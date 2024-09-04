@@ -1,0 +1,1 @@
+An OOP toolkit to streamline and simplify training models using scikit-learn 

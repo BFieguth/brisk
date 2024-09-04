@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "ml-toolkit"
+version = "0.0.1"
+description = ""
+authors = ["BFieguth <bfieguth@uoguelph.ca>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+scikit-learn = "^1.5.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
