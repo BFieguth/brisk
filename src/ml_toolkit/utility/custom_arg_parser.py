@@ -50,8 +50,6 @@ class CustomArgParser:
             *args: Positional arguments for argparse's add_argument.
             **kwargs: Keyword arguments for argparse's add_argument.
         """
-        
-        
         self.parser.add_argument(*args, **kwargs)
 
     def parse_args(
@@ -87,22 +85,3 @@ class CustomArgParser:
         except Exception as e:
             print(f"Unexpected error during argument parsing: {e}")
             raise
-
-    def _argument_exists(self, dest: str, flag: Optional[str] = None) -> bool:
-        """
-        Checks if an argument with the given dest or flag has already been added.
-
-        Args:
-            dest (str): The destination of the argument to check.
-            flag (Optional[str]): An optional flag to check.
-
-        Returns:
-            bool: True if the argument exists, False otherwise.
-        """
-        for action in self.parser._actions:
-            if action.dest == dest:
-                return True
-            if flag and flag in action.option_strings:
-                return True
-        return False
-    
