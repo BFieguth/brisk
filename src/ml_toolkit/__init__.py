@@ -4,3 +4,7 @@ from ml_toolkit.config.model_wrapper import ModelWrapper
 
 from ml_toolkit.utility.custom_arg_parser import CustomArgParser
 from ml_toolkit.utility.notification_email import NotificationEmail
+
+from ml_toolkit.training_manager.training_manager import TrainingManager
+
+from ml_toolkit.data_splitting.data_splitter import DataSplitter
