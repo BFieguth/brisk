@@ -36,10 +36,10 @@ class CustomArgParser:
         )
         self.parser.add_argument(
             "--datasets", "-d", action="store", dest="datasets", nargs="+", 
-            help="Names of tables in SQL database to use."
+            required=True, help="Names of tables in SQL database to use."
         )
         self.parser.add_argument(
-            "--scoring", "-s", action="store", dest="scoring", 
+            "--scoring", "-s", action="store", dest="scoring", required=True,
             help="Metric to evaluate and optimize models with."
         )
 
@@ -74,10 +74,6 @@ class CustomArgParser:
             print("Arguments parsed successfully.")
             return args
         
-        except argparse.ArgumentError as e:
-            print(f"Argument parsing failed: {e}")
-            raise
-
         except SystemExit as e:
             print(f"Argument parsing failed with SystemExit: {e}")
             raise
