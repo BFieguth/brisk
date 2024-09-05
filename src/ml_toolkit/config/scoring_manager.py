@@ -1,6 +1,7 @@
 """
 Dictionaries to import and access a variety of scoring methods
 """
+from typing import Callable
 
 import numpy as np 
 import scipy
@@ -14,7 +15,7 @@ class ScoringManager:
     This class provides access to various scoring metrics for regression 
     tasks by either their full names or common abbreviations.
     """
-    def __init__(self, include_regression=True):
+    def __init__(self, include_regression: bool = True):
         """Initializes the scoring manager with the specified metrics.
 
         Args:
@@ -26,7 +27,7 @@ class ScoringManager:
             self._add_regression_metrics()
 
     def _add_regression_metrics(self):
-        """Add regression metrics to scoring manager."""
+        """Add commmon regression metrics and abbreviations to scoring manager."""
         CCC = metrics.make_scorer(self.__concordance_correlation_coefficient)
 
         REGRESSION_SCORING = {
@@ -75,7 +76,7 @@ class ScoringManager:
         }
         self.scoring_metrics.update(REGRESSION_SCORING)
 
-    def get_scorer(self, name_or_abbr: str):
+    def get_scorer(self, name_or_abbr: str) -> Callable:
         """Retrieve a scoring function by full name or abbreviation.
         
         Args:
@@ -91,20 +92,23 @@ class ScoringManager:
             if details.get("abbr") == name_or_abbr:
                 return details['func']
         
-        return None
+        raise ValueError(f"Scorer '{name_or_abbr}' not found.")
 
     # Define additional scoring metrics not included with sklearn
     @staticmethod
-    def __concordance_correlation_coefficient(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    def __concordance_correlation_coefficient(
+        y_true: np.ndarray, 
+        y_pred: np.ndarray
+    ) -> float:
         """
-        Calculate Lin's Concordance Correlation Coefficient
+        Calculate Lin's Concordance Correlation Coefficient (CCC)
 
         Args:
             y_true (array-like): The true (observed) values.
             y_pred (array-like): The predicted values.
 
         Returns:
-            float: Lin's Concordance Correlation Coefficient.
+            float: Concordance Correlation Coefficient between y_true and y_pred.
         """
         corr, _ = scipy.stats.pearsonr(y_true, y_pred)
         mean_true = np.mean(y_true)
