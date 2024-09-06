@@ -1,5 +1,9 @@
+from collections import deque
+from datetime import datetime
 import itertools
-from typing import List, Dict, Tuple, Callable
+import os
+import traceback
+from typing import List, Dict, Tuple, Callable, Optional
 
 import pandas as pd
 
@@ -13,7 +17,8 @@ class TrainingManager:
         scoring_config: Dict[str, Dict], 
         splitter: DataSplitter, 
         methods: List[str], 
-        data_paths: List[Tuple[str, str]]
+        data_paths: List[Tuple[str, str]],
+        results_dir: Optional[str] = None
     ):
         """
         Initializes the TrainingManager.
@@ -25,12 +30,22 @@ class TrainingManager:
             methods (List[str]): List of methods to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples (data_path, table_name). 
                 If table_name is None, it's assumed that the dataset is not SQL-based.
+            results_dir (str): Directory where results will be stored. If None a timestamp will be used.
         """
         self.method_config = method_config
         self.scoring_config = scoring_config
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
+
+        if results_dir:
+            if os.path.exists(results_dir):
+                raise FileExistsError(
+                    f"Results directory '{results_dir}' already exists."
+                    )
+            self.results_dir = results_dir
+        else:
+            self.results_dir = None
 
         self.evaluator = Evaluator(
             method_config=self.method_config, scoring_config=self.scoring_config
@@ -81,9 +96,36 @@ class TrainingManager:
             List[Tuple[str, str]]:
                 A list of tuples where each tuple represents (data_path, method).
         """
-        configurations = list(itertools.product(self.data_paths, self.methods))
+        configurations = deque(itertools.product(self.data_paths, self.methods))
         return configurations
     
+    def __get_results_dir(self):
+        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+        return f"{timestamp}_Results"
+
+    def __get_configuration_dir(
+        self, 
+        method_name: str, 
+        data_path: Tuple[str, str],
+        results_dir: str
+    ) -> str:
+        """
+        Create a meaningful directory name for each configuration.
+
+        Args:
+            method_name (str): The name of the model method being used.
+            data_path (str): The path to the dataset.
+
+        Returns:
+            str: A directory path to store results for this configuration.
+        """
+        dataset_name = os.path.basename(data_path[0]).split(".")[0]
+        config_dir = f"{method_name}_{dataset_name}"
+        full_path = os.path.join(results_dir, config_dir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        return full_path
+
     def run_configurations(self, workflow: Callable):
         """
         Run the user-defined workflow for each configuration.
@@ -92,9 +134,32 @@ class TrainingManager:
             workflow_function (Callable): A function that defines the workflow 
                 for each configuration.
         """
-        for (data_path, method_name) in self.configurations:
-            X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
+        error_log = []
+        if not self.results_dir:
+            results_dir = self.__get_results_dir()
+        else:
+            results_dir = self.results_dir
 
-            model = self.method_config[method_name].instantiate()
-            
-            workflow(self.evaluator, model, X_train, X_test, y_train, y_test) 
+        os.makedirs(results_dir, exist_ok=True)
+
+        while self.configurations:
+            data_path, method_name = self.configurations.popleft()
+            try:
+                X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
+
+                model = self.method_config[method_name].instantiate()
+                config_dir = self.__get_configuration_dir(method_name, data_path, results_dir)
+
+                workflow(self.evaluator, model, X_train, X_test, y_train, y_test, config_dir) 
+
+            except Exception as e:
+                error_message = f"Error for {method_name} on {data_path}: {str(e)}"
+                print(error_message)
+                traceback.print_exc()
+                error_log.append(error_message)
+        
+        if error_log:
+            error_log_path = os.path.join(results_dir, "error_log.txt")
+            with open(error_log_path, "w") as file:
+                file.write("\n".join(error_log))
+                

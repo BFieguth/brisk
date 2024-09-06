@@ -36,7 +36,7 @@ print(manager.configurations)
 
 
 # Define the workflow
-def test_workflow(evaluator, model, X_train, X_test, y_train, y_test):
+def test_workflow(evaluator, model, X_train, X_test, y_train, y_test, output_dir):
     model.fit(X_train, y_train)
     metrics_list = ["MAE", "R2"]
     evaluator.evaluate_model(model, X_test, y_test, metrics_list)
