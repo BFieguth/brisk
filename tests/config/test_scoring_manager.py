@@ -3,19 +3,19 @@ from unittest import mock
 import numpy as np
 import pytest
 
-from ml_toolkit.config.scoring_manager import ScoringManager
+from ml_toolkit.config.metric_manager import MetricManager
 
-class TestScoringManager:
-    """Test class for ScoringManager."""
+class TestMetricManager:
+    """Test class for MetricManager."""
 
     @pytest.fixture
     def scoring_manager(self):
-        """Fixture to initialize ScoringManager."""
-        return ScoringManager()
+        """Fixture to initialize MetricManager."""
+        return MetricManager()
 
     def test_initialization_with_regression(self, scoring_manager):
         """
-        Test initialization of ScoringManager with regression metrics included.
+        Test initialization of MetricManager with regression metrics included.
         """
         assert "mean_absolute_error" in scoring_manager.scoring_metrics
         assert "MSE" in [scoring_manager.scoring_metrics[key].get("abbr") 
@@ -53,7 +53,7 @@ class TestScoringManager:
         """
         y_true = np.array([3.0, -0.5, 2.0, 7.0])
         y_pred = np.array([2.5, 0.0, 2.0, 8.0])        
-        ccc = ScoringManager._ScoringManager__concordance_correlation_coefficient(
+        ccc = MetricManager._MetricManager__concordance_correlation_coefficient(
             y_true, y_pred
             )
         assert np.isclose(ccc, 0.976, atol=0.01)

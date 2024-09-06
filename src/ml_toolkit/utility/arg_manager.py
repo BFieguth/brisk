@@ -1,7 +1,7 @@
 import argparse
 from typing import List, Optional
 
-class CustomArgParser:
+class ArgManager:
     """A customizable argument parser.
 
     This class provides a base argument parser with common arguments
@@ -14,7 +14,7 @@ class CustomArgParser:
     """
 
     def __init__(self, description: str):
-        """Initializes the CustomArgParser with common arguments.
+        """Initializes the ArgManager with common arguments.
 
         Args:
             description (str): The description of the script.

@@ -3,7 +3,7 @@ import smtplib
 import email.mime.text as text
 import email.mime.multipart as multipart
 
-class NotificationEmail:
+class AlertMailer:
     """A class to send notification emails.
 
     This class handles sending emails using Gmail as the email service
@@ -16,7 +16,7 @@ class NotificationEmail:
     """
     
     def __init__(self, config_path: str):
-        """Initializes NotificationEmail with email credentials.
+        """Initializes AlertMailer with email credentials.
 
         Args:
             config_path (str): The path to the configuration file containing

@@ -1,9 +1,10 @@
 import itertools
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable
 
 import pandas as pd
 
 from ml_toolkit.data_splitting.data_splitter import DataSplitter
+from ml_toolkit.training_manager.evaluator import Evaluator
 
 class TrainingManager:
     def __init__(
@@ -30,7 +31,11 @@ class TrainingManager:
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
-        
+
+        self.evaluator = Evaluator(
+            method_config=self.method_config, scoring_config=self.scoring_config
+        )
+
         self.__validate_methods()
         self.data_splits = self.__get_data_splits()
         self.configurations = self.__create_configurations()
@@ -79,3 +84,17 @@ class TrainingManager:
         configurations = list(itertools.product(self.data_paths, self.methods))
         return configurations
     
+    def run_configurations(self, workflow: Callable):
+        """
+        Run the user-defined workflow for each configuration.
+
+        Args:
+            workflow_function (Callable): A function that defines the workflow 
+                for each configuration.
+        """
+        for (data_path, method_name) in self.configurations:
+            X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
+
+            model = self.method_config[method_name].instantiate()
+            
+            workflow(self.evaluator, model, X_train, X_test, y_train, y_test) 

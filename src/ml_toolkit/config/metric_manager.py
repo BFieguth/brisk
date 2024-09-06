@@ -9,7 +9,7 @@ import sklearn.metrics as metrics
 import sklearn.metrics._regression as regression
 
 
-class ScoringManager:
+class MetricManager:
     """A class to manage scoring metrics for different tasks.
 
     This class provides access to various scoring metrics for regression 

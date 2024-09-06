@@ -2,15 +2,15 @@ import argparse
 import pytest
 from unittest import mock
 
-from ml_toolkit.utility.custom_arg_parser import CustomArgParser
+from ml_toolkit.utility.arg_manager import ArgManager
 
-class TestCustomArgParser:
-    """Test class for CustomArgParser."""
+class TestArgManager:
+    """Test class for ArgManager."""
 
     @pytest.fixture
     def parser(self):
-        """Fixture to initialize the CustomArgParser."""
-        return CustomArgParser(description="Test script")
+        """Fixture to initialize the ArgManager."""
+        return ArgManager(description="Test script")
 
     @mock.patch(
             "sys.argv", 

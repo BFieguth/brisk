@@ -1,15 +1,15 @@
 import pytest
 from unittest import mock
 
-from ml_toolkit.utility.notification_email import NotificationEmail
+from ml_toolkit.utility.alert_mailer import AlertMailer
 
-class TestNotificationEmail:
-    """Test class for NotificationEmail."""
+class TestAlertMailer:
+    """Test class for AlertMailer."""
 
     @pytest.fixture
     def email_instance(self):
         """
-        Fixture to create an instance of NotificationEmail with mocked config values.
+        Fixture to create an instance of AlertMailer with mocked config values.
 
         This avoids using real email credentials and sets up an instance with mock values.
         """
@@ -22,7 +22,7 @@ class TestNotificationEmail:
                     "email_address": "mock_sender@example.com"
                 }
             }[section]):
-                email_instance = NotificationEmail("mock_config.ini")
+                email_instance = AlertMailer("mock_config.ini")
         return email_instance
 
     @mock.patch("smtplib.SMTP")
