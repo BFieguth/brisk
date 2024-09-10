@@ -28,62 +28,83 @@ class MetricManager:
 
     def _add_regression_metrics(self):
         """Add commmon regression metrics and abbreviations to scoring manager."""
-        CCC = metrics.make_scorer(self.__concordance_correlation_coefficient)
 
         REGRESSION_SCORING = {
             "explained_variance_score": {
-                "func": regression.explained_variance_score
+                "func": regression.explained_variance_score,
+                "scorer": metrics.make_scorer(
+                    regression.explained_variance_score
+                    )
             },
             "max_error": {
-                "func": regression.max_error
+                "func": regression.max_error,
+                "scorer": metrics.make_scorer(regression.max_error)
             },
             "mean_absolute_error": {
                 "abbr": "MAE",
-                "func": regression.mean_absolute_error
+                "func": regression.mean_absolute_error,
+                "scorer": metrics.make_scorer(regression.mean_absolute_error)
             },
             "mean_absolute_percentage_error": {
                 "abbr": "MAPE",
-                "func": regression.mean_absolute_percentage_error
+                "func": regression.mean_absolute_percentage_error,
+                "scorer": metrics.make_scorer(
+                    regression.mean_absolute_percentage_error
+                    )
             },
             "mean_pinball_loss": {
-                "func": regression.mean_pinball_loss
+                "func": regression.mean_pinball_loss,
+                "scorer": metrics.make_scorer(regression.mean_pinball_loss)
             },
             "mean_squared_error": {
                 "abbr": "MSE",
-                "func": regression.mean_squared_error
+                "func": regression.mean_squared_error,
+                "scorer": metrics.make_scorer(regression.mean_squared_error)
             },
             "mean_squared_log_error": {
-                "func": regression.mean_squared_log_error
+                "func": regression.mean_squared_log_error,
+                "scorer": metrics.make_scorer(regression.mean_squared_log_error)
             },
             "median_absolute_error": {
-                "func": regression.median_absolute_error
+                "func": regression.median_absolute_error,
+                "scorer": metrics.make_scorer(regression.median_absolute_error)
             },
             "r2_score": {
                 "abbr": "R2",
-                "func": regression.r2_score
+                "func": regression.r2_score,
+                "scorer": metrics.make_scorer(regression.r2_score)
             },
             "root_mean_squared_error": {
                 "abbr": "RMSE",
-                "func": regression.root_mean_squared_error
+                "func": regression.root_mean_squared_error,
+                "scorer": metrics.make_scorer(
+                    regression.root_mean_squared_error
+                    )
             },
             "root_mean_squared_log_error": {
-                "func": regression.root_mean_squared_log_error
+                "func": regression.root_mean_squared_log_error,
+                "scorer": metrics.make_scorer(
+                    regression.root_mean_squared_log_error
+                    )
             },
             "concordance_correlation_coefficient": {
                 "abbr": "CCC",
-                "func": CCC
+                "func": self.__concordance_correlation_coefficient,
+                "scorer": metrics.make_scorer(
+                    self.__concordance_correlation_coefficient
+                    )
             }
         }
         self.scoring_metrics.update(REGRESSION_SCORING)
 
-    def get_scorer(self, name_or_abbr: str) -> Callable:
-        """Retrieve a scoring function by full name or abbreviation.
+    def get_metric(self, name_or_abbr: str) -> Callable:
+        """Retrieve a metric function by full name or abbreviation.
         
         Args:
-            name_or_abbr (str): The full name or abbreviation of the scoring metric.
+            name_or_abbr (str): The full name or abbreviation of the metric.
         
         Returns:
-            The scoring function or None if not found.
+            The metric function or None if not found.
         """
         if name_or_abbr in self.scoring_metrics:
             return self.scoring_metrics[name_or_abbr]['func']
@@ -92,7 +113,25 @@ class MetricManager:
             if details.get("abbr") == name_or_abbr:
                 return details['func']
         
-        raise ValueError(f"Scorer '{name_or_abbr}' not found.")
+        raise ValueError(f"Metric function '{name_or_abbr}' not found.")
+
+    def get_scorer(self, name_or_abbr: str) -> Callable:
+        """Retrieve a scoring callable by full name or abbreviation.
+        
+        Args:
+            name_or_abbr (str): The full name or abbreviation of the metric.
+        
+        Returns:
+            The scoring callable or None if not found.
+        """
+        if name_or_abbr in self.scoring_metrics:
+            return self.scoring_metrics[name_or_abbr]['scorer']
+        
+        for full_name, details in self.scoring_metrics.items():
+            if details.get("abbr") == name_or_abbr:
+                return details['scorer']
+        
+        raise ValueError(f"Scoring callable '{name_or_abbr}' not found.")
 
     # Define additional scoring metrics not included with sklearn
     @staticmethod

@@ -23,29 +23,29 @@ class TestMetricManager:
         assert "CCC" in [scoring_manager.scoring_metrics[key].get("abbr") 
                          for key in scoring_manager.scoring_metrics]
 
-    def test_get_scorer_by_name(self, scoring_manager):
+    def test_get_metric_by_name(self, scoring_manager):
         """
-        Test get_scorer method by full name.
+        Test get_metric method by full name.
         """
-        scorer = scoring_manager.get_scorer("mean_squared_error")
+        scorer = scoring_manager.get_metric("mean_squared_error")
         assert scorer is not None
         assert callable(scorer)
 
-    def test_get_scorer_by_abbreviation(self, scoring_manager):
+    def test_get_metric_by_abbreviation(self, scoring_manager):
         """
-        Test get_scorer method by abbreviation.
+        Test get_metric method by abbreviation.
         """
-        scorer = scoring_manager.get_scorer("MSE")
+        scorer = scoring_manager.get_metric("MSE")
         assert scorer is not None
         assert callable(scorer)
 
-    def test_get_scorer_invalid(self, scoring_manager):
+    def test_get_metric_invalid(self, scoring_manager):
         """
-        Test get_scorer method with an invalid name or abbreviation, 
+        Test get_metric method with an invalid name or abbreviation, 
         ensuring it raises a ValueError.
         """
-        with pytest.raises(ValueError, match="Scorer 'invalid_scorer' not found"):
-            scoring_manager.get_scorer("invalid_scorer")
+        with pytest.raises(ValueError, match="Metric function 'invalid_scorer' not found"):
+            scoring_manager.get_metric("invalid_scorer")
 
     def test_concordance_correlation_coefficient(self):
         """
