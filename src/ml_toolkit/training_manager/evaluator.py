@@ -132,9 +132,6 @@ class Evaluator:
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         self.__save_plot(output_path)      
 
-
-
-
     def plot_learning_curve(
         self, 
         model, 
@@ -191,7 +188,6 @@ class Evaluator:
         axes[0].set_title(f"Learning Curve ({method_name})", fontsize=20)
         axes[0].set_xlabel("Training Examples", fontsize=12)
         axes[0].set_ylabel(scoring, fontsize=12) 
-        axes[0].set_ylim(0, 1.1)
         axes[0].grid()
         axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
                              train_scores_mean + train_scores_std, alpha=0.1, color="r")
@@ -223,7 +219,6 @@ class Evaluator:
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         self.__save_plot(output_path)
-
 
     # Utility Methods
     def __save_to_json(self, data: Dict, output_path: str) -> None:
