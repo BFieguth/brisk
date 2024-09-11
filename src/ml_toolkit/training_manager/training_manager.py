@@ -149,8 +149,9 @@ class TrainingManager:
 
                 model = self.method_config[method_name].instantiate()
                 config_dir = self.__get_configuration_dir(method_name, data_path, results_dir)
+                config_evaluator = self.evaluator.with_config(output_dir=config_dir)
 
-                workflow(self.evaluator, model, X_train, X_test, y_train, y_test, config_dir) 
+                workflow(config_evaluator, model, X_train, X_test, y_train, y_test, config_dir)
 
             except Exception as e:
                 error_message = f"Error for {method_name} on {data_path}: {str(e)}"
