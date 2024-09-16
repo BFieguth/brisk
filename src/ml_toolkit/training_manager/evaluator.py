@@ -9,6 +9,7 @@ import sklearn.model_selection as model_select
 import sklearn.ensemble as ensemble
 import sklearn.tree as tree
 import sklearn.inspection as inspection
+import sklearn.base as base
 
 # TODO
 # 7. Perform Hyperparameter Optimization
@@ -274,6 +275,30 @@ class Evaluator:
         plt.legend()
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         self.__save_plot(output_path)
+
+    def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs) -> base.BaseEstimator:
+        if method == "grid":
+            searcher = model_select.GridSearchCV
+        elif method == "random":
+            searcher = model_select.RandomizedSearchCV
+        else:
+            raise ValueError(f"method must be one of (grid, random). {method} was entered.")
+        
+        metric = self.scoring_config.get_scorer(scorer)
+        param_grid = self.method_config[method_name].get_hyperparam_grid()
+
+
+        cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
+        search = searcher(
+            estimator=model, param_grid=param_grid, n_jobs=n_jobs, cv=cv,
+            scoring=metric
+        )
+        search_result = search.fit(X_train, y_train)
+        tuned_model = self.method_config[method_name].instantiate_tuned(
+            search_result.best_params_
+            )
+        tuned_model.fit(X_train, y_train)
+        return tuned_model
 
     # Utility Methods
     def __save_to_json(self, data: Dict, output_path: str) -> None:

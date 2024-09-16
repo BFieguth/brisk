@@ -21,7 +21,8 @@ scoring = args.scoring
 # Setup Data Splitting
 data_splitter = ml_toolkit.DataSplitter(
     test_size=0.2,
-    split_method="shuffle"
+    split_method="shuffle",
+    group_column="Group"
 )
 
 # Setup configurations using TrainingManager
@@ -36,10 +37,30 @@ print(manager.configurations)
 
 
 # Define the workflow
-def test_workflow(evaluator, model, X_train, X_test, y_train, y_test, output_dir):
+def test_workflow(
+    evaluator, model, X_train, X_test, y_train, y_test, output_dir, method_name
+):
     model.fit(X_train, y_train)
-    metrics_list = ["MAE", "R2"]
-    evaluator.evaluate_model(model, X_test, y_test, metrics_list)
+    # metrics_list = ["MAE", "R2", "MSE"]
+    # evaluator.evaluate_model(model, X_test, y_test, metrics_list, "test_metrics")
+    # evaluator.evaluate_model_cv(model, X_test, y_test, metrics_list, "test_metrics_cv")
+    
+    # pred = model.predict(X_test)
+    # evaluator.plot_pred_vs_obs(y_test, pred, "pred_vs_obs_test")
+
+    # evaluator.plot_feature_importance(
+    #     model, X_train, y_train, filter=10, feature_names=["Feature1", "Feature2"],
+    #     filename="feature_importance", scoring="MAE", num_rep=2
+    # )
+
+    # evaluator.plot_residuals(
+    #     model, X_test, y_test, "residuals"
+    # )
+
+    tuned_model = evaluator.hyperparameter_tuning(
+        model, "grid", method_name, X_train, y_train, "MAE", 5, 2 ,10
+    )
+
 
 # Run the workflow
 manager.run_configurations(test_workflow)
