@@ -32,6 +32,20 @@ class ModelWrapper:
         """
         return self.model_class(**self.default_params)
 
+    def instantiate_tuned(self, best_params: Dict[str, Any]) -> Any:
+        """
+        Instantiates a new model with the tuned parameters and includes default parameters like max_iter if present.
+
+        Args:
+            best_params (Dict[str, Any]): The tuned hyperparameters.
+
+        Returns:
+            Any: A new instance of the model with the tuned hyperparameters.
+        """
+        if 'max_iter' in self.default_params:
+            best_params['max_iter'] = self.default_params['max_iter']
+        return self.model_class(**best_params)
+
     def get_hyperparam_grid(self) -> Dict[str, Any]:
         """Returns the hyperparameter grid for the model.
 
