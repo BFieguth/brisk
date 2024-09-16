@@ -58,10 +58,16 @@ class TrainingManager:
     def __validate_methods(self):
         """Check all methods are included in the method_config"""
         included_methods = self.method_config.keys()
-        if set(self.methods).issubset(included_methods):
+
+        if any(isinstance(m, list) for m in self.methods):
+            flat_methods = set(m for sublist in self.methods for m in sublist)
+        else:
+            flat_methods = set(self.methods)
+
+        if flat_methods.issubset(included_methods):
             return True
         else:
-            invalid_methods = list(set(self.methods) - set(included_methods))
+            invalid_methods = list(flat_methods - set(included_methods))
             raise ValueError(
                 "The following methods are not included in the configuration: "
                 f"{invalid_methods}"
@@ -96,7 +102,7 @@ class TrainingManager:
             List[Tuple[str, str]]:
                 A list of tuples where each tuple represents (data_path, method).
         """
-        configurations = deque(itertools.product(self.data_paths, self.methods))
+        configurations = deque(itertools.product(self.data_paths, zip(*self.methods)))
         return configurations
     
     def __get_results_dir(self):
@@ -143,18 +149,34 @@ class TrainingManager:
         os.makedirs(results_dir, exist_ok=True)
 
         while self.configurations:
-            data_path, method_name = self.configurations.popleft()
+            data_path, method_names = self.configurations.popleft()
             try:
                 X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
 
-                model = self.method_config[method_name].instantiate()
-                config_dir = self.__get_configuration_dir(method_name, data_path, results_dir)
-                config_evaluator = self.evaluator.with_config(output_dir=config_dir)
+                models = [
+                    self.method_config[method_name].instantiate() 
+                    for method_name in method_names
+                    ]
+                if len(models) == 1:
+                    model_kwargs = {"model": models[0]}
+                else:
+                    model_kwargs = {
+                        f"model{i+1}": model for i, model in enumerate(models)
+                        }
 
-                workflow(config_evaluator, model, X_train, X_test, y_train, y_test, config_dir, method_name)
+                config_dir = self.__get_configuration_dir(
+                    "_".join(method_names), data_path, results_dir
+                    )
+                config_evaluator = self.evaluator.with_config(
+                    output_dir=config_dir
+                    )
+                workflow(
+                    config_evaluator, X_train, X_test, y_train, y_test, 
+                    config_dir, method_names, **model_kwargs
+                    )
 
             except Exception as e:
-                error_message = f"Error for {method_name} on {data_path}: {str(e)}"
+                error_message = f"Error for {method_names} on {data_path}: {str(e)}"
                 print(error_message)
                 traceback.print_exc()
                 error_log.append(error_message)

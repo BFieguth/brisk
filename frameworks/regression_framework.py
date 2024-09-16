@@ -1,4 +1,6 @@
 """A standard framework for training regression models."""
+import os
+
 import ml_toolkit
 
 notification = ml_toolkit.AlertMailer("./frameworks/config.ini")
@@ -12,6 +14,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 methods = args.methods
+methods = [
+    ['linear', 'ridge', 'dtr'],  # First model choices
+    ['lasso', 'lasso', 'lasso']  # Second model choices
+]
 kf = args.kfold
 num_repeats = args.num_repeats
 datasets = args.datasets
@@ -38,11 +44,16 @@ print(manager.configurations)
 
 # Define the workflow
 def test_workflow(
-    evaluator, model, X_train, X_test, y_train, y_test, output_dir, method_name
+    evaluator, X_train, X_test, y_train, y_test, output_dir, method_name, model1, model2
 ):
-    model.fit(X_train, y_train)
+    model1.fit(X_train, y_train)
+    model2.fit(X_train, y_train)
+    evaluator.save_model(model1, "fitted_model1")
+    evaluator.save_model(model2, "fitted_model2")
+    # path = os.path.join(output_dir, "fitted_model.pkl")
+    # loaded_model = evaluator.load_model(path)
     # metrics_list = ["MAE", "R2", "MSE"]
-    # evaluator.evaluate_model(model, X_test, y_test, metrics_list, "test_metrics")
+    # evaluator.evaluate_model(loaded_model, X_test, y_test, metrics_list, "test_metrics")
     # evaluator.evaluate_model_cv(model, X_test, y_test, metrics_list, "test_metrics_cv")
     
     # pred = model.predict(X_test)
@@ -57,9 +68,9 @@ def test_workflow(
     #     model, X_test, y_test, "residuals"
     # )
 
-    tuned_model = evaluator.hyperparameter_tuning(
-        model, "grid", method_name, X_train, y_train, "MAE", 5, 2 ,10
-    )
+    # tuned_model = evaluator.hyperparameter_tuning(
+    #     model, "grid", method_name, X_train, y_train, "MAE", 5, 2 ,10
+    # )
 
 
 # Run the workflow
