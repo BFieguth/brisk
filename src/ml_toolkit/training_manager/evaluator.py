@@ -6,9 +6,11 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.model_selection as model_select
+import sklearn.ensemble as ensemble
+import sklearn.tree as tree
+import sklearn.inspection as inspection
 
 # TODO
-# 4. Plot learning curve
 # 5. Plot feature importance
 # 6. Plot Residuals
 # 7. Perform Hyperparameter Optimization
@@ -218,6 +220,47 @@ class Evaluator:
         plt.tight_layout()
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
+        self.__save_plot(output_path)
+
+    def plot_feature_importance(
+        self, 
+        model, 
+        X, 
+        y, 
+        filter, 
+        feature_names, 
+        filename, 
+        scoring, 
+        num_rep
+    ) -> None:
+        metric = self.scoring_config.get_scorer(scoring)
+
+
+        if isinstance(model, (tree.DecisionTreeRegressor, ensemble.RandomForestRegressor, ensemble.GradientBoostingRegressor)):
+            model.fit(X,y)
+            importance = model.feature_importances_
+        else:
+            model.fit(X, y)
+            results = inspection.permutation_importance(model, X=X, y=y, scoring=metric, n_repeats=num_rep)
+            importance = results.importances_mean
+
+
+        if isinstance(filter, int):
+            sorted_indices = np.argsort(importance)[::-1]
+            importance = importance[sorted_indices[:filter]]
+            feature_names = [feature_names[i] for i in sorted_indices[:filter]]
+        elif isinstance(filter, float):
+            above_threshold = importance >= filter
+            importance = importance[above_threshold]
+            feature_names = [feature_names[i] for i in range(len(feature_names)) if above_threshold[i]]
+
+        plt.barh(feature_names, importance)
+        plt.xticks(rotation=90)
+        plt.xlabel('Importance', fontsize=12)
+        plt.ylabel('Feature', fontsize=12)
+        plt.title('Feature Importance', fontsize=16)
+        plt.tight_layout()
+        output_path = os.path.join(self.output_dir, f'{filename}.png')
         self.__save_plot(output_path)
 
     # Utility Methods
