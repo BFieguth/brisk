@@ -11,8 +11,6 @@ import sklearn.tree as tree
 import sklearn.inspection as inspection
 
 # TODO
-# 5. Plot feature importance
-# 6. Plot Residuals
 # 7. Perform Hyperparameter Optimization
 # 8. Save model
 # 9. Load model
@@ -261,6 +259,20 @@ class Evaluator:
         plt.title('Feature Importance', fontsize=16)
         plt.tight_layout()
         output_path = os.path.join(self.output_dir, f'{filename}.png')
+        self.__save_plot(output_path)
+
+    def plot_residuals(self, model, X, y, filename):
+        predictions = model.predict(X)
+        residuals = y - predictions
+
+        plt.figure(figsize=(8, 6))
+        plt.scatter(y, residuals, label='Residuals')
+        plt.axhline(y=0, color='r', linestyle='--')
+        plt.xlabel('Observed', fontsize=12)
+        plt.ylabel('Residual', fontsize=12)
+        plt.title('Residual Plot', fontsize=16)
+        plt.legend()
+        output_path = os.path.join(self.output_dir, f"{filename}.png")
         self.__save_plot(output_path)
 
     # Utility Methods
