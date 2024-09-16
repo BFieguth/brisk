@@ -6,6 +6,7 @@ from typing import Dict, List
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import sklearn.model_selection as model_select
 import sklearn.ensemble as ensemble
 import sklearn.tree as tree
@@ -13,7 +14,6 @@ import sklearn.inspection as inspection
 import sklearn.base as base
 
 # TODO
-# 10. Compare Models (on specified metric w/ same data)
 # 11. Plot model comparison (plot the metric for each model)
 # 12. Plot hyperparameter performance
 
@@ -102,6 +102,69 @@ class Evaluator:
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         self.__save_to_json(results, output_path)
+
+    def compare_models(
+        self, 
+        *models: base.BaseEstimator,
+        X: pd.DataFrame, 
+        y: pd.Series, 
+        metrics: List[str], 
+        filename: str,
+        calculate_diff: bool = False
+    ) -> Dict[str, Dict[str, float]]:
+        """
+        Compare multiple models on the provided metrics.
+
+        Args:
+            models: A variable number of model instances to evaluate.
+            X (pd.DataFrame): The feature data.
+            y (pd.Series): The target data.
+            metrics (List[str]): A list of metric names to calculate.
+            output_dir (str): The directory to save the results.
+            filename (str): The name of the output file without extension.
+            calculate_diff (bool): Whether to compute the difference between models for each metric.
+
+        Returns:
+            Dict[str, Dict[str, float]]: A dictionary containing the metric results 
+            for each model.
+        """
+        comparison_results = {}
+        model_names = [f"model_{i+1}" for i in range(len(models))]
+
+        for idx, model in enumerate(models):
+            model_name = f"model_{idx+1}"
+            print(f"Evaluating {model_name}...")
+            
+            # Evaluate the model and collect results
+            predictions = model.predict(X)
+            results = {}
+
+            for metric_name in metrics:
+                scorer = self.scoring_config.get_metric(metric_name)
+                if scorer is not None:
+                    score = scorer(y, predictions)
+                    results[metric_name] = score
+                else:
+                    print(f"Scorer for {metric_name} not found.")
+            
+            comparison_results[model_name] = results
+
+        # Calculate the difference between models for each metric
+        if calculate_diff and len(models) > 1:
+            comparison_results["difference_from_model1"] = {}
+            base_model = model_names[0]
+            for metric_name in metrics:
+                comparison_results["difference_from_model1"][metric_name] = {}
+                base_score = comparison_results[base_model][metric_name]
+                
+                for other_model in model_names[1:]:
+                    diff = comparison_results[other_model][metric_name] - base_score
+                    comparison_results["difference_from_model1"][metric_name][other_model] = diff
+
+        output_path = os.path.join(self.output_dir, f"{filename}.json")
+        self.__save_to_json(comparison_results, output_path)
+        
+        return comparison_results
 
     def plot_pred_vs_obs(
         self, 
