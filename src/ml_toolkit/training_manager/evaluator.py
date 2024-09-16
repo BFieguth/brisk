@@ -3,6 +3,7 @@ import json
 import os
 from typing import Dict, List
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.model_selection as model_select
@@ -12,9 +13,6 @@ import sklearn.inspection as inspection
 import sklearn.base as base
 
 # TODO
-# 7. Perform Hyperparameter Optimization
-# 8. Save model
-# 9. Load model
 # 10. Compare Models (on specified metric w/ same data)
 # 11. Plot model comparison (plot the metric for each model)
 # 12. Plot hyperparameter performance
@@ -342,3 +340,12 @@ class Evaluator:
         for key, value in kwargs.items():
             setattr(eval_copy, key, value)
         return eval_copy
+
+    def save_model(self, model, filename):
+        output_path = os.path.join(self.output_dir, f"{filename}.pkl")
+        joblib.dump(model, output_path)
+
+    def load_model(self, filepath):
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"No model found at {filepath}")
+        return joblib.load(filepath)
