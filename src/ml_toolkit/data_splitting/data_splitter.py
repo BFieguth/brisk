@@ -172,6 +172,9 @@ class DataSplitter:
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
 
+        if self.group_column:
+            X = X.drop(columns=self.group_column)
+
         if isinstance(
             self.splitter, 
             (ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplit)
