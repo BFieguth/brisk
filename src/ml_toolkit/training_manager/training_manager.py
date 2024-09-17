@@ -146,6 +146,7 @@ class TrainingManager:
                 for each configuration.
         """
         error_log = []
+        self.config_paths = {}
         if not self.results_dir:
             results_dir = self.__get_results_dir()
         else:
@@ -172,6 +173,12 @@ class TrainingManager:
                 config_dir = self.__get_configuration_dir(
                     "_".join(method_names), data_path, results_dir
                     )
+                # Save each config_dir for reporting, grouped by dataset
+                if data_path[0] in self.config_paths:
+                    self.config_paths[data_path[0]].append(config_dir)
+                else:
+                    self.config_paths[data_path[0]] = [config_dir]
+
                 config_evaluator = self.evaluator.with_config(
                     output_dir=config_dir
                     )
