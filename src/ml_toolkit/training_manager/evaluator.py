@@ -1,21 +1,20 @@
 import copy
+import datetime
+import inspect
 import json
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional, Any, Union
 
 import joblib
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import seaborn as sns
 import sklearn.model_selection as model_select
 import sklearn.ensemble as ensemble
 import sklearn.tree as tree
 import sklearn.inspection as inspection
 import sklearn.base as base
-from sklearn.preprocessing import MinMaxScaler
 matplotlib.use('Agg')
 
 class Evaluator:
@@ -57,7 +56,8 @@ class Evaluator:
         
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        self.__save_to_json(results, output_path)
+        metadata = self.__get_metadata(model)
+        self.__save_to_json(results, output_path, metadata)
 
     def evaluate_model_cv(
         self, 
@@ -102,7 +102,8 @@ class Evaluator:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        self.__save_to_json(results, output_path)
+        metadata = self.__get_metadata(model)
+        self.__save_to_json(results, output_path, metadata)
 
     def compare_models(
         self, 
@@ -163,14 +164,16 @@ class Evaluator:
                     comparison_results["difference_from_model1"][metric_name][other_model] = diff
 
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        self.__save_to_json(comparison_results, output_path)
+        metadata = self.__get_metadata(models=models)
+        self.__save_to_json(comparison_results, output_path, metadata)
         
         return comparison_results
 
     def plot_pred_vs_obs(
         self, 
-        y_true, 
-        y_pred, 
+        model,
+        X,
+        y_true,  
         filename: str
     ):
         """
@@ -182,8 +185,10 @@ class Evaluator:
             output_dir: The directory to save the plot.
             filename: The name of the output PNG file (without extension).
         """
+        prediction = model.predict(X)
+
         plt.figure(figsize=(8, 6))
-        plt.scatter(y_true, y_pred, edgecolors=(0, 0, 0))
+        plt.scatter(y_true, prediction, edgecolors=(0, 0, 0))
         plt.plot(
             [min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--', lw=2
             )
@@ -193,7 +198,8 @@ class Evaluator:
         plt.grid(True)
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        self.__save_plot(output_path)      
+        metadata = self.__get_metadata(model)
+        self.__save_plot(output_path, metadata)      
 
     def plot_learning_curve(
         self, 
@@ -281,7 +287,8 @@ class Evaluator:
         plt.tight_layout()
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        self.__save_plot(output_path)
+        metadata = self.__get_metadata(model)
+        self.__save_plot(output_path, metadata)
 
     def plot_feature_importance(
         self, 
@@ -305,7 +312,6 @@ class Evaluator:
             results = inspection.permutation_importance(model, X=X, y=y, scoring=metric, n_repeats=num_rep)
             importance = results.importances_mean
 
-
         if isinstance(filter, int):
             sorted_indices = np.argsort(importance)[::-1]
             importance = importance[sorted_indices[:filter]]
@@ -322,7 +328,8 @@ class Evaluator:
         plt.title('Feature Importance', fontsize=16)
         plt.tight_layout()
         output_path = os.path.join(self.output_dir, f'{filename}.png')
-        self.__save_plot(output_path)
+        metadata = self.__get_metadata(model)
+        self.__save_plot(output_path, metadata)
 
     def plot_residuals(self, model, X, y, filename):
         predictions = model.predict(X)
@@ -336,7 +343,8 @@ class Evaluator:
         plt.title('Residual Plot', fontsize=16)
         plt.legend()
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        self.__save_plot(output_path)
+        metadata = self.__get_metadata(model)
+        self.__save_plot(output_path, metadata)
 
     def plot_model_comparison(self, *models, X, y, metric, filename) -> None:
         """
@@ -377,7 +385,8 @@ class Evaluator:
         plt.title(f"Model Comparison on {metric}", fontsize=16)
         
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        self.__save_plot(output_path)
+        metadata = self.__get_metadata(models)
+        self.__save_plot(output_path, metadata)
         plt.close()
 
     def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs, plot_results: bool = False) -> base.BaseEstimator:
@@ -391,7 +400,6 @@ class Evaluator:
         metric = self.scoring_config.get_scorer(scorer)
         param_grid = self.method_config[method_name].get_hyperparam_grid()
 
-
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
         search = searcher(
             estimator=model, param_grid=param_grid, n_jobs=n_jobs, cv=cv,
@@ -404,12 +412,13 @@ class Evaluator:
         tuned_model.fit(X_train, y_train)
 
         if plot_results:
+            metadata = self.__get_metadata(model)
             self.__plot_hyperparameter_performance(
-                param_grid, search_result, method_name
+                param_grid, search_result, method_name, metadata
             )
         return tuned_model
 
-    def __plot_hyperparameter_performance(self, param_grid, search_result, method_name) -> None:
+    def __plot_hyperparameter_performance(self, param_grid, search_result, method_name, metadata) -> None:
         """
         Plot the performance of hyperparameter tuning.
 
@@ -429,19 +438,21 @@ class Evaluator:
                 param_values=param_grid[param_keys[0]], 
                 mean_test_score=search_result.cv_results_['mean_test_score'], 
                 param_name=param_keys[0], 
-                method_name=method_name
+                method_name=method_name,
+                metadata=metadata
             )
         elif len(param_keys) == 2:
             self.__plot_3d_surface(
                 param_grid=param_grid, 
                 search_result=search_result, 
                 param_names=param_keys, 
-                method_name=method_name
+                method_name=method_name,
+                metadata=metadata
             )
         else:
             print("Higher dimensional visualization not implemented yet")
 
-    def __plot_1d_performance(self, param_values, mean_test_score, param_name, method_name):
+    def __plot_1d_performance(self, param_values, mean_test_score, param_name, method_name, metadata):
         """
         Plot the performance of a single hyperparameter.
         """
@@ -457,9 +468,9 @@ class Evaluator:
         plt.grid(True)
         plt.tight_layout()
         output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_{param_name}.png")
-        self.__save_plot(output_path)
+        self.__save_plot(output_path, metadata)
 
-    def __plot_3d_surface(self, param_grid, search_result, param_names, method_name):
+    def __plot_3d_surface(self, param_grid, search_result, param_names, method_name, metadata):
         """
         Plot the performance of two hyperparameters in 3D.
         """
@@ -478,33 +489,40 @@ class Evaluator:
         ax.set_zlabel('Mean Test Score', fontsize=12)
         ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
         output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_3Dplot.png")
-        self.__save_plot(output_path)       
+        self.__save_plot(output_path, metadata)       
 
     # Utility Methods
-    def __save_to_json(self, data: Dict, output_path: str) -> None:
+    def __save_to_json(self, data: Dict, output_path: str, metadata: Dict[str, Any] = None) -> None:
         """
-        Save a dictionary to a JSON file.
+        Save a dictionary to a JSON file, including metadata.
 
         Args:
             data (dict): The data to save.
             output_path (str): The path to the output file.
+            metadata (Dict[str, Any], optional): Metadata to be included with the data.
         """
         try:
+            if metadata:
+                data["_metadata"] = metadata
+
             with open(output_path, "w") as file:
                 json.dump(data, file, indent=4)
-        except IOError as e:
-            print(f"Failed to save JSON to {output_path}: {e}") 
 
-    def __save_plot(self, output_path: str) -> None:
+        except IOError as e:
+            print(f"Failed to save JSON to {output_path}: {e}")
+
+    def __save_plot(self, output_path: str, metadata: Dict[str, Any] = None) -> None:
         """
-        Save the current matplotlib plot to a PNG file.
+        Save the current matplotlib plot to a PNG file, including metadata.
 
         Args:
             output_path (str): The full path (including filename) where the plot will be saved.
+            metadata (Dict[str, Any], optional): Metadata to be included with the plot.
         """
         try:
-            plt.savefig(output_path, format="png")
+            plt.savefig(output_path, format="png", metadata=metadata)
             plt.close()
+
         except IOError as e:
             print(f"Failed to save plot to {output_path}: {e}")
 
@@ -531,3 +549,34 @@ class Evaluator:
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
         return joblib.load(filepath)
+
+    def __get_metadata(
+        self, 
+        models: Union[base.BaseEstimator, List[base.BaseEstimator]], 
+        method_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate metadata for saving output files (JSON, PNG, etc.).
+
+        Args:
+            models (Union[base.BaseEstimator, List[base.BaseEstimator]]): 
+                A single model or a list of models to include in metadata.
+            method_name (Optional[str]): The name of the calling method (if available).
+
+        Returns:
+            Dict[str, Any]: A dictionary containing metadata such as method name, 
+            timestamp, and model names.
+        """
+        metadata = {
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "method": method_name if method_name else inspect.stack()[1][3]
+        }
+
+        if isinstance(models, tuple):
+            metadata["models"] = [model.__class__.__name__ for model in models]
+        else:
+            metadata["models"] = [models.__class__.__name__]
+
+        metadata = {k: str(v) if not isinstance(v, str) else v for k, v in metadata.items()}
+        return metadata 
+    

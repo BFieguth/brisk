@@ -16,7 +16,7 @@ args = parser.parse_args()
 methods = args.methods
 methods = [
     ['linear', 'ridge'],  # First model choices
-    ['lasso', 'bridge']  # Second model choices
+    ['elasticnet', 'bridge']  # Second model choices
 ]
 kf = args.kfold
 num_repeats = args.num_repeats
@@ -61,20 +61,24 @@ def test_workflow(
 
     # path = os.path.join(output_dir, "fitted_model.pkl")
     # loaded_model = evaluator.load_model(path)
-    # metrics_list = ["MAE", "R2", "MSE"]
-    # evaluator.evaluate_model(loaded_model, X_test, y_test, metrics_list, "test_metrics")
+    metrics_list = ["MAE", "R2", "MSE"]
+    # evaluator.evaluate_model(model1, X_test, y_test, metrics_list, "test_metrics")
     # evaluator.evaluate_model_cv(model, X_test, y_test, metrics_list, "test_metrics_cv")
     
+    # evaluator.plot_learning_curve(
+    #     model1, X_train, y_train
+    # )
+
     # pred = model.predict(X_test)
-    # evaluator.plot_pred_vs_obs(y_test, pred, "pred_vs_obs_test")
+    # evaluator.plot_pred_vs_obs(model1, X_test, y_test, "pred_vs_obs_test")
 
     # evaluator.plot_feature_importance(
-    #     model, X_train, y_train, filter=10, feature_names=["Feature1", "Feature2"],
+    #     model1, X_train, y_train, filter=10, feature_names=["Feature_1", "Feature_2", "Feature_3", "Feature_4", "Feature_5"],
     #     filename="feature_importance", scoring="MAE", num_rep=2
     # )
 
     # evaluator.plot_residuals(
-    #     model, X_test, y_test, "residuals"
+    #     model1, X_test, y_test, "residuals"
     # )
 
     tuned_model = evaluator.hyperparameter_tuning(
