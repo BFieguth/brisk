@@ -102,9 +102,14 @@ class TrainingManager:
             List[Tuple[str, str]]:
                 A list of tuples where each tuple represents (data_path, method).
         """
-        configurations = deque(itertools.product(self.data_paths, zip(*self.methods)))
+        if all(isinstance(method, str) for method in self.methods):
+            method_combinations = [(method,) for method in self.methods]
+        else:
+            method_combinations = zip(*self.methods)
+
+        configurations = deque(itertools.product(self.data_paths, method_combinations))
         return configurations
-    
+
     def __get_results_dir(self):
         timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
         return f"{timestamp}_Results"
