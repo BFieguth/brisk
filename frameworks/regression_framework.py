@@ -15,8 +15,8 @@ args = parser.parse_args()
 
 methods = args.methods
 methods = [
-    ['linear', 'ridge', 'dtr'],  # First model choices
-    ['lasso', 'lasso', 'lasso']  # Second model choices
+    ['linear', 'ridge'],  # First model choices
+    ['lasso', 'bridge']  # Second model choices
 ]
 kf = args.kfold
 num_repeats = args.num_repeats
@@ -55,9 +55,9 @@ def test_workflow(
     #     filename="comparison", calculate_diff=True
     # )
 
-    evaluator.plot_model_comparison(
-        model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
-    )
+    # evaluator.plot_model_comparison(
+    #     model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
+    # )
 
     # path = os.path.join(output_dir, "fitted_model.pkl")
     # loaded_model = evaluator.load_model(path)
@@ -77,9 +77,9 @@ def test_workflow(
     #     model, X_test, y_test, "residuals"
     # )
 
-    # tuned_model = evaluator.hyperparameter_tuning(
-    #     model, "grid", method_name, X_train, y_train, "MAE", 5, 2 ,10
-    # )
+    tuned_model = evaluator.hyperparameter_tuning(
+        model2, "grid", method_name[1], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
+    )
 
 
 # Run the workflow

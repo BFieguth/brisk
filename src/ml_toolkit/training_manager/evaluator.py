@@ -4,17 +4,19 @@ import os
 from typing import Dict, List
 
 import joblib
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import seaborn as sns
 import sklearn.model_selection as model_select
 import sklearn.ensemble as ensemble
 import sklearn.tree as tree
 import sklearn.inspection as inspection
 import sklearn.base as base
-
-# TODO
-# 12. Plot hyperparameter performance
+from sklearn.preprocessing import MinMaxScaler
+matplotlib.use('Agg')
 
 class Evaluator:
     def __init__(self, method_config, scoring_config):
@@ -378,7 +380,7 @@ class Evaluator:
         self.__save_plot(output_path)
         plt.close()
 
-    def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs) -> base.BaseEstimator:
+    def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs, plot_results: bool = False) -> base.BaseEstimator:
         if method == "grid":
             searcher = model_select.GridSearchCV
         elif method == "random":
@@ -400,7 +402,83 @@ class Evaluator:
             search_result.best_params_
             )
         tuned_model.fit(X_train, y_train)
+
+        if plot_results:
+            self.__plot_hyperparameter_performance(
+                param_grid, search_result, method_name
+            )
         return tuned_model
+
+    def __plot_hyperparameter_performance(self, param_grid, search_result, method_name) -> None:
+        """
+        Plot the performance of hyperparameter tuning.
+
+        Args:
+            param_grid (Dict[str, Any]): The hyperparameter grid used for tuning.
+            search_results (Dict[str, Any]): The results from cross-validation during tuning.
+            method_name (str): The name of the model method.
+        """
+        param_keys = list(param_grid.keys())
+        print(f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams")
+
+        if len(param_keys) == 0:
+            return
+
+        elif len(param_keys) == 1:
+            self.__plot_1d_performance(
+                param_values=param_grid[param_keys[0]], 
+                mean_test_score=search_result.cv_results_['mean_test_score'], 
+                param_name=param_keys[0], 
+                method_name=method_name
+            )
+        elif len(param_keys) == 2:
+            self.__plot_3d_surface(
+                param_grid=param_grid, 
+                search_result=search_result, 
+                param_names=param_keys, 
+                method_name=method_name
+            )
+        else:
+            print("Higher dimensional visualization not implemented yet")
+
+    def __plot_1d_performance(self, param_values, mean_test_score, param_name, method_name):
+        """
+        Plot the performance of a single hyperparameter.
+        """
+        plt.figure(figsize=(10, 6))
+        plt.plot(param_values, mean_test_score, marker='o', linestyle='-', color='b')
+        plt.xlabel(param_name, fontsize=12)
+        plt.ylabel("Mean Test Score", fontsize=12)
+        plt.title(f"Hyperparameter Performance: {method_name} ({param_name})", fontsize=16)
+        
+        for i, score in enumerate(mean_test_score):
+            plt.text(param_values[i], score, f'{score:.2f}', ha='center', va='bottom')
+        
+        plt.grid(True)
+        plt.tight_layout()
+        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_{param_name}.png")
+        self.__save_plot(output_path)
+
+    def __plot_3d_surface(self, param_grid, search_result, param_names, method_name):
+        """
+        Plot the performance of two hyperparameters in 3D.
+        """
+        mean_test_score = search_result.cv_results_['mean_test_score'].reshape(
+            len(param_grid[param_names[0]]), 
+            len(param_grid[param_names[1]])
+        )
+        # Create meshgrid for parameters
+        X, Y = np.meshgrid(param_grid[param_names[0]], param_grid[param_names[1]])
+
+        fig = plt.figure(figsize=(10, 6))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(X, Y, mean_test_score.T, cmap='viridis')
+        ax.set_xlabel(param_names[0], fontsize=12)
+        ax.set_ylabel(param_names[1], fontsize=12)
+        ax.set_zlabel('Mean Test Score', fontsize=12)
+        ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
+        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_3Dplot.png")
+        self.__save_plot(output_path)       
 
     # Utility Methods
     def __save_to_json(self, data: Dict, output_path: str) -> None:
