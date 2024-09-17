@@ -14,7 +14,6 @@ import sklearn.inspection as inspection
 import sklearn.base as base
 
 # TODO
-# 11. Plot model comparison (plot the metric for each model)
 # 12. Plot hyperparameter performance
 
 class Evaluator:
@@ -336,6 +335,48 @@ class Evaluator:
         plt.legend()
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         self.__save_plot(output_path)
+
+    def plot_model_comparison(self, *models, X, y, metric, filename) -> None:
+        """
+        Plot a comparison of multiple models based on the specified metric.
+
+        Args:
+            models: A variable number of model instances to evaluate.
+            X (pd.DataFrame): The feature data.
+            y (pd.Series): The target data.
+            metric (str): The metric to evaluate on and plot.
+            output_dir (str): The directory to save the plot.
+            filename (str): The name of the output PNG file.
+        """
+        model_names = [model.__class__.__name__ for model in models]
+        metric_values = []
+        
+        for idx, model in enumerate(models):
+            predictions = model.predict(X)
+            scorer = self.scoring_config.get_metric(metric)
+            if scorer is not None:
+                score = scorer(y, predictions)
+                metric_values.append(score)
+                print(f"{model_names[idx]} - {metric}: {score}")
+            else:
+                print(f"Scorer for {metric} not found.")
+                return
+        
+        plt.figure(figsize=(10, 6))
+        bars = plt.bar(model_names, metric_values, color='lightblue')
+        # Add labels to each bar
+        for bar, value in zip(bars, metric_values):
+            plt.text(
+                bar.get_x() + bar.get_width()/2, bar.get_height(), 
+                f'{value:.3f}', ha='center', va='bottom'
+                    )
+        plt.xlabel("Models", fontsize=12)
+        plt.ylabel(metric, fontsize=12)
+        plt.title(f"Model Comparison on {metric}", fontsize=16)
+        
+        output_path = os.path.join(self.output_dir, f"{filename}.png")
+        self.__save_plot(output_path)
+        plt.close()
 
     def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs) -> base.BaseEstimator:
         if method == "grid":

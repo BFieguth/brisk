@@ -50,9 +50,13 @@ def test_workflow(
     model2.fit(X_train, y_train)
     # evaluator.save_model(model1, "fitted_model1")
     # evaluator.save_model(model2, "fitted_model2")
-    evaluator.compare_models(
-        model1, model2, X=X_train, y=y_train, metrics=["MAE", "R2", "MSE"], 
-        filename="comparison", calculate_diff=True
+    # evaluator.compare_models(
+    #     model1, model2, X=X_train, y=y_train, metrics=["MAE", "R2", "MSE"], 
+    #     filename="comparison", calculate_diff=True
+    # )
+
+    evaluator.plot_model_comparison(
+        model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
     )
 
     # path = os.path.join(output_dir, "fitted_model.pkl")
