@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Report</title>
+</head>
+<body>
+    <h1>Training Report</h1>
+
+    {% for dataset in datasets %}
+    <section>
+        <h2>{{ dataset.dataset_name }}</h2>
+        <ul>
+            {% for config_page in dataset.config_pages %}
+            <li><a href="{{ config_page }}.html">{{ config_page }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endfor %}
+</body>
+</html>

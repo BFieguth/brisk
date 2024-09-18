@@ -9,6 +9,7 @@ import pandas as pd
 
 from ml_toolkit.data_splitting.data_splitter import DataSplitter
 from ml_toolkit.training_manager.evaluator import Evaluator
+from ml_toolkit.training_manager.report_manager import ReportManager
 
 class TrainingManager:
     def __init__(
@@ -50,7 +51,6 @@ class TrainingManager:
         self.evaluator = Evaluator(
             method_config=self.method_config, scoring_config=self.scoring_config
         )
-
         self.__validate_methods()
         self.data_splits = self.__get_data_splits()
         self.configurations = self.__create_configurations()
@@ -137,7 +137,7 @@ class TrainingManager:
             os.makedirs(full_path)
         return full_path
 
-    def run_configurations(self, workflow: Callable):
+    def run_configurations(self, workflow: Callable, create_report: bool = True):
         """
         Run the user-defined workflow for each configuration.
 
@@ -198,3 +198,6 @@ class TrainingManager:
             with open(error_log_path, "w") as file:
                 file.write("\n".join(error_log))
                 
+        if create_report:
+            report_manager = ReportManager(results_dir, self.config_paths)
+            report_manager.create_report()
