@@ -19,9 +19,13 @@ class ReportManager():
         )
         self.method_map = collections.OrderedDict([
             ("evaluate_model", self.report_evaluate_model),
+            ("evaluate_model_cv", self.report_evaluate_model_cv),
+            # ("compare_models", self.report_compare_models),
+            # ("plot_pred_vs_obs", self.report_plot_pred_vs_obs),
             # ("plot_learning_curve", self.report_learning_curve),
+            # ("plot_feature_importance", self.report_plot_feature_importance),
             # ("plot_residuals", self.report_residuals),
-            # ("compare_models", self.report_model_comparison),
+            # ("plot_model_comparison", self.report_plot_model_comparison),
             # ("hyperparameter_tuning", self.report_hyperparameter_tuning)
         ])
 
@@ -76,17 +80,19 @@ class ReportManager():
                 (file, metadata) for file, metadata in file_metadata.items()
                 if metadata["method"] == creating_method
             ]
+        
+            for file, metadata in matching_files:
+                file_path = os.path.join(config_dir, file)
+                data = self.__load_file(file_path)
+                content.append(reporting_method(data, metadata))
 
-        for file, metadata in matching_files:
-            file_path = os.path.join(config_dir, file)
-            data = self.__load_file(file_path)
-            content.append(reporting_method(data, metadata))
+        content_str = "".join(content)
 
         # Step 3: Render the configuration page
         config_output = config_template.render(
             config_name=config_name,
             file_metadata=file_metadata,
-            content=content
+            content=content_str
             )
         config_page_path = os.path.join(self.report_dir, f"{config_name}.html")
         with open(config_page_path, 'w') as f:
@@ -156,3 +162,38 @@ class ReportManager():
         result_html += "</tbody></table>"
 
         return result_html
+
+    def report_evaluate_model_cv(self, data: dict, metadata: dict) -> str:
+        """
+        Generates an HTML block for displaying cross-validated evaluation results.
+        Displays all_scores, mean_score, and std_dev for each metric.
+
+        Args:
+            data (dict): The data containing metric information.
+            metadata (dict): The metadata associated with the evaluation.
+
+        Returns:
+            str: An HTML block representing the results.
+        """
+        model_info = metadata.get("models", ["Unknown model"])
+        model_names = ", ".join(model_info)
+
+        result_html_new = f"""
+        <h2>Model Evaluation (Cross-Validation)</h2>
+        <p><strong>Model:</strong> {model_names}</p>
+        <table>
+            <thead>
+                <tr><th>Metric</th><th>All Scores</th><th>Mean Score</th><th>Std Dev</th></tr>
+            </thead>
+            <tbody>
+        """
+
+        for metric, values in data.items():
+            if metric != "_metadata":
+                all_scores = ", ".join(f"{score:.5f}" for score in values["all_scores"])
+                mean_score = round(values["mean_score"], 5)
+                std_dev = round(values["std_dev"], 5)
+                result_html_new += f"<tr><td>{metric}</td><td>{all_scores}</td><td>{mean_score}</td><td>{std_dev}</td></tr>"
+        
+        result_html_new += "</tbody></table>"
+        return result_html_new

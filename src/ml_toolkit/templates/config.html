@@ -36,11 +36,7 @@
 
     <h2>Generated Report Content</h2>
     <div>
-        {% for item in content %}
-        <div>
-            {{ item|safe }}  <!-- Render the content safely (HTML/JS content will be rendered as HTML) -->
-        </div>
-        {% endfor %}
+        {{ content | safe }}  <!-- Render the full content as HTML -->
     </div>
     
 </body>
