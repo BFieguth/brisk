@@ -22,19 +22,6 @@
 <body>
     <h1>Configuration: {{ config_name }}</h1>
 
-    <h2>Detected Files</h2>
-    <ul>
-        {% for file_name, metadata in file_metadata.items() %}
-        <li>
-            {{ file_name }} 
-            {% if metadata.method %}
-            - Method: {{ metadata.method }}
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-
-    <h2>Generated Report Content</h2>
     <div>
         {{ content | safe }}  <!-- Render the full content as HTML -->
     </div>
