@@ -20,7 +20,7 @@ class ReportManager():
         self.method_map = collections.OrderedDict([
             ("evaluate_model", self.report_evaluate_model),
             ("evaluate_model_cv", self.report_evaluate_model_cv),
-            # ("compare_models", self.report_compare_models),
+            ("compare_models", self.report_compare_models),
             # ("plot_pred_vs_obs", self.report_plot_pred_vs_obs),
             # ("plot_learning_curve", self.report_learning_curve),
             # ("plot_feature_importance", self.report_plot_feature_importance),
@@ -197,3 +197,56 @@ class ReportManager():
         
         result_html_new += "</tbody></table>"
         return result_html_new
+    
+    def report_compare_models(self, data, metadata) -> str:
+        """
+        Generates an HTML block for displaying compare_models results.
+        Args:
+            data (dict): The comparison results.
+            metadata (dict): The metadata containing model information.
+        """
+        model_names = list(data.keys())
+        metrics = list(data[model_names[0]].keys())
+        
+        if isinstance(metadata["models"], list):
+            model_names = [f"model_{i+1}" for i in range(len(metadata["models"]))]
+            display_names = metadata["models"]
+        else:
+            display_names = model_names
+
+        # Start the table HTML
+        result_html = """
+        <h2>Model Comparison</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+        """
+
+        # Add model columns
+        for model_name in display_names:
+            result_html += f"<th>{model_name}</th>"
+
+        # Add the difference column if present
+        if "difference_from_model1" in data:
+            result_html += "<th>Difference from Model 1</th>"
+
+        result_html += "</tr></thead><tbody>"
+
+        # Fill the table with data for each metric
+        for metric in metrics:
+            result_html += f"<tr><td>{metric}</td>"
+            for model_name in model_names:
+                score = round(data[model_name][metric], 5)
+                result_html += f"<td>{score}</td>"
+            
+            if "difference_from_model1" in data and metric in data["difference_from_model1"]:
+                diff = round(data["difference_from_model1"][metric].get(model_names[1], 0), 5)
+                result_html += f"<td>{diff}</td>"
+            
+            result_html += "</tr>"
+
+        result_html += "</tbody></table>"
+
+        return result_html
+    
