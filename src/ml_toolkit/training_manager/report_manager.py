@@ -1,5 +1,6 @@
 import ast
 import collections
+import datetime
 import json
 import os
 from PIL import Image
@@ -60,7 +61,10 @@ class ReportManager():
                 self.create_config_page(config)
 
         # Render the index page
-        index_output = index_template.render(datasets=datasets)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        index_output = index_template.render(
+            datasets=datasets, timestamp=timestamp
+            )
         index_path = os.path.join(self.report_dir, 'index.html')
         with open(index_path, 'w') as f:
             f.write(index_output)

@@ -3,13 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Training Report</title>
+    <title>ML Toolkit Report</title>
+    <style>
+        body {
+            background-color: black;
+            font-family: Helvetica, sans-serif;
+        }
+        /* Styling the top bar */
+        header {
+            background-color: #00abe9;
+            color: white;
+            text-align: left;
+            padding: 20px 0;
+            font-size: 24px;
+        }
+
+        /* Section styling for datasets */
+        section {
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        /* Color backgrounds for dataset sections */
+        .dataset-section:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .dataset-section:nth-child(even) {
+            background-color: #e0e0e0;
+        }
+
+        /* Link styles */
+        a {
+            text-decoration: none;
+            color: #1E90FF;
+        }
+
+        a:hover {
+            text-decoration: underline;
+            color: #1e65ff;
+        }
+
+        h2 {
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Training Report</h1>
+    <!-- Header bar -->
+    <header>
+        ML Toolkit Report - {{ timestamp }}
+    </header>
 
+    <!-- Dataset sections -->
     {% for dataset in datasets %}
-    <section>
+    <section class="dataset-section">
         <h2>{{ dataset.dataset_name }}</h2>
         <ul>
             {% for config_page in dataset.config_pages %}

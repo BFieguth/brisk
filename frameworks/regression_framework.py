@@ -21,7 +21,7 @@ methods = [
 kf = args.kfold
 num_repeats = args.num_repeats
 datasets = args.datasets
-data_paths = [(datasets[0], None)] # Convert to list of tuples
+data_paths = [(datasets[0], None), ("./data_OLD.csv", None)] # Convert to list of tuples
 scoring = args.scoring
 
 # Setup Data Splitting
@@ -82,9 +82,9 @@ def test_workflow(
         model1, X_test, y_test, "residuals"
     )
 
-    tuned_model = evaluator.hyperparameter_tuning(
-        model2, "grid", method_name[1], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
-    )
+    # tuned_model = evaluator.hyperparameter_tuning(
+    #     model2, "grid", method_name[1], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
+    # )
 
 
 # Run the workflow
