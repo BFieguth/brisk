@@ -21,12 +21,24 @@ class ReportManager():
             ("evaluate_model", self.report_evaluate_model),
             ("evaluate_model_cv", self.report_evaluate_model_cv),
             ("compare_models", self.report_compare_models),
-            # ("plot_pred_vs_obs", self.report_plot_pred_vs_obs),
-            # ("plot_learning_curve", self.report_learning_curve),
-            # ("plot_feature_importance", self.report_plot_feature_importance),
-            # ("plot_residuals", self.report_residuals),
-            # ("plot_model_comparison", self.report_plot_model_comparison),
-            # ("hyperparameter_tuning", self.report_hyperparameter_tuning)
+            ("plot_pred_vs_obs", lambda data, metadata: self.report_image(
+                data, metadata, title="Predicted vs Observed Plot"
+                )),
+            ("plot_learning_curve", lambda data, metadata: self.report_image(
+                data, metadata, title="Learning Curve", max_width="80%"
+                )),
+            ("plot_feature_importance", lambda data, metadata: self.report_image(
+                data, metadata, title="Feature Importance"
+            )),
+            ("plot_residuals", lambda data, metadata: self.report_image(
+                data, metadata, title="Residuals (Observed - Predicted)"
+            )),
+            ("plot_model_comparison", lambda data, metadata: self.report_image(
+                data, metadata, title="Model Comparison Plot"
+            )),
+            ("hyperparameter_tuning", lambda data, metadata: self.report_image(
+                data, metadata, title="Hyperparameter Tuning"
+            ))
         ])
 
     def create_report(self):
@@ -133,7 +145,7 @@ class ReportManager():
             with open(file_path, "r") as f:
                 return json.load(f)
         elif file_path.endswith(".png"):
-            return Image.open(file_path)
+            return file_path
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
@@ -248,5 +260,28 @@ class ReportManager():
 
         result_html += "</tbody></table>"
 
+        return result_html
+        
+    def report_image(self, data, metadata, title: str, max_width: str = "100%") -> str:
+        """
+        Generates an HTML block for displaying any image plot.
+        
+        Args:
+            data: The PNG image file path.
+            metadata (dict): The metadata associated with the plot.
+            title (str): The title to display above the image.
+            max_width (str): The maximum width of the image (defaults to "100%").
+            
+        Returns:
+            str: An HTML block containing the image and relevant information.
+        """    
+        model_name = ", ".join(metadata.get("models", ["Unknown model"]))
+        relative_img_path = os.path.relpath(data, self.report_dir)
+
+        result_html = f"""
+        <h2>{title}</h2>
+        <p><strong>Model:</strong> {model_name}</p>
+        <img src="{relative_img_path}" alt="{title}" style="max-width:{max_width};height:auto;">
+        """
         return result_html
     

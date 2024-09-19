@@ -55,9 +55,9 @@ def test_workflow(
         filename="comparison", calculate_diff=True
     )
 
-    # evaluator.plot_model_comparison(
-    #     model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
-    # )
+    evaluator.plot_model_comparison(
+        model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
+    )
 
     # path = os.path.join(output_dir, "fitted_model.pkl")
     # loaded_model = evaluator.load_model(path)
@@ -75,16 +75,16 @@ def test_workflow(
     evaluator.plot_feature_importance(
         model1, X_train, y_train, filter=10, 
         feature_names=["Feature_1", "Feature_2", "Feature_3", "Feature_4", "Feature_5"],
-        filename="feature_importance", scoring="MAE", num_rep=2
+        filename="feature_importance", scoring="CCC", num_rep=2
     )
 
     evaluator.plot_residuals(
         model1, X_test, y_test, "residuals"
     )
 
-    # tuned_model = evaluator.hyperparameter_tuning(
-    #     model, "grid", method_name[0], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
-    # )
+    tuned_model = evaluator.hyperparameter_tuning(
+        model2, "grid", method_name[1], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
+    )
 
 
 # Run the workflow
