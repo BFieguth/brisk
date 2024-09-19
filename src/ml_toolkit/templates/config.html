@@ -4,20 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration Report for {{ config_name }}</title>
+    <style>
+        table {
+            width: 40%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;  /* Apply borders to table cells */
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;  /* Optional: Add background color to table headers */
+        }
+    </style>
 </head>
 <body>
     <h1>Configuration: {{ config_name }}</h1>
 
+    <h2>Detected Files</h2>
     <ul>
-        {% for file in file_metadata_list %}
+        {% for file_name, metadata in file_metadata.items() %}
         <li>
-            {{ file.file_name }} 
-            {% if file.method %}
-            - Method: {{ file.method }}
+            {{ file_name }} 
+            {% if metadata.method %}
+            - Method: {{ metadata.method }}
             {% endif %}
         </li>
         {% endfor %}
     </ul>
+
+    <h2>Generated Report Content</h2>
+    <div>
+        {% for item in content %}
+        <div>
+            {{ item|safe }}  <!-- Render the content safely (HTML/JS content will be rendered as HTML) -->
+        </div>
+        {% endfor %}
+    </div>
     
 </body>
 </html>

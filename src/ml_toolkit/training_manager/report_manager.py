@@ -1,3 +1,5 @@
+import ast
+import collections
 import json
 import os
 from PIL import Image
@@ -15,6 +17,13 @@ class ReportManager():
             loader=jinja2.FileSystemLoader(templates_dir),
             autoescape=jinja2.select_autoescape(["html", "xml"])
         )
+        self.method_map = collections.OrderedDict([
+            ("evaluate_model", self.report_evaluate_model),
+            # ("plot_learning_curve", self.report_learning_curve),
+            # ("plot_residuals", self.report_residuals),
+            # ("compare_models", self.report_model_comparison),
+            # ("hyperparameter_tuning", self.report_hyperparameter_tuning)
+        ])
 
     def create_report(self):
         os.makedirs(self.report_dir, exist_ok=True)
@@ -48,28 +57,36 @@ class ReportManager():
         """
         config_template = self.env.get_template("config.html")
         config_name = os.path.basename(config_dir)
+        files = os.listdir(config_dir)
 
-        # Step 1: List all files in the configuration directory
-        file_metadata_list = []
-        for file_name in os.listdir(config_dir):
-            file_path = os.path.join(config_dir, file_name)
-            file_metadata = {
-                "file_name": file_name,
-                "method": None
-            }
+        # Step 1: Process file metadata
+        file_metadata = {}
+        for file in files:
+            file_path = os.path.join(config_dir, file)
+            if file.endswith(".json"):
+                file_metadata[file] = self.__get_json_metadata(file_path)
+            if file.endswith(".png"):
+                file_metadata[file] = self.__get_image_metadata(file_path)
 
-            # Step 2: Check for metadata in JSON and PNG files
-            if file_name.endswith(".json"):
-                file_metadata["method"] = self.__get_json_metadata(file_path)
-            elif file_name.endswith(".png"):
-                file_metadata["method"] = self.__get_image_metadata(file_path)
+        # Step 2: Prepare content based on extracted metadata
+        content = []
+        
+        for creating_method, reporting_method in self.method_map.items():
+            matching_files = [
+                (file, metadata) for file, metadata in file_metadata.items()
+                if metadata["method"] == creating_method
+            ]
 
-            file_metadata_list.append(file_metadata)
+        for file, metadata in matching_files:
+            file_path = os.path.join(config_dir, file)
+            data = self.__load_file(file_path)
+            content.append(reporting_method(data, metadata))
 
-        # Render the configuration page
+        # Step 3: Render the configuration page
         config_output = config_template.render(
             config_name=config_name,
-            file_metadata_list=file_metadata_list
+            file_metadata=file_metadata,
+            content=content
             )
         config_page_path = os.path.join(self.report_dir, f"{config_name}.html")
         with open(config_page_path, 'w') as f:
@@ -82,10 +99,13 @@ class ReportManager():
         try:
             with open(json_path, 'r') as f:
                 data = json.load(f)
-                return data.get("_metadata", {}).get("method", None)
+                metadata = data.get("_metadata", {})
+                if "models" in metadata and isinstance(metadata["models"], str):
+                    metadata["models"] = ast.literal_eval(metadata["models"])
+                return metadata
         except Exception as e:
             print(f"Failed to extract metadata from {json_path}: {e}")
-            return None
+            return "unknown_method"
 
     def __get_image_metadata(self, image_path: str):
         """
@@ -94,8 +114,45 @@ class ReportManager():
         try:
             with Image.open(image_path) as img:
                 metadata = img.info
-                return metadata.get("method", None)
+                if "models" in metadata and isinstance(metadata["models"], str):
+                    metadata["models"] = ast.literal_eval(metadata["models"])
+                return metadata
         except Exception as e:
             print(f"Failed to extract metadata from {image_path}: {e}")
             return None
         
+    def __load_file(self, file_path: str):
+        """Loads file content based on the file extension."""
+        if file_path.endswith(".json"):
+            with open(file_path, "r") as f:
+                return json.load(f)
+        elif file_path.endswith(".png"):
+            return Image.open(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_path}")
+
+    def report_evaluate_model(self, data: dict, metadata: dict) -> str:
+        """
+        Generates an HTML block for displaying evaluate_model results.
+        """
+        # Extract relevant information
+        metrics = {k: v for k, v in data.items() if k != "_metadata"}
+        model_info = metadata.get("models", ["Unknown model"])
+        model_names = ", ".join(model_info)
+
+        # Create an HTML block for this result
+        result_html = f"""
+        <h2>Model Evaluation</h2>
+        <p><strong>Model:</strong> {model_names}</p>
+        <table>
+            <thead>
+                <tr><th>Metric</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+        """
+        for metric, score in metrics.items():
+            rounded_score = round(score, 5)
+            result_html += f"<tr><td>{metric}</td><td>{rounded_score}</td></tr>"
+        result_html += "</tbody></table>"
+
+        return result_html
