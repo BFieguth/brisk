@@ -4,18 +4,19 @@ import datetime
 import json
 import os
 from PIL import Image
+import shutil
 
 import jinja2
 
 class ReportManager():
     def __init__(self, result_dir, config_paths):
         package_dir = os.path.dirname(os.path.abspath(__file__))
-        templates_dir = os.path.join(package_dir, '../templates')
+        self.templates_dir = os.path.join(package_dir, '../templates')
 
         self.report_dir = os.path.join(result_dir, "html_report")
         self.config_paths = config_paths
         self.env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(templates_dir),
+            loader=jinja2.FileSystemLoader(self.templates_dir),
             autoescape=jinja2.select_autoescape(["html", "xml"])
         )
         self.method_map = collections.OrderedDict([
@@ -59,6 +60,16 @@ class ReportManager():
             # Create individual configuration pages
             for config in configs:
                 self.create_config_page(config)
+
+        # Copy CSS files into the report directory
+        shutil.copy(
+            os.path.join(self.templates_dir, "index.css"), 
+            os.path.join(self.report_dir, "index.css")
+            )
+        shutil.copy(
+            os.path.join(self.templates_dir, "config.css"), 
+            os.path.join(self.report_dir, "config.css")
+            )
 
         # Render the index page
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

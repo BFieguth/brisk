@@ -1,0 +1,65 @@
+body {
+    background-color: #363A36;
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Styling the top bar */
+header {
+    background-color: #191B19;
+    color: #F8F0E3;
+    text-align: left;
+    padding: 20px 0;
+    padding-left: 10px;
+    font-size: 28px;
+    width: 100vw;
+}
+
+/* Section styling for datasets */
+section {
+    padding: 10px;
+    margin: 10px 0;
+    margin-left: 20px;
+    width: 50vw
+}
+
+/* Color backgrounds for dataset sections */
+.dataset-section:nth-child(odd) {
+    background-color: #93B7BE;
+}
+
+.dataset-section:nth-child(even) {
+    background-color: #A799B7;
+}
+
+/* Link styles */
+a {
+    text-decoration: none;
+    color: #F8F0E3;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: #E0CA3C;
+}
+
+h2 {
+    margin: 0;
+    padding: 10px 0;
+}
+
+ul {
+    list-style-type: none;
+    padding-left: 20px;
+    counter-reset: link-counter; /* Reset counter */
+}
+
+li {
+    counter-increment: link-counter;  /* Increment counter */
+}
+
+li::before {
+    content: counter(link-counter) ". ";  /* Display the counter */
+    color: #F8F0E3;
+}

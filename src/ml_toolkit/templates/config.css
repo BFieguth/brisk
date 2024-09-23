@@ -1,0 +1,40 @@
+body {
+    background-color: #363A36;
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #191B19;
+    color: #F8F0E3;
+    text-align: left;
+    padding: 20px 0;
+    padding-left: 10px;
+    font-size: 28px;
+    width: 100vw;
+}
+
+div {
+    margin-left: 10px;
+}
+
+table {
+    width: 40%;
+    border-collapse: collapse;
+    color: #F8F0E3;
+}
+
+th, td {
+    border: 1px solid white; 
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #A799B7;  
+}
+
+h1, h2, p {
+    color: #F8F0E3;
+}

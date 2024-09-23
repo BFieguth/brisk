@@ -3,38 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuration Report for {{ config_name }}</title>
-    <style>
-        body {
-            background-color: black;
-            font-family: Helvetica, sans-serif;
-        }
-        table {
-            width: 40%;
-            border-collapse: collapse;
-            color: white;
-        }
-        th, td {
-            border: 1px solid white;  /* Apply borders to table cells */
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background-color: #00abe9;  /* Optional: Add background color to table headers */
-        }
-        h1 {
-            color: white;
-        }
-        h2 {
-            color: white;
-        }
-        p {
-            color: white;
-        }
-    </style>
+    <title>{{ config_name }}</title>
+    <link rel="stylesheet" href="./config.css">
 </head>
 <body>
-    <h1>Configuration: {{ config_name }}</h1>
+    <header>Configuration: {{ config_name }}</header>
 
     <div>
         {{ content | safe }}  <!-- Render the full content as HTML -->
