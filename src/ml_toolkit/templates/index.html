@@ -12,6 +12,11 @@
         ML Toolkit Report - {{ timestamp }}
     </header>
 
+    <!-- Summary Table -->
+     <div>
+        {{ summary_table|safe }}
+     </div>
+
     <!-- Dataset sections -->
     {% for dataset in datasets %}
     <section class="dataset-section">

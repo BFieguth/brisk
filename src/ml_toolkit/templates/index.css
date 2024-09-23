@@ -47,6 +47,7 @@ a:hover {
 h2 {
     margin: 0;
     padding: 10px 0;
+    color: #F8F0E3;
 }
 
 ul {
@@ -62,4 +63,24 @@ li {
 li::before {
     content: counter(link-counter) ". ";  /* Display the counter */
     color: #F8F0E3;
+}
+
+table {
+    width: 60%;
+    border-collapse: collapse;
+    color: #F8F0E3;
+}
+
+th, td {
+    border: 1px solid white; 
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #A799B7;  
+}
+
+div {
+    margin-left: 20px;
 }

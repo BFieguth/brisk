@@ -42,6 +42,8 @@ class ReportManager():
                 data, metadata, title="Hyperparameter Tuning"
             ))
         ])
+        self.current_dataset = None
+        self.summary_metrics = {}
 
     def create_report(self):
         os.makedirs(self.report_dir, exist_ok=True)
@@ -59,7 +61,11 @@ class ReportManager():
 
             # Create individual configuration pages
             for config in configs:
-                self.create_config_page(config)
+                self.create_config_page(config, dataset)
+
+        # Create summary table
+        if self.summary_metrics:
+            summary_table_html = self.generate_summary_tables()
 
         # Copy CSS files into the report directory
         shutil.copy(
@@ -74,18 +80,19 @@ class ReportManager():
         # Render the index page
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         index_output = index_template.render(
-            datasets=datasets, timestamp=timestamp
+            datasets=datasets, timestamp=timestamp, summary_table=summary_table_html
             )
         index_path = os.path.join(self.report_dir, 'index.html')
         with open(index_path, 'w') as f:
             f.write(index_output)
 
-    def create_config_page(self, config_dir: str):
+    def create_config_page(self, config_dir: str, dataset: str):
         """
         Creates an individual configuration page.
         Args:
             config_dir (str): Path to the configuration directory.
         """
+        self.current_dataset = dataset
         config_template = self.env.get_template("config.html")
         config_name = os.path.basename(config_dir)
         files = os.listdir(config_dir)
@@ -215,13 +222,24 @@ class ReportManager():
             <tbody>
         """
 
+        if self.current_dataset not in self.summary_metrics:
+            self.summary_metrics[self.current_dataset] = {}
+        
+        if model_names not in self.summary_metrics[self.current_dataset]:
+            self.summary_metrics[self.current_dataset][model_names] = {}
+
         for metric, values in data.items():
             if metric != "_metadata":
                 all_scores = ", ".join(f"{score:.5f}" for score in values["all_scores"])
                 mean_score = round(values["mean_score"], 5)
                 std_dev = round(values["std_dev"], 5)
                 result_html_new += f"<tr><td>{metric}</td><td>{all_scores}</td><td>{mean_score}</td><td>{std_dev}</td></tr>"
-        
+
+                self.summary_metrics[self.current_dataset][model_names][metric] = {
+                    "mean": mean_score,
+                    "std_dev": std_dev
+                }
+
         result_html_new += "</tbody></table>"
         return result_html_new
     
@@ -300,3 +318,46 @@ class ReportManager():
         """
         return result_html
     
+    def generate_summary_tables(self) -> str:
+        """
+        Generates HTML for summary tables, one for each dataset.
+        Each table will have the dataset name as a heading, models as rows, and metrics as columns.
+        """
+        summary_html = ""
+
+        for dataset, models in self.summary_metrics.items():
+            summary_html += f"<h2>Summary for {dataset}</h2>"
+            
+            # Extract all the metrics to be used as columns
+            all_metrics = set()
+            for model_metrics in models.values():
+                all_metrics.update(model_metrics.keys())
+            
+            summary_html += """
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+            """
+            
+            # Add a column for each metric
+            for metric in all_metrics:
+                summary_html += f"<th>{metric}</th>"
+            
+            summary_html += "</tr></thead><tbody>"
+
+            # Add rows for each model
+            for model, metrics in models.items():
+                summary_html += f"<tr><td>{model}</td>"
+                for metric in all_metrics:
+                    if metric in metrics:
+                        mean_score = round(metrics[metric]["mean"], 3)
+                        std_dev = round(metrics[metric]["std_dev"], 3)
+                        summary_html += f"<td>{mean_score} ({std_dev})</td>"
+                    else:
+                        summary_html += "<td>N/A</td>"
+                summary_html += "</tr>"
+
+            summary_html += "</tbody></table>"
+
+        return summary_html
