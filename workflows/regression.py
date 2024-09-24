@@ -1,4 +1,4 @@
-"""A standard framework for training regression models."""
+"""A workflow for training regression models."""
 import os
 
 import ml_toolkit
