@@ -314,7 +314,7 @@ class ReportManager():
         result_html = f"""
         <h2>{title}</h2>
         <p><strong>Model:</strong> {model_name}</p>
-        <img src="{relative_img_path}" alt="{title}" style="max-width:{max_width};height:auto;">
+        <img src="{relative_img_path}" alt="{title}" style="max-width:{max_width}; height:auto; display: block; margin: 0 auto;">
         """
         return result_html
     

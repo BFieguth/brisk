@@ -19,22 +19,40 @@ div {
     margin-left: 10px;
 }
 
-table {
-    width: 40%;
-    border-collapse: collapse;
-    color: #F8F0E3;
-}
-
-th, td {
-    border: 1px solid white; 
-    padding: 10px;
-    text-align: center;
-}
-
+/* For table headers */
 th {
-    background-color: #14274A;  
+    background-color: #14274A; 
+    color: #E0E0E0;
+    border: 2px solid #444444; 
+    padding: 12px;
+}
+
+/* For table body */
+td {
+    background-color: #1E3A8A;
+    color: #E0E0E0; 
+    border: 1px solid #444444;
+    padding: 12px;
+}
+
+/* Adding horizontal and vertical spacing */
+table {
+    border-collapse: collapse;
+    border-spacing: 0 8px;
+    width: 80%;
+    margin: 0 auto;
 }
 
 h1, h2, p {
     color: #F8F0E3;
+}
+
+/* Add a subtle border to images */
+img {
+    border: 2px solid #444444; 
+    padding: 5px;
+    max-width: 100%; 
+    height: auto; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+    border-radius: 4px; 
 }

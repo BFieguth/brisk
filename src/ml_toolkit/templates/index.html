@@ -18,15 +18,17 @@
      </div>
 
     <!-- Dataset sections -->
-    {% for dataset in datasets %}
-    <section class="dataset-section">
-        <h2>{{ dataset.dataset_name }}</h2>
-        <ul>
-            {% for config_page in dataset.config_pages %}
-            <li><a href="{{ config_page }}.html">{{ config_page }}</a></li>
-            {% endfor %}
-        </ul>
-    </section>
-    {% endfor %}
+    <div class="section-container">
+        {% for dataset in datasets %}
+        <section class="dataset-section">
+            <h2>{{ dataset.dataset_name }}</h2>
+            <ul>
+                {% for config_page in dataset.config_pages %}
+                <li><a href="{{ config_page }}.html">{{ config_page }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    </div>
 </body>
 </html>

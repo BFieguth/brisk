@@ -20,17 +20,32 @@ body {
 section {
     padding: 10px;
     margin: 10px 0;
-    margin-left: 20px;
-    width: 50vw
+    /* margin-left: 20px; */
+    width: 45vw
+}
+
+/* Container for the sections */
+.section-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48%, 1fr)); /* Two columns, responsive */
+    grid-gap: 20px; /* Space between columns and rows */
+    margin: 20px;
+}
+
+/* Style for individual sections */
+.dataset-section {
+    padding: 10px;
+    color: #E0E0E0; 
+    border-radius: 8px;
 }
 
 /* Color backgrounds for dataset sections */
 .dataset-section:nth-child(odd) {
-    background-color: #14274A;
+    background-color: #14274A; 
 }
 
 .dataset-section:nth-child(even) {
-    background-color: #1E3A8A;
+    background-color: #1E3A8A; 
 }
 
 /* Link styles */
@@ -48,6 +63,7 @@ h2 {
     margin: 0;
     padding: 10px 0;
     color: #E0E0E0;
+    margin-left: 10px;
 }
 
 ul {
@@ -65,22 +81,26 @@ li::before {
     color: #E0E0E0;
 }
 
-table {
-    width: 60%;
-    border-collapse: collapse;
-    color: #E0E0E0;
-}
-
-th, td {
-    border: 1px solid white; 
-    padding: 10px;
-    text-align: center;
-}
-
+/* For table headers */
 th {
-    background-color: #14274A;  
+    background-color: #14274A; 
+    color: #E0E0E0;
+    border: 2px solid #444444; 
+    padding: 12px;
 }
 
-div {
-    margin-left: 20px;
+/* For table body */
+td {
+    background-color: #1E3A8A;
+    color: #E0E0E0; 
+    border: 1px solid #444444;
+    padding: 12px;
+}
+
+/* Adding horizontal and vertical spacing */
+table {
+    border-collapse: collapse;
+    border-spacing: 0 8px;
+    width: 80%;
+    margin: 0 auto;
 }
