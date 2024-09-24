@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from ml_toolkit.config.model_wrapper import ModelWrapper
+from ml_toolkit.utility.ModelWrapper import ModelWrapper
 
 class TestModelWrapper:
     """Test class for ModelWrapper."""

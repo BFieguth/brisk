@@ -9,7 +9,7 @@ import sklearn.neighbors as neighbors
 import sklearn.neural_network as neural
 import sklearn.kernel_ridge as kernel_ridge
 
-from ml_toolkit.config.model_wrapper import ModelWrapper
+from ml_toolkit.utility.ModelWrapper import ModelWrapper
 
 REGRESSION_MODELS = {
     "linear": ModelWrapper(

@@ -7,7 +7,7 @@ from sklearn.model_selection import (
     GroupKFold, StratifiedKFold, KFold, StratifiedGroupKFold
     )
 
-from ml_toolkit.data_splitting.data_splitter import DataSplitter
+from ml_toolkit.data.DataSplitter import DataSplitter
 
 
 class TestDataSplitter:
