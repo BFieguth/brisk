@@ -1,18 +1,18 @@
-body {
-    background-color: #363A36;
-    font-family: Helvetica, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
 header {
-    background-color: #191B19;
-    color: #F8F0E3;
+    background-color: #1B1B1B;
+    color: #E0E0E0;
     text-align: left;
     padding: 20px 0;
     padding-left: 10px;
     font-size: 28px;
     width: 100vw;
+}
+
+body {
+    background-color: #333333;
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 div {

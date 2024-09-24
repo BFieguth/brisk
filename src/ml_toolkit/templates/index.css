@@ -1,19 +1,19 @@
-body {
-    background-color: #363A36;
-    font-family: Helvetica, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
 /* Styling the top bar */
 header {
-    background-color: #191B19;
-    color: #F8F0E3;
+    background-color: #1B1B1B;
+    color: #E0E0E0;
     text-align: left;
     padding: 20px 0;
     padding-left: 10px;
     font-size: 28px;
     width: 100vw;
+}
+
+body {
+    background-color: #333333;
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 /* Section styling for datasets */
@@ -36,7 +36,7 @@ section {
 /* Link styles */
 a {
     text-decoration: none;
-    color: #F8F0E3;
+    color: #E0E0E0;
 }
 
 a:hover {
@@ -47,7 +47,7 @@ a:hover {
 h2 {
     margin: 0;
     padding: 10px 0;
-    color: #F8F0E3;
+    color: #E0E0E0;
 }
 
 ul {
@@ -62,13 +62,13 @@ li {
 
 li::before {
     content: counter(link-counter) ". ";  /* Display the counter */
-    color: #F8F0E3;
+    color: #E0E0E0;
 }
 
 table {
     width: 60%;
     border-collapse: collapse;
-    color: #F8F0E3;
+    color: #E0E0E0;
 }
 
 th, td {
