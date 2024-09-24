@@ -11,7 +11,10 @@ header {
 
 body {
     background-color: #333333;
-    font-family: Helvetica, sans-serif;
+    font-family: 'Montserrat', sans-serif; /* Global font setting */
+    font-weight: 400;
+    font-size: 16px; /* Set base font size */
+    line-height: 1.6; /* Adjust line height for better readability */
     margin: 0;
     padding: 0;
 }
@@ -59,6 +62,18 @@ a:hover {
     color: #E0CA3C;
 }
 
+p {
+    font-size: 16px; /* Increase font size for paragraphs */
+    line-height: 1.6; /* Set line height to make text more readable */
+    color: #E0E0E0; /* Keep text color light gray for contrast */
+    margin: 15px 0; /* Add margin for spacing between paragraphs */
+}
+
+h1, h2, h3 {
+    font-weight: 700; /* Make headers bold */
+    line-height: 1.3; /* Tighter line height for headers */
+}
+
 h2 {
     margin: 30px 0 15px 0; 
     padding: 0; 
@@ -88,6 +103,7 @@ th {
     color: #E0E0E0;
     border: 2px solid #444444; 
     padding: 12px;
+    font-weight: 600;
 }
 
 /* For table body */
@@ -96,6 +112,7 @@ td {
     color: #E0E0E0; 
     border: 1px solid #444444;
     padding: 12px;
+    font-weight: 400;
 }
 
 /* Adding horizontal and vertical spacing */
