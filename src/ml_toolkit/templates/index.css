@@ -26,11 +26,11 @@ section {
 
 /* Color backgrounds for dataset sections */
 .dataset-section:nth-child(odd) {
-    background-color: #93B7BE;
+    background-color: #14274A;
 }
 
 .dataset-section:nth-child(even) {
-    background-color: #A799B7;
+    background-color: #1E3A8A;
 }
 
 /* Link styles */
@@ -78,7 +78,7 @@ th, td {
 }
 
 th {
-    background-color: #A799B7;  
+    background-color: #14274A;  
 }
 
 div {
