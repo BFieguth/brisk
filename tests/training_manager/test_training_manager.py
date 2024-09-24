@@ -45,7 +45,7 @@ class TestTrainingManager:
     @mock.patch("os.makedirs")
     def test_results_directory_with_timestamp(self, mock_makedirs, setup_training_manager):
         """
-        Test that a new directory with a timestamp is created when running configurations.
+        Test that a new directory with a timestamp is created when running experiments.
         """
         tm = setup_training_manager
 
@@ -55,7 +55,7 @@ class TestTrainingManager:
             mock_datetime.strftime = datetime.strftime
 
             print(f"Running configurations with setup: {tm.results_dir}")
-            tm.run_configurations(mock.MagicMock(), create_report=False)
+            tm.run_experiments(mock.MagicMock(), create_report=False)
 
             expected_dir = "06_09_2023_15_30_00_Results/linear_dataset"
             print(f"Expected directory to be created: {expected_dir}")
@@ -75,24 +75,24 @@ class TestTrainingManager:
             results_dir="user_results_dir"
         )
 
-        tm.run_configurations(mock.MagicMock(), create_report=False)
+        tm.run_experiments(mock.MagicMock(), create_report=False)
         mock_makedirs.assert_called_with("user_results_dir/linear_dataset")
 
-    def test_consume_configurations(self, setup_training_manager):
+    def test_consume_experiments(self, setup_training_manager):
         """
-        Test that configurations are consumed as they are processed.
+        Test that experiments are consumed as they are processed.
         """
         tm = setup_training_manager
-        assert len(tm.configurations) == 1
+        assert len(tm.experiments) == 1
 
-        tm.run_configurations(mock.MagicMock(), create_report=False)
-        assert len(tm.configurations) == 0
+        tm.run_experiments(mock.MagicMock(), create_report=False)
+        assert len(tm.experiments) == 0
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("os.makedirs")
     def test_error_logging(self, mock_makedirs, mock_open, setup_training_manager):
         """
-        Test that errors are correctly logged when a configuration fails.
+        Test that errors are correctly logged when a experiment fails.
         """
         results_dir = "test_results_dir"
         tm = TrainingManager(
@@ -105,16 +105,16 @@ class TestTrainingManager:
         )
         mock_workflow_function = mock.MagicMock(side_effect=Exception("Test Error"))
 
-        tm.run_configurations(mock_workflow_function, create_report=False)
+        tm.run_experiments(mock_workflow_function, create_report=False)
 
         mock_open.assert_called_with(os.path.join(tm.results_dir, "error_log.txt"), "w")
         handle = mock_open()
         handle.write.assert_called_with("Error for ('linear',) on ('dataset.csv', None): Test Error")
 
     @mock.patch("os.makedirs")
-    def test_run_configurations_creates_correct_directory_structure(self, mock_makedirs, setup_training_manager):
+    def test_run_experiments_creates_correct_directory_structure(self, mock_makedirs, setup_training_manager):
         """
-        Test that the correct directory structure is created for each configuration.
+        Test that the correct directory structure is created for each experiment.
         """
         results_dir = "test_results_dir"
         tm = TrainingManager(
@@ -127,25 +127,25 @@ class TestTrainingManager:
         )
         mock_workflow_function = mock.MagicMock()
 
-        tm.run_configurations(mock_workflow_function, create_report=False)
+        tm.run_experiments(mock_workflow_function, create_report=False)
 
         expected_dir = os.path.join(tm.results_dir, "linear_dataset")
         mock_makedirs.assert_any_call(expected_dir)
 
     @mock.patch("os.makedirs")
-    def test_run_configurations_calls_workflow_function(self, mock_makedirs, setup_training_manager):
+    def test_run_experiments_calls_workflow_function(self, mock_makedirs, setup_training_manager):
         """
-        Test that the user-defined workflow function is called correctly for each configuration.
+        Test that the user-defined workflow function is called correctly for each experiment.
         """
         tm = setup_training_manager
 
         mock_workflow_function = mock.MagicMock()
 
-        tm.run_configurations(mock_workflow_function, create_report=False)
+        tm.run_experiments(mock_workflow_function, create_report=False)
 
         assert mock_workflow_function.call_count == 1
 
-    def test_invalid_method_in_configuration(self, setup_training_manager):
+    def test_invalid_method_in_experiment(self, setup_training_manager):
         """
         Test that ValueError is raised when a method not in the method_config is used.
         """

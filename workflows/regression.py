@@ -1,12 +1,12 @@
-"""A standard framework for training regression models."""
+"""A workflow for training regression models."""
 import os
 
 import ml_toolkit
 
-notification = ml_toolkit.AlertMailer("./frameworks/config.ini")
+notification = ml_toolkit.AlertMailer("./workflows/config.ini")
 
 # Parse Arguments
-parser = ml_toolkit.ArgManager("Standard Regression Models")
+parser = ml_toolkit.ArgManager("Regression Models")
 parser.add_argument(
     "--methods", "-m", nargs="+", dest="methods", action="store", 
     help="Methods to train" 
@@ -31,7 +31,7 @@ data_splitter = ml_toolkit.DataSplitter(
     group_column="Group"
 )
 
-# Setup configurations using TrainingManager
+# Setup experiments using TrainingManager
 manager = ml_toolkit.TrainingManager(
     method_config=ml_toolkit.REGRESSION_MODELS,
     scoring_config=ml_toolkit.MetricManager(include_regression=True),
@@ -39,7 +39,7 @@ manager = ml_toolkit.TrainingManager(
     methods=methods,
     data_paths=data_paths
 )
-print(manager.configurations)
+print(manager.experiments)
 
 
 # Define the workflow
@@ -88,5 +88,5 @@ def test_workflow(
 
 
 # Run the workflow
-manager.run_configurations(test_workflow)
-print("regression_framework has run!")
+manager.run_experiments(test_workflow)
+print("regression.py has run!")

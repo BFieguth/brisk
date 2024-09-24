@@ -9,13 +9,13 @@ import shutil
 import jinja2
 
 class ReportManager():
-    def __init__(self, result_dir, config_paths):
+    def __init__(self, result_dir, experiment_paths):
         package_dir = os.path.dirname(os.path.abspath(__file__))
         self.templates_dir = os.path.join(package_dir, 'templates')
         self.styles_dir = os.path.join(package_dir, 'styles')
 
         self.report_dir = os.path.join(result_dir, "html_report")
-        self.config_paths = config_paths
+        self.experiment_paths = experiment_paths
         self.env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(self.templates_dir),
             autoescape=jinja2.select_autoescape(["html", "xml"])
@@ -49,20 +49,20 @@ class ReportManager():
     def create_report(self):
         os.makedirs(self.report_dir, exist_ok=True)
 
-        # Step 1: Create the index page with links to configuration pages for each dataset
+        # Step 1: Create the index page with links to experiments pages for each dataset
         index_template = self.env.get_template("index.html")
 
         # Prepare the dataset entries for the index page
         datasets = []
-        for dataset, configs in self.config_paths.items():
+        for dataset, experiments in self.experiment_paths.items():
             datasets.append({
                 'dataset_name': os.path.basename(dataset),
-                'config_pages': [os.path.basename(config) for config in configs]
+                'experiment_pages': [os.path.basename(experiment) for experiment in experiments]
             })
 
-            # Create individual configuration pages
-            for config in configs:
-                self.create_config_page(config, dataset)
+            # Create individual experiments pages
+            for experiment in experiments:
+                self.create_experiment_page(experiment, dataset)
 
         # Create summary table
         summary_table_html = None
@@ -75,8 +75,8 @@ class ReportManager():
             os.path.join(self.report_dir, "index.css")
             )
         shutil.copy(
-            os.path.join(self.styles_dir, "config.css"), 
-            os.path.join(self.report_dir, "config.css")
+            os.path.join(self.styles_dir, "experiment.css"), 
+            os.path.join(self.report_dir, "experiment.css")
             )
 
         # Render the index page
@@ -88,21 +88,22 @@ class ReportManager():
         with open(index_path, 'w') as f:
             f.write(index_output)
 
-    def create_config_page(self, config_dir: str, dataset: str):
+    # TODO Rename this
+    def create_experiment_page(self, experiment_dir: str, dataset: str):
         """
-        Creates an individual configuration page.
+        Creates an individual experiments page.
         Args:
-            config_dir (str): Path to the configuration directory.
+            experiment_dir (str): Path to the experiments directory.
         """
         self.current_dataset = dataset
-        config_template = self.env.get_template("config.html")
-        config_name = os.path.basename(config_dir)
-        files = os.listdir(config_dir)
+        experiment_template = self.env.get_template("experiment.html")
+        experiment_name = os.path.basename(experiment_dir)
+        files = os.listdir(experiment_dir)
 
         # Step 1: Process file metadata
         file_metadata = {}
         for file in files:
-            file_path = os.path.join(config_dir, file)
+            file_path = os.path.join(experiment_dir, file)
             if file.endswith(".json"):
                 file_metadata[file] = self.__get_json_metadata(file_path)
             if file.endswith(".png"):
@@ -118,21 +119,21 @@ class ReportManager():
             ]
         
             for file, metadata in matching_files:
-                file_path = os.path.join(config_dir, file)
+                file_path = os.path.join(experiment_dir, file)
                 data = self.__load_file(file_path)
                 content.append(reporting_method(data, metadata))
 
         content_str = "".join(content)
 
-        # Step 3: Render the configuration page
-        config_output = config_template.render(
-            config_name=config_name,
+        # Step 3: Render the experiments page
+        experiment_output = experiment_template.render(
+            experiment_name=experiment_name,
             file_metadata=file_metadata,
             content=content_str
             )
-        config_page_path = os.path.join(self.report_dir, f"{config_name}.html")
-        with open(config_page_path, 'w') as f:
-            f.write(config_output)
+        experiment_page_path = os.path.join(self.report_dir, f"{experiment_name}.html")
+        with open(experiment_page_path, 'w') as f:
+            f.write(experiment_output)
 
     def __get_json_metadata(self, json_path: str):
         """
