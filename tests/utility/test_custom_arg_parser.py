@@ -2,7 +2,7 @@ import argparse
 import pytest
 from unittest import mock
 
-from ml_toolkit.utility.arg_manager import ArgManager
+from ml_toolkit.utility.ArgManager import ArgManager
 
 class TestArgManager:
     """Test class for ArgManager."""

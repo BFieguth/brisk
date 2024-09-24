@@ -7,9 +7,9 @@ from typing import List, Dict, Tuple, Callable, Optional
 
 import pandas as pd
 
-from ml_toolkit.data_splitting.data_splitter import DataSplitter
-from ml_toolkit.training_manager.evaluator import Evaluator
-from ml_toolkit.training_manager.report_manager import ReportManager
+from ml_toolkit.data.DataSplitter import DataSplitter
+from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
+from ml_toolkit.reporting.ReportManager import ReportManager
 
 class TrainingManager:
     def __init__(
@@ -48,7 +48,7 @@ class TrainingManager:
         else:
             self.results_dir = None
 
-        self.evaluator = Evaluator(
+        self.EvaluationManager = EvaluationManager(
             method_config=self.method_config, scoring_config=self.scoring_config
         )
         self.__validate_methods()
@@ -179,11 +179,11 @@ class TrainingManager:
                 else:
                     self.config_paths[data_path[0]] = [config_dir]
 
-                config_evaluator = self.evaluator.with_config(
+                config_EvaluationManager = self.EvaluationManager.with_config(
                     output_dir=config_dir
                     )
                 workflow(
-                    config_evaluator, X_train, X_test, y_train, y_test, 
+                    config_EvaluationManager, X_train, X_test, y_train, y_test, 
                     config_dir, method_names, **model_kwargs
                     )
 

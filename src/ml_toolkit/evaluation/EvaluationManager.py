@@ -17,7 +17,7 @@ import sklearn.inspection as inspection
 import sklearn.base as base
 matplotlib.use('Agg')
 
-class Evaluator:
+class EvaluationManager:
     def __init__(self, method_config, scoring_config):
         self.method_config = method_config
         self.scoring_config = scoring_config

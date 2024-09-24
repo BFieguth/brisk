@@ -5,8 +5,8 @@ from datetime import datetime
 
 import pytest
 
-from ml_toolkit.training_manager.training_manager import TrainingManager
-from ml_toolkit.config.model_wrapper import ModelWrapper
+from ml_toolkit.training.TrainingManager import TrainingManager
+from ml_toolkit.utility.ModelWrapper import ModelWrapper
 
 @pytest.fixture
 def setup_training_manager():
@@ -50,16 +50,18 @@ class TestTrainingManager:
         tm = setup_training_manager
 
         mock_now = datetime(2023, 9, 6, 15, 30, 0)
-        with mock.patch("ml_toolkit.training_manager.training_manager.datetime") as mock_datetime:
+        with mock.patch("ml_toolkit.training.TrainingManager.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_now
             mock_datetime.strftime = datetime.strftime
 
-            tm.run_configurations(mock.MagicMock())
+            print(f"Running configurations with setup: {tm.results_dir}")
+            tm.run_configurations(mock.MagicMock(), create_report=False)
 
             expected_dir = "06_09_2023_15_30_00_Results/linear_dataset"
+            print(f"Expected directory to be created: {expected_dir}")
             mock_makedirs.assert_called_with(expected_dir)
 
-    @mock.patch("ml_toolkit.training_manager.training_manager.os.makedirs")
+    @mock.patch("ml_toolkit.training.TrainingManager.os.makedirs")
     def test_user_defined_results_dir(self, mock_makedirs, setup_training_manager):
         """
         Test that the user-defined results directory is used when provided.
@@ -73,7 +75,7 @@ class TestTrainingManager:
             results_dir="user_results_dir"
         )
 
-        tm.run_configurations(mock.MagicMock())
+        tm.run_configurations(mock.MagicMock(), create_report=False)
         mock_makedirs.assert_called_with("user_results_dir/linear_dataset")
 
     def test_consume_configurations(self, setup_training_manager):
@@ -83,7 +85,7 @@ class TestTrainingManager:
         tm = setup_training_manager
         assert len(tm.configurations) == 1
 
-        tm.run_configurations(mock.MagicMock())
+        tm.run_configurations(mock.MagicMock(), create_report=False)
         assert len(tm.configurations) == 0
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
@@ -103,11 +105,11 @@ class TestTrainingManager:
         )
         mock_workflow_function = mock.MagicMock(side_effect=Exception("Test Error"))
 
-        tm.run_configurations(mock_workflow_function)
+        tm.run_configurations(mock_workflow_function, create_report=False)
 
         mock_open.assert_called_with(os.path.join(tm.results_dir, "error_log.txt"), "w")
         handle = mock_open()
-        handle.write.assert_called_with("Error for linear on ('dataset.csv', None): Test Error")
+        handle.write.assert_called_with("Error for ('linear',) on ('dataset.csv', None): Test Error")
 
     @mock.patch("os.makedirs")
     def test_run_configurations_creates_correct_directory_structure(self, mock_makedirs, setup_training_manager):
@@ -125,7 +127,7 @@ class TestTrainingManager:
         )
         mock_workflow_function = mock.MagicMock()
 
-        tm.run_configurations(mock_workflow_function)
+        tm.run_configurations(mock_workflow_function, create_report=False)
 
         expected_dir = os.path.join(tm.results_dir, "linear_dataset")
         mock_makedirs.assert_any_call(expected_dir)
@@ -139,7 +141,7 @@ class TestTrainingManager:
 
         mock_workflow_function = mock.MagicMock()
 
-        tm.run_configurations(mock_workflow_function)
+        tm.run_configurations(mock_workflow_function, create_report=False)
 
         assert mock_workflow_function.call_count == 1
 

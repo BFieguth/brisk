@@ -1,10 +1,9 @@
-from ml_toolkit.config.model_presets import REGRESSION_MODELS
-from ml_toolkit.config.metric_manager import MetricManager
-from ml_toolkit.config.model_wrapper import ModelWrapper
-
-from ml_toolkit.utility.arg_manager import ArgManager
-from ml_toolkit.utility.alert_mailer import AlertMailer
-
-from ml_toolkit.training_manager.training_manager import TrainingManager
-
-from ml_toolkit.data_splitting.data_splitter import DataSplitter
+from ml_toolkit.config.RegressionModels import REGRESSION_MODELS
+from ml_toolkit.data.DataSplitter import DataSplitter
+from ml_toolkit.evaluation.MetricManager import MetricManager
+from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
+from ml_toolkit.reporting.ReportManager import ReportManager
+from ml_toolkit.training.TrainingManager import TrainingManager
+from ml_toolkit.utility.ModelWrapper import ModelWrapper
+from ml_toolkit.utility.ArgManager import ArgManager
+from ml_toolkit.utility.AlertMailer import AlertMailer
