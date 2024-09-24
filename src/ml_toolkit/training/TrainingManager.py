@@ -53,7 +53,7 @@ class TrainingManager:
         )
         self.__validate_methods()
         self.data_splits = self.__get_data_splits()
-        self.configurations = self.__create_configurations()
+        self.experiments = self.__create_experiments()
 
     def __validate_methods(self):
         """Check all methods are included in the method_config"""
@@ -94,9 +94,9 @@ class TrainingManager:
         
         return data_splits
 
-    def __create_configurations(self) -> List[Tuple[str, str]]:
+    def __create_experiments(self) -> List[Tuple[str, str]]:
         """
-        Create configurations as a Cartesian product of methods and datasets.
+        Create experiment as a Cartesian product of methods and datasets.
 
         Returns:
             List[Tuple[str, str]]:
@@ -107,46 +107,46 @@ class TrainingManager:
         else:
             method_combinations = zip(*self.methods)
 
-        configurations = deque(itertools.product(self.data_paths, method_combinations))
-        return configurations
+        experiments = deque(itertools.product(self.data_paths, method_combinations))
+        return experiments
 
     def __get_results_dir(self):
         timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
         return f"{timestamp}_Results"
 
-    def __get_configuration_dir(
+    def __get_experiment_dir(
         self, 
         method_name: str, 
         data_path: Tuple[str, str],
         results_dir: str
     ) -> str:
         """
-        Create a meaningful directory name for each configuration.
+        Create a meaningful directory name for each experiment.
 
         Args:
             method_name (str): The name of the model method being used.
             data_path (str): The path to the dataset.
 
         Returns:
-            str: A directory path to store results for this configuration.
+            str: A directory path to store results for this experiment.
         """
         dataset_name = os.path.basename(data_path[0]).split(".")[0]
-        config_dir = f"{method_name}_{dataset_name}"
-        full_path = os.path.join(results_dir, config_dir)
+        experiment_dir = f"{method_name}_{dataset_name}"
+        full_path = os.path.join(results_dir, experiment_dir)
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         return full_path
 
-    def run_configurations(self, workflow: Callable, create_report: bool = True):
+    def run_experiments(self, workflow: Callable, create_report: bool = True):
         """
-        Run the user-defined workflow for each configuration.
+        Run the user-defined workflow for each experiment.
 
         Args:
-            workflow_function (Callable): A function that defines the workflow 
-                for each configuration.
+            workflow (Callable): A function that defines the workflow 
+                for each experiment.
         """
         error_log = []
-        self.config_paths = {}
+        self.experiment_paths = {}
         if not self.results_dir:
             results_dir = self.__get_results_dir()
         else:
@@ -154,8 +154,8 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        while self.configurations:
-            data_path, method_names = self.configurations.popleft()
+        while self.experiments:
+            data_path, method_names = self.experiments.popleft()
             try:
                 X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
 
@@ -170,21 +170,21 @@ class TrainingManager:
                         f"model{i+1}": model for i, model in enumerate(models)
                         }
 
-                config_dir = self.__get_configuration_dir(
+                experiment_dir = self.__get_experiment_dir(
                     "_".join(method_names), data_path, results_dir
                     )
-                # Save each config_dir for reporting, grouped by dataset
-                if data_path[0] in self.config_paths:
-                    self.config_paths[data_path[0]].append(config_dir)
+                # Save each experiment_dir for reporting, grouped by dataset
+                if data_path[0] in self.experiment_paths:
+                    self.experiment_paths[data_path[0]].append(experiment_dir)
                 else:
-                    self.config_paths[data_path[0]] = [config_dir]
+                    self.experiment_paths[data_path[0]] = [experiment_dir]
 
                 config_EvaluationManager = self.EvaluationManager.with_config(
-                    output_dir=config_dir
+                    output_dir=experiment_dir
                     )
                 workflow(
                     config_EvaluationManager, X_train, X_test, y_train, y_test, 
-                    config_dir, method_names, **model_kwargs
+                    experiment_dir, method_names, **model_kwargs
                     )
 
             except Exception as e:
@@ -199,5 +199,5 @@ class TrainingManager:
                 file.write("\n".join(error_log))
                 
         if create_report:
-            report_manager = ReportManager(results_dir, self.config_paths)
+            report_manager = ReportManager(results_dir, self.experiment_paths)
             report_manager.create_report()

@@ -24,8 +24,8 @@
         <section class="dataset-section">
             <h2>{{ dataset.dataset_name }}</h2>
             <ul>
-                {% for config_page in dataset.config_pages %}
-                <li><a href="{{ config_page }}.html">{{ config_page }}</a></li>
+                {% for experiment_page in dataset.experiment_pages %}
+                <li><a href="{{ experiment_page }}.html">{{ experiment_page }}</a></li>
                 {% endfor %}
             </ul>
         </section>

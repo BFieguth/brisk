@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config_name }}</title>
-    <link rel="stylesheet" href="./config.css">
+    <title>{{ experiment_name }}</title>
+    <link rel="stylesheet" href="./experiment.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>Configuration: {{ config_name }}</header>
+    <header>Experiment: {{ experiment_name }}</header>
 
     <div>
         {{ content | safe }}  <!-- Render the full content as HTML -->
