@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Toolkit Report</title>
+    <link rel="stylesheet" href="./index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header bar -->
+    <header>
+        ML Toolkit Report - {{ timestamp }}
+    </header>
+
+    <!-- Summary Table -->
+    <div class="summary-container">
+        {{ summary_table|safe }}
+     </div>
+
+    <!-- Dataset sections -->
+    <div class="section-container">
+        {% for dataset in datasets %}
+        <section class="dataset-section">
+            <h2>{{ dataset.dataset_name }}</h2>
+            <ul>
+                {% for config_page in dataset.config_pages %}
+                <li><a href="{{ config_page }}.html">{{ config_page }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    </div>
+</body>
+</html>

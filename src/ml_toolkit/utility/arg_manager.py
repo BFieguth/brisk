@@ -1,7 +1,7 @@
 import argparse
 from typing import List, Optional
 
-class CustomArgParser:
+class ArgManager:
     """A customizable argument parser.
 
     This class provides a base argument parser with common arguments
@@ -14,7 +14,7 @@ class CustomArgParser:
     """
 
     def __init__(self, description: str):
-        """Initializes the CustomArgParser with common arguments.
+        """Initializes the ArgManager with common arguments.
 
         Args:
             description (str): The description of the script.
@@ -36,10 +36,10 @@ class CustomArgParser:
         )
         self.parser.add_argument(
             "--datasets", "-d", action="store", dest="datasets", nargs="+", 
-            help="Names of tables in SQL database to use."
+            required=True, help="Names of tables in SQL database to use."
         )
         self.parser.add_argument(
-            "--scoring", "-s", action="store", dest="scoring", 
+            "--scoring", "-s", action="store", dest="scoring", required=True,
             help="Metric to evaluate and optimize models with."
         )
 
@@ -74,10 +74,6 @@ class CustomArgParser:
             print("Arguments parsed successfully.")
             return args
         
-        except argparse.ArgumentError as e:
-            print(f"Argument parsing failed: {e}")
-            raise
-
         except SystemExit as e:
             print(f"Argument parsing failed with SystemExit: {e}")
             raise

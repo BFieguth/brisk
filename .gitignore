@@ -1,3 +1,7 @@
 *.ini
 *.pyc
 *.txt
+*.csv
+
+.coverage
+*_Results/
