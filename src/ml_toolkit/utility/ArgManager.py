@@ -1,16 +1,25 @@
+"""Provides the ArgManager class for managing command-line arguments with preset common inputs.
+
+Exports:
+    - ArgManager: A class that wraps around argparse.ArgumentParser with preset 
+        inputs for common variables such as k-fold for cross-validation and 
+        dataset selection.
+"""
+
+
 import argparse
 from typing import List, Optional
 
 class ArgManager:
-    """A customizable argument parser.
+    """A customizable argument parser with preset common inputs.
 
-    This class provides a base argument parser with common arguments
-    like kfold, num_repeats, datasets and allows adding additional custom 
-    arguments.
+    This class wraps around argparse.ArgumentParser, providing common arguments 
+    like k-fold, number of repeats, datasets, and scoring, while allowing for 
+    additional custom arguments to be added.
 
     Attributes:
-        description (str): Description of the script for the parser.
-        parser (ArgumentParser): The argument parser object.
+        parser (ArgumentParser): The argument parser object used to handle 
+            command-line arguments.
     """
 
     def __init__(self, description: str):
@@ -23,7 +32,14 @@ class ArgManager:
         self._add_common_arguments()
 
     def _add_common_arguments(self) -> None:
-        """Adds common arguments to the parser."""
+        """Adds common arguments to the argument parser.
+
+        The common arguments include:
+        - kfold: Number of folds for cross-validation.
+        - num_repeats: Number of repeats for cross-validation.
+        - datasets: Names of the datasets (tables in an SQL database) to use.
+        - scoring: The metric to evaluate and optimize models with.
+        """
         self.parser.add_argument(
             "--kfold", "-k", type=int, action="store", dest="kfold", 
             default=10, required=False, 
@@ -63,7 +79,11 @@ class ArgManager:
                 to parse. Defaults to None.
 
         Returns:
-            argparse.Namespace: Parsed arguments.
+            argparse.Namespace: A namespace containing the parsed arguments.
+
+        Raises:
+            SystemExit: If argument parsing fails and the parser exits.
+            Exception: If an unexpected error occurs during argument parsing.
         """
         try:
             if additional_args:
