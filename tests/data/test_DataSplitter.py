@@ -60,7 +60,7 @@ class TestDataSplitter:
         """
         mock_read_csv.return_value = mock_data
         splitter = DataSplitter()
-        df = splitter._DataSplitter__load_data("data.csv")
+        df = splitter._load_data("data.csv")
 
         mock_read_csv.assert_called_once_with("data.csv")
         assert df.equals(mock_data)
@@ -72,7 +72,7 @@ class TestDataSplitter:
         """
         mock_read_excel.return_value = mock_data
         splitter = DataSplitter()
-        df = splitter._DataSplitter__load_data("data.xlsx")
+        df = splitter._load_data("data.xlsx")
 
         mock_read_excel.assert_called_once_with("data.xlsx")
         assert df.equals(mock_data)
@@ -85,7 +85,7 @@ class TestDataSplitter:
         """
         mock_read_sql.return_value = mock_data
         splitter = DataSplitter()
-        df = splitter._DataSplitter__load_data("database.db", "table_name")
+        df = splitter._load_data("database.db", "table_name")
 
         mock_connect.assert_called_once_with("database.db")
         mock_read_sql.assert_called_once_with(
@@ -98,7 +98,7 @@ class TestDataSplitter:
             test_size=0.2, split_method="shuffle", group_column=None, 
             stratified=False
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, ShuffleSplit)
         assert splitter_obj.n_splits == 1
@@ -111,7 +111,7 @@ class TestDataSplitter:
             test_size=0.2, split_method="shuffle", group_column="group", 
             stratified=False
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, GroupShuffleSplit)
         assert splitter_obj.n_splits == 1
@@ -123,7 +123,7 @@ class TestDataSplitter:
             test_size=0.2, split_method="shuffle", group_column=None, 
             stratified=True
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, StratifiedShuffleSplit)
         assert splitter_obj.n_splits == 1
@@ -135,7 +135,7 @@ class TestDataSplitter:
             n_splits=5, split_method="kfold", group_column="group", 
             stratified=False
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, GroupKFold)
         assert splitter_obj.n_splits == 5
@@ -146,7 +146,7 @@ class TestDataSplitter:
             n_splits=5, split_method="kfold", group_column=None, 
             stratified=True, random_state=42
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, StratifiedKFold)
         assert splitter_obj.n_splits == 5
@@ -159,7 +159,7 @@ class TestDataSplitter:
             n_splits=5, split_method="kfold", group_column=None, 
             stratified=False, random_state=42
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, KFold)
         assert splitter_obj.n_splits == 5
@@ -172,7 +172,7 @@ class TestDataSplitter:
             n_splits=5, split_method="kfold", group_column="group", 
             stratified=True
             )
-        splitter_obj = splitter._DataSplitter__set_splitter()
+        splitter_obj = splitter._set_splitter()
 
         assert isinstance(splitter_obj, StratifiedGroupKFold)
         assert splitter_obj.n_splits == 5
