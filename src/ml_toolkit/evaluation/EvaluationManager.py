@@ -158,7 +158,7 @@ class EvaluationManager:
             for metric_name in metrics:
                 comparison_results["difference_from_model1"][metric_name] = {}
                 base_score = comparison_results[base_model][metric_name]
-                
+                # TODO refactor this to calculate teh difference between all the model combinations 
                 for other_model in model_names[1:]:
                     diff = comparison_results[other_model][metric_name] - base_score
                     comparison_results["difference_from_model1"][metric_name][other_model] = diff
@@ -231,13 +231,8 @@ class EvaluationManager:
 
         # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = model_select.learning_curve(
-            model, 
-            X_train, 
-            y_train, 
-            cv=cv, 
-            n_jobs=-1, 
-            train_sizes=np.linspace(0.1, 1.0, 5), 
-            return_times=True, 
+            model, X_train, y_train, cv=cv, n_jobs=-1, 
+            train_sizes=np.linspace(0.1, 1.0, 5), return_times=True, 
             scoring=scoring
         )
 
@@ -258,19 +253,31 @@ class EvaluationManager:
         axes[0].set_xlabel("Training Examples", fontsize=12)
         axes[0].set_ylabel(scoring, fontsize=12) 
         axes[0].grid()
-        axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
-                             train_scores_mean + train_scores_std, alpha=0.1, color="r")
-        axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std,
-                             test_scores_mean + test_scores_std, alpha=0.1, color="g")
-        axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training Score")
-        axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g", label="Cross-Validation Score")
+        axes[0].fill_between(
+            train_sizes, train_scores_mean - train_scores_std, 
+            train_scores_mean + train_scores_std, alpha=0.1, color="r"
+            )
+        axes[0].fill_between(
+            train_sizes, test_scores_mean - test_scores_std, 
+            test_scores_mean + test_scores_std, alpha=0.1, color="g"
+            )
+        axes[0].plot(
+            train_sizes, train_scores_mean, 'o-', color="r", 
+            label="Training Score"
+            )
+        axes[0].plot(
+            train_sizes, test_scores_mean, 'o-', color="g", 
+            label="Cross-Validation Score"
+            )
         axes[0].legend(loc="best")
 
         # Plot n_samples vs fit_times
         axes[1].grid()
         axes[1].plot(train_sizes, fit_times_mean, 'o-')
-        axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
-                             fit_times_mean + fit_times_std, alpha=0.1)
+        axes[1].fill_between(
+            train_sizes, fit_times_mean - fit_times_std, 
+            fit_times_mean + fit_times_std, alpha=0.1
+            )
         axes[1].set_xlabel("Training Examples", fontsize=12)
         axes[1].set_ylabel("Fit Times", fontsize=12)
         axes[1].set_title("Scalability of the Model", fontsize=16)
@@ -278,8 +285,10 @@ class EvaluationManager:
         # Plot fit_time vs score
         axes[2].grid()
         axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
-        axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
-                             test_scores_mean + test_scores_std, alpha=0.1)
+        axes[2].fill_between(
+            fit_times_mean, test_scores_mean - test_scores_std, 
+            test_scores_mean + test_scores_std, alpha=0.1
+            )
         axes[2].set_xlabel("Fit Times", fontsize=12)
         axes[2].set_ylabel(scoring, fontsize=12)
         axes[2].set_title("Performance of the Model", fontsize=16)
@@ -304,12 +313,18 @@ class EvaluationManager:
         metric = self.scoring_config.get_scorer(scoring)
 
 
-        if isinstance(model, (tree.DecisionTreeRegressor, ensemble.RandomForestRegressor, ensemble.GradientBoostingRegressor)):
+        if isinstance(
+            model, (
+                tree.DecisionTreeRegressor, ensemble.RandomForestRegressor, 
+                ensemble.GradientBoostingRegressor)
+                ):
             model.fit(X,y)
             importance = model.feature_importances_
         else:
             model.fit(X, y)
-            results = inspection.permutation_importance(model, X=X, y=y, scoring=metric, n_repeats=num_rep)
+            results = inspection.permutation_importance(
+                model, X=X, y=y, scoring=metric, n_repeats=num_rep
+                )
             importance = results.importances_mean
 
         if isinstance(filter, int):
@@ -319,7 +334,10 @@ class EvaluationManager:
         elif isinstance(filter, float):
             above_threshold = importance >= filter
             importance = importance[above_threshold]
-            feature_names = [feature_names[i] for i in range(len(feature_names)) if above_threshold[i]]
+            feature_names = [
+                feature_names[i] for i in range(len(feature_names)) 
+                if above_threshold[i]
+                ]
 
         plt.barh(feature_names, importance)
         plt.xticks(rotation=90)
@@ -379,7 +397,7 @@ class EvaluationManager:
             plt.text(
                 bar.get_x() + bar.get_width()/2, bar.get_height(), 
                 f'{value:.3f}', ha='center', va='bottom'
-                    )
+                )
         plt.xlabel("Models", fontsize=12)
         plt.ylabel(metric, fontsize=12)
         plt.title(f"Model Comparison on {metric}", fontsize=16)
@@ -389,13 +407,27 @@ class EvaluationManager:
         self.__save_plot(output_path, metadata)
         plt.close()
 
-    def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs, plot_results: bool = False) -> base.BaseEstimator:
+    def hyperparameter_tuning(
+        self, 
+        model, 
+        method, 
+        method_name, 
+        X_train, 
+        y_train, 
+        scorer, 
+        kf, 
+        num_rep, 
+        n_jobs, 
+        plot_results: bool = False
+    ) -> base.BaseEstimator:
         if method == "grid":
             searcher = model_select.GridSearchCV
         elif method == "random":
             searcher = model_select.RandomizedSearchCV
         else:
-            raise ValueError(f"method must be one of (grid, random). {method} was entered.")
+            raise ValueError(
+                f"method must be one of (grid, random). {method} was entered."
+                )
         
         metric = self.scoring_config.get_scorer(scorer)
         param_grid = self.method_config[method_name].get_hyperparam_grid()
@@ -418,7 +450,13 @@ class EvaluationManager:
             )
         return tuned_model
 
-    def __plot_hyperparameter_performance(self, param_grid, search_result, method_name, metadata) -> None:
+    def __plot_hyperparameter_performance(
+        self, 
+        param_grid, 
+        search_result, 
+        method_name, 
+        metadata
+    ) -> None:
         """
         Plot the performance of hyperparameter tuning.
 
@@ -428,7 +466,9 @@ class EvaluationManager:
             method_name (str): The name of the model method.
         """
         param_keys = list(param_grid.keys())
-        print(f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams")
+        print(
+            f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams"
+            )
 
         if len(param_keys) == 0:
             return
@@ -452,25 +492,48 @@ class EvaluationManager:
         else:
             print("Higher dimensional visualization not implemented yet")
 
-    def __plot_1d_performance(self, param_values, mean_test_score, param_name, method_name, metadata):
+    def __plot_1d_performance(
+        self, 
+        param_values, 
+        mean_test_score, 
+        param_name, 
+        method_name, 
+        metadata
+    ):
         """
         Plot the performance of a single hyperparameter.
         """
         plt.figure(figsize=(10, 6))
-        plt.plot(param_values, mean_test_score, marker='o', linestyle='-', color='b')
+        plt.plot(
+            param_values, mean_test_score, marker='o', linestyle='-', color='b'
+            )
         plt.xlabel(param_name, fontsize=12)
         plt.ylabel("Mean Test Score", fontsize=12)
-        plt.title(f"Hyperparameter Performance: {method_name} ({param_name})", fontsize=16)
+        plt.title(
+            f"Hyperparameter Performance: {method_name} ({param_name})", 
+            fontsize=16
+            )
         
         for i, score in enumerate(mean_test_score):
-            plt.text(param_values[i], score, f'{score:.2f}', ha='center', va='bottom')
+            plt.text(
+                param_values[i], score, f'{score:.2f}', ha='center', va='bottom'
+                )
         
         plt.grid(True)
         plt.tight_layout()
-        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_{param_name}.png")
+        output_path = os.path.join(
+            self.output_dir, f"{method_name}_hyperparam_{param_name}.png"
+            )
         self.__save_plot(output_path, metadata)
 
-    def __plot_3d_surface(self, param_grid, search_result, param_names, method_name, metadata):
+    def __plot_3d_surface(
+        self, 
+        param_grid, 
+        search_result, 
+        param_names, 
+        method_name, 
+        metadata
+    ):
         """
         Plot the performance of two hyperparameters in 3D.
         """
@@ -479,7 +542,9 @@ class EvaluationManager:
             len(param_grid[param_names[1]])
         )
         # Create meshgrid for parameters
-        X, Y = np.meshgrid(param_grid[param_names[0]], param_grid[param_names[1]])
+        X, Y = np.meshgrid(
+            param_grid[param_names[0]], param_grid[param_names[1]]
+            )
 
         fig = plt.figure(figsize=(10, 6))
         ax = fig.add_subplot(111, projection='3d')
@@ -488,11 +553,18 @@ class EvaluationManager:
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel('Mean Test Score', fontsize=12)
         ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
-        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_3Dplot.png")
+        output_path = os.path.join(
+            self.output_dir, f"{method_name}_hyperparam_3Dplot.png"
+            )
         self.__save_plot(output_path, metadata)       
 
     # Utility Methods
-    def __save_to_json(self, data: Dict, output_path: str, metadata: Dict[str, Any] = None) -> None:
+    def __save_to_json(
+        self, 
+        data: Dict, 
+        output_path: str, 
+        metadata: Dict[str, Any] = None
+    ) -> None:
         """
         Save a dictionary to a JSON file, including metadata.
 
@@ -511,7 +583,11 @@ class EvaluationManager:
         except IOError as e:
             print(f"Failed to save JSON to {output_path}: {e}")
 
-    def __save_plot(self, output_path: str, metadata: Dict[str, Any] = None) -> None:
+    def __save_plot(
+        self, 
+        output_path: str, 
+        metadata: Dict[str, Any] = None
+    ) -> None:
         """
         Save the current matplotlib plot to a PNG file, including metadata.
 
@@ -577,6 +653,9 @@ class EvaluationManager:
         else:
             metadata["models"] = [models.__class__.__name__]
 
-        metadata = {k: str(v) if not isinstance(v, str) else v for k, v in metadata.items()}
+        metadata = {
+            k: str(v) if not isinstance(v, str) 
+            else v for k, v in metadata.items()
+            }
         return metadata 
     

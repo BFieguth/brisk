@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 
 from ml_toolkit.training.TrainingManager import TrainingManager
-from ml_toolkit.utility.ModelWrapper import ModelWrapper
+from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
 
 @pytest.fixture
 def setup_training_manager():
@@ -16,7 +16,7 @@ def setup_training_manager():
     """
     model_mock = mock.MagicMock()
     
-    wrapper_mock = mock.MagicMock(spec=ModelWrapper)
+    wrapper_mock = mock.MagicMock(spec=AlgorithmWrapper)
     wrapper_mock.instantiate.return_value = model_mock 
 
     method_config = {

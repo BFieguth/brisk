@@ -3,12 +3,10 @@ import sqlite3
 from typing import Optional, Tuple
 
 import pandas as pd
-from sklearn.model_selection import (KFold, GroupKFold, StratifiedKFold, 
-                                     ShuffleSplit, GroupShuffleSplit, 
-                                     StratifiedShuffleSplit, StratifiedGroupKFold)
+import sklearn.model_selection as model_selection
 
 class DataSplitter:
-    """Handles the data splitting logic for train/test splits."""
+    """Handles the data splitting logic for train test splits."""
     def __init__(
         self, 
         test_size: float = 0.2, 
@@ -58,22 +56,24 @@ class DataSplitter:
                 )
 
     def __set_splitter(self):
-        """Selects and returns the appropriate splitter based on the configuration."""
+        """
+        Selects and returns the appropriate splitter based on the configuration.
+        """
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
-                return GroupShuffleSplit(
+                return model_selection.GroupShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
             
             elif self.stratified and not self.group_column:
-                return StratifiedShuffleSplit(
+                return model_selection.StratifiedShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
             
             elif not self.stratified and not self.group_column:
-                return ShuffleSplit(
+                return model_selection.ShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
@@ -86,23 +86,26 @@ class DataSplitter:
             
         elif self.split_method == "kfold":
             if self.group_column and not self.stratified:
-                return GroupKFold(n_splits=self.n_splits)
+                return model_selection.GroupKFold(n_splits=self.n_splits)
             
             elif self.stratified and not self.group_column:
-                return StratifiedKFold(
+                return model_selection.StratifiedKFold(
                     n_splits=self.n_splits, 
                     shuffle=True if self.random_state else False, 
                     random_state=self.random_state
                     )
             
             elif not self.stratified and not self.group_column:
-                return KFold(
+                return model_selection.KFold(
                     n_splits=self.n_splits, 
                     shuffle=True if self.random_state else False,
-                    random_state=self.random_state)
+                    random_state=self.random_state
+                    )
             
             elif self.group_column and self.stratified:
-                return StratifiedGroupKFold(n_splits=self.n_splits)
+                return model_selection.StratifiedGroupKFold(
+                    n_splits=self.n_splits
+                    )
             
             else:
                 raise ValueError(
@@ -177,7 +180,9 @@ class DataSplitter:
 
         if isinstance(
             self.splitter, 
-            (ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplit)
+            (model_selection.ShuffleSplit, 
+             model_selection.StratifiedShuffleSplit, 
+             model_selection.GroupShuffleSplit)
             ):
             train_idx, test_idx = next(self.splitter.split(X, y, groups))
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
