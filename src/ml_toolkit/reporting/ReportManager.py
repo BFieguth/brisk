@@ -1,3 +1,10 @@
+"""Provides the ReportManager class to generate HTML reports from evaluation results.
+
+Exports:
+    - ReportManager: A class that takes the outputs from the EvaluationManager 
+        and creates an HTML report with all results.
+"""
+
 import ast
 import collections
 import datetime
@@ -9,7 +16,29 @@ import shutil
 import jinja2
 
 class ReportManager():
-    def __init__(self, result_dir, experiment_paths):
+    """A class for creating HTML reports from evaluation results.
+
+    The ReportManager processes the results from various model evaluations and 
+    generates a structured HTML report containing all relevant metrics, 
+    comparisons, and visualizations.
+
+    Attributes:
+        report_dir (str): Directory where the HTML report will be saved.
+        experiment_paths (dict): Dictionary mapping datasets to their 
+            corresponding experiment directories.
+        env (jinja2.Environment): Jinja2 environment for rendering HTML templates.
+        method_map (OrderedDict): Mapping of evaluation methods to reporting methods.
+        current_dataset (str, optional): The name of the dataset currently being processed.
+        summary_metrics (dict): Dictionary holding summary metrics for the report.
+    """
+    def __init__(self, result_dir: str, experiment_paths: dict):
+        """Initializes the ReportManager with directories for results and experiment paths.
+
+        Args:
+            result_dir (str): Path to the directory where the report will be saved.
+            experiment_paths (dict): Dictionary mapping datasets to their 
+                experiment directories.
+        """
         package_dir = os.path.dirname(os.path.abspath(__file__))
         self.templates_dir = os.path.join(package_dir, 'templates')
         self.styles_dir = os.path.join(package_dir, 'styles')
@@ -46,7 +75,16 @@ class ReportManager():
         self.current_dataset = None
         self.summary_metrics = {}
 
-    def create_report(self):
+    def create_report(self) -> None:
+        """Generates the HTML report.
+        
+        This method creates an index page listing all datasets and their 
+        respective experiment pages, as well as a summary table if evaluation 
+        metrics are available.
+        
+        Returns:
+            None
+        """
         os.makedirs(self.report_dir, exist_ok=True)
 
         # Step 1: Create the index page with links to experiments pages for each dataset
@@ -88,12 +126,15 @@ class ReportManager():
         with open(index_path, 'w') as f:
             f.write(index_output)
 
-    # TODO Rename this
-    def create_experiment_page(self, experiment_dir: str, dataset: str):
-        """
-        Creates an individual experiments page.
+    def create_experiment_page(self, experiment_dir: str, dataset: str) -> None:
+        """Creates an HTML page for each experiment.
+
         Args:
-            experiment_dir (str): Path to the experiments directory.
+            experiment_dir (str): Path to the experiment directory.
+            dataset (str): The name of the dataset being evaluated.
+
+        Returns:
+            None
         """
         self.current_dataset = dataset
         experiment_template = self.env.get_template("experiment.html")
@@ -105,9 +146,9 @@ class ReportManager():
         for file in files:
             file_path = os.path.join(experiment_dir, file)
             if file.endswith(".json"):
-                file_metadata[file] = self.__get_json_metadata(file_path)
+                file_metadata[file] = self._get_json_metadata(file_path)
             if file.endswith(".png"):
-                file_metadata[file] = self.__get_image_metadata(file_path)
+                file_metadata[file] = self._get_image_metadata(file_path)
 
         # Step 2: Prepare content based on extracted metadata
         content = []
@@ -120,7 +161,7 @@ class ReportManager():
         
             for file, metadata in matching_files:
                 file_path = os.path.join(experiment_dir, file)
-                data = self.__load_file(file_path)
+                data = self._load_file(file_path)
                 content.append(reporting_method(data, metadata))
 
         content_str = "".join(content)
@@ -135,9 +176,14 @@ class ReportManager():
         with open(experiment_page_path, 'w') as f:
             f.write(experiment_output)
 
-    def __get_json_metadata(self, json_path: str):
-        """
-        Extract the 'method' from the metadata of a JSON file.
+    def _get_json_metadata(self, json_path: str) -> dict:
+        """Extracts metadata from a JSON file.
+
+        Args:
+            json_path (str): Path to the JSON file.
+
+        Returns:
+            dict: The extracted metadata.
         """
         try:
             with open(json_path, 'r') as f:
@@ -150,9 +196,14 @@ class ReportManager():
             print(f"Failed to extract metadata from {json_path}: {e}")
             return "unknown_method"
 
-    def __get_image_metadata(self, image_path: str):
-        """
-        Extract the 'method' from the metadata of a PNG file.
+    def _get_image_metadata(self, image_path: str) -> dict:
+        """Extracts metadata from a PNG file.
+
+        Args:
+            image_path (str): Path to the image file.
+
+        Returns:
+            dict: The extracted metadata.
         """
         try:
             with Image.open(image_path) as img:
@@ -164,8 +215,18 @@ class ReportManager():
             print(f"Failed to extract metadata from {image_path}: {e}")
             return None
         
-    def __load_file(self, file_path: str):
-        """Loads file content based on the file extension."""
+    def _load_file(self, file_path: str):
+        """Loads the content of a file based on its extension.
+
+        Args:
+            file_path (str): Path to the file.
+
+        Returns:
+            dict: The loaded content for JSON files, or the file path for images.
+
+        Raises:
+            ValueError: If the file type is unsupported.
+        """
         if file_path.endswith(".json"):
             with open(file_path, "r") as f:
                 return json.load(f)
@@ -175,8 +236,14 @@ class ReportManager():
             raise ValueError(f"Unsupported file type: {file_path}")
 
     def report_evaluate_model(self, data: dict, metadata: dict) -> str:
-        """
-        Generates an HTML block for displaying evaluate_model results.
+        """Generates an HTML block for displaying evaluate_model results.
+
+        Args:
+            data (dict): The evaluation data.
+            metadata (dict): The metadata associated with the evaluation.
+
+        Returns:
+            str: HTML block representing the evaluation results.
         """
         # Extract relevant information
         metrics = {k: v for k, v in data.items() if k != "_metadata"}
@@ -201,16 +268,14 @@ class ReportManager():
         return result_html
 
     def report_evaluate_model_cv(self, data: dict, metadata: dict) -> str:
-        """
-        Generates an HTML block for displaying cross-validated evaluation results.
-        Displays all_scores, mean_score, and std_dev for each metric.
+        """Generates an HTML block for displaying cross-validated evaluation results.
 
         Args:
-            data (dict): The data containing metric information.
+            data (dict): The evaluation data containing metric information.
             metadata (dict): The metadata associated with the evaluation.
 
         Returns:
-            str: An HTML block representing the results.
+            str: HTML block representing the cross-validation results.
         """
         model_info = metadata.get("models", ["Unknown model"])
         model_names = ", ".join(model_info)
@@ -246,12 +311,15 @@ class ReportManager():
         result_html_new += "</tbody></table>"
         return result_html_new
     
-    def report_compare_models(self, data, metadata) -> str:
-        """
-        Generates an HTML block for displaying compare_models results.
+    def report_compare_models(self, data: dict, metadata: dict) -> str:
+        """Generates an HTML block for displaying model comparison results.
+
         Args:
             data (dict): The comparison results.
             metadata (dict): The metadata containing model information.
+
+        Returns:
+            str: HTML block representing the comparison results.
         """
         model_names = list(data.keys())
         metrics = list(data[model_names[0]].keys())
@@ -298,19 +366,24 @@ class ReportManager():
 
         return result_html
         
-    def report_image(self, data, metadata, title: str, max_width: str = "100%") -> str:
-        """
-        Generates an HTML block for displaying any image plot.
-        
+    def report_image(
+        self, 
+        data: str, 
+        metadata: dict, 
+        title: str, 
+        max_width: str = "100%"
+    ) -> str:
+        """Generates an HTML block for displaying an image plot.
+
         Args:
-            data: The PNG image file path.
+            data (str): The path to the image file.
             metadata (dict): The metadata associated with the plot.
             title (str): The title to display above the image.
-            max_width (str): The maximum width of the image (defaults to "100%").
-            
+            max_width (str): The maximum width of the image. Defaults to "100%".
+
         Returns:
-            str: An HTML block containing the image and relevant information.
-        """    
+            str: HTML block containing the image and its metadata.
+        """   
         model_name = ", ".join(metadata.get("models", ["Unknown model"]))
         relative_img_path = os.path.relpath(data, self.report_dir)
 
@@ -322,9 +395,10 @@ class ReportManager():
         return result_html
     
     def generate_summary_tables(self) -> str:
-        """
-        Generates HTML for summary tables, one for each dataset.
-        Each table will have the dataset name as a heading, models as rows, and metrics as columns.
+        """Generates HTML summary tables for each dataset, displaying model metrics.
+
+        Returns:
+            str: HTML block containing summary tables for all datasets.
         """
         summary_html = ""
 
