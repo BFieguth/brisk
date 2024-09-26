@@ -1,3 +1,9 @@
+"""Provides the AlertMailer class for sending notification and error emails.
+
+Exports:
+    - AlertMailer: A class to send emails using Gmail's SMTP service.
+"""
+
 import configparser
 import smtplib
 import email.mime.text as text
@@ -33,8 +39,7 @@ class AlertMailer:
         subject: str, 
         body: str
     ) -> None:
-        """
-        Send an email using SMTP.
+        """Send an email using SMTP.
 
         Args:
             receiver_email (str): The recipient"s email address.
