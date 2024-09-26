@@ -4,6 +4,7 @@ from ml_toolkit.evaluation.MetricManager import MetricManager
 from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
 from ml_toolkit.reporting.ReportManager import ReportManager
 from ml_toolkit.training.TrainingManager import TrainingManager
+from ml_toolkit.training.Workflow import Workflow
 from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
 from ml_toolkit.utility.ArgManager import ArgManager
 from ml_toolkit.utility.AlertMailer import AlertMailer

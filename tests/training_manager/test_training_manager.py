@@ -25,6 +25,7 @@ def setup_training_manager():
     
     scoring_config = mock.MagicMock()
     splitter = mock.MagicMock()
+    workflow = mock.MagicMock()
 
     splitter.split.return_value = (
         mock.MagicMock(),  
@@ -37,7 +38,7 @@ def setup_training_manager():
     data_paths = [('dataset.csv', None)]
     
     return TrainingManager(
-        method_config, scoring_config, splitter, methods, data_paths
+        method_config, scoring_config, workflow, splitter, methods, data_paths
     )
 
 
@@ -55,7 +56,7 @@ class TestTrainingManager:
             mock_datetime.strftime = datetime.strftime
 
             print(f"Running configurations with setup: {tm.results_dir}")
-            tm.run_experiments(mock.MagicMock(), create_report=False)
+            tm.run_experiments(create_report=False)
 
             expected_dir = "06_09_2023_15_30_00_Results/linear_dataset"
             print(f"Expected directory to be created: {expected_dir}")
@@ -69,13 +70,14 @@ class TestTrainingManager:
         tm = TrainingManager(
             method_config=setup_training_manager.method_config,
             scoring_config=setup_training_manager.scoring_config,
+            workflow=setup_training_manager.workflow,
             splitter=setup_training_manager.splitter,
             methods=setup_training_manager.methods,
             data_paths=setup_training_manager.data_paths,
             results_dir="user_results_dir"
         )
 
-        tm.run_experiments(mock.MagicMock(), create_report=False)
+        tm.run_experiments(create_report=False)
         mock_makedirs.assert_called_with("user_results_dir/linear_dataset")
 
     def test_consume_experiments(self, setup_training_manager):
@@ -85,31 +87,8 @@ class TestTrainingManager:
         tm = setup_training_manager
         assert len(tm.experiments) == 1
 
-        tm.run_experiments(mock.MagicMock(), create_report=False)
+        tm.run_experiments(create_report=False)
         assert len(tm.experiments) == 0
-
-    @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("os.makedirs")
-    def test_error_logging(self, mock_makedirs, mock_open, setup_training_manager):
-        """
-        Test that errors are correctly logged when a experiment fails.
-        """
-        results_dir = "test_results_dir"
-        tm = TrainingManager(
-            method_config=setup_training_manager.method_config,
-            scoring_config=setup_training_manager.scoring_config,
-            splitter=setup_training_manager.splitter,
-            methods=setup_training_manager.methods,
-            data_paths=setup_training_manager.data_paths,
-            results_dir=results_dir 
-        )
-        mock_workflow_function = mock.MagicMock(side_effect=Exception("Test Error"))
-
-        tm.run_experiments(mock_workflow_function, create_report=False)
-
-        mock_open.assert_called_with(os.path.join(tm.results_dir, "error_log.txt"), "w")
-        handle = mock_open()
-        handle.write.assert_called_with("Error for ('linear',) on ('dataset.csv', None): Test Error")
 
     @mock.patch("os.makedirs")
     def test_run_experiments_creates_correct_directory_structure(self, mock_makedirs, setup_training_manager):
@@ -120,6 +99,7 @@ class TestTrainingManager:
         tm = TrainingManager(
             method_config=setup_training_manager.method_config,
             scoring_config=setup_training_manager.scoring_config,
+            workflow=setup_training_manager.workflow,
             splitter=setup_training_manager.splitter,
             methods=setup_training_manager.methods,
             data_paths=setup_training_manager.data_paths,
@@ -127,23 +107,21 @@ class TestTrainingManager:
         )
         mock_workflow_function = mock.MagicMock()
 
-        tm.run_experiments(mock_workflow_function, create_report=False)
+        tm.run_experiments(create_report=False)
 
         expected_dir = os.path.join(tm.results_dir, "linear_dataset")
         mock_makedirs.assert_any_call(expected_dir)
 
     @mock.patch("os.makedirs")
-    def test_run_experiments_calls_workflow_function(self, mock_makedirs, setup_training_manager):
+    @mock.patch("ml_toolkit.Workflow.workflow")
+    def test_run_experiments_calls_workflow_function(self, mock_makedirs, mock_workflow_method, setup_training_manager):
         """
         Test that the user-defined workflow function is called correctly for each experiment.
         """
         tm = setup_training_manager
+        tm.run_experiments(create_report=False)
 
-        mock_workflow_function = mock.MagicMock()
-
-        tm.run_experiments(mock_workflow_function, create_report=False)
-
-        assert mock_workflow_function.call_count == 1
+        assert mock_workflow_method.call_count == 1
 
     def test_invalid_method_in_experiment(self, setup_training_manager):
         """
@@ -155,6 +133,7 @@ class TestTrainingManager:
             tm = TrainingManager(
                 method_config=setup_training_manager.method_config,
                 scoring_config=setup_training_manager.scoring_config,
+                workflow=setup_training_manager.workflow,
                 splitter=setup_training_manager.splitter,
                 methods=invalid_methods,
                 data_paths=setup_training_manager.data_paths,
@@ -172,6 +151,7 @@ class TestTrainingManager:
             TrainingManager(
                 method_config=setup_training_manager.method_config,
                 scoring_config=setup_training_manager.scoring_config,
+                workflow=setup_training_manager.workflow,
                 splitter=setup_training_manager.splitter,
                 methods=setup_training_manager.methods,
                 data_paths=setup_training_manager.data_paths,

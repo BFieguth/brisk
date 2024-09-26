@@ -53,7 +53,7 @@ class TestMetricManager:
         """
         y_true = np.array([3.0, -0.5, 2.0, 7.0])
         y_pred = np.array([2.5, 0.0, 2.0, 8.0])        
-        ccc = MetricManager._MetricManager__concordance_correlation_coefficient(
+        ccc = MetricManager._concordance_correlation_coefficient(
             y_true, y_pred
             )
         assert np.isclose(ccc, 0.976, atol=0.01)

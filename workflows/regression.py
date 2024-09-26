@@ -3,6 +3,58 @@ import os
 
 import ml_toolkit
 
+class RegressionTest(ml_toolkit.Workflow):
+    def workflow(self):
+        self.model1.fit(self.X_train, self.y_train)
+        self.model2.fit(self.X_train, self.y_train)
+        self.evaluator.save_model(self.model1, "fitted_model1")
+        
+        self.evaluator.save_model(self.model2, "fitted_model2")
+
+        self.evaluator.compare_models(
+            self.model1, self.model2, X=self.X_train, y=self.y_train, 
+            metrics=["MAE", "R2", "MSE"], filename="comparison", 
+            calculate_diff=True
+        )
+
+        self.evaluator.plot_model_comparison(
+            self.model1, self.model2, X=self.X_train, y=self.y_train, 
+            metric="MAE", filename="comparisson"
+        )
+
+        metrics_list = ["MAE", "R2", "MSE"]
+        self.evaluator.evaluate_model(
+            self.model1, self.X_test, self.y_test, metrics_list, "test_metrics"
+            )
+        self.evaluator.evaluate_model_cv(
+            self.model1, self.X_test, self.y_test, metrics_list, "test_metrics_cv"
+            )
+        
+        self.evaluator.plot_learning_curve(
+            self.model1, self.X_train, self.y_train
+        )
+
+        # pred = model.predict(X_test)
+        self.evaluator.plot_pred_vs_obs(
+            self.model1, self.X_test, self.y_test, "pred_vs_obs_test"
+            )
+
+        self.evaluator.plot_feature_importance(
+            self.model1, self.X_train, self.y_train, filter=10, 
+            feature_names=["Feature_1", "Feature_2", "Feature_3", "Feature_4", "Feature_5"],
+            filename="feature_importance", scoring="CCC", num_rep=2
+        )
+
+        self.evaluator.plot_residuals(
+            self.model1, self.X_test, self.y_test, "residuals"
+        )
+
+        tuned_model = self.evaluator.hyperparameter_tuning(
+            self.model2, "grid", self.method_names[1], self.X_train, self.y_train, 
+            "MAE", 5, 2 ,10, plot_results=True
+        )
+
+
 notification = ml_toolkit.AlertMailer("./workflows/config.ini")
 
 # Parse Arguments
@@ -33,60 +85,15 @@ data_splitter = ml_toolkit.DataSplitter(
 
 # Setup experiments using TrainingManager
 manager = ml_toolkit.TrainingManager(
-    method_config=ml_toolkit.REGRESSION_MODELS,
+    method_config=ml_toolkit.REGRESSION_ALGORITHMS,
     scoring_config=ml_toolkit.MetricManager(include_regression=True),
+    workflow=RegressionTest,
     splitter=data_splitter,
     methods=methods,
     data_paths=data_paths
 )
 print(manager.experiments)
 
-
-# Define the workflow
-def test_workflow(
-    evaluator, X_train, X_test, y_train, y_test, output_dir, method_name, model1, model2
-):
-    model1.fit(X_train, y_train)
-    model2.fit(X_train, y_train)
-    evaluator.save_model(model1, "fitted_model1")
-    # evaluator.save_model(model2, "fitted_model2")
-    evaluator.compare_models(
-        model1, model2, X=X_train, y=y_train, metrics=["MAE", "R2", "MSE"], 
-        filename="comparison", calculate_diff=True
-    )
-
-    evaluator.plot_model_comparison(
-        model1, model2, X=X_train, y=y_train, metric="MAE", filename="comparisson"
-    )
-
-    # path = os.path.join(output_dir, "fitted_model.pkl")
-    # loaded_model = evaluator.load_model(path)
-    metrics_list = ["MAE", "R2", "MSE"]
-    evaluator.evaluate_model(model1, X_test, y_test, metrics_list, "test_metrics")
-    evaluator.evaluate_model_cv(model1, X_test, y_test, metrics_list, "test_metrics_cv")
-    
-    evaluator.plot_learning_curve(
-        model1, X_train, y_train
-    )
-
-    # pred = model.predict(X_test)
-    evaluator.plot_pred_vs_obs(model1, X_test, y_test, "pred_vs_obs_test")
-
-    evaluator.plot_feature_importance(
-        model1, X_train, y_train, filter=10, 
-        feature_names=["Feature_1", "Feature_2", "Feature_3", "Feature_4", "Feature_5"],
-        filename="feature_importance", scoring="CCC", num_rep=2
-    )
-
-    evaluator.plot_residuals(
-        model1, X_test, y_test, "residuals"
-    )
-
-    # tuned_model = evaluator.hyperparameter_tuning(
-    #     model2, "grid", method_name[1], X_train, y_train, "MAE", 5, 2 ,10, plot_results=True
-    # )
-
-
 # Run the workflow
-manager.run_experiments(test_workflow)
+manager.run_experiments()
 print("regression.py has run!")
