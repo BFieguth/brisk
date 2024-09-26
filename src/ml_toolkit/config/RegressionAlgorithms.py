@@ -6,6 +6,8 @@ name, its class, default parameters, and hyperparameter space for optimization.
 
 """
 
+from typing import Dict
+
 import numpy as np
 import sklearn
 import sklearn.ensemble
@@ -19,7 +21,7 @@ import sklearn.kernel_ridge as kernel_ridge
 
 from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
 
-REGRESSION_ALGORITHMS = {
+REGRESSION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
     "linear": AlgorithmWrapper(
         name="Linear Regression",
         algorithm_class=linear.LinearRegression
