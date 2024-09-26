@@ -1,5 +1,9 @@
-"""
-Dictionaries to import and access a variety of scoring methods
+"""Provides the MetricManager class for managing and retrieving evaluation metrics.
+
+Exports:
+    - MetricManager: A class to manage metrics used for model evaluation. It 
+        supports both accessing the metric functions and the corresponding 
+        scoring callables.
 """
 from typing import Callable
 
@@ -10,25 +14,33 @@ import sklearn.metrics._regression as regression
 
 
 class MetricManager:
-    """A class to manage scoring metrics for different tasks.
+    """A class to manage scoring metrics.
 
-    This class provides access to various scoring metrics for regression 
-    tasks by either their full names or common abbreviations.
+    This class provides access to various scoring metrics for regression tasks, 
+    allowing retrieval by either their full names or common abbreviations.
+
+    Attributes:
+        scoring_metrics (dict): A dictionary storing the available metrics and 
+            their corresponding callables.
     """
     def __init__(self, include_regression: bool = True):
-        """Initializes the scoring manager with the specified metrics.
+        """Initializes the MetricManager with a set of metrics.
 
         Args:
-            include_regression (bool): Whether to include regression metrics.
+            include_regression (bool): Whether to include regression metrics. 
+                Defaults to True.
         """
         self.scoring_metrics = {}
 
         if include_regression:
             self._add_regression_metrics()
 
-    def _add_regression_metrics(self):
-        """Add commmon regression metrics and abbreviations to scoring manager."""
+    def _add_regression_metrics(self) -> None:
+        """Adds common regression metrics to the MetricManager.
 
+        This method populates the `scoring_metrics` dictionary with standard 
+        regression metrics and their scoring callables.
+        """
         REGRESSION_SCORING = {
             "explained_variance_score": {
                 "func": regression.explained_variance_score,
@@ -89,22 +101,25 @@ class MetricManager:
             },
             "concordance_correlation_coefficient": {
                 "abbr": "CCC",
-                "func": self.__concordance_correlation_coefficient,
+                "func": self._concordance_correlation_coefficient,
                 "scorer": metrics.make_scorer(
-                    self.__concordance_correlation_coefficient
+                    self._concordance_correlation_coefficient
                     )
             }
         }
         self.scoring_metrics.update(REGRESSION_SCORING)
 
     def get_metric(self, name_or_abbr: str) -> Callable:
-        """Retrieve a metric function by full name or abbreviation.
-        
+        """Retrieve a metric function by its full name or abbreviation.
+
         Args:
             name_or_abbr (str): The full name or abbreviation of the metric.
-        
+
         Returns:
-            The metric function or None if not found.
+            Callable: The metric function.
+
+        Raises:
+            ValueError: If the metric is not found.
         """
         if name_or_abbr in self.scoring_metrics:
             return self.scoring_metrics[name_or_abbr]['func']
@@ -116,13 +131,16 @@ class MetricManager:
         raise ValueError(f"Metric function '{name_or_abbr}' not found.")
 
     def get_scorer(self, name_or_abbr: str) -> Callable:
-        """Retrieve a scoring callable by full name or abbreviation.
-        
+        """Retrieve a scoring callable by its full name or abbreviation.
+
         Args:
             name_or_abbr (str): The full name or abbreviation of the metric.
-        
+
         Returns:
-            The scoring callable or None if not found.
+            Callable: The scoring callable.
+
+        Raises:
+            ValueError: If the scoring callable is not found.
         """
         if name_or_abbr in self.scoring_metrics:
             return self.scoring_metrics[name_or_abbr]['scorer']
@@ -135,19 +153,18 @@ class MetricManager:
 
     # Define additional scoring metrics not included with sklearn
     @staticmethod
-    def __concordance_correlation_coefficient(
+    def _concordance_correlation_coefficient(
         y_true: np.ndarray, 
         y_pred: np.ndarray
     ) -> float:
-        """
-        Calculate Lin's Concordance Correlation Coefficient (CCC)
+        """Calculate Lin's Concordance Correlation Coefficient (CCC).
 
         Args:
-            y_true (array-like): The true (observed) values.
-            y_pred (array-like): The predicted values.
+            y_true (np.ndarray): The true (observed) values.
+            y_pred (np.ndarray): The predicted values.
 
         Returns:
-            float: Concordance Correlation Coefficient between y_true and y_pred.
+            float: The Concordance Correlation Coefficient between y_true and y_pred.
         """
         corr, _ = scipy.stats.pearsonr(y_true, y_pred)
         mean_true = np.mean(y_true)
