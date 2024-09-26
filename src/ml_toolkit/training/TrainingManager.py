@@ -1,3 +1,10 @@
+"""Provides the TrainingManager class to manage the training of models.
+
+Exports:
+    - TrainingManager: A class to handle model training across multiple 
+        datasets and methods.
+"""
+
 from collections import deque
 from datetime import datetime
 import itertools
@@ -12,6 +19,22 @@ from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
 from ml_toolkit.reporting.ReportManager import ReportManager
 
 class TrainingManager:
+    """A class to manage the training and evaluation of machine learning models.
+
+    The TrainingManager coordinates the training of models using various methods, 
+    evaluates them on different datasets, and generates reports. It integrates with 
+    EvaluationManager for model evaluation and ReportManager for generating HTML reports.
+
+    Attributes:
+        method_config (dict): Configuration of methods with default parameters.
+        scoring_config (dict): Configuration of scoring metrics.
+        splitter (DataSplitter): Instance of the DataSplitter class for train-test splits.
+        methods (list): List of methods to apply to each dataset.
+        data_paths (list): List of tuples containing dataset paths and table names.
+        results_dir (str, optional): Directory to store results. Defaults to None.
+        EvaluationManager (EvaluationManager): Instance of the EvaluationManager 
+            class for handling evaluations.
+    """
     def __init__(
         self, 
         method_config: Dict[str, Dict], 
@@ -21,17 +44,15 @@ class TrainingManager:
         data_paths: List[Tuple[str, str]],
         results_dir: Optional[str] = None
     ):
-        """
-        Initializes the TrainingManager.
+        """Initializes the TrainingManager.
 
         Args:
             method_config (Dict[str, Dict]): Configuration of methods with default parameters.
             scoring_config (Dict[str, Dict]): Configuration of scoring metrics.
-            splitter (DataSplitter): An instance of the DataSplitter class.
+            splitter (DataSplitter): An instance of the DataSplitter class for train-test splits.
             methods (List[str]): List of methods to train on each dataset.
-            data_paths (List[Tuple[str, str]]): List of tuples (data_path, table_name). 
-                If table_name is None, it's assumed that the dataset is not SQL-based.
-            results_dir (str): Directory where results will be stored. If None a timestamp will be used.
+            data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
+            results_dir (Optional[str]): Directory to store results. If None, a timestamp will be used.
         """
         self.method_config = method_config
         self.scoring_config = scoring_config
@@ -51,12 +72,16 @@ class TrainingManager:
         self.EvaluationManager = EvaluationManager(
             method_config=self.method_config, scoring_config=self.scoring_config
         )
-        self.__validate_methods()
-        self.data_splits = self.__get_data_splits()
-        self.experiments = self.__create_experiments()
+        self._validate_methods()
+        self.data_splits = self._get_data_splits()
+        self.experiments = self._create_experiments()
 
-    def __validate_methods(self):
-        """Check all methods are included in the method_config"""
+    def _validate_methods(self) -> None:
+        """Validates that all specified methods are included in the method configuration.
+
+        Raises:
+            ValueError: If any methods are missing from the method configuration.
+        """
         included_methods = self.method_config.keys()
 
         if any(isinstance(m, list) for m in self.methods):
@@ -73,17 +98,17 @@ class TrainingManager:
                 f"{invalid_methods}"
                 )
 
-    def __get_data_splits(
+    def _get_data_splits(
         self
     ) -> Dict[str, Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]]:
-        """
-        Splits each dataset using the provided splitter and returns a dictionary mapping
-        each dataset path to its respective train-test splits.
+        """Splits each dataset using the provided splitter.
+         
+        Returns a dictionary mapping each dataset path to its respective 
+        train-test splits.
 
         Returns:
-            Dict[str, Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]]:
-                A dictionary where the key is the data path, and the value is the 
-                train-test split for the dataset at that path.
+            Dict[str, Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]]: 
+            A dictionary where the key is the dataset path, and the value is the train-test split.
         """
         data_splits = {}
         for data_path, table_name in self.data_paths:
@@ -94,13 +119,12 @@ class TrainingManager:
         
         return data_splits
 
-    def __create_experiments(self) -> List[Tuple[str, str]]:
-        """
-        Create experiment as a Cartesian product of methods and datasets.
+    def _create_experiments(self) -> List[Tuple[str, str]]:
+        """Creates experiments as a Cartesian product of methods and datasets.
 
         Returns:
-            List[Tuple[str, str]]:
-                A list of tuples where each tuple represents (data_path, method).
+            List[Tuple[str, str]]: A list of tuples where each tuple 
+                represents (data_path, method).
         """
         if all(isinstance(method, str) for method in self.methods):
             method_combinations = [(method,) for method in self.methods]
@@ -110,25 +134,30 @@ class TrainingManager:
         experiments = deque(itertools.product(self.data_paths, method_combinations))
         return experiments
 
-    def __get_results_dir(self):
+    def _get_results_dir(self) -> str:
+        """Generates a results directory name based on the current timestamp.
+
+        Returns:
+            str: The directory name for storing results.
+        """
         timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
         return f"{timestamp}_Results"
 
-    def __get_experiment_dir(
+    def _get_experiment_dir(
         self, 
         method_name: str, 
         data_path: Tuple[str, str],
         results_dir: str
     ) -> str:
-        """
-        Create a meaningful directory name for each experiment.
+        """Creates a meaningful directory name for storing experiment results.
 
         Args:
-            method_name (str): The name of the model method being used.
-            data_path (str): The path to the dataset.
+            method_name (str): The name of the method being used.
+            data_path (Tuple[str, str]): The dataset path and table name (if applicable).
+            results_dir (str): The root directory for storing results.
 
         Returns:
-            str: A directory path to store results for this experiment.
+            str: The full path to the directory for storing experiment results.
         """
         dataset_name = os.path.basename(data_path[0]).split(".")[0]
         experiment_dir = f"{method_name}_{dataset_name}"
@@ -137,18 +166,26 @@ class TrainingManager:
             os.makedirs(full_path)
         return full_path
 
-    def run_experiments(self, workflow: Callable, create_report: bool = True):
-        """
-        Run the user-defined workflow for each experiment.
+    def run_experiments(
+        self, 
+        workflow: Callable, 
+        create_report: bool = True
+    ) -> None:
+        """Runs the user-defined workflow for each experiment and optionally generates reports.
 
         Args:
-            workflow (Callable): A function that defines the workflow 
-                for each experiment.
+            workflow (Callable): A function that defines the training and 
+                evaluation workflow for each experiment.
+            create_report (bool): Whether to generate an HTML report after all 
+                experiments. Defaults to True.
+
+        Returns:
+            None
         """
         error_log = []
         self.experiment_paths = {}
         if not self.results_dir:
-            results_dir = self.__get_results_dir()
+            results_dir = self._get_results_dir()
         else:
             results_dir = self.results_dir
 
@@ -170,7 +207,7 @@ class TrainingManager:
                         f"model{i+1}": model for i, model in enumerate(models)
                         }
 
-                experiment_dir = self.__get_experiment_dir(
+                experiment_dir = self._get_experiment_dir(
                     "_".join(method_names), data_path, results_dir
                     )
                 # Save each experiment_dir for reporting, grouped by dataset
