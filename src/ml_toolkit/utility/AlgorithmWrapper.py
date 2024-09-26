@@ -1,15 +1,32 @@
+"""Provides the AlgorithmWrapper class for managing and instantiating machine learning algorithms.
+
+Exports:
+    - AlgorithmWrapper: A class to handle model instantiation and tuning, 
+        allowing for easy access to models and their hyperparameter grids.
+"""
+
 from typing import Any, Dict, Optional, Type
 
 class AlgorithmWrapper:
-    def __init__(self, 
-                 name: str, 
-                 algorithm_class: Type, 
-                 default_params: Optional[Dict[str, Any]] = None, 
-                 hyperparam_grid: Optional[Dict[str, Any]] = None
+    """A wrapper class for machine learning algorithms.
+
+    This class provides methods to easily instantiate models with default parameters 
+    or tuned hyperparameters. It also manages hyperparameter grids for tuning.
+
+    Attributes:
+        name (str): The name of the algorithm.
+        algorithm_class (Type): The class of the algorithm.
+        default_params (dict): The default parameters for the algorithm.
+        hyperparam_grid (dict): The hyperparameter grid for tuning the algorithm.
+    """
+    def __init__(
+        self, 
+        name: str, 
+        algorithm_class: Type, 
+        default_params: Optional[Dict[str, Any]] = None, 
+        hyperparam_grid: Optional[Dict[str, Any]] = None
     ):
-        """
-        Initializes the ModelWrapper with a model class, default parameters, and 
-        a hyperparameter grid.
+        """Initializes the AlgorithmWrapper with a model class.
 
         Args:
             name (str): The name of the model.
@@ -33,8 +50,7 @@ class AlgorithmWrapper:
         return self.algorithm_class(**self.default_params)
 
     def instantiate_tuned(self, best_params: Dict[str, Any]) -> Any:
-        """
-        Instantiates a new model with the tuned parameters and includes default parameters like max_iter if present.
+        """Instantiates a new model with the tuned parameters, includes max_iter if present.
 
         Args:
             best_params (Dict[str, Any]): The tuned hyperparameters.
