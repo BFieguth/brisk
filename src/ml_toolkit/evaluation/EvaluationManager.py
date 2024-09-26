@@ -1,3 +1,11 @@
+"""Provides the EvaluationManager class for model evaluation and visualization.
+
+Exports:
+    - EvaluationManager: A class that provides methods for evaluating models, 
+        generating plots, and comparing models. These methods are used when 
+        building a training workflow.
+"""
+
 import copy
 import datetime
 import inspect
@@ -18,29 +26,47 @@ import sklearn.base as base
 matplotlib.use('Agg')
 
 class EvaluationManager:
-    def __init__(self, method_config, scoring_config):
+    """A class for evaluating machine learning models and generating visualizations.
+
+    This class provides methods for model evaluation, including calculating 
+    metrics, generating plots, comparing models, and hyperparameter tuning. It 
+    is designed to be used within a training workflow.
+
+    Attributes:
+        method_config (dict): Configuration for model methods.
+        scoring_config (object): Configuration for evaluation metrics.
+    """
+    def __init__(self, method_config: Dict[str, Any], scoring_config: Any):
+        """
+        Initializes the EvaluationManager with method and scoring configurations.
+
+        Args:
+            method_config (Dict[str, Any]): Configuration for model methods.
+            scoring_config (Any): Configuration for evaluation metrics.
+        """
         self.method_config = method_config
         self.scoring_config = scoring_config
 
     # Evaluation Tools
     def evaluate_model(
         self, 
-        model, 
-        X, 
-        y, 
+        model: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y: pd.Series, 
         metrics: List[str], 
         filename: str
     ) -> None:
-        """
-        Calculate and save the scores for the given model and metrics.
+        """ Evaluate the given model on the provided metrics and save the results.
 
         Args:
-            model: The trained machine learning model to evaluate.
-            X: The feature data to use for evaluation.
-            y: The target data to use for evaluation.
-            metrics (list): A list of metric names to calculate.
-            output_dir (str): The directory to save the results.
+            model (BaseEstimator): The trained machine learning model to evaluate.
+            X (pd.DataFrame): The feature data to use for evaluation.
+            y (pd.Series): The target data to use for evaluation.
+            metrics (List[str]): A list of metric names to calculate.
             filename (str): The name of the output file without extension.
+
+        Returns:
+            None
         """
         predictions = model.predict(X)
         results = {}
@@ -56,29 +82,30 @@ class EvaluationManager:
         
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self.__get_metadata(model)
-        self.__save_to_json(results, output_path, metadata)
+        metadata = self._get_metadata(model)
+        self._save_to_json(results, output_path, metadata)
 
     def evaluate_model_cv(
         self, 
-        model, 
-        X, 
-        y, 
+        model: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y: pd.Series, 
         metrics: List[str], 
         filename: str, 
         cv: int = 5
     ) -> None:
-        """
-        Evaluate the model using cross-validation and save the scores for the given metrics.
+        """Evaluate the model using cross-validation and save the scores.
 
         Args:
-            model: The machine learning model to evaluate.
-            X: The feature data to use for evaluation.
-            y: The target data to use for evaluation.
-            metrics (list): A list of metric names to calculate.
-            output_dir (str): The directory to save the results.
+            model (BaseEstimator): The machine learning model to evaluate.
+            X (pd.DataFrame): The feature data to use for evaluation.
+            y (pd.Series): The target data to use for evaluation.
+            metrics (List[str]): A list of metric names to calculate.
             filename (str): The name of the output file without extension.
-            cv (int): The number of cross-validation folds. Default is 5.
+            cv (int): The number of cross-validation folds. Defaults to 5.
+
+        Returns:
+            None
         """
         results = {}
 
@@ -102,33 +129,32 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self.__get_metadata(model)
-        self.__save_to_json(results, output_path, metadata)
+        metadata = self._get_metadata(model)
+        self._save_to_json(results, output_path, metadata)
 
     def compare_models(
         self, 
-        *models: base.BaseEstimator,
+        *models: base.BaseEstimator, 
         X: pd.DataFrame, 
         y: pd.Series, 
         metrics: List[str], 
-        filename: str,
+        filename: str, 
         calculate_diff: bool = False
     ) -> Dict[str, Dict[str, float]]:
-        """
-        Compare multiple models on the provided metrics.
+        """Compare multiple models based on the provided metrics.
 
         Args:
             models: A variable number of model instances to evaluate.
             X (pd.DataFrame): The feature data.
             y (pd.Series): The target data.
             metrics (List[str]): A list of metric names to calculate.
-            output_dir (str): The directory to save the results.
             filename (str): The name of the output file without extension.
-            calculate_diff (bool): Whether to compute the difference between models for each metric.
+            calculate_diff (bool): Whether to compute the difference between 
+                models for each metric. Defaults to False.
 
         Returns:
             Dict[str, Dict[str, float]]: A dictionary containing the metric results 
-            for each model.
+                for each model.
         """
         comparison_results = {}
         model_names = [f"model_{i+1}" for i in range(len(models))]
@@ -158,32 +184,34 @@ class EvaluationManager:
             for metric_name in metrics:
                 comparison_results["difference_from_model1"][metric_name] = {}
                 base_score = comparison_results[base_model][metric_name]
-                
+                # TODO refactor this to calculate teh difference between all the model combinations 
                 for other_model in model_names[1:]:
                     diff = comparison_results[other_model][metric_name] - base_score
                     comparison_results["difference_from_model1"][metric_name][other_model] = diff
 
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self.__get_metadata(models=models)
-        self.__save_to_json(comparison_results, output_path, metadata)
+        metadata = self._get_metadata(models=models)
+        self._save_to_json(comparison_results, output_path, metadata)
         
         return comparison_results
 
     def plot_pred_vs_obs(
         self, 
-        model,
-        X,
-        y_true,  
+        model: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y_true: pd.Series, 
         filename: str
-    ):
-        """
-        Plot predicted vs. observed (actual) values and save the plot.
+    ) -> None:
+        """Plot predicted vs. observed values and save the plot.
 
         Args:
-            y_true: The actual target values.
-            y_pred: The predicted values from the model.
-            output_dir: The directory to save the plot.
-            filename: The name of the output PNG file (without extension).
+            model (BaseEstimator): The trained machine learning model.
+            X (pd.DataFrame): The feature data.
+            y_true (pd.Series): The true target values.
+            filename (str): The name of the output PNG file (without extension).
+
+        Returns:
+            None
         """
         prediction = model.predict(X)
 
@@ -198,32 +226,33 @@ class EvaluationManager:
         plt.grid(True)
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self.__get_metadata(model)
-        self.__save_plot(output_path, metadata)      
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)      
 
     def plot_learning_curve(
         self, 
-        model, 
-        X_train, 
-        y_train, 
+        model: base.BaseEstimator, 
+        X_train: pd.DataFrame, 
+        y_train: pd.Series, 
         cv: int = 5, 
         num_repeats: int = 1, 
         scoring: str = 'neg_mean_absolute_error', 
         filename: str = 'learning_curve'
-    ):
+    ) -> None:
         """
-        Generate learning curves for a model and save them as a PNG file.
+        Plot a learning curve for the given model and save the plot.
 
         Args:
-            model: The machine learning model to evaluate.
-            X_train (array-like): The input features of the training set.
-            y_train (array-like): The target values of the training set.
-            method_name (str): The name of the regression method.
-            cv (int): Number of folds in cross-validation (default is 5).
-            num_repeats (int): Number of times to repeat the cross-validation (default is 1).
-            scoring (str): The scoring metric to use (default is 'neg_mean_absolute_error').
-            output_dir (str): The directory to save the plot (default is './results').
-            filename (str): The name of the output PNG file (default is 'learning_curve').
+            model (BaseEstimator): The machine learning model to evaluate.
+            X_train (pd.DataFrame): The input features of the training set.
+            y_train (pd.Series): The target values of the training set.
+            cv (int): Number of cross-validation folds. Defaults to 5.
+            num_repeats (int): Number of times to repeat the cross-validation. Defaults to 1.
+            scoring (str): The scoring metric to use. Defaults to 'neg_mean_absolute_error'.
+            filename (str): The name of the output PNG file (without extension).
+
+        Returns:
+            None
         """
         method_name = model.__class__.__name__
 
@@ -231,13 +260,8 @@ class EvaluationManager:
 
         # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = model_select.learning_curve(
-            model, 
-            X_train, 
-            y_train, 
-            cv=cv, 
-            n_jobs=-1, 
-            train_sizes=np.linspace(0.1, 1.0, 5), 
-            return_times=True, 
+            model, X_train, y_train, cv=cv, n_jobs=-1, 
+            train_sizes=np.linspace(0.1, 1.0, 5), return_times=True, 
             scoring=scoring
         )
 
@@ -258,19 +282,31 @@ class EvaluationManager:
         axes[0].set_xlabel("Training Examples", fontsize=12)
         axes[0].set_ylabel(scoring, fontsize=12) 
         axes[0].grid()
-        axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
-                             train_scores_mean + train_scores_std, alpha=0.1, color="r")
-        axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std,
-                             test_scores_mean + test_scores_std, alpha=0.1, color="g")
-        axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training Score")
-        axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g", label="Cross-Validation Score")
+        axes[0].fill_between(
+            train_sizes, train_scores_mean - train_scores_std, 
+            train_scores_mean + train_scores_std, alpha=0.1, color="r"
+            )
+        axes[0].fill_between(
+            train_sizes, test_scores_mean - test_scores_std, 
+            test_scores_mean + test_scores_std, alpha=0.1, color="g"
+            )
+        axes[0].plot(
+            train_sizes, train_scores_mean, 'o-', color="r", 
+            label="Training Score"
+            )
+        axes[0].plot(
+            train_sizes, test_scores_mean, 'o-', color="g", 
+            label="Cross-Validation Score"
+            )
         axes[0].legend(loc="best")
 
         # Plot n_samples vs fit_times
         axes[1].grid()
         axes[1].plot(train_sizes, fit_times_mean, 'o-')
-        axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
-                             fit_times_mean + fit_times_std, alpha=0.1)
+        axes[1].fill_between(
+            train_sizes, fit_times_mean - fit_times_std, 
+            fit_times_mean + fit_times_std, alpha=0.1
+            )
         axes[1].set_xlabel("Training Examples", fontsize=12)
         axes[1].set_ylabel("Fit Times", fontsize=12)
         axes[1].set_title("Scalability of the Model", fontsize=16)
@@ -278,8 +314,10 @@ class EvaluationManager:
         # Plot fit_time vs score
         axes[2].grid()
         axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
-        axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
-                             test_scores_mean + test_scores_std, alpha=0.1)
+        axes[2].fill_between(
+            fit_times_mean, test_scores_mean - test_scores_std, 
+            test_scores_mean + test_scores_std, alpha=0.1
+            )
         axes[2].set_xlabel("Fit Times", fontsize=12)
         axes[2].set_ylabel(scoring, fontsize=12)
         axes[2].set_title("Performance of the Model", fontsize=16)
@@ -287,29 +325,51 @@ class EvaluationManager:
         plt.tight_layout()
 
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self.__get_metadata(model)
-        self.__save_plot(output_path, metadata)
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
 
     def plot_feature_importance(
         self, 
-        model, 
-        X, 
-        y, 
-        filter, 
-        feature_names, 
-        filename, 
-        scoring, 
-        num_rep
+        model: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y: pd.Series, 
+        filter: Union[int, float], 
+        feature_names: List[str], 
+        filename: str, 
+        scoring: str, 
+        num_rep: int
     ) -> None:
+        """Plot the feature importance for the model and save the plot.
+
+        Args:
+            model (BaseEstimator): The machine learning model to evaluate.
+            X (pd.DataFrame): The feature data.
+            y (pd.Series): The target data.
+            filter (Union[int, float]): The number of features or the threshold 
+                to filter features by importance.
+            feature_names (List[str]): A list of feature names corresponding to 
+                the columns in X.
+            filename (str): The name of the output PNG file (without extension).
+            scoring (str): The scoring metric to use for evaluation.
+            num_rep (int): The number of repetitions for calculating importance.
+
+        Returns:
+            None
+        """
         metric = self.scoring_config.get_scorer(scoring)
 
-
-        if isinstance(model, (tree.DecisionTreeRegressor, ensemble.RandomForestRegressor, ensemble.GradientBoostingRegressor)):
+        if isinstance(
+            model, (
+                tree.DecisionTreeRegressor, ensemble.RandomForestRegressor, 
+                ensemble.GradientBoostingRegressor)
+                ):
             model.fit(X,y)
             importance = model.feature_importances_
         else:
             model.fit(X, y)
-            results = inspection.permutation_importance(model, X=X, y=y, scoring=metric, n_repeats=num_rep)
+            results = inspection.permutation_importance(
+                model, X=X, y=y, scoring=metric, n_repeats=num_rep
+                )
             importance = results.importances_mean
 
         if isinstance(filter, int):
@@ -319,7 +379,10 @@ class EvaluationManager:
         elif isinstance(filter, float):
             above_threshold = importance >= filter
             importance = importance[above_threshold]
-            feature_names = [feature_names[i] for i in range(len(feature_names)) if above_threshold[i]]
+            feature_names = [
+                feature_names[i] for i in range(len(feature_names)) 
+                if above_threshold[i]
+                ]
 
         plt.barh(feature_names, importance)
         plt.xticks(rotation=90)
@@ -328,10 +391,27 @@ class EvaluationManager:
         plt.title('Feature Importance', fontsize=16)
         plt.tight_layout()
         output_path = os.path.join(self.output_dir, f'{filename}.png')
-        metadata = self.__get_metadata(model)
-        self.__save_plot(output_path, metadata)
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
 
-    def plot_residuals(self, model, X, y, filename):
+    def plot_residuals(
+        self, 
+        model: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y: pd.Series, 
+        filename: str
+    ) -> None:
+        """Plot the residuals of the model and save the plot.
+
+        Args:
+            model (BaseEstimator): The trained machine learning model.
+            X (pd.DataFrame): The feature data.
+            y (pd.Series): The true target values.
+            filename (str): The name of the output PNG file (without extension).
+
+        Returns:
+            None
+        """
         predictions = model.predict(X)
         residuals = y - predictions
 
@@ -343,20 +423,28 @@ class EvaluationManager:
         plt.title('Residual Plot', fontsize=16)
         plt.legend()
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self.__get_metadata(model)
-        self.__save_plot(output_path, metadata)
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
 
-    def plot_model_comparison(self, *models, X, y, metric, filename) -> None:
-        """
-        Plot a comparison of multiple models based on the specified metric.
+    def plot_model_comparison(
+        self, 
+        *models: base.BaseEstimator, 
+        X: pd.DataFrame, 
+        y: pd.Series, 
+        metric: str, 
+        filename: str
+    ) -> None:
+        """Plot a comparison of multiple models based on the specified metric.
 
         Args:
             models: A variable number of model instances to evaluate.
             X (pd.DataFrame): The feature data.
             y (pd.Series): The target data.
-            metric (str): The metric to evaluate on and plot.
-            output_dir (str): The directory to save the plot.
-            filename (str): The name of the output PNG file.
+            metric (str): The metric to evaluate and plot.
+            filename (str): The name of the output PNG file (without extension).
+
+        Returns:
+            None
         """
         model_names = [model.__class__.__name__ for model in models]
         metric_values = []
@@ -379,23 +467,56 @@ class EvaluationManager:
             plt.text(
                 bar.get_x() + bar.get_width()/2, bar.get_height(), 
                 f'{value:.3f}', ha='center', va='bottom'
-                    )
+                )
         plt.xlabel("Models", fontsize=12)
         plt.ylabel(metric, fontsize=12)
         plt.title(f"Model Comparison on {metric}", fontsize=16)
         
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self.__get_metadata(models)
-        self.__save_plot(output_path, metadata)
+        metadata = self._get_metadata(models)
+        self._save_plot(output_path, metadata)
         plt.close()
 
-    def hyperparameter_tuning(self, model, method, method_name, X_train, y_train, scorer, kf, num_rep, n_jobs, plot_results: bool = False) -> base.BaseEstimator:
+    def hyperparameter_tuning(
+        self, 
+        model: base.BaseEstimator, 
+        method: str, 
+        method_name: str, 
+        X_train: pd.DataFrame, 
+        y_train: pd.Series, 
+        scorer: str, 
+        kf: int, 
+        num_rep: int, 
+        n_jobs: int, 
+        plot_results: bool = False
+    ) -> base.BaseEstimator:
+        """Perform hyperparameter tuning using grid or random search.
+
+        Args:
+            model (BaseEstimator): The model to be tuned.
+            method (str): The search method to use ('grid' or 'random').
+            method_name (str): The name of the method for which the hyperparameter 
+                grid is being used.
+            X_train (pd.DataFrame): The training data.
+            y_train (pd.Series): The target values for training.
+            scorer (str): The scoring metric to use.
+            kf (int): Number of splits for cross-validation.
+            num_rep (int): Number of repetitions for cross-validation.
+            n_jobs (int): Number of parallel jobs to run.
+            plot_results (bool): Whether to plot the performance of 
+                hyperparameters. Defaults to False.
+
+        Returns:
+            BaseEstimator: The tuned model.
+        """
         if method == "grid":
             searcher = model_select.GridSearchCV
         elif method == "random":
             searcher = model_select.RandomizedSearchCV
         else:
-            raise ValueError(f"method must be one of (grid, random). {method} was entered.")
+            raise ValueError(
+                f"method must be one of (grid, random). {method} was entered."
+                )
         
         metric = self.scoring_config.get_scorer(scorer)
         param_grid = self.method_config[method_name].get_hyperparam_grid()
@@ -412,29 +533,40 @@ class EvaluationManager:
         tuned_model.fit(X_train, y_train)
 
         if plot_results:
-            metadata = self.__get_metadata(model)
-            self.__plot_hyperparameter_performance(
+            metadata = self._get_metadata(model)
+            self._plot_hyperparameter_performance(
                 param_grid, search_result, method_name, metadata
             )
         return tuned_model
 
-    def __plot_hyperparameter_performance(self, param_grid, search_result, method_name, metadata) -> None:
-        """
-        Plot the performance of hyperparameter tuning.
+    def _plot_hyperparameter_performance(
+        self, 
+        param_grid: Dict[str, Any], 
+        search_result: Any, 
+        method_name: str, 
+        metadata: Dict[str, Any]
+    ) -> None:
+        """Plot the performance of hyperparameter tuning.
 
         Args:
             param_grid (Dict[str, Any]): The hyperparameter grid used for tuning.
-            search_results (Dict[str, Any]): The results from cross-validation during tuning.
+            search_result (Any): The results from cross-validation during tuning.
             method_name (str): The name of the model method.
-        """
+            metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+        Returns:
+            None
+        """ 
         param_keys = list(param_grid.keys())
-        print(f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams")
+        print(
+            f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams"
+            )
 
         if len(param_keys) == 0:
             return
 
         elif len(param_keys) == 1:
-            self.__plot_1d_performance(
+            self._plot_1d_performance(
                 param_values=param_grid[param_keys[0]], 
                 mean_test_score=search_result.cv_results_['mean_test_score'], 
                 param_name=param_keys[0], 
@@ -442,7 +574,7 @@ class EvaluationManager:
                 metadata=metadata
             )
         elif len(param_keys) == 2:
-            self.__plot_3d_surface(
+            self._plot_3d_surface(
                 param_grid=param_grid, 
                 search_result=search_result, 
                 param_names=param_keys, 
@@ -452,34 +584,78 @@ class EvaluationManager:
         else:
             print("Higher dimensional visualization not implemented yet")
 
-    def __plot_1d_performance(self, param_values, mean_test_score, param_name, method_name, metadata):
-        """
-        Plot the performance of a single hyperparameter.
+    def _plot_1d_performance(
+        self, 
+        param_values: List[Any], 
+        mean_test_score: List[float], 
+        param_name: str, 
+        method_name: str, 
+        metadata: Dict[str, Any]
+    ) -> None:
+        """Plot the performance of a single hyperparameter.
+
+        Args:
+            param_values (List[Any]): The values of the hyperparameter.
+            mean_test_score (List[float]): The mean test scores for each 
+                hyperparameter value.
+            param_name (str): The name of the hyperparameter.
+            method_name (str): The name of the model method.
+            metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+        Returns:
+            None
         """
         plt.figure(figsize=(10, 6))
-        plt.plot(param_values, mean_test_score, marker='o', linestyle='-', color='b')
+        plt.plot(
+            param_values, mean_test_score, marker='o', linestyle='-', color='b'
+            )
         plt.xlabel(param_name, fontsize=12)
         plt.ylabel("Mean Test Score", fontsize=12)
-        plt.title(f"Hyperparameter Performance: {method_name} ({param_name})", fontsize=16)
+        plt.title(
+            f"Hyperparameter Performance: {method_name} ({param_name})", 
+            fontsize=16
+            )
         
         for i, score in enumerate(mean_test_score):
-            plt.text(param_values[i], score, f'{score:.2f}', ha='center', va='bottom')
+            plt.text(
+                param_values[i], score, f'{score:.2f}', ha='center', va='bottom'
+                )
         
         plt.grid(True)
         plt.tight_layout()
-        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_{param_name}.png")
-        self.__save_plot(output_path, metadata)
+        output_path = os.path.join(
+            self.output_dir, f"{method_name}_hyperparam_{param_name}.png"
+            )
+        self._save_plot(output_path, metadata)
 
-    def __plot_3d_surface(self, param_grid, search_result, param_names, method_name, metadata):
-        """
-        Plot the performance of two hyperparameters in 3D.
+    def _plot_3d_surface(
+        self, 
+        param_grid: Dict[str, List[Any]], 
+        search_result: Any, 
+        param_names: List[str], 
+        method_name: str, 
+        metadata: Dict[str, Any]
+    ) -> None:
+        """Plot the performance of two hyperparameters in 3D.
+
+        Args:
+            param_grid (Dict[str, List[Any]]): The hyperparameter grid used for tuning.
+            search_result (Any): The results from cross-validation during tuning.
+            param_names (List[str]): The names of the two hyperparameters.
+            method_name (str): The name of the model method.
+            metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+        Returns:
+            None
         """
         mean_test_score = search_result.cv_results_['mean_test_score'].reshape(
             len(param_grid[param_names[0]]), 
             len(param_grid[param_names[1]])
         )
         # Create meshgrid for parameters
-        X, Y = np.meshgrid(param_grid[param_names[0]], param_grid[param_names[1]])
+        X, Y = np.meshgrid(
+            param_grid[param_names[0]], param_grid[param_names[1]]
+            )
 
         fig = plt.figure(figsize=(10, 6))
         ax = fig.add_subplot(111, projection='3d')
@@ -488,18 +664,28 @@ class EvaluationManager:
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel('Mean Test Score', fontsize=12)
         ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
-        output_path = os.path.join(self.output_dir, f"{method_name}_hyperparam_3Dplot.png")
-        self.__save_plot(output_path, metadata)       
+        output_path = os.path.join(
+            self.output_dir, f"{method_name}_hyperparam_3Dplot.png"
+            )
+        self._save_plot(output_path, metadata)       
 
     # Utility Methods
-    def __save_to_json(self, data: Dict, output_path: str, metadata: Dict[str, Any] = None) -> None:
-        """
-        Save a dictionary to a JSON file, including metadata.
+    def _save_to_json(
+        self, 
+        data: Dict[str, Any], 
+        output_path: str, 
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Save a dictionary to a JSON file, including metadata.
 
         Args:
-            data (dict): The data to save.
+            data (Dict[str, Any]): The data to save.
             output_path (str): The path to the output file.
-            metadata (Dict[str, Any], optional): Metadata to be included with the data.
+            metadata (Optional[Dict[str, Any]]): Metadata to be included with 
+                the data. Defaults to None.
+
+        Returns:
+            None
         """
         try:
             if metadata:
@@ -511,13 +697,21 @@ class EvaluationManager:
         except IOError as e:
             print(f"Failed to save JSON to {output_path}: {e}")
 
-    def __save_plot(self, output_path: str, metadata: Dict[str, Any] = None) -> None:
-        """
-        Save the current matplotlib plot to a PNG file, including metadata.
+    def _save_plot(
+        self, 
+        output_path: str, 
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Save the current matplotlib plot to a PNG file, including metadata.
 
         Args:
-            output_path (str): The full path (including filename) where the plot will be saved.
-            metadata (Dict[str, Any], optional): Metadata to be included with the plot.
+            output_path (str): The full path (including filename) where the plot 
+                will be saved.
+            metadata (Optional[Dict[str, Any]]): Metadata to be included with 
+                the plot. Defaults to None.
+
+        Returns:
+            None
         """
         try:
             plt.savefig(output_path, format="png", metadata=metadata)
@@ -526,37 +720,55 @@ class EvaluationManager:
         except IOError as e:
             print(f"Failed to save plot to {output_path}: {e}")
 
-    def with_config(self, **kwargs):
-        """
-        Create a copy of the current evaluator and update with additional configuration.
+    def with_config(self, **kwargs: Any) -> 'EvaluationManager':
+        """Create a copy of the current evaluator with additional configuration.
 
         Args:
             kwargs: Key-value pairs of attributes to add/modify in the copy.
-        
+
         Returns:
-            ModelEvaluator: A copy of the current evaluator with updated attributes.
+            EvaluationManager: A copy of the current evaluator with updated attributes.
         """
         eval_copy = copy.copy(self)
         for key, value in kwargs.items():
             setattr(eval_copy, key, value)
         return eval_copy
 
-    def save_model(self, model, filename):
+    def save_model(self, model: base.BaseEstimator, filename: str) -> None:
+        """Save the model to a file in pickle format.
+
+        Args:
+            model (BaseEstimator): The model to save.
+            filename (str): The name of the output file (without extension).
+
+        Returns:
+            None
+        """
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
         joblib.dump(model, output_path)
 
-    def load_model(self, filepath):
+    def load_model(self, filepath: str) -> base.BaseEstimator:
+        """Load a model from a pickle file.
+
+        Args:
+            filepath (str): The path to the file containing the saved model.
+
+        Returns:
+            BaseEstimator: The loaded model.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+        """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
         return joblib.load(filepath)
 
-    def __get_metadata(
+    def _get_metadata(
         self, 
         models: Union[base.BaseEstimator, List[base.BaseEstimator]], 
         method_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Generate metadata for saving output files (JSON, PNG, etc.).
+        """Generate metadata for saving output files (JSON, PNG, etc.).
 
         Args:
             models (Union[base.BaseEstimator, List[base.BaseEstimator]]): 
@@ -565,7 +777,7 @@ class EvaluationManager:
 
         Returns:
             Dict[str, Any]: A dictionary containing metadata such as method name, 
-            timestamp, and model names.
+                timestamp, and model names.
         """
         metadata = {
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -577,6 +789,9 @@ class EvaluationManager:
         else:
             metadata["models"] = [models.__class__.__name__]
 
-        metadata = {k: str(v) if not isinstance(v, str) else v for k, v in metadata.items()}
+        metadata = {
+            k: str(v) if not isinstance(v, str) 
+            else v for k, v in metadata.items()
+            }
         return metadata 
     

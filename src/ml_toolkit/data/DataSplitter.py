@@ -1,14 +1,36 @@
+"""Provides the DataSplitter class for creating train-test splits.
+
+This module contains the `DataSplitter` class, which handles creating train-test 
+splits for machine learning models. It supports several splitting strategies 
+such as shuffle, k-fold, and stratified splits, with optional grouping.
+
+Exports:
+    - DataSplitter: A class for configuring and generating train-test splits or 
+        cross-validation folds.
+"""
+
 import os
 import sqlite3
 from typing import Optional, Tuple
 
 import pandas as pd
-from sklearn.model_selection import (KFold, GroupKFold, StratifiedKFold, 
-                                     ShuffleSplit, GroupShuffleSplit, 
-                                     StratifiedShuffleSplit, StratifiedGroupKFold)
+import sklearn.model_selection as model_selection
 
 class DataSplitter:
-    """Handles the data splitting logic for train/test splits."""
+    """Handles the data splitting logic for creating train-test splits.
+
+    This class allows users to configure different splitting strategies 
+    (e.g., shuffle, k-fold, stratified) and return train-test splits or 
+    cross-validation folds. Supports splitting based on groupings.
+
+    Attributes:
+        test_size (float): The proportion of the dataset to allocate to the test set.
+        n_splits (int): The number of splits for cross-validation (if applicable).
+        split_method (str): The method used for splitting ("shuffle" or "kfold").
+        group_column (Optional[str]): The column used for grouping (if any).
+        stratified (bool): Whether to use stratified sampling or cross-validation.
+        random_state (Optional[int]): The random seed for reproducibility.
+    """
     def __init__(
         self, 
         test_size: float = 0.2, 
@@ -18,8 +40,7 @@ class DataSplitter:
         stratified: bool = False,
         random_state: Optional[int] = None
     ):
-        """
-        Initializes the DataSplitter with custom splitting strategies.
+        """Initializes the DataSplitter with custom splitting strategies.
 
         Args:
             test_size (float): The proportion of the dataset to allocate to the test set. Defaults to 0.2.
@@ -36,11 +57,16 @@ class DataSplitter:
         self.n_splits = n_splits
         self.random_state = random_state
 
-        self.__validate_config()
-        self.splitter = self.__set_splitter()
+        self._validate_config()
+        self.splitter = self._set_splitter()
 
-    def __validate_config(self):
-        """Validates the provided configuration is compatible."""
+    def _validate_config(self) -> None:
+        """Validates the provided configuration for splitting.
+
+        Raises:
+            ValueError: If an invalid split method or incompatible combination of
+                        group column and stratification is provided.
+        """
         valid_split_methods = ["shuffle", "kfold"]
         if self.split_method not in valid_split_methods:
             raise ValueError(
@@ -57,23 +83,32 @@ class DataSplitter:
                 "Use split_method='kfold' for grouped and stratified splits."
                 )
 
-    def __set_splitter(self):
-        """Selects and returns the appropriate splitter based on the configuration."""
+    def _set_splitter(self):
+        """Selects and returns the appropriate splitter based on the configuration.
+
+        Returns:
+            sklearn.model_selection._BaseKFold or sklearn.model_selection._Splitter: 
+                The initialized splitter object based on the configuration.
+
+        Raises:
+            ValueError: If an invalid combination of stratified and group_column 
+                        settings is provided.
+        """
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
-                return GroupShuffleSplit(
+                return model_selection.GroupShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
             
             elif self.stratified and not self.group_column:
-                return StratifiedShuffleSplit(
+                return model_selection.StratifiedShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
             
             elif not self.stratified and not self.group_column:
-                return ShuffleSplit(
+                return model_selection.ShuffleSplit(
                     n_splits=1, test_size=self.test_size, 
                     random_state=self.random_state
                     )
@@ -86,23 +121,26 @@ class DataSplitter:
             
         elif self.split_method == "kfold":
             if self.group_column and not self.stratified:
-                return GroupKFold(n_splits=self.n_splits)
+                return model_selection.GroupKFold(n_splits=self.n_splits)
             
             elif self.stratified and not self.group_column:
-                return StratifiedKFold(
+                return model_selection.StratifiedKFold(
                     n_splits=self.n_splits, 
                     shuffle=True if self.random_state else False, 
                     random_state=self.random_state
                     )
             
             elif not self.stratified and not self.group_column:
-                return KFold(
+                return model_selection.KFold(
                     n_splits=self.n_splits, 
                     shuffle=True if self.random_state else False,
-                    random_state=self.random_state)
+                    random_state=self.random_state
+                    )
             
             elif self.group_column and self.stratified:
-                return StratifiedGroupKFold(n_splits=self.n_splits)
+                return model_selection.StratifiedGroupKFold(
+                    n_splits=self.n_splits
+                    )
             
             else:
                 raise ValueError(
@@ -110,20 +148,24 @@ class DataSplitter:
                     "for kfold method."
                     )
 
-    def __load_data(
+    def _load_data(
         self, 
         data_path: str, 
         table_name: Optional[str] = None
     ) -> pd.DataFrame:
-        """
-        Loads data from a CSV, Excel file, or SQL database.
+        """Loads data from a CSV, Excel file, or SQL database.
 
         Args:
             data_path (str): Path to the dataset.
-            table_name (Optional[str]): Name of the table in the SQL database (if applicable). Defaults to None.
+            table_name (Optional[str]): Name of the table in the SQL database 
+                (if applicable). Defaults to None.
 
         Returns:
-            pd.DataFrame: Loaded dataset.
+            pd.DataFrame: The loaded dataset.
+
+        Raises:
+            ValueError: If the file format is unsupported or if table_name is 
+                missing for an SQL database.
         """
         file_extension = os.path.splitext(data_path)[1].lower()
 
@@ -161,13 +203,18 @@ class DataSplitter:
 
         Args:
             data_path (str): Path to the dataset.
-            table_name (Optional[str]): Name of the table in the SQL database (if applicable). Defaults to None.
+            table_name (Optional[str]): Name of the table in the SQL database 
+                (if applicable). Defaults to None.
 
         Returns:
             Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: 
-                X_train, X_test, y_train, y_test: Train/test splits of the data or cross-validation splits.
+                A tuple containing:
+                - X_train (pd.DataFrame): The training features.
+                - X_test (pd.DataFrame): The testing features.
+                - y_train (pd.Series): The training target variable.
+                - y_test (pd.Series): The testing target variable.
         """
-        df = self.__load_data(data_path, table_name)
+        df = self._load_data(data_path, table_name)
         X = df.iloc[:, :-1]
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
@@ -177,7 +224,9 @@ class DataSplitter:
 
         if isinstance(
             self.splitter, 
-            (ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplit)
+            (model_selection.ShuffleSplit, 
+             model_selection.StratifiedShuffleSplit, 
+             model_selection.GroupShuffleSplit)
             ):
             train_idx, test_idx = next(self.splitter.split(X, y, groups))
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]

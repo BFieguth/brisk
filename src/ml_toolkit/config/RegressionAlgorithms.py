@@ -1,3 +1,13 @@
+"""Default configuration for regression algorithms.
+
+This module provides configuration settings for different regression algorithms. 
+Each algorithm is wrapped in a `AlgorithmWrapper` which includes the algorithms's 
+name, its class, default parameters, and hyperparameter space for optimization.
+
+"""
+
+from typing import Dict
+
 import numpy as np
 import sklearn
 import sklearn.ensemble
@@ -9,28 +19,28 @@ import sklearn.neighbors as neighbors
 import sklearn.neural_network as neural
 import sklearn.kernel_ridge as kernel_ridge
 
-from ml_toolkit.utility.ModelWrapper import ModelWrapper
+from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
 
-REGRESSION_MODELS = {
-    "linear": ModelWrapper(
+REGRESSION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
+    "linear": AlgorithmWrapper(
         name="Linear Regression",
-        model_class=linear.LinearRegression
+        algorithm_class=linear.LinearRegression
     ),
-    "ridge": ModelWrapper(
+    "ridge": AlgorithmWrapper(
         name="Ridge Regression",
-        model_class=linear.Ridge,
+        algorithm_class=linear.Ridge,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    "lasso": ModelWrapper(
+    "lasso": AlgorithmWrapper(
         name="LASSO Regression",
-        model_class=linear.Lasso,
+        algorithm_class=linear.Lasso,
         default_params={"alpha": 0.1, "max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    "bridge": ModelWrapper(
+    "bridge": AlgorithmWrapper(
         name="Bayesian Ridge Regression",
-        model_class=linear.BayesianRidge,
+        algorithm_class=linear.BayesianRidge,
         default_params={"max_iter": 10000},
         hyperparam_grid={
             'alpha_1': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],    #TODO Change these?
@@ -39,18 +49,18 @@ REGRESSION_MODELS = {
             'lambda_2': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  
         }
     ),
-    "elasticnet": ModelWrapper(
+    "elasticnet": AlgorithmWrapper(
         name="Elastic Net Regression",
-        model_class=linear.ElasticNet,
+        algorithm_class=linear.ElasticNet,
         default_params={"alpha": 0.1, "max_iter": 10000},
         hyperparam_grid={
             "alpha": np.logspace(-3, 0, 100),
             "l1_ratio": list(np.arange(0.1, 1, 0.1))
         }
     ),
-    "dtr": ModelWrapper(
+    "dtr": AlgorithmWrapper(
         name="Decision Tree Regression",
-        model_class=tree.DecisionTreeRegressor,
+        algorithm_class=tree.DecisionTreeRegressor,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             'criterion': ['friedman_mse', 'absolute_error', 
@@ -58,9 +68,9 @@ REGRESSION_MODELS = {
             'max_depth': list(range(5, 25, 5)) + [None]
         }
     ),
-    "rf": ModelWrapper(
+    "rf": AlgorithmWrapper(
         name="Random Forest",
-        model_class=ensemble.RandomForestRegressor,
+        algorithm_class=ensemble.RandomForestRegressor,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             'n_estimators': list(range(20, 160, 20)),   # TODO add min_samples_split?
@@ -69,9 +79,9 @@ REGRESSION_MODELS = {
             'max_depth': list(range(5, 25, 5)) + [None]
         }
     ),
-    "gbr": ModelWrapper(
+    "gbr": AlgorithmWrapper(
         name="Gradient Boosting Regression",
-        model_class=ensemble.GradientBoostingRegressor,
+        algorithm_class=ensemble.GradientBoostingRegressor,
         hyperparam_grid={
             'loss': ['squared_error', 'absolute_error', 'huber'],
             'learning_rate': list(np.arange(0.01, 1, 0.1)),
@@ -79,18 +89,18 @@ REGRESSION_MODELS = {
             # 'alpha': list(np.arange(0.1, 1, 0.1)) # Range [0, 1], only use if 'huber' is selected
         } 
     ),
-    "adaboost": ModelWrapper(
+    "adaboost": AlgorithmWrapper(
         name="AdaBoost Regression",
-        model_class=ensemble.AdaBoostRegressor,
+        algorithm_class=ensemble.AdaBoostRegressor,
         hyperparam_grid={
             'n_estimators': list(range(50, 200, 10)),  
             'learning_rate': list(np.arange(0.01, 3, 0.1)), 
             'loss': ['linear', 'square', 'exponential'] 
         } 
     ),
-    "svr": ModelWrapper(
+    "svr": AlgorithmWrapper(
         name="Support Vector Regression",
-        model_class=svm.SVR,
+        algorithm_class=svm.SVR,
         default_params={"max_iter": 10000},
         hyperparam_grid={
             'kernel': ['linear', 'rbf', 'sigmoid'],
@@ -98,9 +108,9 @@ REGRESSION_MODELS = {
             'gamma': ['scale', 'auto', 0.001, 0.01, 0.1]
         }
     ),
-    "mlp": ModelWrapper(
+    "mlp": AlgorithmWrapper(
         name="Multi-Layer Perceptron Regression",
-        model_class=neural.MLPRegressor,
+        algorithm_class=neural.MLPRegressor,
         default_params={"max_iter": 20000},
         hyperparam_grid={
             'hidden_layer_sizes': [
@@ -111,9 +121,9 @@ REGRESSION_MODELS = {
             'learning_rate': ['constant', 'invscaling', 'adaptive']   
         }
     ),
-    "knn": ModelWrapper(
+    "knn": AlgorithmWrapper(
         name="K-Nearest Neighbour Regression",
-        model_class=neighbors.KNeighborsRegressor,
+        algorithm_class=neighbors.KNeighborsRegressor,
         hyperparam_grid={
             'n_neighbors': list(range(1,5,2)),
             'weights': ['uniform', 'distance'],
@@ -121,17 +131,17 @@ REGRESSION_MODELS = {
             'leaf_size': list(range(5, 50, 5))
         } 
     ),
-    "lars": ModelWrapper(
+    "lars": AlgorithmWrapper(
         name="Least Angle Regression",
-        model_class=linear.Lars
+        algorithm_class=linear.Lars
     ),
-    "omp": ModelWrapper(
+    "omp": AlgorithmWrapper(
         name="Orthogonal Matching Pursuit",
-        model_class=linear.OrthogonalMatchingPursuit
+        algorithm_class=linear.OrthogonalMatchingPursuit
     ),
-    "ard": ModelWrapper(
+    "ard": AlgorithmWrapper(
         name="Bayesian ARD Regression",
-        model_class=linear.ARDRegression,
+        algorithm_class=linear.ARDRegression,
         default_params={"max_iter": 10000},
         hyperparam_grid={
             'alpha_1': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],    # TODO same as bayesian regression
@@ -140,24 +150,24 @@ REGRESSION_MODELS = {
             'lambda_2': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         }
     ),
-    "passagg": ModelWrapper(
+    "passagg": AlgorithmWrapper(
         name="Passive Aggressive Regressor",
-        model_class=linear.PassiveAggressiveRegressor,
+        algorithm_class=linear.PassiveAggressiveRegressor,
         default_params={"max_iter": 10000},
         hyperparam_grid={
             'C': list(np.arange(1, 100, 1)) # TODO fine tune this?
         }
     ),
-    "kridge": ModelWrapper(
+    "kridge": AlgorithmWrapper(
         name="Kernel Ridge",
-        model_class=kernel_ridge.KernelRidge,
+        algorithm_class=kernel_ridge.KernelRidge,
         hyperparam_grid={
             'alpha': np.logspace(-3, 0, 100)
         }
     ),
-    "nusvr": ModelWrapper(
+    "nusvr": AlgorithmWrapper(
         name="Nu Support Vector Regression",
-        model_class=svm.NuSVR,
+        algorithm_class=svm.NuSVR,
         default_params={"max_iter": 20000},
         hyperparam_grid={
             'kernel': ['linear', 'rbf', 'sigmoid'],
@@ -165,9 +175,9 @@ REGRESSION_MODELS = {
             'gamma': ['scale', 'auto', 0.001, 0.01, 0.1]
         }
     ),
-    "rnn": ModelWrapper(
+    "rnn": AlgorithmWrapper(
         name="Radius Nearest Neighbour",
-        model_class=neighbors.RadiusNeighborsRegressor,
+        algorithm_class=neighbors.RadiusNeighborsRegressor,
         hyperparam_grid={
             'radius': [i * 0.5 for i in range(1, 7)],
             'weights': ['uniform', 'distance'],
@@ -175,9 +185,9 @@ REGRESSION_MODELS = {
             'leaf_size': list(range(10, 60, 10))
         }
     ),
-    "xtree": ModelWrapper(
+    "xtree": AlgorithmWrapper(
         name="Extra Tree Regressor",
-        model_class=ensemble.ExtraTreesRegressor,
+        algorithm_class=ensemble.ExtraTreesRegressor,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             'n_estimators': list(range(20, 160, 20)),
