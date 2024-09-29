@@ -13,7 +13,7 @@ from typing import List, Dict, Any
 
 import pandas as pd
 
-from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
+from brisk.evaluation.EvaluationManager import EvaluationManager
 
 class Workflow:
     """Base class for machine learning workflows.

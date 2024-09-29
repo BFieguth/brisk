@@ -14,10 +14,10 @@ from typing import List, Dict, Tuple, Callable, Optional
 
 import pandas as pd
 
-from ml_toolkit.data.DataSplitter import DataSplitter
-from ml_toolkit.training.Workflow import Workflow
-from ml_toolkit.evaluation.EvaluationManager import EvaluationManager
-from ml_toolkit.reporting.ReportManager import ReportManager
+from brisk.data.DataSplitter import DataSplitter
+from brisk.training.Workflow import Workflow
+from brisk.evaluation.EvaluationManager import EvaluationManager
+from brisk.reporting.ReportManager import ReportManager
 
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.

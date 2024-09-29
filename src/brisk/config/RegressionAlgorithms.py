@@ -19,7 +19,7 @@ import sklearn.neighbors as neighbors
 import sklearn.neural_network as neural
 import sklearn.kernel_ridge as kernel_ridge
 
-from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 REGRESSION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
     "linear": AlgorithmWrapper(

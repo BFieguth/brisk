@@ -1,9 +1,9 @@
 """A workflow for training regression models."""
 import os
 
-import ml_toolkit
+import brisk
 
-class RegressionTest(ml_toolkit.Workflow):
+class RegressionTest(brisk.Workflow):
     def workflow(self):
         self.model1.fit(self.X_train, self.y_train)
         self.model2.fit(self.X_train, self.y_train)
@@ -55,10 +55,10 @@ class RegressionTest(ml_toolkit.Workflow):
         )
 
 
-notification = ml_toolkit.AlertMailer("./workflows/config.ini")
+notification = brisk.AlertMailer("./workflows/config.ini")
 
 # Parse Arguments
-parser = ml_toolkit.ArgManager("Regression Models")
+parser = brisk.ArgManager("Regression Models")
 parser.add_argument(
     "--methods", "-m", nargs="+", dest="methods", action="store", 
     help="Methods to train" 
@@ -77,16 +77,16 @@ data_paths = [(datasets[0], None), ("./data_OLD.csv", None)] # Convert to list o
 scoring = args.scoring
 
 # Setup Data Splitting
-data_splitter = ml_toolkit.DataSplitter(
+data_splitter = brisk.DataSplitter(
     test_size=0.2,
     split_method="shuffle",
     group_column="Group"
 )
 
 # Setup experiments using TrainingManager
-manager = ml_toolkit.TrainingManager(
-    method_config=ml_toolkit.REGRESSION_ALGORITHMS,
-    scoring_config=ml_toolkit.MetricManager(include_regression=True),
+manager = brisk.TrainingManager(
+    method_config=brisk.REGRESSION_ALGORITHMS,
+    scoring_config=brisk.MetricManager(include_regression=True),
     workflow=RegressionTest,
     splitter=data_splitter,
     methods=methods,

@@ -5,8 +5,8 @@ from datetime import datetime
 
 import pytest
 
-from ml_toolkit.training.TrainingManager import TrainingManager
-from ml_toolkit.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.training.TrainingManager import TrainingManager
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 @pytest.fixture
 def setup_training_manager():
@@ -51,7 +51,7 @@ class TestTrainingManager:
         tm = setup_training_manager
 
         mock_now = datetime(2023, 9, 6, 15, 30, 0)
-        with mock.patch("ml_toolkit.training.TrainingManager.datetime") as mock_datetime:
+        with mock.patch("brisk.training.TrainingManager.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_now
             mock_datetime.strftime = datetime.strftime
 
@@ -62,7 +62,7 @@ class TestTrainingManager:
             print(f"Expected directory to be created: {expected_dir}")
             mock_makedirs.assert_called_with(expected_dir)
 
-    @mock.patch("ml_toolkit.training.TrainingManager.os.makedirs")
+    @mock.patch("brisk.training.TrainingManager.os.makedirs")
     def test_user_defined_results_dir(self, mock_makedirs, setup_training_manager):
         """
         Test that the user-defined results directory is used when provided.
@@ -113,7 +113,7 @@ class TestTrainingManager:
         mock_makedirs.assert_any_call(expected_dir)
 
     @mock.patch("os.makedirs")
-    @mock.patch("ml_toolkit.Workflow.workflow")
+    @mock.patch("brisk.Workflow.workflow")
     def test_run_experiments_calls_workflow_function(self, mock_makedirs, mock_workflow_method, setup_training_manager):
         """
         Test that the user-defined workflow function is called correctly for each experiment.
