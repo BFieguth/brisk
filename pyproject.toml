@@ -17,4 +17,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-brisk = "brisk.cli:main"
+brisk = "brisk.cli:cli"
