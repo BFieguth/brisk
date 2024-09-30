@@ -37,7 +37,8 @@ class Workflow:
         y_test: pd.Series, 
         output_dir: str, 
         method_names: List[str], 
-        model_kwargs: Dict[str, Any]
+        model_kwargs: Dict[str, Any],
+        workflow_config = None
     ):
         self.evaluator = evaluator
         self.X_train = X_train
@@ -46,7 +47,9 @@ class Workflow:
         self.y_test = y_test
         self.output_dir = output_dir
         self.method_names = method_names
-        self._unpack_models(model_kwargs)
+        self._unpack_attributes(model_kwargs)
+        if workflow_config:
+            self._unpack_attributes(workflow_config)
 
     def __getattr__(self, name: str) -> None:
         available_attrs = ", ".join(self.__dict__.keys())
@@ -54,8 +57,15 @@ class Workflow:
             f"'{name}' not found. Available attributes are: {available_attrs}"
             )
 
-    def _unpack_models(self, model_kwargs: Dict[str, Any]) -> None:
-        for key, model in model_kwargs.items():
+    def _unpack_attributes(self, config: Dict[str, Any]) -> None:
+        """
+        Unpacks the key-value pairs from the config dictionary and sets them as 
+        attributes of the instance.
+
+        Args:
+            config (Dict[str, Any]): The configuration dictionary to unpack.
+        """
+        for key, model in config.items():
             setattr(self, key, model)
  
     @abc.abstractmethod

@@ -49,10 +49,10 @@ class RegressionTest(brisk.Workflow):
             self.model1, self.X_test, self.y_test, "residuals"
         )
 
-        tuned_model = self.evaluator.hyperparameter_tuning(
-            self.model2, "grid", self.method_names[1], self.X_train, self.y_train, 
-            "MAE", 5, 2 ,10, plot_results=True
-        )
+        # tuned_model = self.evaluator.hyperparameter_tuning(
+        #     self.model2, "grid", self.method_names[1], self.X_train, self.y_train, 
+        #     "MAE", 5, 2 ,10, plot_results=True
+        # )
 
 
 notification = brisk.AlertMailer("./workflows/config.ini")
@@ -87,7 +87,6 @@ data_splitter = brisk.DataSplitter(
 manager = brisk.TrainingManager(
     method_config=brisk.REGRESSION_ALGORITHMS,
     scoring_config=brisk.MetricManager(include_regression=True),
-    workflow=RegressionTest,
     splitter=data_splitter,
     methods=methods,
     data_paths=data_paths
@@ -95,5 +94,5 @@ manager = brisk.TrainingManager(
 print(manager.experiments)
 
 # Run the workflow
-manager.run_experiments()
+manager.run_experiments(RegressionTest)
 print("regression.py has run!")

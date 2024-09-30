@@ -29,7 +29,6 @@ class TrainingManager:
     Attributes:
         method_config (dict): Configuration of methods with default parameters.
         scoring_config (dict): Configuration of scoring metrics.
-        workflow (Workflow): An instance of the Workflow class to define training steps.
         splitter (DataSplitter): Instance of the DataSplitter class for train-test splits.
         methods (list): List of methods to apply to each dataset.
         data_paths (list): List of tuples containing dataset paths and table names.
@@ -41,7 +40,6 @@ class TrainingManager:
         self, 
         method_config: Dict[str, Dict], 
         scoring_config: Dict[str, Dict], 
-        workflow: Workflow,
         splitter: DataSplitter, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
@@ -60,7 +58,6 @@ class TrainingManager:
         """
         self.method_config = method_config
         self.scoring_config = scoring_config
-        self.workflow = workflow
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
@@ -173,11 +170,15 @@ class TrainingManager:
 
     def run_experiments(
         self, 
+        workflow,
+        workflow_config = None,
         create_report: bool = True
     ) -> None:
         """Runs the user-defined workflow for each experiment and optionally generates reports.
 
         Args:
+            workflow (Workflow): An instance of the Workflow class to define training steps.
+            workflow_config: Variables to pass the workflow class.
             create_report (bool): Whether to generate an HTML report after all 
                 experiments. Defaults to True.
 
@@ -186,6 +187,7 @@ class TrainingManager:
         """
         error_log = []
         self.experiment_paths = {}
+
         if not self.results_dir:
             results_dir = self._get_results_dir()
         else:
@@ -221,7 +223,7 @@ class TrainingManager:
                 config_EvaluationManager = self.EvaluationManager.with_config(
                     output_dir=experiment_dir
                     )
-                workflow_instance = self.workflow(
+                workflow_instance = workflow(
                     evaluator=config_EvaluationManager,
                     X_train=X_train,
                     X_test=X_test,
@@ -229,7 +231,8 @@ class TrainingManager:
                     y_test=y_test,
                     output_dir=experiment_dir,
                     method_names=method_names,
-                    model_kwargs=model_kwargs
+                    model_kwargs=model_kwargs,
+                    workflow_config=workflow_config
                 )
 
                 # Call the workflow method
