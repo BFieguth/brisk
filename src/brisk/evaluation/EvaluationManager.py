@@ -73,10 +73,11 @@ class EvaluationManager:
         results = {}
 
         for metric_name in metrics:
+            display_name = self.metric_config.get_name(metric_name)
             scorer = self.metric_config.get_metric(metric_name)
             if scorer is not None:
                 score = scorer(y, predictions)
-                results[metric_name] = score
+                results[display_name] = score
                 # print(f"{metric_name}: {score}")
             else:
                 print(f"Scorer for {metric_name} not found.")
@@ -111,12 +112,13 @@ class EvaluationManager:
         results = {}
 
         for metric_name in metrics:
+            display_name = self.metric_config.get_name(metric_name)
             scorer = self.metric_config.get_scorer(metric_name)
             if scorer is not None:
                 scores = model_select.cross_val_score(
                     model, X, y, scoring=scorer, cv=cv
                     )
-                results[metric_name] = {
+                results[display_name] = {
                     "mean_score": scores.mean(),
                     "std_dev": scores.std(),
                     "all_scores": scores.tolist()
@@ -171,9 +173,10 @@ class EvaluationManager:
 
             for metric_name in metrics:
                 scorer = self.metric_config.get_metric(metric_name)
+                display_name = self.metric_config.get_name(metric_name)
                 if scorer is not None:
                     score = scorer(y, predictions)
-                    results[metric_name] = score
+                    results[display_name] = score
                 else:
                     print(f"Scorer for {metric_name} not found.")
             
@@ -185,13 +188,14 @@ class EvaluationManager:
             model_pairs = list(itertools.combinations(model_names, 2))
                     
             for metric_name in metrics:
-                comparison_results["differences"][metric_name] = {}
+                display_name = self.metric_config.get_name(metric_name)
+                comparison_results["differences"][display_name] = {}
 
                 for model_a, model_b in model_pairs:
-                    score_a = comparison_results[model_a][metric_name]
-                    score_b = comparison_results[model_b][metric_name]
+                    score_a = comparison_results[model_a][display_name]
+                    score_b = comparison_results[model_b][display_name]
                     diff = score_b - score_a
-                    comparison_results["differences"][metric_name][f"{model_b} - {model_a}"] = diff
+                    comparison_results["differences"][display_name][f"{model_b} - {model_a}"] = diff
 
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(models=models)
@@ -240,7 +244,7 @@ class EvaluationManager:
         y_train: pd.Series, 
         cv: int = 5, 
         num_repeats: int = 1, 
-        scoring: str = 'neg_mean_absolute_error', 
+        metric: str = 'neg_mean_absolute_error', 
         filename: str = 'learning_curve'
     ) -> None:
         """
@@ -252,7 +256,7 @@ class EvaluationManager:
             y_train (pd.Series): The target values of the training set.
             cv (int): Number of cross-validation folds. Defaults to 5.
             num_repeats (int): Number of times to repeat the cross-validation. Defaults to 1.
-            scoring (str): The scoring metric to use. Defaults to 'neg_mean_absolute_error'.
+            metric (str): The scoring metric to use. Defaults to 'neg_mean_absolute_error'.
             filename (str): The name of the output PNG file (without extension).
 
         Returns:
@@ -262,11 +266,13 @@ class EvaluationManager:
 
         cv = model_select.RepeatedKFold(n_splits=cv, n_repeats=num_repeats)
 
+        scorer = self.metric_config.get_scorer(metric)
+
         # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = model_select.learning_curve(
             model, X_train, y_train, cv=cv, n_jobs=-1, 
             train_sizes=np.linspace(0.1, 1.0, 5), return_times=True, 
-            scoring=scoring
+            scoring=scorer
         )
 
         # Calculate means and standard deviations
@@ -282,9 +288,10 @@ class EvaluationManager:
         plt.rcParams.update({'font.size': 12})
 
         # Plot Learning Curve
+        display_name = self.metric_config.get_name(metric)       
         axes[0].set_title(f"Learning Curve ({method_name})", fontsize=20)
         axes[0].set_xlabel("Training Examples", fontsize=12)
-        axes[0].set_ylabel(scoring, fontsize=12) 
+        axes[0].set_ylabel(display_name, fontsize=12) 
         axes[0].grid()
         axes[0].fill_between(
             train_sizes, train_scores_mean - train_scores_std, 
@@ -323,7 +330,7 @@ class EvaluationManager:
             test_scores_mean + test_scores_std, alpha=0.1
             )
         axes[2].set_xlabel("Fit Times", fontsize=12)
-        axes[2].set_ylabel(scoring, fontsize=12)
+        axes[2].set_ylabel(display_name, fontsize=12)
         axes[2].set_title("Performance of the Model", fontsize=16)
 
         plt.tight_layout()
@@ -340,7 +347,7 @@ class EvaluationManager:
         filter: Union[int, float], 
         feature_names: List[str], 
         filename: str, 
-        scoring: str, 
+        metric: str, 
         num_rep: int
     ) -> None:
         """Plot the feature importance for the model and save the plot.
@@ -354,13 +361,14 @@ class EvaluationManager:
             feature_names (List[str]): A list of feature names corresponding to 
                 the columns in X.
             filename (str): The name of the output PNG file (without extension).
-            scoring (str): The scoring metric to use for evaluation.
+            metric (str): The metric to use for evaluation.
             num_rep (int): The number of repetitions for calculating importance.
 
         Returns:
             None
         """
-        metric = self.metric_config.get_scorer(scoring)
+        scorer = self.metric_config.get_scorer(metric)
+        display_name = self.metric_config.get_name(metric)
 
         if isinstance(
             model, (
@@ -372,7 +380,7 @@ class EvaluationManager:
         else:
             model.fit(X, y)
             results = inspection.permutation_importance(
-                model, X=X, y=y, scoring=metric, n_repeats=num_rep
+                model, X=X, y=y, scoring=scorer, n_repeats=num_rep
                 )
             importance = results.importances_mean
 
@@ -390,7 +398,7 @@ class EvaluationManager:
 
         plt.barh(feature_names, importance)
         plt.xticks(rotation=90)
-        plt.xlabel('Importance', fontsize=12)
+        plt.xlabel(f'Importance ({display_name})', fontsize=12)
         plt.ylabel('Feature', fontsize=12)
         plt.title('Feature Importance', fontsize=16)
         plt.tight_layout()
@@ -452,10 +460,12 @@ class EvaluationManager:
         """
         model_names = [model.__class__.__name__ for model in models]
         metric_values = []
+
+        scorer = self.metric_config.get_metric(metric)
+        display_name = self.metric_config.get_name(metric)
         
         for idx, model in enumerate(models):
             predictions = model.predict(X)
-            scorer = self.metric_config.get_metric(metric)
             if scorer is not None:
                 score = scorer(y, predictions)
                 metric_values.append(score)
@@ -473,8 +483,8 @@ class EvaluationManager:
                 f'{value:.3f}', ha='center', va='bottom'
                 )
         plt.xlabel("Models", fontsize=12)
-        plt.ylabel(metric, fontsize=12)
-        plt.title(f"Model Comparison on {metric}", fontsize=16)
+        plt.ylabel(display_name, fontsize=12)
+        plt.title(f"Model Comparison on {display_name}", fontsize=16)
         
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(models)
