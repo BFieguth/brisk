@@ -43,7 +43,6 @@ class TrainingManager:
         splitter: DataSplitter, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
-        results_dir: Optional[str] = None
     ):
         """Initializes the TrainingManager.
 
@@ -54,23 +53,12 @@ class TrainingManager:
             workflow (Workflow): An instance of the Workflow class to define training steps.
             methods (List[str]): List of methods to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
-            results_dir (Optional[str]): Directory to store results. If None, a timestamp will be used.
         """
         self.method_config = method_config
         self.scoring_config = scoring_config
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
-
-        if results_dir:
-            if os.path.exists(results_dir):
-                raise FileExistsError(
-                    f"Results directory '{results_dir}' already exists."
-                    )
-            self.results_dir = results_dir
-        else:
-            self.results_dir = None
-
         self.EvaluationManager = EvaluationManager(
             method_config=self.method_config, scoring_config=self.scoring_config
         )
@@ -143,7 +131,8 @@ class TrainingManager:
             str: The directory name for storing results.
         """
         timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-        return f"{timestamp}_Results"
+        results_dir = os.path.join("results", timestamp)
+        return results_dir
 
     def _get_experiment_dir(
         self, 
@@ -172,6 +161,7 @@ class TrainingManager:
         self, 
         workflow,
         workflow_config = None,
+        results_name = None,
         create_report: bool = True
     ) -> None:
         """Runs the user-defined workflow for each experiment and optionally generates reports.
@@ -188,10 +178,14 @@ class TrainingManager:
         error_log = []
         self.experiment_paths = {}
 
-        if not self.results_dir:
+        if not results_name:
             results_dir = self._get_results_dir()
         else:
-            results_dir = self.results_dir
+            results_dir = os.path.join("results", results_name)
+            if os.path.exists(results_dir):
+                raise FileExistsError(
+                    f"Results directory '{results_dir}' already exists."
+                    )
 
         os.makedirs(results_dir, exist_ok=True)
 
