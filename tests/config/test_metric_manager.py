@@ -3,7 +3,7 @@ from unittest import mock
 import numpy as np
 import pytest
 
-from ml_toolkit.evaluation.MetricManager import MetricManager
+from brisk.evaluation.MetricManager import MetricManager
 
 class TestMetricManager:
     """Test class for MetricManager."""

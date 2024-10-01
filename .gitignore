@@ -5,3 +5,6 @@
 
 .coverage
 *_Results/
+
+regression-test/*
+dev/*
