@@ -9,6 +9,7 @@ Exports:
 import copy
 import datetime
 import inspect
+import itertools
 import json
 import os
 from typing import Dict, List, Optional, Any, Union
@@ -134,12 +135,12 @@ class EvaluationManager:
 
     def compare_models(
         self, 
-        *models: base.BaseEstimator, 
+        *models: base.BaseEstimator,
         X: pd.DataFrame, 
         y: pd.Series, 
         metrics: List[str], 
         filename: str, 
-        calculate_diff: bool = False
+        calculate_diff: bool = False,
     ) -> Dict[str, Dict[str, float]]:
         """Compare multiple models based on the provided metrics.
 
@@ -157,13 +158,14 @@ class EvaluationManager:
                 for each model.
         """
         comparison_results = {}
-        model_names = [f"model_{i+1}" for i in range(len(models))]
 
-        for idx, model in enumerate(models):
-            model_name = f"model_{idx+1}"
-            # print(f"Evaluating {model_name}...")
-            
-            # Evaluate the model and collect results
+        if not models:
+            raise ValueError("At least one model must be provided")
+
+        model_names = [model.__class__.__name__ for model in models]
+        
+        # Evaluate the model and collect results
+        for model_name, model in zip(model_names, models):           
             predictions = model.predict(X)
             results = {}
 
@@ -179,15 +181,17 @@ class EvaluationManager:
 
         # Calculate the difference between models for each metric
         if calculate_diff and len(models) > 1:
-            comparison_results["difference_from_model1"] = {}
-            base_model = model_names[0]
+            comparison_results["differences"] = {}
+            model_pairs = list(itertools.combinations(model_names, 2))
+                    
             for metric_name in metrics:
-                comparison_results["difference_from_model1"][metric_name] = {}
-                base_score = comparison_results[base_model][metric_name]
-                # TODO refactor this to calculate teh difference between all the model combinations 
-                for other_model in model_names[1:]:
-                    diff = comparison_results[other_model][metric_name] - base_score
-                    comparison_results["difference_from_model1"][metric_name][other_model] = diff
+                comparison_results["differences"][metric_name] = {}
+
+                for model_a, model_b in model_pairs:
+                    score_a = comparison_results[model_a][metric_name]
+                    score_b = comparison_results[model_b][metric_name]
+                    diff = score_b - score_a
+                    comparison_results["differences"][metric_name][f"{model_b} - {model_a}"] = diff
 
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(models=models)
