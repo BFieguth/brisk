@@ -41,6 +41,15 @@ class AlgorithmWrapper:
         self.default_params = default_params if default_params else {}
         self.hyperparam_grid = hyperparam_grid if hyperparam_grid else {}
 
+    def __setitem__(self, key, value):
+        """Override item setting to update default_params or hyperparam_grid."""
+        if key == 'default_params':
+            self.default_params.update(value)
+        elif key == 'hyperparam_grid':
+            self.hyperparam_grid.update(value)
+        else:
+            raise KeyError(f"Invalid key: {key}. Allowed keys: 'default_params', 'hyperparam_grid'")
+
     def instantiate(self) -> Any:
         """Instantiates the model with the default parameters.
 
