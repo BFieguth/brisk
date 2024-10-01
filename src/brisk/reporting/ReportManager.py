@@ -14,6 +14,7 @@ from PIL import Image
 import shutil
 
 import jinja2
+import pandas as pd
 
 class ReportManager():
     """A class for creating HTML reports from evaluation results.
@@ -310,7 +311,7 @@ class ReportManager():
 
         result_html_new += "</tbody></table>"
         return result_html_new
-    
+     
     def report_compare_models(self, data: dict, metadata: dict) -> str:
         """Generates an HTML block for displaying model comparison results.
 
@@ -321,51 +322,42 @@ class ReportManager():
         Returns:
             str: HTML block representing the comparison results.
         """
-        model_names = list(data.keys())
-        metrics = list(data[model_names[0]].keys())
+        model_names = metadata.get("models", [])
         
-        if isinstance(metadata["models"], list):
-            model_names = [f"model_{i+1}" for i in range(len(metadata["models"]))]
-            display_names = metadata["models"]
-        else:
-            display_names = model_names
+        if not model_names:
+            raise ValueError("No model names found in metadata.")
+        
+        metrics = list(next(iter(data.values())).keys())
 
-        # Start the table HTML
-        result_html = """
+        metric_data = {
+            model_name: {metric: data[model_name][metric] for metric in metrics} 
+            for model_name in model_names if 'differences' not in model_name
+            }
+
+        df = pd.DataFrame(metric_data)
+
+        if "differences" in data:
+            diff_data = {
+                metric: {
+                    pair: data["differences"][metric].get(pair, None) 
+                    for pair in data["differences"][metric]
+                    }
+                for metric in data["differences"]
+            }
+            diff_df = pd.DataFrame(diff_data).T
+            df = pd.concat([df, diff_df], axis=1)
+
+        # Generate the HTML table
+        model_name = ", ".join(metadata.get("models", ["Unknown model"]))
+        html_table = df.to_html(classes='table table-bordered', border=0)
+        result_html = f"""
         <h2>Model Comparison</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Metric</th>
+        <p><strong>Model:</strong> {model_name}</p>
         """
-
-        # Add model columns
-        for model_name in display_names:
-            result_html += f"<th>{model_name}</th>"
-
-        # Add the difference column if present
-        if "difference_from_model1" in data:
-            result_html += "<th>Difference from Model 1</th>"
-
-        result_html += "</tr></thead><tbody>"
-
-        # Fill the table with data for each metric
-        for metric in metrics:
-            result_html += f"<tr><td>{metric}</td>"
-            for model_name in model_names:
-                score = round(data[model_name][metric], 5)
-                result_html += f"<td>{score}</td>"
-            
-            if "difference_from_model1" in data and metric in data["difference_from_model1"]:
-                diff = round(data["difference_from_model1"][metric].get(model_names[1], 0), 5)
-                result_html += f"<td>{diff}</td>"
-            
-            result_html += "</tr>"
-
-        result_html += "</tbody></table>"
+        result_html += html_table
 
         return result_html
-        
+
     def report_image(
         self, 
         data: str, 
