@@ -59,7 +59,7 @@ from .splitter import SPLITTER
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     method_config=ALGORITHM_CONFIG,
-    scoring_config=METRIC_CONFIG,
+    metric_config=METRIC_CONFIG,
     splitter=SPLITTER
 )                 
 """)

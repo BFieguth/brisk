@@ -28,7 +28,7 @@ def concordance_correlation_coefficient(
     return numerator / denominator
 
 
-REGRESSION_SCORING = {
+REGRESSION_METRICS = {
     "explained_variance_score": {
         "func": regression.explained_variance_score,
         "scorer": metrics.make_scorer(

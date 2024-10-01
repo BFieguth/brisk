@@ -35,18 +35,18 @@ class EvaluationManager:
 
     Attributes:
         method_config (dict): Configuration for model methods.
-        scoring_config (object): Configuration for evaluation metrics.
+        metric_config (object): Configuration for evaluation metrics.
     """
-    def __init__(self, method_config: Dict[str, Any], scoring_config: Any):
+    def __init__(self, method_config: Dict[str, Any], metric_config: Any):
         """
         Initializes the EvaluationManager with method and scoring configurations.
 
         Args:
             method_config (Dict[str, Any]): Configuration for model methods.
-            scoring_config (Any): Configuration for evaluation metrics.
+            metric_config (Any): Configuration for evaluation metrics.
         """
         self.method_config = method_config
-        self.scoring_config = scoring_config
+        self.metric_config = metric_config
 
     # Evaluation Tools
     def evaluate_model(
@@ -73,7 +73,7 @@ class EvaluationManager:
         results = {}
 
         for metric_name in metrics:
-            scorer = self.scoring_config.get_metric(metric_name)
+            scorer = self.metric_config.get_metric(metric_name)
             if scorer is not None:
                 score = scorer(y, predictions)
                 results[metric_name] = score
@@ -111,7 +111,7 @@ class EvaluationManager:
         results = {}
 
         for metric_name in metrics:
-            scorer = self.scoring_config.get_scorer(metric_name)
+            scorer = self.metric_config.get_scorer(metric_name)
             if scorer is not None:
                 scores = model_select.cross_val_score(
                     model, X, y, scoring=scorer, cv=cv
@@ -170,7 +170,7 @@ class EvaluationManager:
             results = {}
 
             for metric_name in metrics:
-                scorer = self.scoring_config.get_metric(metric_name)
+                scorer = self.metric_config.get_metric(metric_name)
                 if scorer is not None:
                     score = scorer(y, predictions)
                     results[metric_name] = score
@@ -360,7 +360,7 @@ class EvaluationManager:
         Returns:
             None
         """
-        metric = self.scoring_config.get_scorer(scoring)
+        metric = self.metric_config.get_scorer(scoring)
 
         if isinstance(
             model, (
@@ -455,7 +455,7 @@ class EvaluationManager:
         
         for idx, model in enumerate(models):
             predictions = model.predict(X)
-            scorer = self.scoring_config.get_metric(metric)
+            scorer = self.metric_config.get_metric(metric)
             if scorer is not None:
                 score = scorer(y, predictions)
                 metric_values.append(score)
@@ -522,13 +522,13 @@ class EvaluationManager:
                 f"method must be one of (grid, random). {method} was entered."
                 )
         
-        metric = self.scoring_config.get_scorer(scorer)
+        score = self.metric_config.get_scorer(scorer)
         param_grid = self.method_config[method_name].get_hyperparam_grid()
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
         search = searcher(
             estimator=model, param_grid=param_grid, n_jobs=n_jobs, cv=cv,
-            scoring=metric
+            scoring=score
         )
         search_result = search.fit(X_train, y_train)
         tuned_model = self.method_config[method_name].instantiate_tuned(
