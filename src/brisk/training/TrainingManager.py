@@ -9,10 +9,12 @@ from collections import deque
 from datetime import datetime
 import itertools
 import os
+import time
 import traceback
 from typing import List, Dict, Tuple, Callable, Optional
 
 import pandas as pd
+from tqdm import tqdm
 
 from brisk.data.DataSplitter import DataSplitter
 from brisk.training.Workflow import Workflow
@@ -175,6 +177,11 @@ class TrainingManager:
         Returns:
             None
         """
+        def format_time(seconds):
+            mins, secs = divmod(seconds, 60)
+            return f"{int(mins)}m {int(secs)}s"
+
+
         error_log = []
         self.experiment_paths = {}
 
@@ -189,8 +196,18 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
+        total_experiments = len(self.experiments)
+        pbar = tqdm(total=total_experiments, desc="Running Experiments", unit="experiment")
+        experiment_results = {}
+
         while self.experiments:
             data_path, method_names = self.experiments.popleft()
+            dataset_name = os.path.basename(data_path[0])
+            experiment_name = f"{'_'.join(method_names)}"
+
+            if dataset_name not in experiment_results:
+                experiment_results[dataset_name] = []
+
             try:
                 X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
 
@@ -229,20 +246,61 @@ class TrainingManager:
                     workflow_config=workflow_config
                 )
 
-                # Call the workflow method
+                start_time = time.time()
                 workflow_instance.workflow()
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+
+                experiment_results[dataset_name].append({
+                    "experiment": experiment_name,
+                    "status": "PASSED",
+                    "time_taken": format_time(elapsed_time)
+                })
+                pbar.set_postfix({"Status": "PASSED"})
+                pbar.update(1)
 
             except Exception as e:
+                end_time = time.time()
+                elapsed_time = end_time - start_time
                 error_message = f"Error for {method_names} on {data_path}: {str(e)}"
                 print(error_message)
                 traceback.print_exc()
                 error_log.append(error_message)
+
+                experiment_results[dataset_name].append({
+                    "experiment": experiment_name,
+                    "status": "FAILED",
+                    "time_taken": format_time(elapsed_time),
+                    "error": str(e)
+                })
+                pbar.set_postfix({"Status": "FAILED"})
+                pbar.update(1)
+            
+            print("\nExperiment Summary (so far):")
+            self._print_experiment_summary(experiment_results)
+
+        pbar.close()
+
+        # Final summary after all experiments
+        print("\nFinal Experiment Summary:")
+        self._print_experiment_summary(experiment_results)
         
         if error_log:
             error_log_path = os.path.join(results_dir, "error_log.txt")
             with open(error_log_path, "w") as file:
                 file.write("\n".join(error_log))
+            print(f"\nErrors were logged to: {error_log_path}")
                 
         if create_report:
             report_manager = ReportManager(results_dir, self.experiment_paths)
             report_manager.create_report()
+
+    def _print_experiment_summary(self, experiment_results):
+        """
+        Print the experiment summary organized by dataset.
+        """
+        for dataset_name, experiments in experiment_results.items():
+            print(f"{f"\nDataset: {dataset_name}":<50} {'Status':<10} {'Time (MM:SS)':<10}")
+            print("="*70)
+            for result in experiments:
+                print(f"{result['experiment']:<50} {result['status']:<10} {result['time_taken']:<10}")

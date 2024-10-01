@@ -76,7 +76,7 @@ class EvaluationManager:
             if scorer is not None:
                 score = scorer(y, predictions)
                 results[metric_name] = score
-                print(f"{metric_name}: {score}")
+                # print(f"{metric_name}: {score}")
             else:
                 print(f"Scorer for {metric_name} not found.")
         
@@ -120,10 +120,10 @@ class EvaluationManager:
                     "std_dev": scores.std(),
                     "all_scores": scores.tolist()
                 }
-                print(
-                    f"{metric_name} - Mean: {scores.mean()}, "
-                    f"Std Dev: {scores.std()}"
-                    )
+                # print(
+                #     f"{metric_name} - Mean: {scores.mean()}, "
+                #     f"Std Dev: {scores.std()}"
+                #     )
             else:
                 print(f"Scorer for {metric_name} not found.")
 
@@ -161,7 +161,7 @@ class EvaluationManager:
 
         for idx, model in enumerate(models):
             model_name = f"model_{idx+1}"
-            print(f"Evaluating {model_name}...")
+            # print(f"Evaluating {model_name}...")
             
             # Evaluate the model and collect results
             predictions = model.predict(X)
@@ -455,7 +455,7 @@ class EvaluationManager:
             if scorer is not None:
                 score = scorer(y, predictions)
                 metric_values.append(score)
-                print(f"{model_names[idx]} - {metric}: {score}")
+                # print(f"{model_names[idx]} - {metric}: {score}")
             else:
                 print(f"Scorer for {metric} not found.")
                 return
@@ -558,9 +558,9 @@ class EvaluationManager:
             None
         """ 
         param_keys = list(param_grid.keys())
-        print(
-            f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams"
-            )
+        # print(
+        #     f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams"
+        #     )
 
         if len(param_keys) == 0:
             return
