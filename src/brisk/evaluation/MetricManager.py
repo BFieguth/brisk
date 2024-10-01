@@ -69,3 +69,25 @@ class MetricManager:
                 return details['scorer']
         
         raise ValueError(f"Scoring callable '{name_or_abbr}' not found.")
+
+    def get_name(self, name_or_abbr: str) -> Callable:
+        """Retrieve a metrics name, formatted for plots/tables, by its full name or abbreviation.
+
+        Args:
+            name_or_abbr (str): The full name or abbreviation of the metric.
+
+        Returns:
+            Callable: The scoring callable.
+
+        Raises:
+            ValueError: If the scoring callable is not found.
+        """
+        if name_or_abbr in self.scoring_metrics:
+            return self.scoring_metrics[name_or_abbr]['display_name']
+        
+        for full_name, details in self.scoring_metrics.items():
+            if details.get("abbr") == name_or_abbr:
+                return details['display_name']
+        
+        raise ValueError(f"Scoring callable '{name_or_abbr}' not found.")
+    

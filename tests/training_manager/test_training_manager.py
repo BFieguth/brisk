@@ -23,7 +23,7 @@ def setup_training_manager():
         'linear': wrapper_mock 
     }
     
-    scoring_config = mock.MagicMock()
+    metric_config = mock.MagicMock()
     splitter = mock.MagicMock()
     workflow = mock.MagicMock()
 
@@ -38,7 +38,7 @@ def setup_training_manager():
     data_paths = [('dataset.csv', None)]
     
     return TrainingManager(
-        method_config, scoring_config, workflow, splitter, methods, data_paths
+        method_config, metric_config, workflow, splitter, methods, data_paths
     )
 
 
@@ -69,7 +69,7 @@ class TestTrainingManager:
         """
         tm = TrainingManager(
             method_config=setup_training_manager.method_config,
-            scoring_config=setup_training_manager.scoring_config,
+            metric_config=setup_training_manager.metric_config,
             workflow=setup_training_manager.workflow,
             splitter=setup_training_manager.splitter,
             methods=setup_training_manager.methods,
@@ -98,7 +98,7 @@ class TestTrainingManager:
         results_dir = "test_results_dir"
         tm = TrainingManager(
             method_config=setup_training_manager.method_config,
-            scoring_config=setup_training_manager.scoring_config,
+            metric_config=setup_training_manager.metric_config,
             workflow=setup_training_manager.workflow,
             splitter=setup_training_manager.splitter,
             methods=setup_training_manager.methods,
@@ -132,7 +132,7 @@ class TestTrainingManager:
         with pytest.raises(ValueError, match="The following methods are not included in the configuration: \['not_a_model'\]"):
             tm = TrainingManager(
                 method_config=setup_training_manager.method_config,
-                scoring_config=setup_training_manager.scoring_config,
+                metric_config=setup_training_manager.metric_config,
                 workflow=setup_training_manager.workflow,
                 splitter=setup_training_manager.splitter,
                 methods=invalid_methods,
@@ -150,7 +150,7 @@ class TestTrainingManager:
         with pytest.raises(FileExistsError, match="Results directory 'existing_dir' already exists."):
             TrainingManager(
                 method_config=setup_training_manager.method_config,
-                scoring_config=setup_training_manager.scoring_config,
+                metric_config=setup_training_manager.metric_config,
                 workflow=setup_training_manager.workflow,
                 splitter=setup_training_manager.splitter,
                 methods=setup_training_manager.methods,

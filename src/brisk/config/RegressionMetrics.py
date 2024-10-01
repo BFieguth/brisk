@@ -28,23 +28,27 @@ def concordance_correlation_coefficient(
     return numerator / denominator
 
 
-REGRESSION_SCORING = {
+REGRESSION_METRICS = {
     "explained_variance_score": {
+        "display_name": "Explained Variance Score",
         "func": regression.explained_variance_score,
         "scorer": metrics.make_scorer(
             regression.explained_variance_score
             )
     },
     "max_error": {
+        "display_name": "Max Error",
         "func": regression.max_error,
         "scorer": metrics.make_scorer(regression.max_error)
     },
     "mean_absolute_error": {
+        "display_name": "Mean Absolute Error",
         "abbr": "MAE",
         "func": regression.mean_absolute_error,
         "scorer": metrics.make_scorer(regression.mean_absolute_error)
     },
     "mean_absolute_percentage_error": {
+        "display_name": "Mean Absolute Percentage Error",
         "abbr": "MAPE",
         "func": regression.mean_absolute_percentage_error,
         "scorer": metrics.make_scorer(
@@ -52,28 +56,34 @@ REGRESSION_SCORING = {
             )
     },
     "mean_pinball_loss": {
+        "display_name": "Mean Pinball Loss",
         "func": regression.mean_pinball_loss,
         "scorer": metrics.make_scorer(regression.mean_pinball_loss)
     },
     "mean_squared_error": {
+        "display_name": "Mean Squared Error",
         "abbr": "MSE",
         "func": regression.mean_squared_error,
         "scorer": metrics.make_scorer(regression.mean_squared_error)
     },
     "mean_squared_log_error": {
+        "display_name": "Mean Squared Log Error",
         "func": regression.mean_squared_log_error,
         "scorer": metrics.make_scorer(regression.mean_squared_log_error)
     },
     "median_absolute_error": {
+        "display_name": "Median Absolute Error",
         "func": regression.median_absolute_error,
         "scorer": metrics.make_scorer(regression.median_absolute_error)
     },
     "r2_score": {
+        "display_name": "R2 Score",
         "abbr": "R2",
         "func": regression.r2_score,
         "scorer": metrics.make_scorer(regression.r2_score)
     },
     "root_mean_squared_error": {
+        "display_name": "Root Mean Squared Error",
         "abbr": "RMSE",
         "func": regression.root_mean_squared_error,
         "scorer": metrics.make_scorer(
@@ -81,16 +91,27 @@ REGRESSION_SCORING = {
             )
     },
     "root_mean_squared_log_error": {
+        "display_name": "Root Mean Squared Log Error",
         "func": regression.root_mean_squared_log_error,
         "scorer": metrics.make_scorer(
             regression.root_mean_squared_log_error
             )
     },
     "concordance_correlation_coefficient": {
+        "display_name": "Concordance Correlation Coefficient",
         "abbr": "CCC",
         "func": concordance_correlation_coefficient,
         "scorer": metrics.make_scorer(
             concordance_correlation_coefficient
             )
-    }
+    },
+    "neg_mean_absolute_error": {
+        "display_name": "Negative Mean Absolute Error",
+        "abbr": "NegMAE",
+        "func": regression.mean_absolute_error,
+        "scorer": metrics.make_scorer(
+            regression.mean_absolute_error,
+            greater_is_better=False
+        )
+    },
 }

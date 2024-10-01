@@ -30,7 +30,7 @@ class TrainingManager:
 
     Attributes:
         method_config (dict): Configuration of methods with default parameters.
-        scoring_config (dict): Configuration of scoring metrics.
+        metric_config (dict): Configuration of scoring metrics.
         splitter (DataSplitter): Instance of the DataSplitter class for train-test splits.
         methods (list): List of methods to apply to each dataset.
         data_paths (list): List of tuples containing dataset paths and table names.
@@ -41,7 +41,7 @@ class TrainingManager:
     def __init__(
         self, 
         method_config: Dict[str, Dict], 
-        scoring_config: Dict[str, Dict], 
+        metric_config: Dict[str, Dict], 
         splitter: DataSplitter, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
@@ -50,19 +50,19 @@ class TrainingManager:
 
         Args:
             method_config (Dict[str, Dict]): Configuration of methods with default parameters.
-            scoring_config (Dict[str, Dict]): Configuration of scoring metrics.
+            metric_config (Dict[str, Dict]): Configuration of scoring metrics.
             splitter (DataSplitter): An instance of the DataSplitter class for train-test splits.
             workflow (Workflow): An instance of the Workflow class to define training steps.
             methods (List[str]): List of methods to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
         """
         self.method_config = method_config
-        self.scoring_config = scoring_config
+        self.metric_config = metric_config
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
         self.EvaluationManager = EvaluationManager(
-            method_config=self.method_config, scoring_config=self.scoring_config
+            method_config=self.method_config, metric_config=self.metric_config
         )
         self._validate_methods()
         self.data_splits = self._get_data_splits()
