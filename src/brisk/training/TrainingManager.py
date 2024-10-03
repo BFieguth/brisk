@@ -252,6 +252,8 @@ class TrainingManager:
             if dataset_name not in experiment_results:
                 experiment_results[dataset_name] = []
 
+            tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
+
             try:
                 X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
 
@@ -300,7 +302,7 @@ class TrainingManager:
                     "status": "PASSED",
                     "time_taken": format_time(elapsed_time)
                 })
-                pbar.set_postfix({"Status": "PASSED"})
+                tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
                 pbar.update(1)
 
             except Exception as e:
@@ -319,14 +321,12 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time),
                     "error": str(e)
                 })
-                pbar.set_postfix({"Status": "FAILED"})
+                tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
                 pbar.update(1)
             
-            print("\nExperiment Summary:")
-            self._print_experiment_summary(experiment_results)
-
         pbar.close()
-                
+        self._print_experiment_summary(experiment_results)
+
         # Delete error_log.txt if it is empty
         logging.shutdown()
         error_log_path = os.path.join(results_dir, "error_log.txt")
@@ -341,11 +341,16 @@ class TrainingManager:
         """
         Print the experiment summary organized by dataset.
         """
+        print("\n" + "="*70)
+        print("EXPERIMENT SUMMARY")
+        print("="*70)
         for dataset_name, experiments in experiment_results.items():
-            print(f"{f"\nDataset: {dataset_name}":<50} {'Status':<10} {'Time (MM:SS)':<10}")
-            print("="*70)
+            print(f"\nDataset: {dataset_name}")
+            print(f"{'Experiment':<50} {'Status':<10} {'Time (MM:SS)':<10}")
+            print("-"*70)
             for result in experiments:
                 print(f"{result['experiment']:<50} {result['status']:<10} {result['time_taken']:<10}")
+        print("="*70)
 
     def _setup_logger(self, results_dir):
         """Set up logging for the TrainingManager.
