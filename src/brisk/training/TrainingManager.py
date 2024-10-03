@@ -197,6 +197,25 @@ class TrainingManager:
             logger.warning(log_message)
 
 
+        def save_config_log(results_dir, workflow, workflow_config, splitter):
+            """Saves the workflow configuration and class name to a config log file."""
+            config_log_path = os.path.join(results_dir, "config_log.txt")
+            
+            with open(config_log_path, 'w') as f:
+                f.write(f"Workflow Class: {workflow.__name__}\n\n")
+                
+                f.write("Workflow Configuration:\n")
+                if workflow_config:
+                    for key, value in workflow_config.items():
+                        f.write(f"{key}: {value}\n")
+                else:
+                    f.write("No workflow configuration provided.\n")
+
+                f.write("\nDataSplitter Configuration:\n")
+                for attr, value in vars(splitter).items():
+                    f.write(f"{attr}: {value}\n")
+
+
         logging.captureWarnings(True)
 
         self.experiment_paths = {}
@@ -213,6 +232,8 @@ class TrainingManager:
                     )
 
         os.makedirs(results_dir, exist_ok=True)
+
+        save_config_log(results_dir, workflow, workflow_config, self.splitter)
 
         self.logger = self._setup_logger(results_dir)
         self.logger.info("Starting experiment run.")
