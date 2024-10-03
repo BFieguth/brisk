@@ -10,7 +10,6 @@ from datetime import datetime
 import itertools
 import logging
 import os
-import sys
 import time
 import traceback
 from typing import List, Dict, Tuple, Callable, Optional
@@ -307,6 +306,12 @@ class TrainingManager:
 
         pbar.close()
                 
+        # Delete error_log.txt if it is empty
+        logging.shutdown()
+        error_log_path = os.path.join(results_dir, "error_log.txt")
+        if os.path.exists(error_log_path) and os.path.getsize(error_log_path) == 0:
+            os.remove(error_log_path)
+
         if create_report:
             report_manager = ReportManager(results_dir, self.experiment_paths)
             report_manager.create_report()
