@@ -22,6 +22,7 @@ from brisk.data.DataSplitter import DataSplitter
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
+from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
 
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.
@@ -47,6 +48,7 @@ class TrainingManager:
         splitter: DataSplitter, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
+        verbose=False
     ):
         """Initializes the TrainingManager.
 
@@ -63,6 +65,7 @@ class TrainingManager:
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
+        self.verbose = verbose
         self.EvaluationManager = EvaluationManager(
             method_config=self.method_config, metric_config=self.metric_config
         )
@@ -191,7 +194,6 @@ class TrainingManager:
                 f"Warning in {filename} at line {lineno}:\n"
                 f"Category: {category.__name__}\n\n"
                 f"Message: {message}\n"
-                f"{'-'*80}\n"
             )
             logger = logging.getLogger("TrainingManager")
             logger.warning(log_message)
@@ -236,7 +238,6 @@ class TrainingManager:
         save_config_log(results_dir, workflow, workflow_config, self.splitter)
 
         self.logger = self._setup_logger(results_dir)
-        self.logger.info("Starting experiment run.")
          
         pbar = tqdm(total=total_experiments, desc="Running Experiments", unit="experiment")
 
@@ -252,6 +253,7 @@ class TrainingManager:
             if dataset_name not in experiment_results:
                 experiment_results[dataset_name] = []
 
+            tqdm.write(f"\n{"-" * 80}")
             tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
 
             try:
@@ -278,7 +280,7 @@ class TrainingManager:
                     self.experiment_paths[data_path[0]] = [experiment_dir]
 
                 config_EvaluationManager = self.EvaluationManager.with_config(
-                    output_dir=experiment_dir
+                    output_dir=experiment_dir, logger=self.logger
                     )
                 workflow_instance = workflow(
                     evaluator=config_EvaluationManager,
@@ -303,17 +305,18 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time)
                 })
                 tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
 
             except Exception as e:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
-                traceback.print_exc()
-                
-                self.logger.error(f"\n\nDataset Name: {dataset_name} \nExperiment Name: {experiment_name}\n")
-                self.logger.error(f"Error: {e}")
-                self.logger.error("Traceback:\n" + traceback.format_exc())
-                self.logger.error("\n" + "-" * 80 + "\n")
+                error_message = (
+                    f"\n\nDataset Name: {dataset_name}\n"
+                    f"Experiment Name: {experiment_name}\n\n"
+                    f"Error: {e}"
+                )
+                self.logger.exception(error_message)
 
                 experiment_results[dataset_name].append({
                     "experiment": experiment_name,
@@ -322,6 +325,7 @@ class TrainingManager:
                     "error": str(e)
                 })
                 tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
             
         pbar.close()
@@ -363,15 +367,19 @@ class TrainingManager:
         file_handler = logging.FileHandler(os.path.join(results_dir, "error_log.txt"))
         file_handler.setLevel(logging.WARNING)
 
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.ERROR)
+        console_handler = TqdmLoggingHandler()
+        if self.verbose:
+            console_handler.setLevel(logging.INFO)
+        else:
+            console_handler.setLevel(logging.ERROR)
 
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
+        file_formatter = FileFormatter("%(asctime)s - %(levelname)s - %(message)s")
+        
+        file_handler.setFormatter(file_formatter)
         console_handler.setFormatter(formatter)
 
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
         return logger
-    

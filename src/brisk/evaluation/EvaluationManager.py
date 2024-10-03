@@ -37,7 +37,7 @@ class EvaluationManager:
         method_config (dict): Configuration for model methods.
         metric_config (object): Configuration for evaluation metrics.
     """
-    def __init__(self, method_config: Dict[str, Any], metric_config: Any):
+    def __init__(self, method_config: Dict[str, Any], metric_config: Any, logger=None):
         """
         Initializes the EvaluationManager with method and scoring configurations.
 
@@ -47,6 +47,7 @@ class EvaluationManager:
         """
         self.method_config = method_config
         self.metric_config = metric_config
+        self.logger = logger
 
     # Evaluation Tools
     def evaluate_model(
@@ -760,6 +761,7 @@ class EvaluationManager:
         """
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
         joblib.dump(model, output_path)
+        self.logger.info(f"Saving model '{filename}' to '{output_path}'.")
 
     def load_model(self, filepath: str) -> base.BaseEstimator:
         """Load a model from a pickle file.
