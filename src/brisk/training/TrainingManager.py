@@ -8,11 +8,14 @@ Exports:
 from collections import deque
 from datetime import datetime
 import itertools
+import logging
 import os
+import sys
 import time
 import traceback
 from typing import List, Dict, Tuple, Callable, Optional
-
+import warnings
+ 
 import pandas as pd
 from tqdm import tqdm
 
@@ -182,8 +185,24 @@ class TrainingManager:
             return f"{int(mins)}m {int(secs)}s"
 
 
-        error_log = []
+        def log_warning(message, category, filename, lineno, file=None, line=None, dataset_name=None, experiment_name=None):
+            """Custom warning handler that logs warnings with specific formatting."""
+            log_message = (
+                f"\n\nDataset Name: {dataset_name} \nExperiment Name: {experiment_name}\n\n"
+                f"Warning in {filename} at line {lineno}:\n"
+                f"Category: {category.__name__}\n\n"
+                f"Message: {message}\n"
+                f"{'-'*80}\n"
+            )
+            logger = logging.getLogger("TrainingManager")
+            logger.warning(log_message)
+
+
+        logging.captureWarnings(True)
+
         self.experiment_paths = {}
+        experiment_results = {}
+        total_experiments = len(self.experiments)
 
         if not results_name:
             results_dir = self._get_results_dir()
@@ -196,14 +215,19 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        total_experiments = len(self.experiments)
+        self.logger = self._setup_logger(results_dir)
+        self.logger.info("Starting experiment run.")
+         
         pbar = tqdm(total=total_experiments, desc="Running Experiments", unit="experiment")
-        experiment_results = {}
 
         while self.experiments:
             data_path, method_names = self.experiments.popleft()
             dataset_name = os.path.basename(data_path[0])
             experiment_name = f"{'_'.join(method_names)}"
+
+            warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: log_warning(
+                message, category, filename, lineno, file, line, dataset_name, experiment_name
+            )
 
             if dataset_name not in experiment_results:
                 experiment_results[dataset_name] = []
@@ -262,10 +286,12 @@ class TrainingManager:
             except Exception as e:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
-                error_message = f"Error for {method_names} on {data_path}: {str(e)}"
-                print(error_message)
                 traceback.print_exc()
-                error_log.append(error_message)
+                
+                self.logger.error(f"\n\nDataset Name: {dataset_name} \nExperiment Name: {experiment_name}\n")
+                self.logger.error(f"Error: {e}")
+                self.logger.error("Traceback:\n" + traceback.format_exc())
+                self.logger.error("\n" + "-" * 80 + "\n")
 
                 experiment_results[dataset_name].append({
                     "experiment": experiment_name,
@@ -276,20 +302,10 @@ class TrainingManager:
                 pbar.set_postfix({"Status": "FAILED"})
                 pbar.update(1)
             
-            print("\nExperiment Summary (so far):")
+            print("\nExperiment Summary:")
             self._print_experiment_summary(experiment_results)
 
         pbar.close()
-
-        # Final summary after all experiments
-        print("\nFinal Experiment Summary:")
-        self._print_experiment_summary(experiment_results)
-        
-        if error_log:
-            error_log_path = os.path.join(results_dir, "error_log.txt")
-            with open(error_log_path, "w") as file:
-                file.write("\n".join(error_log))
-            print(f"\nErrors were logged to: {error_log_path}")
                 
         if create_report:
             report_manager = ReportManager(results_dir, self.experiment_paths)
@@ -304,3 +320,27 @@ class TrainingManager:
             print("="*70)
             for result in experiments:
                 print(f"{result['experiment']:<50} {result['status']:<10} {result['time_taken']:<10}")
+
+    def _setup_logger(self, results_dir):
+        """Set up logging for the TrainingManager.
+
+        Logs to both file and console, using different levels for each        
+        """ 
+        logger = logging.getLogger("TrainingManager")
+        logger.setLevel(logging.DEBUG)
+
+        file_handler = logging.FileHandler(os.path.join(results_dir, "error_log.txt"))
+        file_handler.setLevel(logging.WARNING)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.ERROR)
+
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
+        return logger
+    
