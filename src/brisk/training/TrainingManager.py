@@ -304,7 +304,7 @@ class TrainingManager:
                     "status": "PASSED",
                     "time_taken": format_time(elapsed_time)
                 })
-                tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
                 tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
 
@@ -324,7 +324,7 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time),
                     "error": str(e)
                 })
-                tqdm.write(f"Experiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
                 tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
             
@@ -373,7 +373,7 @@ class TrainingManager:
         else:
             console_handler.setLevel(logging.ERROR)
 
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("\n%(asctime)s - %(levelname)s - %(message)s")
         file_formatter = FileFormatter("%(asctime)s - %(levelname)s - %(message)s")
         
         file_handler.setFormatter(file_formatter)

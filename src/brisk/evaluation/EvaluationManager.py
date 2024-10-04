@@ -79,15 +79,24 @@ class EvaluationManager:
             if scorer is not None:
                 score = scorer(y, predictions)
                 results[display_name] = score
-                # print(f"{metric_name}: {score}")
             else:
-                print(f"Scorer for {metric_name} not found.")
+                self.logger.info(f"Scorer for {metric_name} not found.")
         
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(model)
         self._save_to_json(results, output_path, metadata)
 
+        scores_log = "\n".join([
+            f"{metric}: {score:.4f}" 
+            if isinstance(score, (int, float)) 
+            else f"{metric}: {score}" 
+            for metric, score in results.items()
+            if metric != "_metadata"
+            ]
+        )
+        self.logger.info(f"Model evaluation results:\n{scores_log}\nSaved to '{output_path}'.")
+    
     def evaluate_model_cv(
         self, 
         model: base.BaseEstimator, 
@@ -124,17 +133,20 @@ class EvaluationManager:
                     "std_dev": scores.std(),
                     "all_scores": scores.tolist()
                 }
-                # print(
-                #     f"{metric_name} - Mean: {scores.mean()}, "
-                #     f"Std Dev: {scores.std()}"
-                #     )
             else:
-                print(f"Scorer for {metric_name} not found.")
+                self.logger.info(f"Scorer for {metric_name} not found.")
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(model)
         self._save_to_json(results, output_path, metadata)
+
+        scores_log = "\n".join([
+            f"{metric}: mean={res['mean_score']:.4f}, std_dev={res['std_dev']:.4f}"
+            for metric, res in results.items() 
+            if metric != "_metadata"
+        ])
+        self.logger.info(f"Cross-validation results:\n{scores_log}\nSaved to '{output_path}'.")
 
     def compare_models(
         self, 
@@ -179,7 +191,7 @@ class EvaluationManager:
                     score = scorer(y, predictions)
                     results[display_name] = score
                 else:
-                    print(f"Scorer for {metric_name} not found.")
+                    self.logger.info(f"Scorer for {metric_name} not found.")
             
             comparison_results[model_name] = results
 
@@ -202,6 +214,14 @@ class EvaluationManager:
         metadata = self._get_metadata(models=models)
         self._save_to_json(comparison_results, output_path, metadata)
         
+        comparison_log = "\n".join([
+            f"{model}: " + 
+            ", ".join([f"{metric}: {score:.4f}" if isinstance(score, (float, int, np.floating)) 
+                    else f"{metric}: {score}" for metric, score in results.items() if metric != "_metadata"])
+            for model, results in comparison_results.items() if model not in ["differences", "_metadata"]
+        ])
+        self.logger.info(f"Model comparison results:\n{comparison_log}\nSaved to '{output_path}'.")
+
         return comparison_results
 
     def plot_pred_vs_obs(
@@ -237,6 +257,7 @@ class EvaluationManager:
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)      
+        self.logger.info(f"Predicted vs. Observed plot saved to '{output_path}'.")
 
     def plot_learning_curve(
         self, 
@@ -339,6 +360,7 @@ class EvaluationManager:
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
+        self.logger.info(f"Learning Curve plot saved to '{output_path}'.")
 
     def plot_feature_importance(
         self, 
@@ -406,6 +428,7 @@ class EvaluationManager:
         output_path = os.path.join(self.output_dir, f'{filename}.png')
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
+        self.logger.info(f"Feature Importance plot saved to '{output_path}'.")
 
     def plot_residuals(
         self, 
@@ -438,6 +461,7 @@ class EvaluationManager:
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
+        self.logger.info(f"Residuals plot saved to '{output_path}'.")
 
     def plot_model_comparison(
         self, 
@@ -470,9 +494,8 @@ class EvaluationManager:
             if scorer is not None:
                 score = scorer(y, predictions)
                 metric_values.append(score)
-                # print(f"{model_names[idx]} - {metric}: {score}")
             else:
-                print(f"Scorer for {metric} not found.")
+                self.logger.info(f"Scorer for {metric} not found.")
                 return
         
         plt.figure(figsize=(10, 6))
@@ -490,6 +513,7 @@ class EvaluationManager:
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(models)
         self._save_plot(output_path, metadata)
+        self.logger.info(f"Model Comparison plot saved to '{output_path}'.")
         plt.close()
 
     def hyperparameter_tuning(
@@ -533,6 +557,7 @@ class EvaluationManager:
                 f"method must be one of (grid, random). {method} was entered."
                 )
         
+        self.logger.info(f"Starting hyperparameter optimization for {model.__class__.__name__}")
         score = self.metric_config.get_scorer(scorer)
         param_grid = self.method_config[method_name].get_hyperparam_grid()
 
@@ -546,6 +571,7 @@ class EvaluationManager:
             search_result.best_params_
             )
         tuned_model.fit(X_train, y_train)
+        self.logger.info(f"Hyperparameter optimization for {model.__class__.__name__} complete.")
 
         if plot_results:
             metadata = self._get_metadata(model)
@@ -573,9 +599,6 @@ class EvaluationManager:
             None
         """ 
         param_keys = list(param_grid.keys())
-        # print(
-        #     f"Hyperparam plot for {method_name} has {len(param_keys)} hyperparams"
-        #     )
 
         if len(param_keys) == 0:
             return
@@ -597,7 +620,7 @@ class EvaluationManager:
                 metadata=metadata
             )
         else:
-            print("Higher dimensional visualization not implemented yet")
+            self.logger.info("Higher dimensional visualization not implemented yet")
 
     def _plot_1d_performance(
         self, 
@@ -642,6 +665,7 @@ class EvaluationManager:
             self.output_dir, f"{method_name}_hyperparam_{param_name}.png"
             )
         self._save_plot(output_path, metadata)
+        self.logger.info(f"Hyperparameter performance plot saved to '{output_path}'.")
 
     def _plot_3d_surface(
         self, 
@@ -682,7 +706,8 @@ class EvaluationManager:
         output_path = os.path.join(
             self.output_dir, f"{method_name}_hyperparam_3Dplot.png"
             )
-        self._save_plot(output_path, metadata)       
+        self._save_plot(output_path, metadata)      
+        self.logger.info(f"Hyperparameter performance plot saved to '{output_path}'.")
 
     # Utility Methods
     def _save_to_json(
@@ -710,7 +735,7 @@ class EvaluationManager:
                 json.dump(data, file, indent=4)
 
         except IOError as e:
-            print(f"Failed to save JSON to {output_path}: {e}")
+            self.logger.info(f"Failed to save JSON to {output_path}: {e}")
 
     def _save_plot(
         self, 
@@ -733,7 +758,7 @@ class EvaluationManager:
             plt.close()
 
         except IOError as e:
-            print(f"Failed to save plot to {output_path}: {e}")
+            self.logger.info(f"Failed to save plot to {output_path}: {e}")
 
     def with_config(self, **kwargs: Any) -> 'EvaluationManager':
         """Create a copy of the current evaluator with additional configuration.
