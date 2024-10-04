@@ -8,11 +8,13 @@ Exports:
 from collections import deque
 from datetime import datetime
 import itertools
+import logging
 import os
 import time
 import traceback
 from typing import List, Dict, Tuple, Callable, Optional
-
+import warnings
+ 
 import pandas as pd
 from tqdm import tqdm
 
@@ -20,6 +22,7 @@ from brisk.data.DataSplitter import DataSplitter
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
+from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
 
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.
@@ -45,6 +48,7 @@ class TrainingManager:
         splitter: DataSplitter, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
+        verbose=False
     ):
         """Initializes the TrainingManager.
 
@@ -61,6 +65,7 @@ class TrainingManager:
         self.splitter = splitter
         self.methods = methods
         self.data_paths = data_paths
+        self.verbose = verbose
         self.EvaluationManager = EvaluationManager(
             method_config=self.method_config, metric_config=self.metric_config
         )
@@ -182,8 +187,42 @@ class TrainingManager:
             return f"{int(mins)}m {int(secs)}s"
 
 
-        error_log = []
+        def log_warning(message, category, filename, lineno, file=None, line=None, dataset_name=None, experiment_name=None):
+            """Custom warning handler that logs warnings with specific formatting."""
+            log_message = (
+                f"\n\nDataset Name: {dataset_name} \nExperiment Name: {experiment_name}\n\n"
+                f"Warning in {filename} at line {lineno}:\n"
+                f"Category: {category.__name__}\n\n"
+                f"Message: {message}\n"
+            )
+            logger = logging.getLogger("TrainingManager")
+            logger.warning(log_message)
+
+
+        def save_config_log(results_dir, workflow, workflow_config, splitter):
+            """Saves the workflow configuration and class name to a config log file."""
+            config_log_path = os.path.join(results_dir, "config_log.txt")
+            
+            with open(config_log_path, 'w') as f:
+                f.write(f"Workflow Class: {workflow.__name__}\n\n")
+                
+                f.write("Workflow Configuration:\n")
+                if workflow_config:
+                    for key, value in workflow_config.items():
+                        f.write(f"{key}: {value}\n")
+                else:
+                    f.write("No workflow configuration provided.\n")
+
+                f.write("\nDataSplitter Configuration:\n")
+                for attr, value in vars(splitter).items():
+                    f.write(f"{attr}: {value}\n")
+
+
+        logging.captureWarnings(True)
+
         self.experiment_paths = {}
+        experiment_results = {}
+        total_experiments = len(self.experiments)
 
         if not results_name:
             results_dir = self._get_results_dir()
@@ -196,17 +235,26 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        total_experiments = len(self.experiments)
+        save_config_log(results_dir, workflow, workflow_config, self.splitter)
+
+        self.logger = self._setup_logger(results_dir)
+         
         pbar = tqdm(total=total_experiments, desc="Running Experiments", unit="experiment")
-        experiment_results = {}
 
         while self.experiments:
             data_path, method_names = self.experiments.popleft()
             dataset_name = os.path.basename(data_path[0])
             experiment_name = f"{'_'.join(method_names)}"
 
+            warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: log_warning(
+                message, category, filename, lineno, file, line, dataset_name, experiment_name
+            )
+
             if dataset_name not in experiment_results:
                 experiment_results[dataset_name] = []
+
+            tqdm.write(f"\n{"-" * 80}")
+            tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
 
             try:
                 X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
@@ -232,7 +280,7 @@ class TrainingManager:
                     self.experiment_paths[data_path[0]] = [experiment_dir]
 
                 config_EvaluationManager = self.EvaluationManager.with_config(
-                    output_dir=experiment_dir
+                    output_dir=experiment_dir, logger=self.logger
                     )
                 workflow_instance = workflow(
                     evaluator=config_EvaluationManager,
@@ -256,16 +304,19 @@ class TrainingManager:
                     "status": "PASSED",
                     "time_taken": format_time(elapsed_time)
                 })
-                pbar.set_postfix({"Status": "PASSED"})
+                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
 
             except Exception as e:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
-                error_message = f"Error for {method_names} on {data_path}: {str(e)}"
-                print(error_message)
-                traceback.print_exc()
-                error_log.append(error_message)
+                error_message = (
+                    f"\n\nDataset Name: {dataset_name}\n"
+                    f"Experiment Name: {experiment_name}\n\n"
+                    f"Error: {e}"
+                )
+                self.logger.exception(error_message)
 
                 experiment_results[dataset_name].append({
                     "experiment": experiment_name,
@@ -273,24 +324,19 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time),
                     "error": str(e)
                 })
-                pbar.set_postfix({"Status": "FAILED"})
+                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
+                tqdm.write(f"\n{"-" * 80}")
                 pbar.update(1)
             
-            print("\nExperiment Summary (so far):")
-            self._print_experiment_summary(experiment_results)
-
         pbar.close()
-
-        # Final summary after all experiments
-        print("\nFinal Experiment Summary:")
         self._print_experiment_summary(experiment_results)
-        
-        if error_log:
-            error_log_path = os.path.join(results_dir, "error_log.txt")
-            with open(error_log_path, "w") as file:
-                file.write("\n".join(error_log))
-            print(f"\nErrors were logged to: {error_log_path}")
-                
+
+        # Delete error_log.txt if it is empty
+        logging.shutdown()
+        error_log_path = os.path.join(results_dir, "error_log.txt")
+        if os.path.exists(error_log_path) and os.path.getsize(error_log_path) == 0:
+            os.remove(error_log_path)
+
         if create_report:
             report_manager = ReportManager(results_dir, self.experiment_paths)
             report_manager.create_report()
@@ -299,8 +345,41 @@ class TrainingManager:
         """
         Print the experiment summary organized by dataset.
         """
+        print("\n" + "="*70)
+        print("EXPERIMENT SUMMARY")
+        print("="*70)
         for dataset_name, experiments in experiment_results.items():
-            print(f"{f"\nDataset: {dataset_name}":<50} {'Status':<10} {'Time (MM:SS)':<10}")
-            print("="*70)
+            print(f"\nDataset: {dataset_name}")
+            print(f"{'Experiment':<50} {'Status':<10} {'Time (MM:SS)':<10}")
+            print("-"*70)
             for result in experiments:
                 print(f"{result['experiment']:<50} {result['status']:<10} {result['time_taken']:<10}")
+        print("="*70)
+
+    def _setup_logger(self, results_dir):
+        """Set up logging for the TrainingManager.
+
+        Logs to both file and console, using different levels for each        
+        """ 
+        logger = logging.getLogger("TrainingManager")
+        logger.setLevel(logging.DEBUG)
+
+        file_handler = logging.FileHandler(os.path.join(results_dir, "error_log.txt"))
+        file_handler.setLevel(logging.WARNING)
+
+        console_handler = TqdmLoggingHandler()
+        if self.verbose:
+            console_handler.setLevel(logging.INFO)
+        else:
+            console_handler.setLevel(logging.ERROR)
+
+        formatter = logging.Formatter("\n%(asctime)s - %(levelname)s - %(message)s")
+        file_formatter = FileFormatter("%(asctime)s - %(levelname)s - %(message)s")
+        
+        file_handler.setFormatter(file_formatter)
+        console_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
+        return logger
