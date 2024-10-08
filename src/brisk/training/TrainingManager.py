@@ -72,7 +72,6 @@ class TrainingManager:
             method_config=self.method_config, metric_config=self.metric_config
         )
         self._validate_methods()
-        # self.scalers = {}
         self.data_splits = self._get_data_splits()
         self.experiments = self._create_experiments()
 
@@ -225,7 +224,7 @@ class TrainingManager:
             logger.warning(log_message)
 
 
-        def save_config_log(results_dir, workflow, workflow_config, DataManager):
+        def save_config_log(results_dir, workflow, workflow_config, DataManager, data_splits):
             """Saves the workflow configuration and class name to a config log file."""
             config_log_path = os.path.join(results_dir, "config_log.txt")
             
@@ -243,6 +242,10 @@ class TrainingManager:
                 for attr, value in vars(DataManager).items():
                     f.write(f"{attr}: {value}\n")
 
+                f.write("\nFeature Order:\n")
+                for data_split in data_splits.values():
+                        f.write(f"Filename: {data_split.filename}\n")
+                        f.write(f"Feature Order: {', '.join(data_split.features)}\n\n")
 
         logging.captureWarnings(True)
 
@@ -261,7 +264,10 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        save_config_log(results_dir, workflow, workflow_config, self.DataManager)
+        save_config_log(
+            results_dir, workflow, workflow_config, self.DataManager, 
+            self.data_splits
+            )
 
         self._save_scalers(results_dir)
 
