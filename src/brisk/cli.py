@@ -41,9 +41,9 @@ METRIC_CONFIG = brisk.MetricManager({})
 
     with open(os.path.join(project_dir, 'splitter.py'), 'w') as f:
         f.write("""# splitter.py
-from brisk.data.DataSplitter import DataSplitter                
+from brisk.data.DataManager import DataManager                
 
-SPLITTER = DataSplitter(
+SPLITTER = DataManager(
     test_size = 0.2,
     n_splits = 5
 )              

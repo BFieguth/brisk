@@ -15,10 +15,11 @@ import traceback
 from typing import List, Dict, Tuple, Callable, Optional
 import warnings
  
+import joblib
 import pandas as pd
 from tqdm import tqdm
 
-from brisk.data.DataSplitter import DataSplitter
+from brisk.data.DataManager import DataManager
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
@@ -34,7 +35,7 @@ class TrainingManager:
     Attributes:
         method_config (dict): Configuration of methods with default parameters.
         metric_config (dict): Configuration of scoring metrics.
-        splitter (DataSplitter): Instance of the DataSplitter class for train-test splits.
+        splitter (DataManager): Instance of the DataManager class for train-test splits.
         methods (list): List of methods to apply to each dataset.
         data_paths (list): List of tuples containing dataset paths and table names.
         results_dir (str, optional): Directory to store results. Defaults to None.
@@ -45,7 +46,7 @@ class TrainingManager:
         self, 
         method_config: Dict[str, Dict], 
         metric_config: Dict[str, Dict], 
-        splitter: DataSplitter, 
+        splitter: DataManager, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
         verbose=False
@@ -55,7 +56,7 @@ class TrainingManager:
         Args:
             method_config (Dict[str, Dict]): Configuration of methods with default parameters.
             metric_config (Dict[str, Dict]): Configuration of scoring metrics.
-            splitter (DataSplitter): An instance of the DataSplitter class for train-test splits.
+            splitter (DataManager): An instance of the DataManager class for train-test splits.
             workflow (Workflow): An instance of the Workflow class to define training steps.
             methods (List[str]): List of methods to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
@@ -70,6 +71,7 @@ class TrainingManager:
             method_config=self.method_config, metric_config=self.metric_config
         )
         self._validate_methods()
+        self.scalers = {}
         self.data_splits = self._get_data_splits()
         self.experiments = self._create_experiments()
 
@@ -109,10 +111,16 @@ class TrainingManager:
         """
         data_splits = {}
         for data_path, table_name in self.data_paths:
-            X_train, X_test, y_train, y_test = self.splitter.split(
+            X_train, X_test, y_train, y_test, scaler = self.splitter.split(
                 data_path, table_name
                 )
             data_splits[data_path] = (X_train, X_test, y_train, y_test)
+              
+            file_key = table_name if table_name else os.path.splitext(
+                os.path.basename(data_path)
+                )[0]
+            if scaler:
+                self.scalers[file_key] = scaler
         
         return data_splits
 
@@ -164,6 +172,14 @@ class TrainingManager:
             os.makedirs(full_path)
         return full_path
 
+    def _save_scalers(self, results_dir):
+        scaler_dir = os.path.join(results_dir, "scalers")
+        os.makedirs(scaler_dir, exist_ok=True)
+        
+        for file_key, scaler in self.scalers.items():
+            scaler_path = os.path.join(scaler_dir, f"{file_key}_scaler.pkl")
+            joblib.dump(scaler, scaler_path)
+
     def run_experiments(
         self, 
         workflow,
@@ -213,7 +229,7 @@ class TrainingManager:
                 else:
                     f.write("No workflow configuration provided.\n")
 
-                f.write("\nDataSplitter Configuration:\n")
+                f.write("\nDataManager Configuration:\n")
                 for attr, value in vars(splitter).items():
                     f.write(f"{attr}: {value}\n")
 
@@ -236,6 +252,9 @@ class TrainingManager:
         os.makedirs(results_dir, exist_ok=True)
 
         save_config_log(results_dir, workflow, workflow_config, self.splitter)
+
+        if self.scalers:
+            self._save_scalers(results_dir)
 
         self.logger = self._setup_logger(results_dir)
          

@@ -1,11 +1,11 @@
-"""Provides the DataSplitter class for creating train-test splits.
+"""Provides the DataManager class for creating train-test splits.
 
-This module contains the `DataSplitter` class, which handles creating train-test 
+This module contains the `DataManager` class, which handles creating train-test 
 splits for machine learning models. It supports several splitting strategies 
 such as shuffle, k-fold, and stratified splits, with optional grouping.
 
 Exports:
-    - DataSplitter: A class for configuring and generating train-test splits or 
+    - DataManager: A class for configuring and generating train-test splits or 
         cross-validation folds.
 """
 
@@ -15,8 +15,9 @@ from typing import Optional, Tuple
 
 import pandas as pd
 import sklearn.model_selection as model_selection
+import sklearn.preprocessing as preprocessing
 
-class DataSplitter:
+class DataManager:
     """Handles the data splitting logic for creating train-test splits.
 
     This class allows users to configure different splitting strategies 
@@ -38,9 +39,10 @@ class DataSplitter:
         split_method: str = "shuffle", 
         group_column: Optional[str] = None, 
         stratified: bool = False,
-        random_state: Optional[int] = None
+        random_state: Optional[int] = None,
+        scale_method: Optional[str] = None
     ):
-        """Initializes the DataSplitter with custom splitting strategies.
+        """Initializes the DataManager with custom splitting strategies.
 
         Args:
             test_size (float): The proportion of the dataset to allocate to the test set. Defaults to 0.2.
@@ -56,9 +58,11 @@ class DataSplitter:
         self.stratified = stratified
         self.n_splits = n_splits
         self.random_state = random_state
+        self.scale_method = scale_method
 
         self._validate_config()
         self.splitter = self._set_splitter()
+        self.scaler = self._set_scaler()
 
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
@@ -81,6 +85,15 @@ class DataSplitter:
             raise ValueError(
                 "Group stratified shuffle is not supported. "
                 "Use split_method='kfold' for grouped and stratified splits."
+                )
+        
+        valid_scale_methods = [
+            "standard", "minmax", "robust", "maxabs", "normalizer", None
+            ]
+        if self.scale_method not in valid_scale_methods:
+            raise ValueError(
+                f"Invalid scale_method: {self.scale_method}."
+                "Choose from standard, minmax, robust, maxabs, normalizer"
                 )
 
     def _set_splitter(self):
@@ -147,6 +160,25 @@ class DataSplitter:
                     "Invalid combination of stratified and group_column "
                     "for kfold method."
                     )
+
+    def _set_scaler(self):
+        if self.scale_method == "standard":
+            return preprocessing.StandardScaler()
+
+        if self.scale_method == "minmax":
+            return preprocessing.MinMaxScaler()
+
+        if self.scale_method == "robust":
+            return preprocessing.RobustScaler()
+
+        if self.scale_method == "maxabs":
+            return preprocessing.MaxAbsScaler()
+
+        if self.scale_method == "normalizer":
+            return preprocessing.Normalizer()
+        
+        else:
+            return None
 
     def _load_data(
         self, 
@@ -222,18 +254,12 @@ class DataSplitter:
         if self.group_column:
             X = X.drop(columns=self.group_column)
 
-        if isinstance(
-            self.splitter, 
-            (model_selection.ShuffleSplit, 
-             model_selection.StratifiedShuffleSplit, 
-             model_selection.GroupShuffleSplit)
-            ):
-            train_idx, test_idx = next(self.splitter.split(X, y, groups))
-            X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-            y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-        else:
-            train_idx, test_idx = next(self.splitter.split(X, y, groups))
-            X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-            y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        train_idx, test_idx = next(self.splitter.split(X, y, groups))
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-        return X_train, X_test, y_train, y_test
+        if self.scaler:
+            X_train = pd.DataFrame(self.scaler.fit_transform(X_train), columns=X.columns)
+            X_test = pd.DataFrame(self.scaler.transform(X_test), columns=X.columns)
+
+        return X_train, X_test, y_train, y_test, self.scaler

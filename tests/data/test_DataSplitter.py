@@ -7,11 +7,11 @@ from sklearn.model_selection import (
     GroupKFold, StratifiedKFold, KFold, StratifiedGroupKFold
     )
 
-from brisk.data.DataSplitter import DataSplitter
+from brisk.data.DataManager import DataManager
 
 
-class TestDataSplitter:
-    """Test class for DataSplitter."""
+class TestDataManager:
+    """Test class for DataManager."""
 
     @pytest.fixture
     def mock_data(self):
@@ -24,12 +24,12 @@ class TestDataSplitter:
 
     @pytest.fixture
     def data_splitter(self):
-        """Fixture to initialize DataSplitter."""
-        return DataSplitter(test_size=0.2, split_method="shuffle")
+        """Fixture to initialize DataManager."""
+        return DataManager(test_size=0.2, split_method="shuffle")
 
     def test_initialization(self, data_splitter):
         """
-        Test that the DataSplitter is initialized correctly.
+        Test that the DataManager is initialized correctly.
         """
         assert data_splitter.test_size == 0.2
         assert data_splitter.split_method == "shuffle"
@@ -40,7 +40,7 @@ class TestDataSplitter:
         Test that an invalid split method raises a ValueError.
         """
         with pytest.raises(ValueError, match="Invalid split_method"):
-            DataSplitter(split_method="invalid_method")
+            DataManager(split_method="invalid_method")
 
     def test_validate_config_invalid_group_stratified(self):
         """
@@ -49,7 +49,7 @@ class TestDataSplitter:
         with pytest.raises(
             ValueError, match="Group stratified shuffle is not supported"
             ):
-            DataSplitter(
+            DataManager(
                 split_method="shuffle", group_column="group", stratified=True
                 )
 
@@ -59,7 +59,7 @@ class TestDataSplitter:
         Test loading data from a CSV file.
         """
         mock_read_csv.return_value = mock_data
-        splitter = DataSplitter()
+        splitter = DataManager()
         df = splitter._load_data("data.csv")
 
         mock_read_csv.assert_called_once_with("data.csv")
@@ -71,7 +71,7 @@ class TestDataSplitter:
         Test loading data from an Excel file.
         """
         mock_read_excel.return_value = mock_data
-        splitter = DataSplitter()
+        splitter = DataManager()
         df = splitter._load_data("data.xlsx")
 
         mock_read_excel.assert_called_once_with("data.xlsx")
@@ -84,7 +84,7 @@ class TestDataSplitter:
         Test loading data from an SQL database.
         """
         mock_read_sql.return_value = mock_data
-        splitter = DataSplitter()
+        splitter = DataManager()
         df = splitter._load_data("database.db", "table_name")
 
         mock_connect.assert_called_once_with("database.db")
@@ -94,7 +94,7 @@ class TestDataSplitter:
         assert df.equals(mock_data)
 
     def test_shuffle_without_stratified_or_group(self):
-        splitter = DataSplitter(
+        splitter = DataManager(
             test_size=0.2, split_method="shuffle", group_column=None, 
             stratified=False
             )
@@ -107,7 +107,7 @@ class TestDataSplitter:
 
     def test_shuffle_with_group_column(self):
         """Test GroupShuffleSplit is selected when group_column is True and not stratified."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             test_size=0.2, split_method="shuffle", group_column="group", 
             stratified=False
             )
@@ -119,7 +119,7 @@ class TestDataSplitter:
 
     def test_shuffle_with_stratified(self):
         """Test StratifiedShuffleSplit is selected when stratified is True and no group column."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             test_size=0.2, split_method="shuffle", group_column=None, 
             stratified=True
             )
@@ -131,7 +131,7 @@ class TestDataSplitter:
 
     def test_kfold_with_group_column(self):
         """Test GroupKFold is selected when using kfold and group_column is True."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             n_splits=5, split_method="kfold", group_column="group", 
             stratified=False
             )
@@ -142,7 +142,7 @@ class TestDataSplitter:
 
     def test_kfold_with_stratified(self):
         """Test StratifiedKFold is selected when using kfold and stratified is True."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             n_splits=5, split_method="kfold", group_column=None, 
             stratified=True, random_state=42
             )
@@ -155,7 +155,7 @@ class TestDataSplitter:
 
     def test_kfold_without_stratified_or_group(self):
         """Test KFold is selected when using kfold without stratified and group_column."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             n_splits=5, split_method="kfold", group_column=None, 
             stratified=False, random_state=42
             )
@@ -168,7 +168,7 @@ class TestDataSplitter:
 
     def test_kfold_with_stratified_and_group_column(self):
         """Test StratifiedGroupKFold is selected when using kfold with both stratified and group_column."""
-        splitter = DataSplitter(
+        splitter = DataManager(
             n_splits=5, split_method="kfold", group_column="group", 
             stratified=True
             )
@@ -184,7 +184,7 @@ class TestDataSplitter:
         """
         mock_read_csv.return_value = mock_data
 
-        splitter = DataSplitter(
+        splitter = DataManager(
             test_size=0.2, split_method="shuffle", random_state=42
             )
 
@@ -209,7 +209,7 @@ class TestDataSplitter:
         Test the split method using KFold.
         """
         mock_read_csv.return_value = mock_data
-        splitter = DataSplitter(
+        splitter = DataManager(
             n_splits=2, split_method="kfold", random_state=42
             )
         X_train, X_test, y_train, y_test = splitter.split("data.csv")
