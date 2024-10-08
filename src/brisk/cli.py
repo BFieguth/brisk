@@ -39,11 +39,11 @@ import brisk
 METRIC_CONFIG = brisk.MetricManager({})                       
 """)
 
-    with open(os.path.join(project_dir, 'splitter.py'), 'w') as f:
-        f.write("""# splitter.py
+    with open(os.path.join(project_dir, 'data.py'), 'w') as f:
+        f.write("""# data.py
 from brisk.data.DataManager import DataManager                
 
-SPLITTER = DataManager(
+DataManager = DataManager(
     test_size = 0.2,
     n_splits = 5
 )              
@@ -54,13 +54,13 @@ SPLITTER = DataManager(
 from brisk.training.TrainingManager import TrainingManager
 from .algorithms import ALGORITHM_CONFIG
 from .metrics import METRIC_CONFIG
-from .splitter import SPLITTER
+from .data import DataManager
                 
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     method_config=ALGORITHM_CONFIG,
     metric_config=METRIC_CONFIG,
-    splitter=SPLITTER
+    data_manager=DataManager
 )                 
 """)
     
