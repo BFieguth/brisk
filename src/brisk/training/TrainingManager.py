@@ -35,7 +35,7 @@ class TrainingManager:
     Attributes:
         method_config (dict): Configuration of methods with default parameters.
         metric_config (dict): Configuration of scoring metrics.
-        splitter (DataManager): Instance of the DataManager class for train-test splits.
+        DataManager (DataManager): Instance of the DataManager class for train-test splits.
         methods (list): List of methods to apply to each dataset.
         data_paths (list): List of tuples containing dataset paths and table names.
         results_dir (str, optional): Directory to store results. Defaults to None.
@@ -46,7 +46,7 @@ class TrainingManager:
         self, 
         method_config: Dict[str, Dict], 
         metric_config: Dict[str, Dict], 
-        splitter: DataManager, 
+        data_manager: DataManager, 
         methods: List[str], 
         data_paths: List[Tuple[str, str]],
         verbose=False
@@ -56,14 +56,14 @@ class TrainingManager:
         Args:
             method_config (Dict[str, Dict]): Configuration of methods with default parameters.
             metric_config (Dict[str, Dict]): Configuration of scoring metrics.
-            splitter (DataManager): An instance of the DataManager class for train-test splits.
+            data_manager (DataManager): An instance of the DataManager class for train-test splits.
             workflow (Workflow): An instance of the Workflow class to define training steps.
             methods (List[str]): List of methods to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
         """
         self.method_config = method_config
         self.metric_config = metric_config
-        self.splitter = splitter
+        self.DataManager = data_manager
         self.methods = methods
         self.data_paths = data_paths
         self.verbose = verbose
@@ -100,7 +100,7 @@ class TrainingManager:
     def _get_data_splits(
         self
     ) -> Dict[str, Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]]:
-        """Splits each dataset using the provided splitter.
+        """Splits each dataset using the provided DataManager.
          
         Returns a dictionary mapping each dataset path to its respective 
         train-test splits.
@@ -111,7 +111,7 @@ class TrainingManager:
         """
         data_splits = {}
         for data_path, table_name in self.data_paths:
-            X_train, X_test, y_train, y_test, scaler = self.splitter.split(
+            X_train, X_test, y_train, y_test, scaler = self.DataManager.split(
                 data_path, table_name
                 )
             data_splits[data_path] = (X_train, X_test, y_train, y_test)
@@ -215,7 +215,7 @@ class TrainingManager:
             logger.warning(log_message)
 
 
-        def save_config_log(results_dir, workflow, workflow_config, splitter):
+        def save_config_log(results_dir, workflow, workflow_config, DataManager):
             """Saves the workflow configuration and class name to a config log file."""
             config_log_path = os.path.join(results_dir, "config_log.txt")
             
@@ -230,7 +230,7 @@ class TrainingManager:
                     f.write("No workflow configuration provided.\n")
 
                 f.write("\nDataManager Configuration:\n")
-                for attr, value in vars(splitter).items():
+                for attr, value in vars(DataManager).items():
                     f.write(f"{attr}: {value}\n")
 
 
@@ -251,7 +251,7 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        save_config_log(results_dir, workflow, workflow_config, self.splitter)
+        save_config_log(results_dir, workflow, workflow_config, self.DataManager)
 
         if self.scalers:
             self._save_scalers(results_dir)
