@@ -20,6 +20,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from brisk.data.DataManager import DataManager
+from brisk.data.DataSplitInfo import DataSplitInfo
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
@@ -71,7 +72,6 @@ class TrainingManager:
             method_config=self.method_config, metric_config=self.metric_config
         )
         self._validate_methods()
-        self.scalers = {}
         self.data_splits = self._get_data_splits()
         self.experiments = self._create_experiments()
 
@@ -111,16 +111,23 @@ class TrainingManager:
         """
         data_splits = {}
         for data_path, table_name in self.data_paths:
-            X_train, X_test, y_train, y_test, scaler = self.DataManager.split(
+            X_train, X_test, y_train, y_test, scaler, feature_names = self.DataManager.split(
                 data_path, table_name
                 )
-            data_splits[data_path] = (X_train, X_test, y_train, y_test)
-              
-            file_key = table_name if table_name else os.path.splitext(
+
+            filename = table_name if table_name else os.path.splitext(
                 os.path.basename(data_path)
                 )[0]
-            if scaler:
-                self.scalers[file_key] = scaler
+            
+            data_splits[data_path] = DataSplitInfo(
+                X_train=X_train,
+                X_test=X_test,
+                y_train=y_train,
+                y_test=y_test,
+                filename=filename,
+                scaler=scaler,
+                features=feature_names
+            )
         
         return data_splits
 
@@ -176,9 +183,11 @@ class TrainingManager:
         scaler_dir = os.path.join(results_dir, "scalers")
         os.makedirs(scaler_dir, exist_ok=True)
         
-        for file_key, scaler in self.scalers.items():
-            scaler_path = os.path.join(scaler_dir, f"{file_key}_scaler.pkl")
-            joblib.dump(scaler, scaler_path)
+        for data_split in self.data_splits.values():
+            if data_split.scaler:
+                scaler_path = os.path.join(scaler_dir, f"{data_split.filename}_scaler.pkl")
+                joblib.dump(data_split.scaler, scaler_path)
+
 
     def run_experiments(
         self, 
@@ -215,7 +224,7 @@ class TrainingManager:
             logger.warning(log_message)
 
 
-        def save_config_log(results_dir, workflow, workflow_config, DataManager):
+        def save_config_log(results_dir, workflow, workflow_config, DataManager, data_splits):
             """Saves the workflow configuration and class name to a config log file."""
             config_log_path = os.path.join(results_dir, "config_log.txt")
             
@@ -233,6 +242,10 @@ class TrainingManager:
                 for attr, value in vars(DataManager).items():
                     f.write(f"{attr}: {value}\n")
 
+                f.write("\nFeature Order:\n")
+                for data_split in data_splits.values():
+                        f.write(f"Filename: {data_split.filename}\n")
+                        f.write(f"Feature Order: {', '.join(data_split.features)}\n\n")
 
         logging.captureWarnings(True)
 
@@ -251,10 +264,12 @@ class TrainingManager:
 
         os.makedirs(results_dir, exist_ok=True)
 
-        save_config_log(results_dir, workflow, workflow_config, self.DataManager)
+        save_config_log(
+            results_dir, workflow, workflow_config, self.DataManager, 
+            self.data_splits
+            )
 
-        if self.scalers:
-            self._save_scalers(results_dir)
+        self._save_scalers(results_dir)
 
         self.logger = self._setup_logger(results_dir)
          
@@ -276,7 +291,8 @@ class TrainingManager:
             tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
 
             try:
-                X_train, X_test, y_train, y_test = self.data_splits[data_path[0]]
+                data_split = self.data_splits[data_path[0]]
+                X_train, X_test, y_train, y_test = data_split.get_train_test()
 
                 models = [
                     self.method_config[method_name].instantiate() 
