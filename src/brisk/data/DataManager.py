@@ -250,9 +250,11 @@ class DataManager:
         X = df.iloc[:, :-1]
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
-
+        
         if self.group_column:
             X = X.drop(columns=self.group_column)
+
+        feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
@@ -262,4 +264,4 @@ class DataManager:
             X_train = pd.DataFrame(self.scaler.fit_transform(X_train), columns=X.columns)
             X_test = pd.DataFrame(self.scaler.transform(X_test), columns=X.columns)
 
-        return X_train, X_test, y_train, y_test, self.scaler
+        return X_train, X_test, y_train, y_test, self.scaler, feature_names
