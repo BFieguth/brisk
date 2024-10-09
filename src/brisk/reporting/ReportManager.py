@@ -94,9 +94,15 @@ class ReportManager():
         # Prepare the dataset entries for the index page
         datasets = []
         for dataset, experiments in self.experiment_paths.items():
+            dataset_file = os.path.basename(dataset)
+            dataset_name = os.path.splitext(dataset_file)[0]
             datasets.append({
-                'dataset_name': os.path.basename(dataset),
-                'experiment_pages': [os.path.basename(experiment) for experiment in experiments]
+                'dataset_file': dataset_file,
+                'dataset_name': dataset_name,
+                'experiment_pages': [
+                    (os.path.basename(experiment), f"{dataset_name}_{os.path.basename(experiment)}") 
+                    for experiment in experiments
+                    ]
             })
 
             # Create individual experiments pages
@@ -140,6 +146,8 @@ class ReportManager():
         self.current_dataset = dataset
         experiment_template = self.env.get_template("experiment.html")
         experiment_name = os.path.basename(experiment_dir)
+        dataset_name = os.path.splitext(os.path.basename(dataset))[0]    # TODO Get dataset name and add to file path
+        filename = f"{dataset_name}_{experiment_name}"
         files = os.listdir(experiment_dir)
 
         # Step 1: Process file metadata
@@ -173,7 +181,7 @@ class ReportManager():
             file_metadata=file_metadata,
             content=content_str
             )
-        experiment_page_path = os.path.join(self.report_dir, f"{experiment_name}.html")
+        experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, 'w') as f:
             f.write(experiment_output)
 

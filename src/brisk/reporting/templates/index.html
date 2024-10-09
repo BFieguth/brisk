@@ -22,10 +22,10 @@
     <div class="section-container">
         {% for dataset in datasets %}
         <section class="dataset-section">
-            <h2>{{ dataset.dataset_name }}</h2>
+            <h2>{{ dataset.dataset_file }}</h2>
             <ul>
                 {% for experiment_page in dataset.experiment_pages %}
-                <li><a href="{{ experiment_page }}.html">{{ experiment_page }}</a></li>
+                <li><a href="{{ experiment_page[1] }}.html">{{ experiment_page[0] }}</a></li>
                 {% endfor %}
             </ul>
         </section>

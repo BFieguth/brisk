@@ -173,11 +173,18 @@ class TrainingManager:
             str: The full path to the directory for storing experiment results.
         """
         dataset_name = os.path.basename(data_path[0]).split(".")[0]
-        experiment_dir = f"{method_name}_{dataset_name}"
-        full_path = os.path.join(results_dir, experiment_dir)
+
+        # experiment_dir = f"{method_name}_{dataset_name}"
+        # full_path = os.path.join(results_dir, experiment_dir)
+
+        experiment_path = f"{dataset_name}/{method_name}"
+        full_path = os.path.join(results_dir, experiment_path)
+
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         return full_path
+    
+    
 
     def _save_scalers(self, results_dir):
         scaler_dir = os.path.join(results_dir, "scalers")
@@ -187,7 +194,6 @@ class TrainingManager:
             if data_split.scaler:
                 scaler_path = os.path.join(scaler_dir, f"{data_split.filename}_scaler.pkl")
                 joblib.dump(data_split.scaler, scaler_path)
-
 
     def run_experiments(
         self, 
@@ -365,6 +371,7 @@ class TrainingManager:
             
         pbar.close()
         self._print_experiment_summary(experiment_results)
+        print(self.experiment_paths)
 
         # Delete error_log.txt if it is empty
         logging.shutdown()
