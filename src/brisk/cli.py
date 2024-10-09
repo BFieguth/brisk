@@ -1,10 +1,11 @@
 import importlib
+import inspect
 import os
 import sys
 
 import click
 
-# from brisk.training import TrainingManager
+from brisk.training.Workflow import Workflow
 
 @click.group()
 def cli():
@@ -105,7 +106,20 @@ def run(workflow, extra_args):
             )
 
         workflow_module = importlib.import_module(f'workflows.{workflow}')
-        workflow_class = getattr(workflow_module, 'MyWorkflow')
+        workflow_classes = [
+            obj for name, obj in inspect.getmembers(workflow_module) 
+            if inspect.isclass(obj) and issubclass(obj, Workflow) and obj is not Workflow
+        ]
+
+        if len(workflow_classes) == 0:
+            raise AttributeError(f"No Workflow subclass found in {workflow}.py")
+        elif len(workflow_classes) > 1:
+            raise AttributeError(
+                f"Multiple Workflow subclasses found in {workflow}.py. "
+                "There can only be one Workflow per file."
+                )
+        
+        workflow_class = workflow_classes[0]
 
         manager.run_experiments(
             workflow=workflow_class, workflow_config=WORKFLOW_CONFIG,
