@@ -126,7 +126,8 @@ class TrainingManager:
                 y_test=y_test,
                 filename=filename,
                 scaler=scaler,
-                features=feature_names
+                features=feature_names,
+                categorical_features=self.DataManager.categorical_features
             )
         
         return data_splits

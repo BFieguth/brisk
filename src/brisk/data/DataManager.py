@@ -270,13 +270,6 @@ class DataManager:
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
         if self.scaler:
-            X_train[continuous_features] = pd.DataFrame(
-                self.scaler.fit_transform(X_train[continuous_features]), 
-                columns=continuous_features
-                )
-            X_test[continuous_features] = pd.DataFrame(
-                self.scaler.transform(X_test[continuous_features]), 
-                columns=continuous_features
-                )
+            self.scaler.fit(X_train[continuous_features])
 
         return X_train, X_test, y_train, y_test, self.scaler, feature_names
