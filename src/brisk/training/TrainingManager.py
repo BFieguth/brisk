@@ -183,9 +183,7 @@ class TrainingManager:
 
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        return full_path
-    
-    
+        return full_path   
 
     def _save_scalers(self, results_dir):
         scaler_dir = os.path.join(results_dir, "scalers")
