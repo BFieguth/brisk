@@ -40,7 +40,8 @@ class DataManager:
         group_column: Optional[str] = None, 
         stratified: bool = False,
         random_state: Optional[int] = None,
-        scale_method: Optional[str] = None
+        scale_method: Optional[str] = None,
+        categorical_features: Optional[list] = None
     ):
         """Initializes the DataManager with custom splitting strategies.
 
@@ -59,6 +60,7 @@ class DataManager:
         self.n_splits = n_splits
         self.random_state = random_state
         self.scale_method = scale_method
+        self.categorical_features = categorical_features
 
         self._validate_config()
         self.splitter = self._set_splitter()
@@ -254,6 +256,13 @@ class DataManager:
         if self.group_column:
             X = X.drop(columns=self.group_column)
 
+        if self.categorical_features:
+            continuous_features = [
+                col for col in X.columns if col not in self.categorical_features
+                ]
+        else:
+            continuous_features = X.columns
+
         feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
@@ -261,7 +270,13 @@ class DataManager:
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
         if self.scaler:
-            X_train = pd.DataFrame(self.scaler.fit_transform(X_train), columns=X.columns)
-            X_test = pd.DataFrame(self.scaler.transform(X_test), columns=X.columns)
+            X_train[continuous_features] = pd.DataFrame(
+                self.scaler.fit_transform(X_train[continuous_features]), 
+                columns=continuous_features
+                )
+            X_test[continuous_features] = pd.DataFrame(
+                self.scaler.transform(X_test[continuous_features]), 
+                columns=continuous_features
+                )
 
         return X_train, X_test, y_train, y_test, self.scaler, feature_names
