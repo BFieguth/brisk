@@ -118,33 +118,43 @@ class DataSplitInfo:
 
     def _plot_histogram_boxplot(
         self, 
-        feature_series: pd.Series,
         feature_name: str,
         output_dir: str
     ) -> None:
         os.makedirs(output_dir, exist_ok=True)
 
-        fig, (ax_hist, ax_box) = plt.subplots(
-            nrows=2, sharex=True, gridspec_kw={"height_ratios": (3, 1)}, 
-            figsize=(8, 6)
-            )
-        
-        # Histogram
-        # Use Sturges Rule to calculate bins
-        bins = int(np.ceil(np.log(len(feature_series.dropna())) + 1))
+        train_series = self.X_train[feature_name].dropna()
+        test_series = self.X_test[feature_name].dropna()
 
-        ax_hist.hist(feature_series, bins=bins, edgecolor='black', alpha=0.7)
-        ax_hist.set_title(f'Distribution of {feature_name}', fontsize=14)
-        ax_hist.set_ylabel('Frequency', fontsize=12)
+        fig, axs = plt.subplots(
+            nrows=2, ncols=2, sharex='col', gridspec_kw={"height_ratios": (3, 1)}, 
+            figsize=(12, 6)
+        )
         
-        # Boxplot
-        ax_box.boxplot(feature_series, vert=False)
-        ax_box.set_xlabel(f'{feature_name}', fontsize=12)
+        # Histograms
+        bins_train = int(np.ceil(np.log(len(train_series)) + 1))  # Sturges' rule
+        bins_test = int(np.ceil(np.log(len(test_series)) + 1))
 
-        plot_path = os.path.join(output_dir, f"{feature_name}_hist_box.png")
+        axs[0, 0].hist(train_series, bins=bins_train, edgecolor='black', alpha=0.7)
+        axs[0, 0].set_title(f'Train Distribution of {feature_name}', fontsize=14)
+        axs[0, 0].set_ylabel('Frequency', fontsize=12)
+
+        axs[0, 1].hist(test_series, bins=bins_test, edgecolor='black', alpha=0.7)
+        axs[0, 1].set_title(f'Test Distribution of {feature_name}', fontsize=14)
+
+        # Boxplots
+        axs[1, 0].boxplot(train_series, vert=False)
+        axs[1, 1].boxplot(test_series, vert=False)
+
+        # Set labels
+        axs[1, 0].set_xlabel(f'{feature_name}', fontsize=12)
+        axs[1, 1].set_xlabel(f'{feature_name}', fontsize=12)
+
+        # Save the plot
+        plot_path = os.path.join(output_dir, f"{feature_name}_hist_box_train_test.png")
         plt.tight_layout()
         plt.savefig(plot_path)
-        plt.close() 
+        plt.close()
 
     def _plot_correlation_matrix(self, output_dir: str):
         """Plot and save the correlation matrix for continuous features."""
@@ -163,7 +173,7 @@ class DataSplitInfo:
         plt.savefig(plot_path)
         plt.close() 
 
-    def _plot_categorical_pie(self, feature_series: pd.Series, feature_name: str, output_dir: str):
+    def _plot_categorical_pie(self, feature_name: str, output_dir: str):
         """
         Creates a pie chart to visualize the frequency distribution of a categorical feature.
 
@@ -173,16 +183,29 @@ class DataSplitInfo:
             output_dir (str): The file path to save the pie chart. If None, it will display the chart.
         """
         os.makedirs(output_dir, exist_ok=True)
-        value_counts = feature_series.value_counts()
-        plt.figure(figsize=(8, 8))
-        plt.pie(
-            value_counts, labels=value_counts.index, autopct='%1.1f%%', 
+
+        train_series = self.X_train[feature_name].dropna()
+        test_series = self.X_test[feature_name].dropna()
+
+        train_value_counts = train_series.value_counts()
+        test_value_counts = test_series.value_counts()
+
+        fig, axs = plt.subplots(1, 2, figsize=(14, 8))
+
+        axs[0].pie(
+            train_value_counts, labels=train_value_counts.index, autopct='%1.1f%%',
             startangle=90, colors=plt.cm.Paired.colors
-            )
-        plt.title(f'Frequency Distribution of {feature_name}')
-        plt.axis('equal')
+        )
+        axs[0].set_title(f'Train {feature_name} Distribution')
+
+        axs[1].pie(
+            test_value_counts, labels=test_value_counts.index, autopct='%1.1f%%',
+            startangle=90, colors=plt.cm.Paired.colors
+        )
+        axs[1].set_title(f'Test {feature_name} Distribution')
+
+        plot_path = os.path.join(output_dir, f"{feature_name}_pie_train_test.png")
         plt.tight_layout()
-        plot_path = os.path.join(output_dir, f"{feature_name}_pie_plot.png")
         plt.savefig(plot_path)
         plt.close()
 
@@ -242,21 +265,19 @@ class DataSplitInfo:
             with open(continuous_stats_path, 'w') as f:
                 json.dump(self.continuous_stats, f, indent=4)
 
+            for feature in self.continuous_features:
+                self._plot_histogram_boxplot(
+                    feature, os.path.join(dataset_dir, "hist_box_plot")
+                )
+            self._plot_correlation_matrix(dataset_dir)
+
         if self.categorical_stats:
             categorical_stats_path = os.path.join(dataset_dir, 'categorical_stats.json')
             with open(categorical_stats_path, 'w') as f:
                 json.dump(self.categorical_stats, f, indent=4)
 
-        for feature in self.continuous_features:
-            feature_series = self.X_train[feature]
-            self._plot_histogram_boxplot(
-                feature_series, feature, os.path.join(dataset_dir, "hist_box_plot")
-            )
-            self._plot_correlation_matrix(dataset_dir)
-
-        for feature in self.categorical_features:
-            feature_series = self.X_train[feature]
-            self._plot_categorical_pie(
-                feature_series, feature, os.path.join(dataset_dir, "pie_plot")
-                )
-            
+            for feature in self.categorical_features:
+                self._plot_categorical_pie(
+                    feature, os.path.join(dataset_dir, "pie_plot")
+                    )
+                
