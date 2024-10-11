@@ -195,9 +195,11 @@ class TrainingManager:
                 joblib.dump(data_split.scaler, scaler_path)
 
     def _save_data_distributions(self, results_dir):
+        self.data_distribution_paths = {}
         for data_split in self.data_splits.values():
-            dataset_dir = os.path.join(results_dir, data_split.filename)
+            dataset_dir = os.path.join(results_dir, data_split.filename, "feature_distribution")
             data_split.save_distribution(dataset_dir)
+            self.data_distribution_paths[data_split.filename] = dataset_dir
 
     def run_experiments(
         self, 
@@ -384,7 +386,9 @@ class TrainingManager:
             os.remove(error_log_path)
 
         if create_report:
-            report_manager = ReportManager(results_dir, self.experiment_paths)
+            report_manager = ReportManager(
+                results_dir, self.experiment_paths, self.data_distribution_paths
+                )
             report_manager.create_report()
 
     def _print_experiment_summary(self, experiment_results):

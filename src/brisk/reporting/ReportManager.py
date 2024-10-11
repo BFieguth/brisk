@@ -32,7 +32,12 @@ class ReportManager():
         current_dataset (str, optional): The name of the dataset currently being processed.
         summary_metrics (dict): Dictionary holding summary metrics for the report.
     """
-    def __init__(self, result_dir: str, experiment_paths: dict):
+    def __init__(
+        self, 
+        result_dir: str, 
+        experiment_paths: dict,
+        data_distribution_paths: dict
+    ):
         """Initializes the ReportManager with directories for results and experiment paths.
 
         Args:
@@ -75,6 +80,7 @@ class ReportManager():
         ])
         self.current_dataset = None
         self.summary_metrics = {}
+        self.data_distribution_paths = data_distribution_paths
 
     def create_report(self) -> None:
         """Generates the HTML report.
@@ -104,6 +110,7 @@ class ReportManager():
                     for experiment in experiments
                     ]
             })
+            self.create_dataset_page(dataset_name)
 
             # Create individual experiments pages
             for experiment in experiments:
@@ -184,6 +191,48 @@ class ReportManager():
         experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, 'w') as f:
             f.write(experiment_output)
+
+    def create_dataset_page(self, dataset_name) -> None:
+        dataset_dir = self.data_distribution_paths[dataset_name]
+        files = os.listdir(dataset_dir)
+        print(files)
+
+        # Template for the dataset page
+        dataset_page_template = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{{ dataset_name }} Report</title>
+            <link rel="stylesheet" href="index.css">
+        </head>
+        <body>
+            <header>
+                <h1>Report for {{ dataset_name }}</h1>
+            </header>
+            <div class="content-container">
+                <section>
+                    <h2>Distribution Data for {{ dataset_name }}</h2>
+                    <ul>
+                    {% for file in files %}
+                        <li>{{ file }}</li>
+                    {% endfor %}
+                    </ul>
+                </section>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Use Jinja2 to render the template with dataset-specific content
+        template = jinja2.Template(dataset_page_template)
+        rendered_html = template.render(dataset_name=dataset_name, files=files)
+
+        # Save the rendered HTML content to a file
+        output_file_path = os.path.join(self.report_dir, f"{dataset_name}.html")
+        with open(output_file_path, 'w') as f:
+            f.write(rendered_html)
 
     def _get_json_metadata(self, json_path: str) -> dict:
         """Extracts metadata from a JSON file.

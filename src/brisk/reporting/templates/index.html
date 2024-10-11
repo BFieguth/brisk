@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ML Toolkit Report</title>
+    <title>Brisk Report</title>
     <link rel="stylesheet" href="./index.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -22,7 +22,8 @@
     <div class="section-container">
         {% for dataset in datasets %}
         <section class="dataset-section">
-            <h2>{{ dataset.dataset_file }}</h2>
+            <!-- <h2>{{ dataset.dataset_name }}</h2> -->
+            <h2><a href="{{ dataset.dataset_name }}.html">{{ dataset.dataset_name }}</a></h2>
             <ul>
                 {% for experiment_page in dataset.experiment_pages %}
                 <li><a href="{{ experiment_page[1] }}.html">{{ experiment_page[0] }}</a></li>
