@@ -376,7 +376,6 @@ class TrainingManager:
             
         pbar.close()
         self._print_experiment_summary(experiment_results)
-        print(self.experiment_paths)
 
         # Delete error_log.txt if it is empty
         logging.shutdown()
