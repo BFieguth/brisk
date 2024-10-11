@@ -194,6 +194,11 @@ class TrainingManager:
                 scaler_path = os.path.join(scaler_dir, f"{data_split.filename}_scaler.pkl")
                 joblib.dump(data_split.scaler, scaler_path)
 
+    def _save_data_distributions(self, results_dir):
+        for data_split in self.data_splits.values():
+            dataset_dir = os.path.join(results_dir, data_split.filename)
+            data_split.save_distribution(dataset_dir)
+
     def run_experiments(
         self, 
         workflow,
@@ -275,6 +280,7 @@ class TrainingManager:
             )
 
         self._save_scalers(results_dir)
+        self._save_data_distributions(results_dir)
 
         self.logger = self._setup_logger(results_dir)
          

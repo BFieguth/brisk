@@ -1,9 +1,11 @@
 import json
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats
+import seaborn as sns
 
 class DataSplitInfo:
     def __init__(
@@ -114,6 +116,76 @@ class DataSplitInfo:
         
         return stats
 
+    def _plot_histogram_boxplot(
+        self, 
+        feature_series: pd.Series,
+        feature_name: str,
+        output_dir: str
+    ) -> None:
+        os.makedirs(output_dir, exist_ok=True)
+
+        fig, (ax_hist, ax_box) = plt.subplots(
+            nrows=2, sharex=True, gridspec_kw={"height_ratios": (3, 1)}, 
+            figsize=(8, 6)
+            )
+        
+        # Histogram
+        # Use Sturges Rule to calculate bins
+        bins = int(np.ceil(np.log(len(feature_series.dropna())) + 1))
+
+        ax_hist.hist(feature_series, bins=bins, edgecolor='black', alpha=0.7)
+        ax_hist.set_title(f'Distribution of {feature_name}', fontsize=14)
+        ax_hist.set_ylabel('Frequency', fontsize=12)
+        
+        # Boxplot
+        ax_box.boxplot(feature_series, vert=False)
+        ax_box.set_xlabel(f'{feature_name}', fontsize=12)
+
+        plot_path = os.path.join(output_dir, f"{feature_name}_hist_box.png")
+        plt.tight_layout()
+        plt.savefig(plot_path)
+        plt.close() 
+
+    def _plot_correlation_matrix(self, output_dir: str):
+        """Plot and save the correlation matrix for continuous features."""
+        os.makedirs(output_dir, exist_ok=True)
+        
+        correlation_matrix = self.X_train[self.continuous_features].corr()
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(
+            correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f", 
+            linewidths=0.5, square=True
+            )
+        plt.title("Correlation Matrix of Continuous Features", fontsize=14)
+
+        plot_path = os.path.join(output_dir, "correlation_matrix.png")
+        plt.tight_layout()
+        plt.savefig(plot_path)
+        plt.close() 
+
+    def _plot_categorical_pie(self, feature_series: pd.Series, feature_name: str, output_dir: str):
+        """
+        Creates a pie chart to visualize the frequency distribution of a categorical feature.
+
+        Args:
+            feature_series (pd.Series): The categorical feature data to plot.
+            feature_name (str): The name of the feature (used as the chart title).
+            output_dir (str): The file path to save the pie chart. If None, it will display the chart.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        value_counts = feature_series.value_counts()
+        plt.figure(figsize=(8, 8))
+        plt.pie(
+            value_counts, labels=value_counts.index, autopct='%1.1f%%', 
+            startangle=90, colors=plt.cm.Paired.colors
+            )
+        plt.title(f'Frequency Distribution of {feature_name}')
+        plt.axis('equal')
+        plt.tight_layout()
+        plot_path = os.path.join(output_dir, f"{feature_name}_pie_plot.png")
+        plt.savefig(plot_path)
+        plt.close()
+
     def get_train(self):
         """
         Returns the training features.
@@ -174,3 +246,17 @@ class DataSplitInfo:
             categorical_stats_path = os.path.join(dataset_dir, 'categorical_stats.json')
             with open(categorical_stats_path, 'w') as f:
                 json.dump(self.categorical_stats, f, indent=4)
+
+        for feature in self.continuous_features:
+            feature_series = self.X_train[feature]
+            self._plot_histogram_boxplot(
+                feature_series, feature, os.path.join(dataset_dir, "hist_box_plot")
+            )
+            self._plot_correlation_matrix(dataset_dir)
+
+        for feature in self.categorical_features:
+            feature_series = self.X_train[feature]
+            self._plot_categorical_pie(
+                feature_series, feature, os.path.join(dataset_dir, "pie_plot")
+                )
+            
