@@ -84,9 +84,9 @@ class ReportManager():
             ("continuous_stats.json", self.report_continuous_stats),
         ])
 
-        self.categorical_section = collections.OrderedDict([
-            # ("categorical_stats.json", self.report_categorical_stats),
-            # ("pie_plot", self.report_pie_plot)
+        self.categorical_data_map = collections.OrderedDict([
+            # ("pie_plot", self.report_pie_plot),
+            ("categorical_stats.json", self.report_categorical_stats),
         ])
 
         self.current_dataset = None
@@ -580,3 +580,87 @@ class ReportManager():
         </div>
         """
         return result_html
+
+    def report_categorical_stats(self, file_path):
+        with open(file_path, 'r') as file:
+            stats_data = json.load(file)
+        
+        content = ""
+        
+        for feature_name, stats in stats_data.items():
+            feature_html = f"<h3>{feature_name}</h3>"
+            feature_html += '''
+            <table class="categorical-feature-table">
+                <thead>
+                    <tr>
+                        <th>Statistic</th>
+                        <th>Train</th>
+                        <th>Test</th>
+                    </tr>
+                </thead>
+                <tbody>
+            '''
+
+            stat_keys = [
+                "frequency", "proportion", "num_unique", "entropy", "chi_square"
+                ]
+            chi_square_keys = ["chi2_stat", "p_value", "degrees_of_freedom"]
+            
+            
+            for stat in stat_keys:
+                train_value = stats['train'].get(stat, 'N/A')
+                test_value = stats['test'].get(stat, 'N/A')
+                
+                if stat == "frequency" and isinstance(train_value, dict):
+                    train_value = "<br>".join([f"{key}: {value}" for key, value in sorted(train_value.items())])
+                    test_value = "<br>".join([f"{key}: {value}" for key, value in sorted(test_value.items())])
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+                elif stat == "proportion" and isinstance(train_value, dict):
+                    train_value = "<br>".join([f"{key}: {value * 100:.2f}%" for key, value in sorted(train_value.items())])
+                    test_value = "<br>".join([f"{key}: {value * 100:.2f}%" for key, value in sorted(test_value.items())])
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+                
+                
+                # Formatting chi_square dictionary to split across rows
+                elif stat == "chi_square" and isinstance(train_value, dict):
+                    for chi_key in chi_square_keys:
+                        feature_html += f'''
+                            <tr>
+                                <td>{chi_key.replace("_", " ").capitalize()}</td>
+                                <td>{train_value.get(chi_key, "N/A")}</td>
+                                <td>{test_value.get(chi_key, "N/A")}</td>
+                            </tr>
+                        '''
+                    continue                
+
+                else:
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.replace("_", " ").capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+
+            feature_html += '''
+                </tbody>
+            </table>
+            <br/>
+            '''
+            
+            content += feature_html
+        
+        return content
+    

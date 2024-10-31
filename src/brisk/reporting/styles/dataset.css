@@ -143,3 +143,10 @@ img {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
     border-radius: 4px;
 }
+
+.categorical-feature-table {
+    width: 100%;
+    margin: 0;
+    margin-left: 10px;
+    max-width: 600px;
+}
