@@ -338,6 +338,7 @@ class TrainingManager:
                     y_test=y_test,
                     output_dir=experiment_dir,
                     method_names=method_names,
+                    feature_names=data_split.features,
                     model_kwargs=model_kwargs,
                     workflow_config=workflow_config
                 )
