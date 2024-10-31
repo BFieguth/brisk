@@ -78,6 +78,17 @@ class ReportManager():
                 data, metadata, title="Hyperparameter Tuning"
             ))
         ])
+
+        self.continuous_data_map = collections.OrderedDict([
+            ("continuous_stats.json", self.report_continuous_stats),
+            # ("correlation_matrix.png", self.report_correlation_matrix)
+        ])
+
+        self.categorical_section = collections.OrderedDict([
+            # ("categorical_stats.json", self.report_categorical_stats),
+            # ("pie_plot", self.report_pie_plot)
+        ])
+
         self.current_dataset = None
         self.summary_metrics = {}
         self.data_distribution_paths = data_distribution_paths
@@ -129,6 +140,10 @@ class ReportManager():
         shutil.copy(
             os.path.join(self.styles_dir, "experiment.css"), 
             os.path.join(self.report_dir, "experiment.css")
+            )
+        shutil.copy(
+            os.path.join(self.styles_dir, "dataset.css"), 
+            os.path.join(self.report_dir, "dataset.css")
             )
 
         # Render the index page
@@ -193,43 +208,31 @@ class ReportManager():
             f.write(experiment_output)
 
     def create_dataset_page(self, dataset_name) -> None:
+        dataset_template = self.env.get_template("dataset.html")
         dataset_dir = self.data_distribution_paths[dataset_name]
         files = os.listdir(dataset_dir)
-        print(files)
+        content = []
 
-        # Template for the dataset page
-        dataset_page_template = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{{ dataset_name }} Report</title>
-            <link rel="stylesheet" href="index.css">
-        </head>
-        <body>
-            <header>
-                <h1>Report for {{ dataset_name }}</h1>
-            </header>
-            <div class="content-container">
-                <section>
-                    <h2>Distribution Data for {{ dataset_name }}</h2>
-                    <ul>
-                    {% for file in files %}
-                        <li>{{ file }}</li>
-                    {% endfor %}
-                    </ul>
-                </section>
-            </div>
-        </body>
-        </html>
-        """
-        
-        # Use Jinja2 to render the template with dataset-specific content
-        template = jinja2.Template(dataset_page_template)
-        rendered_html = template.render(dataset_name=dataset_name, files=files)
+        continuous_present = any(file.startswith("continuous_") for file in files)
+        if continuous_present:
+            content.append("<h2>Continuous Features</h2>")
+            for file, report_method in self.continuous_data_map.items():
+                matching_files = [f for f in files if file in f]
+                for match in matching_files:
+                    file_path = os.path.join(dataset_dir, match)
+                    content.append(report_method(file_path))
 
-        # Save the rendered HTML content to a file
+        categorical_present = any(file.startswith("categorical_") for file in files)
+        if categorical_present:
+            content.append("<h2>Categorical Features</h2>")
+            for file, report_method in self.categorical_data_map.items():
+                matching_files = [f for f in files if file in f]
+                for match in matching_files:
+                    file_path = os.path.join(dataset_dir, match)
+                    content.append(report_method(file_path))
+
+        content_str = "".join(content)
+        rendered_html = dataset_template.render(dataset_name=dataset_name, content=content_str)
         output_file_path = os.path.join(self.report_dir, f"{dataset_name}.html")
         with open(output_file_path, 'w') as f:
             f.write(rendered_html)
@@ -487,3 +490,84 @@ class ReportManager():
             summary_html += "</tbody></table>"
 
         return summary_html
+
+    # Report Dataset Distribution
+    def report_continuous_stats(self, file_path):
+        with open(file_path, 'r') as file:
+            stats_data = json.load(file)
+
+        content = ""
+
+        base_dir = os.path.dirname(file_path)            
+        for feature_name, stats in stats_data.items():
+            image_path = os.path.join(
+                base_dir, 'hist_box_plot', f'{feature_name}_hist_box.png'
+                )
+            relative_image_path = os.path.relpath(
+                image_path, self.report_dir
+                )
+                    
+            if os.path.exists(image_path):
+                image_html = f'''
+                    <div class="image-container">
+                        <img src="{relative_image_path}" alt="{feature_name} histogram and boxplot">
+                    </div>
+            '''
+            else:
+                image_html = f'No image found at {relative_image_path}'
+
+            # Create a table for each feature
+            feature_html = f'''
+            <div class="feature-section">
+                <h3>{feature_name}</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <table class="feature-table">
+                            <thead>
+                                <tr>
+                                    <th>Statistic</th>
+                                    <th>Train</th>
+                                    <th>Test</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            '''
+            
+            # List of statistics for the table rows
+            stats_keys = ["mean", "median", "std_dev", "variance", "min", "max", "range", 
+                        "25_percentile", "75_percentile", "skewness", "kurtosis", 
+                        "coefficient_of_variation"]
+            
+            for stat in stats_keys:
+                train_value = stats['train'].get(stat, 'N/A')
+                test_value = stats['test'].get(stat, 'N/A')
+                
+                if isinstance(train_value, (int, float)):
+                    train_value = round(train_value, 5)
+                if isinstance(test_value, (int, float)):
+                    test_value = round(test_value, 5)
+
+                feature_html += f'''
+                            <tr>
+                                <td>{stat.replace("_", " ").capitalize()}</td>
+                                <td>{train_value}</td>
+                                <td>{test_value}</td>
+                            </tr>
+                '''
+            
+            feature_html += '''
+                        </tbody>
+                    </table>
+                </div>
+            '''
+            feature_html += image_html
+            feature_html += '''
+                    </div>
+                </div>
+                <br/>
+            '''
+            
+            content += feature_html
+        
+        return content
+    

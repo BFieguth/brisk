@@ -153,7 +153,7 @@ class DataSplitInfo:
         axs[1, 1].set_xlabel(f'{feature_name}', fontsize=12)
 
         # Save the plot
-        plot_path = os.path.join(output_dir, f"{feature_name}_hist_box_train_test.png")
+        plot_path = os.path.join(output_dir, f"{feature_name}_hist_box.png")
         plt.tight_layout()
         plt.savefig(plot_path)
         plt.close()
