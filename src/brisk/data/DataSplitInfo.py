@@ -40,13 +40,16 @@ class DataSplitInfo:
         self.filename = filename
         self.scaler = scaler
         self.features = features
-        self.categorical_features = categorical_features
-        if self.categorical_features:
-            self.continuous_features = [
-                col for col in X_train.columns if col not in self.categorical_features
-                ]
-        else:
-            self.continuous_features = X_train.columns
+
+        if categorical_features:
+            self.categorical_features = [
+                feature for feature in categorical_features 
+                if feature in X_train.columns
+            ]
+
+        self.continuous_features = [
+            col for col in X_train.columns if col not in self.categorical_features
+            ]
 
         self.continuous_stats = {}
         for feature in self.continuous_features:
@@ -56,16 +59,15 @@ class DataSplitInfo:
             }
         
         self.categorical_stats = {}
-        if self.categorical_features:
-            for feature in self.categorical_features:
-                self.categorical_stats[feature] = {
-                    "train": self._calculate_categorical_stats(
-                        self.X_train[feature], feature
-                        ),
-                    "test": self._calculate_categorical_stats(
-                        self.X_test[feature], feature
-                        )
-                }
+        for feature in self.categorical_features:
+            self.categorical_stats[feature] = {
+                "train": self._calculate_categorical_stats(
+                    self.X_train[feature], feature
+                    ),
+                "test": self._calculate_categorical_stats(
+                    self.X_test[feature], feature
+                    )
+            }
 
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
         """Calculate descriptive statistics for a continuous feature."""
