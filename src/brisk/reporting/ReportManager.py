@@ -80,8 +80,8 @@ class ReportManager():
         ])
 
         self.continuous_data_map = collections.OrderedDict([
+            ("correlation_matrix.png", self.report_correlation_matrix),
             ("continuous_stats.json", self.report_continuous_stats),
-            # ("correlation_matrix.png", self.report_correlation_matrix)
         ])
 
         self.categorical_section = collections.OrderedDict([
@@ -571,3 +571,12 @@ class ReportManager():
         
         return content
     
+    def report_correlation_matrix(self, file_path):
+        relative_img_path = os.path.relpath(file_path, self.report_dir)
+        result_html = f"""
+        <h3>Correlation Matrix</h3>
+        <div class="correlation-matrix-container">
+            <img src="{relative_img_path}" alt="Correlation Matrix">
+        </div>
+        """
+        return result_html
