@@ -208,7 +208,7 @@ class DataSplitInfo:
         )
         axs[1].set_title(f'Test {feature_name} Distribution')
 
-        plot_path = os.path.join(output_dir, f"{feature_name}_pie_train_test.png")
+        plot_path = os.path.join(output_dir, f"{feature_name}_pie_plot.png")
         plt.tight_layout()
         plt.savefig(plot_path)
         plt.close()

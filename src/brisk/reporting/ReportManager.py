@@ -85,7 +85,6 @@ class ReportManager():
         ])
 
         self.categorical_data_map = collections.OrderedDict([
-            # ("pie_plot", self.report_pie_plot),
             ("categorical_stats.json", self.report_categorical_stats),
         ])
 
@@ -584,21 +583,31 @@ class ReportManager():
     def report_categorical_stats(self, file_path):
         with open(file_path, 'r') as file:
             stats_data = json.load(file)
+
+        base_dir = os.path.dirname(file_path)
         
         content = ""
         
         for feature_name, stats in stats_data.items():
+            image_path = os.path.join(
+                base_dir, 'pie_plot', f'{feature_name}_pie_plot.png'
+                )
+            relative_image_path = os.path.relpath(image_path, self.report_dir)
+
+
             feature_html = f"<h3>{feature_name}</h3>"
             feature_html += '''
-            <table class="categorical-feature-table">
-                <thead>
-                    <tr>
-                        <th>Statistic</th>
-                        <th>Train</th>
-                        <th>Test</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <table class="categorical-feature-table">
+                        <thead>
+                            <tr>
+                                <th>Statistic</th>
+                                <th>Train</th>
+                                <th>Test</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             '''
 
             stat_keys = [
@@ -655,12 +664,22 @@ class ReportManager():
                     '''
 
             feature_html += '''
-                </tbody>
-            </table>
-            <br/>
+                        </tbody>
+                    </table>
+                </div>
             '''
-            
+
+            if os.path.exists(image_path):
+                feature_html += f'''
+                    <div class="pie-plot-container">
+                        <img src="{relative_image_path}" alt="{feature_name} pie chart">
+                    </div>
+                '''
+            else:
+                feature_html += f'<p>No image found at {relative_image_path}</p>'
+
+            feature_html += '</div><br/>'
             content += feature_html
         
         return content
-    
+        
