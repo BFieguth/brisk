@@ -41,7 +41,7 @@ class DataManager:
         stratified: bool = False,
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
-        categorical_features: Optional[list] = None
+        categorical_features: Optional[list] = []
     ):
         """Initializes the DataManager with custom splitting strategies.
 
