@@ -104,7 +104,6 @@ class TestDataManager:
         assert splitter_obj.n_splits == 1
         assert splitter_obj.test_size == 0.2
 
-
     def test_shuffle_with_group_column(self):
         """Test GroupShuffleSplit is selected when group_column is True and not stratified."""
         splitter = DataManager(
@@ -188,7 +187,9 @@ class TestDataManager:
             test_size=0.2, split_method="shuffle", random_state=42
             )
 
-        X_train, X_test, y_train, y_test = splitter.split("data.csv")
+        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+            "data.csv"
+            )
 
         assert len(X_train) == 8
         assert len(X_test) == 2
@@ -203,6 +204,9 @@ class TestDataManager:
         assert isinstance(y_train, pd.Series)
         assert isinstance(y_test, pd.Series)
 
+        assert scaler == None
+        assert feature_names == ['feature1', 'feature2']
+
     @mock.patch("pandas.read_csv")
     def test_kfold_split(self, mock_read_csv, mock_data):
         """
@@ -212,7 +216,9 @@ class TestDataManager:
         splitter = DataManager(
             n_splits=2, split_method="kfold", random_state=42
             )
-        X_train, X_test, y_train, y_test = splitter.split("data.csv")
+        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+            "data.csv"
+            )
 
         assert len(X_train) == 5
         assert len(X_test) == 5
@@ -226,3 +232,6 @@ class TestDataManager:
         assert isinstance(X_test, pd.DataFrame)
         assert isinstance(y_train, pd.Series)
         assert isinstance(y_test, pd.Series)
+
+        assert scaler == None
+        assert feature_names == ['feature1', 'feature2']
