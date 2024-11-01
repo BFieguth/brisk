@@ -32,7 +32,12 @@ class ReportManager():
         current_dataset (str, optional): The name of the dataset currently being processed.
         summary_metrics (dict): Dictionary holding summary metrics for the report.
     """
-    def __init__(self, result_dir: str, experiment_paths: dict):
+    def __init__(
+        self, 
+        result_dir: str, 
+        experiment_paths: dict,
+        data_distribution_paths: dict
+    ):
         """Initializes the ReportManager with directories for results and experiment paths.
 
         Args:
@@ -73,8 +78,19 @@ class ReportManager():
                 data, metadata, title="Hyperparameter Tuning"
             ))
         ])
+
+        self.continuous_data_map = collections.OrderedDict([
+            ("correlation_matrix.png", self.report_correlation_matrix),
+            ("continuous_stats.json", self.report_continuous_stats),
+        ])
+
+        self.categorical_data_map = collections.OrderedDict([
+            ("categorical_stats.json", self.report_categorical_stats),
+        ])
+
         self.current_dataset = None
         self.summary_metrics = {}
+        self.data_distribution_paths = data_distribution_paths
 
     def create_report(self) -> None:
         """Generates the HTML report.
@@ -94,10 +110,17 @@ class ReportManager():
         # Prepare the dataset entries for the index page
         datasets = []
         for dataset, experiments in self.experiment_paths.items():
+            dataset_file = os.path.basename(dataset)
+            dataset_name = os.path.splitext(dataset_file)[0]
             datasets.append({
-                'dataset_name': os.path.basename(dataset),
-                'experiment_pages': [os.path.basename(experiment) for experiment in experiments]
+                'dataset_file': dataset_file,
+                'dataset_name': dataset_name,
+                'experiment_pages': [
+                    (os.path.basename(experiment), f"{dataset_name}_{os.path.basename(experiment)}") 
+                    for experiment in experiments
+                    ]
             })
+            self.create_dataset_page(dataset_name)
 
             # Create individual experiments pages
             for experiment in experiments:
@@ -116,6 +139,10 @@ class ReportManager():
         shutil.copy(
             os.path.join(self.styles_dir, "experiment.css"), 
             os.path.join(self.report_dir, "experiment.css")
+            )
+        shutil.copy(
+            os.path.join(self.styles_dir, "dataset.css"), 
+            os.path.join(self.report_dir, "dataset.css")
             )
 
         # Render the index page
@@ -140,6 +167,8 @@ class ReportManager():
         self.current_dataset = dataset
         experiment_template = self.env.get_template("experiment.html")
         experiment_name = os.path.basename(experiment_dir)
+        dataset_name = os.path.splitext(os.path.basename(dataset))[0]    # TODO Get dataset name and add to file path
+        filename = f"{dataset_name}_{experiment_name}"
         files = os.listdir(experiment_dir)
 
         # Step 1: Process file metadata
@@ -173,9 +202,39 @@ class ReportManager():
             file_metadata=file_metadata,
             content=content_str
             )
-        experiment_page_path = os.path.join(self.report_dir, f"{experiment_name}.html")
+        experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, 'w') as f:
             f.write(experiment_output)
+
+    def create_dataset_page(self, dataset_name) -> None:
+        dataset_template = self.env.get_template("dataset.html")
+        dataset_dir = self.data_distribution_paths[dataset_name]
+        files = os.listdir(dataset_dir)
+        content = []
+
+        continuous_present = any(file.startswith("continuous_") for file in files)
+        if continuous_present:
+            content.append("<h2>Continuous Features</h2>")
+            for file, report_method in self.continuous_data_map.items():
+                matching_files = [f for f in files if file in f]
+                for match in matching_files:
+                    file_path = os.path.join(dataset_dir, match)
+                    content.append(report_method(file_path))
+
+        categorical_present = any(file.startswith("categorical_") for file in files)
+        if categorical_present:
+            content.append("<h2>Categorical Features</h2>")
+            for file, report_method in self.categorical_data_map.items():
+                matching_files = [f for f in files if file in f]
+                for match in matching_files:
+                    file_path = os.path.join(dataset_dir, match)
+                    content.append(report_method(file_path))
+
+        content_str = "".join(content)
+        rendered_html = dataset_template.render(dataset_name=dataset_name, content=content_str)
+        output_file_path = os.path.join(self.report_dir, f"{dataset_name}.html")
+        with open(output_file_path, 'w') as f:
+            f.write(rendered_html)
 
     def _get_json_metadata(self, json_path: str) -> dict:
         """Extracts metadata from a JSON file.
@@ -430,3 +489,197 @@ class ReportManager():
             summary_html += "</tbody></table>"
 
         return summary_html
+
+    # Report Dataset Distribution
+    def report_continuous_stats(self, file_path):
+        with open(file_path, 'r') as file:
+            stats_data = json.load(file)
+
+        content = ""
+
+        base_dir = os.path.dirname(file_path)            
+        for feature_name, stats in stats_data.items():
+            image_path = os.path.join(
+                base_dir, 'hist_box_plot', f'{feature_name}_hist_box.png'
+                )
+            relative_image_path = os.path.relpath(
+                image_path, self.report_dir
+                )
+                    
+            if os.path.exists(image_path):
+                image_html = f'''
+                    <div class="image-container">
+                        <img src="{relative_image_path}" alt="{feature_name} histogram and boxplot">
+                    </div>
+            '''
+            else:
+                image_html = f'No image found at {relative_image_path}'
+
+            # Create a table for each feature
+            feature_html = f'''
+            <div class="feature-section">
+                <h3>{feature_name}</h3>
+                <div class="flex-container">
+                    <div class="flex-item">
+                        <table class="feature-table">
+                            <thead>
+                                <tr>
+                                    <th>Statistic</th>
+                                    <th>Train</th>
+                                    <th>Test</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            '''
+            
+            # List of statistics for the table rows
+            stats_keys = ["mean", "median", "std_dev", "variance", "min", "max", "range", 
+                        "25_percentile", "75_percentile", "skewness", "kurtosis", 
+                        "coefficient_of_variation"]
+            
+            for stat in stats_keys:
+                train_value = stats['train'].get(stat, 'N/A')
+                test_value = stats['test'].get(stat, 'N/A')
+                
+                if isinstance(train_value, (int, float)):
+                    train_value = round(train_value, 5)
+                if isinstance(test_value, (int, float)):
+                    test_value = round(test_value, 5)
+
+                feature_html += f'''
+                            <tr>
+                                <td>{stat.replace("_", " ").capitalize()}</td>
+                                <td>{train_value}</td>
+                                <td>{test_value}</td>
+                            </tr>
+                '''
+            
+            feature_html += '''
+                        </tbody>
+                    </table>
+                </div>
+            '''
+            feature_html += image_html
+            feature_html += '''
+                    </div>
+                </div>
+                <br/>
+            '''
+            
+            content += feature_html
+        
+        return content
+    
+    def report_correlation_matrix(self, file_path):
+        relative_img_path = os.path.relpath(file_path, self.report_dir)
+        result_html = f"""
+        <h3>Correlation Matrix</h3>
+        <div class="correlation-matrix-container">
+            <img src="{relative_img_path}" alt="Correlation Matrix">
+        </div>
+        """
+        return result_html
+
+    def report_categorical_stats(self, file_path):
+        with open(file_path, 'r') as file:
+            stats_data = json.load(file)
+
+        base_dir = os.path.dirname(file_path)
+        
+        content = ""
+        
+        for feature_name, stats in stats_data.items():
+            image_path = os.path.join(
+                base_dir, 'pie_plot', f'{feature_name}_pie_plot.png'
+                )
+            relative_image_path = os.path.relpath(image_path, self.report_dir)
+
+
+            feature_html = f"<h3>{feature_name}</h3>"
+            feature_html += '''
+            <div class="flex-container">
+                <div class="flex-item">
+                    <table class="categorical-feature-table">
+                        <thead>
+                            <tr>
+                                <th>Statistic</th>
+                                <th>Train</th>
+                                <th>Test</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            '''
+
+            stat_keys = [
+                "frequency", "proportion", "num_unique", "entropy", "chi_square"
+                ]
+            chi_square_keys = ["chi2_stat", "p_value", "degrees_of_freedom"]
+            
+            
+            for stat in stat_keys:
+                train_value = stats['train'].get(stat, 'N/A')
+                test_value = stats['test'].get(stat, 'N/A')
+                
+                if stat == "frequency" and isinstance(train_value, dict):
+                    train_value = "<br>".join([f"{key}: {value}" for key, value in sorted(train_value.items())])
+                    test_value = "<br>".join([f"{key}: {value}" for key, value in sorted(test_value.items())])
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+                elif stat == "proportion" and isinstance(train_value, dict):
+                    train_value = "<br>".join([f"{key}: {value * 100:.2f}%" for key, value in sorted(train_value.items())])
+                    test_value = "<br>".join([f"{key}: {value * 100:.2f}%" for key, value in sorted(test_value.items())])
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+                
+                
+                # Formatting chi_square dictionary to split across rows
+                elif stat == "chi_square" and isinstance(train_value, dict):
+                    for chi_key in chi_square_keys:
+                        feature_html += f'''
+                            <tr>
+                                <td>{chi_key.replace("_", " ").capitalize()}</td>
+                                <td>{train_value.get(chi_key, "N/A")}</td>
+                                <td>{test_value.get(chi_key, "N/A")}</td>
+                            </tr>
+                        '''
+                    continue                
+
+                else:
+                    feature_html += f'''
+                        <tr>
+                            <td>{stat.replace("_", " ").capitalize()}</td>
+                            <td>{train_value}</td>
+                            <td>{test_value}</td>
+                        </tr>
+                    '''
+
+            feature_html += '''
+                        </tbody>
+                    </table>
+                </div>
+            '''
+
+            if os.path.exists(image_path):
+                feature_html += f'''
+                    <div class="pie-plot-container">
+                        <img src="{relative_image_path}" alt="{feature_name} pie chart">
+                    </div>
+                '''
+            else:
+                feature_html += f'<p>No image found at {relative_image_path}</p>'
+
+            feature_html += '</div><br/>'
+            content += feature_html
+        
+        return content
+        

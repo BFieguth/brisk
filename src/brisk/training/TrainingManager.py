@@ -126,7 +126,8 @@ class TrainingManager:
                 y_test=y_test,
                 filename=filename,
                 scaler=scaler,
-                features=feature_names
+                features=feature_names,
+                categorical_features=self.DataManager.categorical_features
             )
         
         return data_splits
@@ -173,11 +174,16 @@ class TrainingManager:
             str: The full path to the directory for storing experiment results.
         """
         dataset_name = os.path.basename(data_path[0]).split(".")[0]
-        experiment_dir = f"{method_name}_{dataset_name}"
-        full_path = os.path.join(results_dir, experiment_dir)
+
+        # experiment_dir = f"{method_name}_{dataset_name}"
+        # full_path = os.path.join(results_dir, experiment_dir)
+
+        experiment_path = f"{dataset_name}/{method_name}"
+        full_path = os.path.join(results_dir, experiment_path)
+
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        return full_path
+        return full_path   
 
     def _save_scalers(self, results_dir):
         scaler_dir = os.path.join(results_dir, "scalers")
@@ -188,6 +194,12 @@ class TrainingManager:
                 scaler_path = os.path.join(scaler_dir, f"{data_split.filename}_scaler.pkl")
                 joblib.dump(data_split.scaler, scaler_path)
 
+    def _save_data_distributions(self, results_dir):
+        self.data_distribution_paths = {}
+        for data_split in self.data_splits.values():
+            dataset_dir = os.path.join(results_dir, data_split.filename, "feature_distribution")
+            data_split.save_distribution(dataset_dir)
+            self.data_distribution_paths[data_split.filename] = dataset_dir
 
     def run_experiments(
         self, 
@@ -270,6 +282,7 @@ class TrainingManager:
             )
 
         self._save_scalers(results_dir)
+        self._save_data_distributions(results_dir)
 
         self.logger = self._setup_logger(results_dir)
          
@@ -325,6 +338,7 @@ class TrainingManager:
                     y_test=y_test,
                     output_dir=experiment_dir,
                     method_names=method_names,
+                    feature_names=data_split.features,
                     model_kwargs=model_kwargs,
                     workflow_config=workflow_config
                 )
@@ -373,7 +387,9 @@ class TrainingManager:
             os.remove(error_log_path)
 
         if create_report:
-            report_manager = ReportManager(results_dir, self.experiment_paths)
+            report_manager = ReportManager(
+                results_dir, self.experiment_paths, self.data_distribution_paths
+                )
             report_manager.create_report()
 
     def _print_experiment_summary(self, experiment_results):

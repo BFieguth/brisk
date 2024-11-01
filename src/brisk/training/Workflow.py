@@ -37,6 +37,7 @@ class Workflow:
         y_test: pd.Series, 
         output_dir: str, 
         method_names: List[str], 
+        feature_names: List[str],
         model_kwargs: Dict[str, Any],
         workflow_config = None
     ):
@@ -47,6 +48,7 @@ class Workflow:
         self.y_test = y_test
         self.output_dir = output_dir
         self.method_names = method_names
+        self.feature_names = feature_names
         self._unpack_attributes(model_kwargs)
         if workflow_config:
             self._unpack_attributes(workflow_config)
