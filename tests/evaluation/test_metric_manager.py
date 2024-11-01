@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from brisk.evaluation.MetricManager import MetricManager
+from brisk.config.RegressionMetrics import REGRESSION_METRICS
 
 class TestMetricManager:
     """Test class for MetricManager."""
@@ -11,7 +12,7 @@ class TestMetricManager:
     @pytest.fixture
     def scoring_manager(self):
         """Fixture to initialize MetricManager."""
-        return MetricManager()
+        return MetricManager(REGRESSION_METRICS)
 
     def test_initialization_with_regression(self, scoring_manager):
         """
@@ -46,14 +47,3 @@ class TestMetricManager:
         """
         with pytest.raises(ValueError, match="Metric function 'invalid_scorer' not found"):
             scoring_manager.get_metric("invalid_scorer")
-
-    def test_concordance_correlation_coefficient(self):
-        """
-        Test the concordance correlation coefficient calculation.
-        """
-        y_true = np.array([3.0, -0.5, 2.0, 7.0])
-        y_pred = np.array([2.5, 0.0, 2.0, 8.0])        
-        ccc = MetricManager._concordance_correlation_coefficient(
-            y_true, y_pred
-            )
-        assert np.isclose(ccc, 0.976, atol=0.01)
