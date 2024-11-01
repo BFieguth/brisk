@@ -15,7 +15,7 @@ import pandas as pd
 
 from brisk.evaluation.EvaluationManager import EvaluationManager
 
-class Workflow:
+class Workflow(abc.ABC):
     """Base class for machine learning workflows.
 
     Attributes:
