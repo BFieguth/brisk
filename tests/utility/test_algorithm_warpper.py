@@ -51,3 +51,68 @@ class TestAlgorithmWrapper:
         returned_grid = wrapper.get_hyperparam_grid()
 
         assert returned_grid == hyperparam_grid
+
+    def test_setitem_default_params(self, algorithm_class_mock):
+        """
+        Test __setitem__ method to update default_params.
+        """
+        wrapper = AlgorithmWrapper(
+            name="MockModel", algorithm_class=algorithm_class_mock
+            )
+        wrapper["default_params"] = {"param1": 5, "param2": "test"}
+
+        assert wrapper.default_params["param1"] == 5
+        assert wrapper.default_params["param2"] == "test"
+
+    def test_setitem_hyperparam_grid(self, algorithm_class_mock):
+        """
+        Test __setitem__ method to update hyperparam_grid.
+        """
+        wrapper = AlgorithmWrapper(
+            name="MockModel", algorithm_class=algorithm_class_mock
+            )
+        wrapper["hyperparam_grid"] = {"param1": [1, 2, 3]}
+
+        assert wrapper.hyperparam_grid["param1"] == [1, 2, 3]
+
+    def test_setitem_invalid_key(self, algorithm_class_mock):
+        """
+        Test __setitem__ method raises KeyError for invalid keys.
+        """
+        wrapper = AlgorithmWrapper(
+            name="MockModel", algorithm_class=algorithm_class_mock
+            )
+
+        with pytest.raises(KeyError, match="Invalid key: invalid_key"):
+            wrapper["invalid_key"] = {"param1": 10}
+
+    def test_instantiate_tuned_with_best_params(self, algorithm_class_mock):
+        """
+        Test instantiate_tuned method with specific tuned parameters.
+        """
+        wrapper = AlgorithmWrapper(
+            name="MockModel", algorithm_class=algorithm_class_mock,
+            default_params={"param1": 5, "param2": "default"}
+        )
+        best_params = {"param2": "tuned", "param3": "new_value"}
+        wrapper.instantiate_tuned(best_params)
+
+        algorithm_class_mock.assert_called_once_with(
+            param2="tuned", param3="new_value"
+            )
+
+    def test_instantiate_tuned_with_max_iter(self, algorithm_class_mock):
+        """
+        Test instantiate_tuned method ensures max_iter from default_params is 
+        applied if present.
+        """
+        wrapper = AlgorithmWrapper(
+            name="MockModel", algorithm_class=algorithm_class_mock,
+            default_params={"param1": 5, "max_iter": 100}
+        )
+        best_params = {"param2": "tuned"}
+        wrapper.instantiate_tuned(best_params)
+
+        algorithm_class_mock.assert_called_once_with(
+            param2="tuned", max_iter=100
+            )
