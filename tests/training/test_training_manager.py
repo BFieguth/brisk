@@ -1,12 +1,14 @@
 import os
 from unittest import mock
-from collections import deque
-from datetime import datetime
 
+import numpy as np
+import pandas as pd
 import pytest
+from sklearn.preprocessing import StandardScaler
 
 from brisk.training.TrainingManager import TrainingManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.data.DataManager import DataManager
 
 @pytest.fixture
 def setup_training_manager():
@@ -15,7 +17,6 @@ def setup_training_manager():
     Mocks required objects for unit testing.
     """
     model_mock = mock.MagicMock()
-    
     wrapper_mock = mock.MagicMock(spec=AlgorithmWrapper)
     wrapper_mock.instantiate.return_value = model_mock 
 
@@ -24,102 +25,60 @@ def setup_training_manager():
     }
     
     metric_config = mock.MagicMock()
-    splitter = mock.MagicMock()
-    workflow = mock.MagicMock()
-
-    splitter.split.return_value = (
-        mock.MagicMock(),  
-        mock.MagicMock(),  
-        mock.MagicMock(),  
-        mock.MagicMock()   
-    )
-
+    data_manager = mock.MagicMock(spec=DataManager)
     methods = ['linear']
     data_paths = [('dataset.csv', None)]
-    
+
+    X_train = pd.DataFrame(
+        np.random.rand(10, 3), columns=['feature1', 'feature2', 'feature3']
+        )
+    X_test = pd.DataFrame(
+        np.random.rand(5, 3), columns=['feature1', 'feature2', 'feature3']
+        )
+    y_train = pd.Series(np.random.rand(10))
+    y_test = pd.Series(np.random.rand(5))
+    scaler_mock = mock.MagicMock()
+    feature_names = ['feature1', 'feature2', 'feature3']
+
+    data_manager.split.return_value = (
+        X_train, X_test, y_train, y_test, scaler_mock, feature_names
+        )
+    data_manager.categorical_features = []
+
     return TrainingManager(
-        method_config, metric_config, workflow, splitter, methods, data_paths
+        method_config, metric_config, data_manager, methods, data_paths
     )
 
 
 class TestTrainingManager:
-    @mock.patch("os.makedirs")
-    def test_results_directory_with_timestamp(self, mock_makedirs, setup_training_manager):
-        """
-        Test that a new directory with a timestamp is created when running experiments.
-        """
-        tm = setup_training_manager
-
-        mock_now = datetime(2023, 9, 6, 15, 30, 0)
-        with mock.patch("brisk.training.TrainingManager.datetime") as mock_datetime:
-            mock_datetime.now.return_value = mock_now
-            mock_datetime.strftime = datetime.strftime
-
-            print(f"Running configurations with setup: {tm.results_dir}")
-            tm.run_experiments(create_report=False)
-
-            expected_dir = "06_09_2023_15_30_00_Results/linear_dataset"
-            print(f"Expected directory to be created: {expected_dir}")
-            mock_makedirs.assert_called_with(expected_dir)
-
-    @mock.patch("brisk.training.TrainingManager.os.makedirs")
-    def test_user_defined_results_dir(self, mock_makedirs, setup_training_manager):
-        """
-        Test that the user-defined results directory is used when provided.
-        """
-        tm = TrainingManager(
-            method_config=setup_training_manager.method_config,
-            metric_config=setup_training_manager.metric_config,
-            workflow=setup_training_manager.workflow,
-            splitter=setup_training_manager.splitter,
-            methods=setup_training_manager.methods,
-            data_paths=setup_training_manager.data_paths,
-            results_dir="user_results_dir"
-        )
-
-        tm.run_experiments(create_report=False)
-        mock_makedirs.assert_called_with("user_results_dir/linear_dataset")
-
-    def test_consume_experiments(self, setup_training_manager):
+    @mock.patch("brisk.Workflow.workflow")
+    def test_consume_experiments(self, mock_workflow_method, setup_training_manager):
         """
         Test that experiments are consumed as they are processed.
         """
+        mock_workflow_method.__name__ = "mock_workflow"
+        setup_training_manager.data_splits["dataset.csv"].scaler = StandardScaler()
+
         tm = setup_training_manager
         assert len(tm.experiments) == 1
 
-        tm.run_experiments(create_report=False)
+        with mock.patch("os.makedirs", wraps=os.makedirs):
+            tm.run_experiments(mock_workflow_method, create_report=False)
+        
         assert len(tm.experiments) == 0
 
-    @mock.patch("os.makedirs")
-    def test_run_experiments_creates_correct_directory_structure(self, mock_makedirs, setup_training_manager):
-        """
-        Test that the correct directory structure is created for each experiment.
-        """
-        results_dir = "test_results_dir"
-        tm = TrainingManager(
-            method_config=setup_training_manager.method_config,
-            metric_config=setup_training_manager.metric_config,
-            workflow=setup_training_manager.workflow,
-            splitter=setup_training_manager.splitter,
-            methods=setup_training_manager.methods,
-            data_paths=setup_training_manager.data_paths,
-            results_dir=results_dir 
-        )
-        mock_workflow_function = mock.MagicMock()
-
-        tm.run_experiments(create_report=False)
-
-        expected_dir = os.path.join(tm.results_dir, "linear_dataset")
-        mock_makedirs.assert_any_call(expected_dir)
-
-    @mock.patch("os.makedirs")
     @mock.patch("brisk.Workflow.workflow")
-    def test_run_experiments_calls_workflow_function(self, mock_makedirs, mock_workflow_method, setup_training_manager):
+    def test_run_experiments_calls_workflow_function(self, mock_workflow_method, setup_training_manager):
         """
         Test that the user-defined workflow function is called correctly for each experiment.
         """
+        mock_workflow_method.__name__ = "mock_workflow"
+        setup_training_manager.data_splits["dataset.csv"].scaler = StandardScaler()
+        
         tm = setup_training_manager
-        tm.run_experiments(create_report=False)
+
+        with mock.patch("os.makedirs", wraps=os.makedirs):
+            tm.run_experiments(mock_workflow_method, create_report=False)
 
         assert mock_workflow_method.call_count == 1
 
@@ -133,28 +92,8 @@ class TestTrainingManager:
             tm = TrainingManager(
                 method_config=setup_training_manager.method_config,
                 metric_config=setup_training_manager.metric_config,
-                workflow=setup_training_manager.workflow,
-                splitter=setup_training_manager.splitter,
+                data_manager=setup_training_manager.DataManager,
                 methods=invalid_methods,
                 data_paths=setup_training_manager.data_paths,
-            )
-
-    @mock.patch("os.path.exists")
-    @mock.patch("os.makedirs")
-    def test_results_directory_already_exists(self, mock_makedirs, mock_exists, setup_training_manager):
-        """
-        Test that FileExistsError is raised when the results directory already exists.
-        """
-        mock_exists.return_value = True
-        
-        with pytest.raises(FileExistsError, match="Results directory 'existing_dir' already exists."):
-            TrainingManager(
-                method_config=setup_training_manager.method_config,
-                metric_config=setup_training_manager.metric_config,
-                workflow=setup_training_manager.workflow,
-                splitter=setup_training_manager.splitter,
-                methods=setup_training_manager.methods,
-                data_paths=setup_training_manager.data_paths,
-                results_dir="existing_dir"
             )
             

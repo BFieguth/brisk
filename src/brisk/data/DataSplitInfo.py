@@ -19,7 +19,7 @@ class DataSplitInfo:
         filename, 
         scaler=None, 
         features=None,
-        categorical_features=None
+        categorical_features=[]
     ):
         """
         Initialize the DataSplitInfo to store all the data related to a split.
@@ -41,11 +41,10 @@ class DataSplitInfo:
         self.scaler = scaler
         self.features = features
 
-        if categorical_features:
-            self.categorical_features = [
-                feature for feature in categorical_features 
-                if feature in X_train.columns
-            ]
+        self.categorical_features = [
+            feature for feature in categorical_features 
+            if feature in X_train.columns
+        ]
 
         self.continuous_features = [
             col for col in X_train.columns if col not in self.categorical_features
