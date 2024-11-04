@@ -99,7 +99,10 @@ class DataSplitInfo:
             'frequency': feature_series.value_counts().to_dict(),
             'proportion': feature_series.value_counts(normalize=True).to_dict(),
             'num_unique': feature_series.nunique(),
-            'entropy': -np.sum(p * np.log2(p) for p in feature_series.value_counts(normalize=True) if p > 0)
+            'entropy': -np.sum(np.fromiter(
+                (p * np.log2(p) for p in feature_series.value_counts(normalize=True) if p > 0),
+                dtype=float
+            ))
         }
 
         # Check if test data exists for Chi-Square test
