@@ -7,4 +7,5 @@
 *_Results/
 
 regression-test/*
+classification-test/*
 dev/*
