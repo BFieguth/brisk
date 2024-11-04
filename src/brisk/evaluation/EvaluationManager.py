@@ -268,6 +268,7 @@ class EvaluationManager:
         y_train: pd.Series, 
         cv: int = 5, 
         num_repeats: int = 1, 
+        n_jobs: int = -1,
         metric: str = 'neg_mean_absolute_error', 
         filename: str = 'learning_curve'
     ) -> None:
@@ -294,7 +295,7 @@ class EvaluationManager:
 
         # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = model_select.learning_curve(
-            model, X_train, y_train, cv=cv, n_jobs=-1, 
+            model, X_train, y_train, cv=cv, n_jobs=n_jobs, 
             train_sizes=np.linspace(0.1, 1.0, 5), return_times=True, 
             scoring=scorer
         )
