@@ -33,10 +33,11 @@ class DataSplitInfo:
             scaler (optional): The scaler used for this split.
             features (list, optional): The order of input features.
         """
-        self.X_train = X_train
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_test = y_test
+        self.X_train = X_train.copy(deep=True)
+        self.X_test = X_test.copy(deep=True)
+        self.y_train = y_train.copy(deep=True)
+        self.y_test = y_test.copy(deep=True)
+
         self.filename = filename
         self.scaler = scaler
         self.features = features
@@ -67,6 +68,9 @@ class DataSplitInfo:
                     self.X_test[feature], feature
                     )
             }
+
+        if self.scaler:
+            self.scaler.fit(self.X_train[self.continuous_features])
 
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
         """Calculate descriptive statistics for a continuous feature."""
@@ -223,7 +227,7 @@ class DataSplitInfo:
         if self.scaler:
             X_train_scaled = self.X_train.copy()
             X_train_scaled[self.continuous_features] = pd.DataFrame(
-                self.scaler.fit_transform(self.X_train[self.continuous_features]), 
+                self.scaler.transform(self.X_train[self.continuous_features]), 
                 columns=self.continuous_features
                 )
             return X_train_scaled, self.y_train
@@ -240,7 +244,7 @@ class DataSplitInfo:
         if self.scaler:
             X_test_scaled = self.X_test.copy()
             X_test_scaled[self.continuous_features] = pd.DataFrame(
-                self.scaler.fit_transform(self.X_test[self.continuous_features]), 
+                self.scaler.transform(self.X_test[self.continuous_features]), 
                 columns=self.continuous_features
                 )
             return X_test_scaled, self.y_test
