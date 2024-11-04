@@ -210,6 +210,7 @@ class EvaluationManager:
                     diff = score_b - score_a
                     comparison_results["differences"][display_name][f"{model_b} - {model_a}"] = diff
 
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(models=models)
         self._save_to_json(comparison_results, output_path, metadata)
@@ -254,6 +255,7 @@ class EvaluationManager:
         plt.title("Predicted vs. Observed Values")
         plt.grid(True)
 
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)      
@@ -357,6 +359,7 @@ class EvaluationManager:
 
         plt.tight_layout()
 
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
@@ -425,6 +428,8 @@ class EvaluationManager:
         plt.ylabel('Feature', fontsize=12)
         plt.title('Feature Importance', fontsize=16)
         plt.tight_layout()
+
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f'{filename}.png')
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
@@ -458,6 +463,8 @@ class EvaluationManager:
         plt.ylabel('Residual', fontsize=12)
         plt.title('Residual Plot', fontsize=16)
         plt.legend()
+
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
         self._save_plot(output_path, metadata)
@@ -510,6 +517,7 @@ class EvaluationManager:
         plt.ylabel(display_name, fontsize=12)
         plt.title(f"Model Comparison on {display_name}", fontsize=16)
         
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(models)
         self._save_plot(output_path, metadata)
@@ -661,6 +669,7 @@ class EvaluationManager:
         
         plt.grid(True)
         plt.tight_layout()
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
             self.output_dir, f"{method_name}_hyperparam_{param_name}.png"
             )
@@ -703,6 +712,7 @@ class EvaluationManager:
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel('Mean Test Score', fontsize=12)
         ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
             self.output_dir, f"{method_name}_hyperparam_3Dplot.png"
             )
@@ -784,6 +794,7 @@ class EvaluationManager:
         Returns:
             None
         """
+        os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
         joblib.dump(model, output_path)
         self.logger.info(f"Saving model '{filename}' to '{output_path}'.")
