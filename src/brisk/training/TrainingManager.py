@@ -303,6 +303,8 @@ class TrainingManager:
             tqdm.write(f"\n{"-" * 80}")
             tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
 
+            start_time = time.time()
+
             try:
                 data_split = self.data_splits[data_path[0]]
                 X_train, X_test, y_train, y_test = data_split.get_train_test()
