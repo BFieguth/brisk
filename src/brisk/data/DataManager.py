@@ -128,12 +128,6 @@ class DataManager:
                     random_state=self.random_state
                     )
             
-            else:
-                raise ValueError(
-                    "Invalid combination of stratified and group_column for "
-                    "shuffle method."
-                    )
-            
         elif self.split_method == "kfold":
             if self.group_column and not self.stratified:
                 return model_selection.GroupKFold(n_splits=self.n_splits)
@@ -157,11 +151,10 @@ class DataManager:
                     n_splits=self.n_splits
                     )
             
-            else:
-                raise ValueError(
-                    "Invalid combination of stratified and group_column "
-                    "for kfold method."
-                    )
+        raise ValueError(
+            "Invalid combination of stratified and group_column for "
+            "the specified split method."
+            )
 
     def _set_scaler(self):
         if self.scale_method == "standard":

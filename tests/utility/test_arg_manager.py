@@ -1,4 +1,3 @@
-import argparse
 import pytest
 from unittest import mock
 
@@ -101,3 +100,21 @@ class TestArgManager:
         assert args.datasets == ["dataset1", "dataset2"]
         assert args.scoring == "f1"
         
+    def test_unexpected_exception_during_parsing(self, parser):
+        """
+        Test handling of unexpected exceptions during argument parsing.
+        """
+        with mock.patch.object(
+            parser.parser, 'parse_args', 
+            side_effect=Exception("Unexpected error during argument parsing:")
+            ):
+            additional_args = [
+                "--kfold", "5", "--num_repeats", "10", "--datasets", "dataset1", 
+                "dataset2", "--scoring", "accuracy"
+                ]
+        
+            with pytest.raises(
+                Exception, match="Unexpected error during argument parsing:"
+                ):
+                parser.parse_args(additional_args)
+                
