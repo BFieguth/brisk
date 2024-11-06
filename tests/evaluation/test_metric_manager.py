@@ -11,17 +11,15 @@ class TestMetricManager:
     @pytest.fixture
     def metric_manager(self):
         """Fixture to initialize MetricManager."""
-        return MetricManager(REGRESSION_METRICS)
+        return MetricManager(*REGRESSION_METRICS)
 
     def test_initialization_with_regression(self, metric_manager):
         """
         Test initialization of MetricManager with regression metrics included.
         """
-        assert "mean_absolute_error" in metric_manager.scoring_metrics
-        assert "MSE" in [metric_manager.scoring_metrics[key].get("abbr") 
-                         for key in metric_manager.scoring_metrics]
-        assert "CCC" in [metric_manager.scoring_metrics[key].get("abbr") 
-                         for key in metric_manager.scoring_metrics]
+        assert "mean_absolute_error" in metric_manager.metrics
+        assert "MSE" in metric_manager.metrics 
+        assert "CCC" in metric_manager.metrics 
 
     def test_get_metric_by_name(self, metric_manager):
         """
@@ -93,6 +91,6 @@ class TestMetricManager:
         ensuring it raises a ValueError.
         """
         with pytest.raises(
-            ValueError, match="Scoring callable 'invalid_name' not found"
+            ValueError, match="Metric 'invalid_name' not found"
             ):
             metric_manager.get_name("invalid_name")
