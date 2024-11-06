@@ -17,16 +17,17 @@ class MetricManager:
         scoring_metrics (dict): A dictionary storing the available metrics and 
             their corresponding callables.
     """
-    def __init__(self, *metric_dicts):
-        """Initializes the MetricManager with a set of metrics.
+    def __init__(self, *metric_wrappers):
+        """Initializes the MetricManager with a set of MetricWrapper instances.
 
         Args:
-            include_regression (bool): Whether to include regression metrics. 
-                Defaults to True.
+            metric_wrappers: Instances of MetricWrapper for each metric to include.
         """
-        self.scoring_metrics = {}
-        for metric_dict in metric_dicts:
-            self.scoring_metrics.update(metric_dict)
+        self.metrics = {}
+        for wrapper in metric_wrappers:
+            self.metrics[wrapper.name] = wrapper
+            if wrapper.abbr:
+                self.metrics[wrapper.abbr] = wrapper
 
     def get_metric(self, name_or_abbr: str) -> Callable:
         """Retrieve a metric function by its full name or abbreviation.
@@ -40,13 +41,8 @@ class MetricManager:
         Raises:
             ValueError: If the metric is not found.
         """
-        if name_or_abbr in self.scoring_metrics:
-            return self.scoring_metrics[name_or_abbr]['func']
-        
-        for full_name, details in self.scoring_metrics.items():
-            if details.get("abbr") == name_or_abbr:
-                return details['func']
-        
+        if name_or_abbr in self.metrics:
+            return self.metrics[name_or_abbr].func
         raise ValueError(f"Metric function '{name_or_abbr}' not found.")
 
     def get_scorer(self, name_or_abbr: str) -> Callable:
@@ -61,33 +57,23 @@ class MetricManager:
         Raises:
             ValueError: If the scoring callable is not found.
         """
-        if name_or_abbr in self.scoring_metrics:
-            return self.scoring_metrics[name_or_abbr]['scorer']
-        
-        for full_name, details in self.scoring_metrics.items():
-            if details.get("abbr") == name_or_abbr:
-                return details['scorer']
-        
+        if name_or_abbr in self.metrics:
+            return self.metrics[name_or_abbr].scorer       
         raise ValueError(f"Scoring callable '{name_or_abbr}' not found.")
 
-    def get_name(self, name_or_abbr: str) -> Callable:
+    def get_name(self, name_or_abbr: str) -> str:
         """Retrieve a metrics name, formatted for plots/tables, by its full name or abbreviation.
 
         Args:
             name_or_abbr (str): The full name or abbreviation of the metric.
 
         Returns:
-            Callable: The scoring callable.
+            str: The display name.
 
         Raises:
-            ValueError: If the scoring callable is not found.
+            ValueError: If the metric is not found.
         """
-        if name_or_abbr in self.scoring_metrics:
-            return self.scoring_metrics[name_or_abbr]['display_name']
-        
-        for full_name, details in self.scoring_metrics.items():
-            if details.get("abbr") == name_or_abbr:
-                return details['display_name']
-        
-        raise ValueError(f"Scoring callable '{name_or_abbr}' not found.")
+        if name_or_abbr in self.metrics:
+            return self.metrics[name_or_abbr].display_name     
+        raise ValueError(f"Metric '{name_or_abbr}' not found.")
     
