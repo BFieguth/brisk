@@ -6,11 +6,11 @@ Exports:
         building a training workflow.
 """
 
-import copy
 import datetime
 import inspect
 import itertools
 import json
+import logging
 import os
 from typing import Dict, List, Optional, Any, Union
 
@@ -37,16 +37,25 @@ class EvaluationManager:
         method_config (dict): Configuration for model methods.
         metric_config (object): Configuration for evaluation metrics.
     """
-    def __init__(self, method_config: Dict[str, Any], metric_config: Any, logger=None):
+    def __init__(
+        self, 
+        method_config: Dict[str, Any], 
+        metric_config: Any, 
+        output_dir: str,
+        logger: Optional[logging.Logger]=None
+    ):
         """
         Initializes the EvaluationManager with method and scoring configurations.
 
         Args:
             method_config (Dict[str, Any]): Configuration for model methods.
             metric_config (Any): Configuration for evaluation metrics.
+            output_dir (str): Directory to save results.
+            logger (Optional[logging.Logger]): Logger instance to use.
         """
         self.method_config = method_config
         self.metric_config = metric_config
+        self.output_dir = output_dir
         self.logger = logger
 
     # Evaluation Tools
@@ -770,20 +779,6 @@ class EvaluationManager:
 
         except IOError as e:
             self.logger.info(f"Failed to save plot to {output_path}: {e}")
-
-    def with_config(self, **kwargs: Any) -> 'EvaluationManager':
-        """Create a copy of the current evaluator with additional configuration.
-
-        Args:
-            kwargs: Key-value pairs of attributes to add/modify in the copy.
-
-        Returns:
-            EvaluationManager: A copy of the current evaluator with updated attributes.
-        """
-        eval_copy = copy.copy(self)
-        for key, value in kwargs.items():
-            setattr(eval_copy, key, value)
-        return eval_copy
 
     def save_model(self, model: base.BaseEstimator, filename: str) -> None:
         """Save the model to a file in pickle format.
