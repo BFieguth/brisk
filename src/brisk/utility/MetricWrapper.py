@@ -1,3 +1,5 @@
+from functools import partial
+
 from sklearn.metrics import make_scorer
 from typing import Callable, Any, Optional
 
@@ -28,9 +30,7 @@ class MetricWrapper:
 
     def _apply_params(self):
         """Applies the parameters to both the function and scorer."""
-        self._func_with_params = lambda y_true, y_pred: self.func(
-            y_true, y_pred, **self.params
-            )
+        self._func_with_params = partial(self.func, **self.params)
         self.scorer = make_scorer(self.func, **self.params)
 
     def set_params(self, **params: Any):
