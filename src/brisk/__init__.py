@@ -10,6 +10,7 @@ from brisk.reporting.ReportManager import ReportManager
 from brisk.training.TrainingManager import TrainingManager
 from brisk.training.Workflow import Workflow
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.utility.MetricWrapper import MetricWrapper
 from brisk.utility.ArgManager import ArgManager
 from brisk.utility.AlertMailer import AlertMailer
 from brisk.utility.CreateMetric import create_metric
