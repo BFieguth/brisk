@@ -17,9 +17,9 @@ class TestMetricManager:
         """
         Test initialization of MetricManager with regression metrics included.
         """
-        assert "mean_absolute_error" in metric_manager.metrics
-        assert "MSE" in metric_manager.metrics 
-        assert "CCC" in metric_manager.metrics 
+        assert "mean_absolute_error" in metric_manager._metrics_by_name
+        assert "MSE" in metric_manager._abbreviations_to_name 
+        assert "CCC" in metric_manager._abbreviations_to_name 
 
     def test_get_metric_by_name(self, metric_manager):
         """
@@ -42,7 +42,7 @@ class TestMetricManager:
         Test get_metric method with an invalid name or abbreviation, 
         ensuring it raises a ValueError.
         """
-        with pytest.raises(ValueError, match="Metric function 'invalid_scorer' not found"):
+        with pytest.raises(ValueError, match="Metric 'invalid_scorer' not found"):
             metric_manager.get_metric("invalid_scorer")
 
     def test_get_scorer_by_name(self, metric_manager):
@@ -67,7 +67,7 @@ class TestMetricManager:
         ensuring it raises a ValueError.
         """
         with pytest.raises(
-            ValueError, match="Scoring callable 'invalid_scorer' not found"
+            ValueError, match="Metric 'invalid_scorer' not found"
             ):
             metric_manager.get_scorer("invalid_scorer")
 
