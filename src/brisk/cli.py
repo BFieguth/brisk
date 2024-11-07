@@ -30,20 +30,33 @@ def create(project_name):
         f.write(f"project_name={project_name}\n")
 
     with open(os.path.join(project_dir, 'settings.py'), 'w') as f:
-        f.write("# settings.py\n")
+        f.write("""# settings.py
+TRAINING_MANAGER_CONFIG = {
+    "methods": [],
+    "data_paths": []
+}
+                
+WORKFLOW_CONFIG = {
+
+}
+""")
 
     with open(os.path.join(project_dir, 'algorithms.py'), 'w') as f:
         f.write("""# algorithms.py
 import brisk
                 
-ALGORITHM_CONFIG = {}        
+ALGORITHM_CONFIG = {
+    "name": brisk.AlgorithmWrapper()
+}        
 """)
 
     with open(os.path.join(project_dir, 'metrics.py'), 'w') as f:
         f.write("""# metrics.py
 import brisk
                 
-METRIC_CONFIG = brisk.MetricManager({})                       
+METRIC_CONFIG = brisk.MetricManager(
+    brisk.MetricWrapper(),
+)                       
 """)
 
     with open(os.path.join(project_dir, 'data.py'), 'w') as f:
@@ -59,15 +72,18 @@ DataManager = DataManager(
     with open(os.path.join(project_dir, 'training.py'), 'w') as f:
         f.write("""# training.py
 from brisk.training.TrainingManager import TrainingManager
-from .algorithms import ALGORITHM_CONFIG
-from .metrics import METRIC_CONFIG
-from .data import DataManager
-                
+from algorithms import ALGORITHM_CONFIG
+from metrics import METRIC_CONFIG
+from data import DataManager
+from settings import TRAINING_MANAGER_CONFIG
+                                
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     method_config=ALGORITHM_CONFIG,
     metric_config=METRIC_CONFIG,
-    data_manager=DataManager
+    data_manager=DataManager,
+    methods=TRAINING_MANAGER_CONFIG.get("methods"),
+    data_paths=TRAINING_MANAGER_CONFIG.get("data_paths")
 )                 
 """)
     
