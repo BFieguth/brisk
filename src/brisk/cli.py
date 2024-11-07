@@ -4,6 +4,12 @@ import os
 import sys
 
 import click
+import pandas as pd
+from sklearn.datasets import (
+    load_iris, load_wine, load_breast_cancer,
+    load_diabetes, load_linnerud,
+    make_classification, make_regression
+)
 
 from brisk.training.Workflow import Workflow
 
@@ -24,20 +30,33 @@ def create(project_name):
         f.write(f"project_name={project_name}\n")
 
     with open(os.path.join(project_dir, 'settings.py'), 'w') as f:
-        f.write("# settings.py\n")
+        f.write("""# settings.py
+TRAINING_MANAGER_CONFIG = {
+    "methods": [],
+    "data_paths": []
+}
+                
+WORKFLOW_CONFIG = {
+
+}
+""")
 
     with open(os.path.join(project_dir, 'algorithms.py'), 'w') as f:
         f.write("""# algorithms.py
 import brisk
                 
-ALGORITHM_CONFIG = {}        
+ALGORITHM_CONFIG = {
+    "name": brisk.AlgorithmWrapper()
+}        
 """)
 
     with open(os.path.join(project_dir, 'metrics.py'), 'w') as f:
         f.write("""# metrics.py
 import brisk
                 
-METRIC_CONFIG = brisk.MetricManager({})                       
+METRIC_CONFIG = brisk.MetricManager(
+    brisk.MetricWrapper(),
+)                       
 """)
 
     with open(os.path.join(project_dir, 'data.py'), 'w') as f:
@@ -53,15 +72,18 @@ DataManager = DataManager(
     with open(os.path.join(project_dir, 'training.py'), 'w') as f:
         f.write("""# training.py
 from brisk.training.TrainingManager import TrainingManager
-from .algorithms import ALGORITHM_CONFIG
-from .metrics import METRIC_CONFIG
-from .data import DataManager
-                
+from algorithms import ALGORITHM_CONFIG
+from metrics import METRIC_CONFIG
+from data import DataManager
+from settings import TRAINING_MANAGER_CONFIG
+                                
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     method_config=ALGORITHM_CONFIG,
     metric_config=METRIC_CONFIG,
-    data_manager=DataManager
+    data_manager=DataManager,
+    methods=TRAINING_MANAGER_CONFIG.get("methods"),
+    data_paths=TRAINING_MANAGER_CONFIG.get("data_paths")
 )                 
 """)
     
@@ -132,6 +154,107 @@ def run(workflow, extra_args):
     except (ImportError, AttributeError) as e:
         print(f"Error loading workflow: {workflow}. Error: {str(e)}")
         return
+
+
+@cli.command()
+@click.option('--dataset', type=click.Choice(['iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud']), required=True, help='Name of the sklearn dataset to load. Options are iris, wine, breast_cancer, diabetes or linnerud.')
+@click.option('--dataset_name', type=str, default=None, help='Name to save the dataset as.')
+def load_data(dataset, dataset_name):
+    """Load a dataset from sklearn into the project."""
+    try:
+        project_root = find_project_root()
+        datasets_dir = os.path.join(project_root, 'datasets')
+        os.makedirs(datasets_dir, exist_ok=True)
+
+        data = load_sklearn_dataset(dataset)
+        if data is None:
+            print(
+                f"Dataset '{dataset}' not found in sklearn. Options are iris, "
+                "wine, breast_cancer, diabetes or linnerud."
+                )
+            return
+        X = data.data
+        y = data.target
+
+        feature_names = (
+            data.feature_names 
+            if hasattr(data, 'feature_names') 
+            else [f'feature_{i}' for i in range(X.shape[1])]
+            )
+        df = pd.DataFrame(X, columns=feature_names)
+        df['target'] = y
+        dataset_filename = dataset_name if dataset_name else dataset
+        csv_path = os.path.join(datasets_dir, f"{dataset_filename}.csv")
+        df.to_csv(csv_path, index=False)
+        print(f"Dataset saved to {csv_path}")
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
+@cli.command()
+@click.option('--data_type', type=click.Choice(['classification', 'regression']), required=True, help='Type of the synthetic dataset.')
+@click.option('--n_samples', type=int, default=100, help='Number of samples for synthetic data.')
+@click.option('--n_features', type=int, default=20, help='Number of features for synthetic data.')
+@click.option('--n_classes', type=int, default=2, help='Number of classes for classification data.')
+@click.option('--random_state', type=int, default=42, help='Random state for reproducibility.')
+@click.option('--dataset_name', type=str, default='synthetic_dataset', help='Name of the dataset file to be saved.')
+def create_data(data_type, n_samples, n_features, n_classes, random_state, dataset_name):
+    """Create synthetic data and add it to the project."""
+    try:
+        project_root = find_project_root()
+        datasets_dir = os.path.join(project_root, 'datasets')
+        os.makedirs(datasets_dir, exist_ok=True)
+        
+        if data_type == 'classification':
+            X, y = make_classification(
+                n_samples=n_samples,
+                n_features=n_features,
+                n_informative=int(n_features * 0.8),
+                n_redundant=int(n_features * 0.2),
+                n_repeated=0,
+                n_classes=n_classes,
+                random_state=random_state
+            )
+        elif data_type == 'regression':
+            X, y = make_regression(
+                n_samples=n_samples,
+                n_features=n_features,
+                n_informative=int(n_features * 0.8),
+                noise=0.1,
+                random_state=random_state
+            )
+        
+        df = pd.DataFrame(X)
+        df['target'] = y
+        csv_path = os.path.join(datasets_dir, f"{dataset_name}.csv")
+        df.to_csv(csv_path, index=False)
+        print(f"Synthetic dataset saved to {csv_path}")
+    
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
+def load_sklearn_dataset(name):
+    """Load a dataset from sklearn by name."""
+    datasets_map = {
+        'iris': load_iris,
+        'wine': load_wine,
+        'breast_cancer': load_breast_cancer,
+        'diabetes': load_diabetes,
+        'linnerud': load_linnerud
+    }
+    if name in datasets_map:
+        return datasets_map[name]()
+    else:
+        return None
+
 
 def parse_extra_args(extra_args):
     arg_dict = {}

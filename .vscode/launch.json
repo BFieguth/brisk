@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Brisk CLI Run Command",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/brisk/cli.py",
+            "args": [
+                "run", "-w", "${input:workflowName}"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/${input:projectDir}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "projectDir",
+            "type": "promptString",
+            "description": "Enter the project directory path",
+        },
+        {
+            "id": "workflowName",
+            "type": "promptString",
+            "description": "Enter the workflow file name",
+        }
+    ]
+}

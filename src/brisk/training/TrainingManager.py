@@ -68,9 +68,6 @@ class TrainingManager:
         self.methods = methods
         self.data_paths = data_paths
         self.verbose = verbose
-        self.EvaluationManager = EvaluationManager(
-            method_config=self.method_config, metric_config=self.metric_config
-        )
         self._validate_methods()
         self.data_splits = self._get_data_splits()
         self.experiments = self._create_experiments()
@@ -329,11 +326,12 @@ class TrainingManager:
                 else:
                     self.experiment_paths[data_path[0]] = [experiment_dir]
 
-                config_EvaluationManager = self.EvaluationManager.with_config(
-                    output_dir=experiment_dir, logger=self.logger
-                    )
+                eval_manager = EvaluationManager(
+                    self.method_config, self.metric_config, experiment_dir,
+                    self.logger
+                )
                 workflow_instance = workflow(
-                    evaluator=config_EvaluationManager,
+                    evaluator=eval_manager,
                     X_train=X_train,
                     X_test=X_test,
                     y_train=y_train,

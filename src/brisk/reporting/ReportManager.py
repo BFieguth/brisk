@@ -59,6 +59,7 @@ class ReportManager():
             ("evaluate_model", self.report_evaluate_model),
             ("evaluate_model_cv", self.report_evaluate_model_cv),
             ("compare_models", self.report_compare_models),
+            ("confusion_matrix", self.report_confusion_matrix),
             ("plot_pred_vs_obs", lambda data, metadata: self.report_image(
                 data, metadata, title="Predicted vs Observed Plot"
                 )),
@@ -73,6 +74,15 @@ class ReportManager():
             )),
             ("plot_model_comparison", lambda data, metadata: self.report_image(
                 data, metadata, title="Model Comparison Plot"
+            )),
+            ("plot_confusion_heatmap", lambda data, metadata: self.report_image(
+                data, metadata, title="Confusion Matrix Heatmap"
+            )),
+            ("plot_roc_curve", lambda data, metadata: self.report_image(
+                data, metadata, title="ROC Curve"
+            )),
+            ("plot_precision_recall_curve", lambda data, metadata: self.report_image(
+                data, metadata, title="Precision Recall Curve"
             )),
             ("hyperparameter_tuning", lambda data, metadata: self.report_image(
                 data, metadata, title="Hyperparameter Tuning"
@@ -444,7 +454,53 @@ class ReportManager():
         <img src="{relative_img_path}" alt="{title}" style="max-width:{max_width}; height:auto; display: block; margin: 0 auto;">
         """
         return result_html
-    
+
+    def report_confusion_matrix(self, data: dict, metadata: dict) -> str:
+        """
+        Generates an HTML block for displaying the confusion matrix results.
+
+        Args:
+            data (dict): The confusion matrix data, including the matrix itself and labels.
+            metadata (dict): The metadata associated with the matrix.
+
+        Returns:
+            str: HTML block representing the confusion matrix results.
+        """
+        confusion_matrix = data.get("confusion_matrix", [])
+        labels = data.get("labels", [])
+        model_info = metadata.get("models", ["Unknown model"])
+        model_names = ", ".join(model_info)
+
+        # Check for binary classification
+        if len(labels) == 2:
+            cell_annotations = {
+                (0, 0): "True Positive",  
+                (0, 1): "False Positive",  
+                (1, 0): "False Negative",  
+                (1, 1): "True Negative",  
+            }
+        else:
+            cell_annotations = {}
+
+        result_html = f"""
+        <h2>Confusion Matrix</h2>
+        <p><strong>Model:</strong> {model_names}</p>
+        <table>
+            <thead>
+                <tr><th></th>{"".join(f"<th>{label}</th>" for label in labels)}</tr>
+            </thead>
+            <tbody>
+        """
+        for i, (label, row) in enumerate(zip(labels, confusion_matrix)):
+            result_html += f"<tr><td><strong>{label}</strong></td>"
+            for j, count in enumerate(row):
+                annotation = cell_annotations.get((i, j), "")
+                result_html += f"<td>{count} {annotation}</td>"
+            result_html += "</tr>"
+        result_html += "</tbody></table>"
+
+        return result_html
+
     def generate_summary_tables(self) -> str:
         """Generates HTML summary tables for each dataset, displaying model metrics.
 
