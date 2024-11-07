@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "brisk"
+name = "brisk-ml"
 version = "0.0.1"
-description = ""
+description = "A framework that helps train machine learning models using sklearn."
 authors = ["BFieguth <bfieguth@uoguelph.ca>"]
 readme = "README.md"
+packages = [{include = "brisk", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
