@@ -11,6 +11,7 @@ Exports:
 import abc
 from typing import List, Dict, Any, Union
 
+import numpy as np
 import pandas as pd
 import sklearn.base as base
 
@@ -314,3 +315,98 @@ class Workflow(abc.ABC):
             model, method, method_name, X_train, y_train, scorer, 
             kf, num_rep, n_jobs, plot_results=plot_results
             )
+
+    def confusion_matrix(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate a confusion matrix for a given model and dataset, 
+        and save the results to a JSON file.
+
+        Args:
+            model (Any): Trained classification model with a `predict` method.
+            X (np.ndarray): Input feature.
+            y (np.ndarray): Target feature.
+            filename (str): Path to save the confusion matrix as a JSON file.
+
+        Returns:
+            None
+        """
+        return self.evaluator.confusion_matrix(
+            model, X, y, filename
+        )
+    
+    def plot_confusion_heatmap(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a heatmap of the confusion matrix for a given model and dataset.
+
+        Args:
+            model (Any): Trained classification model with a `predict` method.
+            X (np.ndarray): Input features.
+            y (np.ndarray): Target labels.
+            filename (str): Path to save the confusion matrix heatmap image.
+            labels (Optional[list]): List of class labels for display on the heatmap axes.
+
+        Returns:
+            None
+        """
+        return self.evaluator.plot_confusion_heatmap(
+            model, X, y, filename
+        )
+
+    def plot_roc_curve(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a ROC curve with AUC for a given binary classification model and dataset.
+
+        Args:
+            model (Any): Trained binary classification model with a `predict_proba` method.
+            X (np.ndarray): Input features.
+            y (np.ndarray): True binary labels.
+            filename (str): Path to save the ROC curve image.
+
+        Returns:
+            None
+        """
+        return self.evaluator.plot_roc_curve(
+            model, X, y, filename
+        )
+
+    def plot_precision_recall_curve(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a Precision-Recall (PR) curve with Average Precision (AP) for a 
+        given binary classification model and dataset.
+
+        Args:
+            model (Any): Trained binary classification model.
+            X (np.ndarray): Input features.
+            y (np.ndarray): True binary labels.
+            filename (str): Path to save the PR curve image.
+
+        Returns:
+            None
+        """
+        return self.evaluator.plot_precision_recall_curve(
+            model, X, y, filename
+        )

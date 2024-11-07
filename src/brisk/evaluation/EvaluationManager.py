@@ -19,11 +19,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import sklearn.model_selection as model_select
 import sklearn.ensemble as ensemble
 import sklearn.tree as tree
 import sklearn.inspection as inspection
 import sklearn.base as base
+import sklearn.metrics as metrics
 matplotlib.use('Agg')
 
 class EvaluationManager:
@@ -728,6 +730,179 @@ class EvaluationManager:
             )
         self._save_plot(output_path, metadata)      
         self.logger.info(f"Hyperparameter performance plot saved to '{output_path}'.")
+
+    def confusion_matrix(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate a confusion matrix for a given model and dataset, 
+        and save the results to a JSON file.
+
+        Args:
+            model (Any): Trained classification model with a `predict` method.
+            X (np.ndarray): Input feature.
+            y (np.ndarray): Target feature.
+            filename (str): Path to save the confusion matrix as a JSON file.
+
+        Returns:
+            None
+        """
+        y_pred = model.predict(X)
+        labels = np.unique(y).tolist()
+        cm = metrics.confusion_matrix(y, y_pred, labels=labels).tolist()
+        data = {
+            "confusion_matrix": cm,
+            "labels": labels
+            }
+
+        os.makedirs(self.output_dir, exist_ok=True)
+        output_path = os.path.join(self.output_dir, f"{filename}.json")
+        metadata = self._get_metadata(model)
+        self._save_to_json(data, output_path, metadata)
+
+        header = " " * 10 + " ".join(f"{label:>10}" for label in labels) + "\n"        
+        rows = [f"{label:>10} " + " ".join(f"{count:>10}" for count in row) 
+                for label, row in zip(labels, cm)]        
+        table = header + "\n".join(rows)
+        confusion_log = f"Confusion Matrix:\n{table}"
+        self.logger.info(confusion_log)
+
+    def plot_confusion_heatmap(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a heatmap of the confusion matrix for a given model and dataset.
+
+        Args:
+            model (Any): Trained classification model with a `predict` method.
+            X (np.ndarray): Input features.
+            y (np.ndarray): Target labels.
+            filename (str): Path to save the confusion matrix heatmap image.
+            labels (Optional[list]): List of class labels for display on the heatmap axes.
+
+        Returns:
+            None
+        """
+        y_pred = model.predict(X)
+        labels = np.unique(y).tolist()        
+        cm = metrics.confusion_matrix(y, y_pred, labels=labels)
+        cm_percent = cm / cm.sum() * 100
+        annotations = np.array([
+            [f"{int(count)}\n({percentage:.1f}%)" for count, percentage in zip(row, percent_row)]
+            for row, percent_row in zip(cm, cm_percent)
+        ])
+
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(
+            cm_percent, annot=annotations, fmt='', cmap='Blues', xticklabels=labels, 
+            yticklabels=labels, cbar_kws={'format': '%.0f%%'}
+            )        
+        plt.title("Confusion Matrix Heatmap")
+        plt.xlabel("Predicted Labels")
+        plt.ylabel("True Labels") 
+
+        os.makedirs(self.output_dir, exist_ok=True)
+        output_path = os.path.join(self.output_dir, f"{filename}.png")
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
+        self.logger.info(f"Confusion matrix heatmap saved to {output_path}")
+
+    def plot_roc_curve(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a ROC curve with AUC for a given binary classification model and dataset.
+
+        Args:
+            model (Any): Trained binary classification model with a `predict_proba` method.
+            X (np.ndarray): Input features.
+            y (np.ndarray): True binary labels.
+            filename (str): Path to save the ROC curve image.
+
+        Returns:
+            None
+        """
+        if hasattr(model, "predict_proba"):
+            y_score = model.predict_proba(X)[:, 1]  # Use probability of the positive class
+        elif hasattr(model, "decision_function"):
+            y_score = model.decision_function(X)  # Use decision function score
+        else:
+            y_score = model.predict(X)  # Use binary predictions as a last resort
+        
+        fpr, tpr, _ = metrics.roc_curve(y, y_score)
+        auc = metrics.roc_auc_score(y, y_score)
+        
+        plt.figure(figsize=(8, 6))
+        plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {auc:.2f})", color="blue")
+        plt.plot([0, 1], [0, 1], 'k--', label="Random Guessing")        
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title(f"ROC Curve for {model.__class__.__name__}")
+        plt.legend(loc="lower right")
+        
+        os.makedirs(self.output_dir, exist_ok=True)
+        output_path = os.path.join(self.output_dir, f"{filename}.png")
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
+        self.logger.info(f"ROC curve with AUC = {auc:.2f} saved to {output_path}")
+
+    def plot_precision_recall_curve(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        filename: str
+    ) -> None:
+        """
+        Generate and save a Precision-Recall (PR) curve with Average Precision (AP) for a 
+        given binary classification model and dataset.
+
+        Args:
+            model (Any): Trained binary classification model.
+            X (np.ndarray): Input features.
+            y (np.ndarray): True binary labels.
+            filename (str): Path to save the PR curve image.
+
+        Returns:
+            None
+        """
+        if hasattr(model, "predict_proba"):
+            y_score = model.predict_proba(X)[:, 1]  # Use probability of the positive class
+        elif hasattr(model, "decision_function"):
+            y_score = model.decision_function(X)  # Use decision function score
+        else:
+            y_score = model.predict(X)  # Use binary predictions as a last resort
+
+        precision, recall, _ = metrics.precision_recall_curve(y, y_score)
+        ap_score = metrics.average_precision_score(y, y_score)
+        
+        plt.figure(figsize=(8, 6))
+        plt.plot(
+            recall, precision, label=f"PR Curve (AP = {ap_score:.2f})", 
+            color="purple"
+            )
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title("Precision-Recall Curve")
+        plt.legend(loc="lower left")
+        
+        os.makedirs(self.output_dir, exist_ok=True)
+        output_path = os.path.join(self.output_dir, f"{filename}.png")
+        metadata = self._get_metadata(model)
+        self._save_plot(output_path, metadata)
+        self.logger.info(f"Precision-Recall curve with AP = {ap_score:.2f} saved to {output_path}")
 
     # Utility Methods
     def _save_to_json(
