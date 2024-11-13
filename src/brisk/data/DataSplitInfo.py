@@ -181,17 +181,27 @@ class DataSplitInfo:
         os.makedirs(output_dir, exist_ok=True)
         
         correlation_matrix = self.X_train[self.continuous_features].corr()
-        plt.figure(figsize=(10, 8))
+        
+        # Calculate figure size based on number of features
+        size_per_feature = 0.5
+        plot_width = max(
+            12, size_per_feature * len(self.continuous_features)
+            )
+        plot_height = max(
+            8, size_per_feature * len(self.continuous_features) * 0.75
+            )
+        
+        plt.figure(figsize=(plot_width, plot_height))
         sns.heatmap(
             correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f", 
-            linewidths=0.5, square=True
+            linewidths=0.5
             )
         plt.title("Correlation Matrix of Continuous Features", fontsize=14)
 
         plot_path = os.path.join(output_dir, "correlation_matrix.png")
         plt.tight_layout()
         plt.savefig(plot_path)
-        plt.close() 
+        plt.close()
 
     def _plot_categorical_pie(self, feature_name: str, output_dir: str):
         """
