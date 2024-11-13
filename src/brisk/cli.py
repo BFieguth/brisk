@@ -97,7 +97,7 @@ manager = TrainingManager(
         f.write("""# workflow.py
 # Define the workflow for training and evaluating models
 
-from brisk.training import Workflow
+from brisk.training.Workflow import Workflow
 
 class MyWorkflow(Workflow):
     def workflow(self):
