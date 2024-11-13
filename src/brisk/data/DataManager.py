@@ -244,6 +244,7 @@ class DataManager:
         X = df.iloc[:, :-1]
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
+        scaler = None
         
         if self.group_column:
             X = X.drop(columns=self.group_column)
