@@ -64,7 +64,6 @@ class DataManager:
 
         self._validate_config()
         self.splitter = self._set_splitter()
-        self.scaler = self._set_scaler()
 
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
@@ -262,7 +261,8 @@ class DataManager:
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-        if self.scaler:
-            self.scaler.fit(X_train[continuous_features])
+        if self.scale_method:
+            scaler = self._set_scaler()
+            scaler.fit(X_train[continuous_features])
 
-        return X_train, X_test, y_train, y_test, self.scaler, feature_names
+        return X_train, X_test, y_train, y_test, scaler, feature_names

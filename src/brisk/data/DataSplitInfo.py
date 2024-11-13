@@ -69,9 +69,6 @@ class DataSplitInfo:
                     )
             }
 
-        if self.scaler:
-            self.scaler.fit(self.X_train[self.continuous_features])
-
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
         """Calculate descriptive statistics for a continuous feature."""
         stats = {
@@ -227,12 +224,23 @@ class DataSplitInfo:
             Tuple[pd.DataFrame, pd.Series]: A tuple containing the training features (X_train)
             and training labels (y_train).
         """
-        if self.scaler:
-            X_train_scaled = self.X_train.copy()
-            X_train_scaled[self.continuous_features] = pd.DataFrame(
-                self.scaler.transform(self.X_train[self.continuous_features]), 
-                columns=self.continuous_features
+        if self.scaler and self.continuous_features:
+            categorical_data = (
+                self.X_train[self.categorical_features].copy() 
+                if self.categorical_features 
+                else pd.DataFrame(index=self.X_train.index)
                 )
+
+            continuous_scaled = pd.DataFrame(
+                self.scaler.transform(self.X_train[self.continuous_features]),
+                columns=self.continuous_features,
+                index=self.X_train.index
+                )
+            
+            X_train_scaled = pd.concat(
+                [categorical_data, continuous_scaled], axis=1
+                )
+            X_train_scaled = X_train_scaled[self.X_train.columns]
             return X_train_scaled, self.y_train
         return self.X_train, self.y_train
 
@@ -244,12 +252,23 @@ class DataSplitInfo:
             Tuple[pd.DataFrame, pd.Series]: A tuple containing the testing features (X_test)
             and testing labels (y_test).
         """
-        if self.scaler:
-            X_test_scaled = self.X_test.copy()
-            X_test_scaled[self.continuous_features] = pd.DataFrame(
-                self.scaler.transform(self.X_test[self.continuous_features]), 
-                columns=self.continuous_features
+        if self.scaler and self.continuous_features:
+            categorical_data = (
+                self.X_test[self.categorical_features].copy() 
+                if self.categorical_features 
+                else pd.DataFrame(index=self.X_test.index)
                 )
+
+            continuous_scaled = pd.DataFrame(
+                self.scaler.transform(self.X_test[self.continuous_features]),
+                columns=self.continuous_features,
+                index=self.X_test.index
+                )
+            
+            X_test_scaled = pd.concat(
+                [categorical_data, continuous_scaled], axis=1
+                )
+            X_test_scaled = X_test_scaled[self.X_test.columns]
             return X_test_scaled, self.y_test
         return self.X_test, self.y_test
 
