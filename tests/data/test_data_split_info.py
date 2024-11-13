@@ -63,7 +63,10 @@ class TestDataSplitInfo:
         filename = 'sample_dataset.csv'
         features = ['feature1', 'feature2', 'categorical_feature']
         categorical_features = ['categorical_feature']
-        scaler = StandardScaler()
+        scaler = StandardScaler().fit(
+            X_train[[feature for feature in features 
+                    if feature not in categorical_features]]
+            )
 
         return {
             'X_train': X_train,
