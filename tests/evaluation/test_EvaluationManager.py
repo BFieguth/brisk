@@ -36,8 +36,8 @@ class TestEvaluationManager:
         metric_config.get_metric.return_value = mean_absolute_error
         metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
         return EvaluationManager(
-            method_config, metric_config, logger=MagicMock()
-            ).with_config(output_dir=str(tmpdir))
+            method_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
+            )
 
     @pytest.fixture
     def model(self, sample_data):
@@ -180,10 +180,10 @@ class TestEvaluationManager:
         loaded_model = eval_manager.load_model(f"{filename}.pkl")
         assert isinstance(loaded_model, RandomForestRegressor)
 
-    def test_with_config(self, eval_manager):
-        updated_eval_manager = eval_manager.with_config(output_dir="/new/path")
-        assert updated_eval_manager.output_dir == "/new/path"
-        assert eval_manager.output_dir != updated_eval_manager.output_dir
+    # def test_with_config(self, eval_manager):
+    #     updated_eval_manager = eval_manager.with_config(output_dir="/new/path")
+    #     assert updated_eval_manager.output_dir == "/new/path"
+    #     assert eval_manager.output_dir != updated_eval_manager.output_dir
 
     def test_plot_model_comparison(self, eval_manager, model, model2,sample_data):
         X, y = sample_data
