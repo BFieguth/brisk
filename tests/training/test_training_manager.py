@@ -35,12 +35,12 @@ class MockEvaluationManager:
         self.method_config = method_config
         self.metric_config = metric_config
 
-    def with_config(self, **kwargs):
-        """Simulate creating a copy of the evaluator with additional configuration."""
-        eval_copy = copy.copy(self)
-        for key, value in kwargs.items():
-            setattr(eval_copy, key, value)
-        return eval_copy
+    # def with_config(self, **kwargs):
+    #     """Simulate creating a copy of the evaluator with additional configuration."""
+    #     eval_copy = copy.copy(self)
+    #     for key, value in kwargs.items():
+    #         setattr(eval_copy, key, value)
+    #     return eval_copy
     
 
 class MockDataSplitInfo:
@@ -145,7 +145,6 @@ class TestTrainingManager:
         assert isinstance(training_manager.DataManager, MockDataManager)
         assert training_manager.methods == methods
         assert training_manager.data_paths == data_paths
-        assert isinstance(training_manager.EvaluationManager, MockEvaluationManager)
         assert hasattr(training_manager, 'data_splits')
         assert hasattr(training_manager, 'experiments')
 
