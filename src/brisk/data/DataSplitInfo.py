@@ -2,6 +2,7 @@ import datetime
 import inspect
 import json
 import os
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +34,14 @@ class DataSplitInfo:
             scaler (optional): The scaler used for this split.
             features (list, optional): The order of input features.
         """
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        if not self.logger.handlers:
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            handler = logging.StreamHandler()
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+
         self.X_train = X_train.copy(deep=True)
         self.X_test = X_test.copy(deep=True)
         self.y_train = y_train.copy(deep=True)
@@ -51,6 +60,8 @@ class DataSplitInfo:
             col for col in X_train.columns if col not in self.categorical_features
             ]
 
+        self.logger.info(f"Calculating stats for continuous features in {self.filename} split.")
+        
         self.continuous_stats = {}
         for feature in self.continuous_features:
             self.continuous_stats[feature] = {
@@ -58,6 +69,8 @@ class DataSplitInfo:
                 "test": self._calculate_continuous_stats(self.X_test[feature])
             }
         
+        self.logger.info(f"Calculating stats for categorical features in {self.filename} split.")
+
         self.categorical_stats = {}
         for feature in self.categorical_features:
             self.categorical_stats[feature] = {
