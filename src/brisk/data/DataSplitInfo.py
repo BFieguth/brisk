@@ -69,9 +69,6 @@ class DataSplitInfo:
                     )
             }
 
-        if self.scaler:
-            self.scaler.fit(self.X_train[self.continuous_features])
-
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
         """Calculate descriptive statistics for a continuous feature."""
         stats = {
