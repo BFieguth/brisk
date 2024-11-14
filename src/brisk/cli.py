@@ -32,7 +32,7 @@ def create(project_name):
     with open(os.path.join(project_dir, 'settings.py'), 'w') as f:
         f.write("""# settings.py
 TRAINING_MANAGER_CONFIG = {
-    "methods": [],
+    "algorithms": [],
     "data_paths": []
 }
                 
@@ -45,18 +45,18 @@ WORKFLOW_CONFIG = {
         f.write("""# algorithms.py
 import brisk
                 
-ALGORITHM_CONFIG = {
-    "name": brisk.AlgorithmWrapper()
-}        
+ALGORITHM_CONFIG = [
+    brisk.AlgorithmWrapper()
+]        
 """)
 
     with open(os.path.join(project_dir, 'metrics.py'), 'w') as f:
         f.write("""# metrics.py
 import brisk
                 
-METRIC_CONFIG = brisk.MetricManager(
+METRIC_CONFIG = [
     brisk.MetricWrapper(),
-)                       
+]                       
 """)
 
     with open(os.path.join(project_dir, 'data.py'), 'w') as f:
@@ -79,10 +79,10 @@ from settings import TRAINING_MANAGER_CONFIG
                                 
 # Define the TrainingManager for experiments
 manager = TrainingManager(
-    method_config=ALGORITHM_CONFIG,
+    algorithm_config=ALGORITHM_CONFIG,
     metric_config=METRIC_CONFIG,
     data_manager=DataManager,
-    methods=TRAINING_MANAGER_CONFIG.get("methods"),
+    algorithms=TRAINING_MANAGER_CONFIG.get("algorithms"),
     data_paths=TRAINING_MANAGER_CONFIG.get("data_paths")
 )                 
 """)
