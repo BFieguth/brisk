@@ -2,7 +2,7 @@
 
 Exports:
     - TrainingManager: A class to handle model training across multiple 
-        datasets and methods.
+        datasets and algorithms.
 """
 
 from collections import deque
@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 from brisk.data.DataManager import DataManager
 from brisk.data.DataSplitInfo import DataSplitInfo
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
@@ -29,15 +30,15 @@ from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.
 
-    The TrainingManager coordinates the training of models using various methods, 
+    The TrainingManager coordinates the training of models using various algorithms, 
     evaluates them on different datasets, and generates reports. It integrates with 
     EvaluationManager for model evaluation and ReportManager for generating HTML reports.
 
     Attributes:
-        method_config (dict): Configuration of methods with default parameters.
-        metric_config (dict): Configuration of scoring metrics.
+        algorithm_config (list): Configuration of algorithms with default parameters.
+        metric_config (lis): Configuration of scoring metrics.
         DataManager (DataManager): Instance of the DataManager class for train-test splits.
-        methods (list): List of methods to apply to each dataset.
+        algorithms (list): List of algorithms to apply to each dataset.
         data_paths (list): List of tuples containing dataset paths and table names.
         results_dir (str, optional): Directory to store results. Defaults to None.
         EvaluationManager (EvaluationManager): Instance of the EvaluationManager 
@@ -45,52 +46,52 @@ class TrainingManager:
     """
     def __init__(
         self, 
-        method_config: Dict[str, Dict], 
+        algorithm_config: List[AlgorithmWrapper], 
         metric_config: Dict[str, Dict], 
         data_manager: DataManager, 
-        methods: List[str], 
+        algorithms: List[str], 
         data_paths: List[Tuple[str, str]],
         verbose=False
     ):
         """Initializes the TrainingManager.
 
         Args:
-            method_config (Dict[str, Dict]): Configuration of methods with default parameters.
+            algorithm_config (List[AlgorithmWrapper]): Configuration of algorithms with default parameters.
             metric_config (Dict[str, Dict]): Configuration of scoring metrics.
             data_manager (DataManager): An instance of the DataManager class for train-test splits.
             workflow (Workflow): An instance of the Workflow class to define training steps.
-            methods (List[str]): List of methods to train on each dataset.
+            algorithms (List[str]): List of algorithms to train on each dataset.
             data_paths (List[Tuple[str, str]]): List of tuples containing dataset paths and table names.
         """
-        self.method_config = method_config
+        self.algorithm_config = algorithm_config
         self.metric_config = metric_config
         self.DataManager = data_manager
-        self.methods = methods
+        self.algorithms = algorithms
         self.data_paths = data_paths
         self.verbose = verbose
-        self._validate_methods()
+        self._validate_algorithms()
         self.data_splits = self._get_data_splits()
         self.experiments = self._create_experiments()
 
-    def _validate_methods(self) -> None:
-        """Validates that all specified methods are included in the method configuration.
+    def _validate_algorithms(self) -> None:
+        """Validates that all specified algorithms are included in the algorithm configuration.
 
         Raises:
-            ValueError: If any methods are missing from the method configuration.
+            ValueError: If any algorithms are missing from the algorithm configuration.
         """
-        included_methods = self.method_config.keys()
+        included_algorithms = [wrapper.name for wrapper in self.algorithm_config]
 
-        if any(isinstance(m, list) for m in self.methods):
-            flat_methods = set(m for sublist in self.methods for m in sublist)
+        if any(isinstance(m, list) for m in self.algorithms):
+            flat_algorithms = set(m for sublist in self.algorithms for m in sublist)
         else:
-            flat_methods = set(self.methods)
+            flat_algorithms = set(self.algorithms)
 
-        if flat_methods.issubset(included_methods):
+        if flat_algorithms.issubset(included_algorithms):
             return True
         else:
-            invalid_methods = list(flat_methods - set(included_methods))
+            invalid_methods = list(flat_algorithms - set(included_algorithms))
             raise ValueError(
-                "The following methods are not included in the configuration: "
+                "The following algorithms are not included in the configuration: "
                 f"{invalid_methods}"
                 )
 
@@ -130,16 +131,16 @@ class TrainingManager:
         return data_splits
 
     def _create_experiments(self) -> List[Tuple[str, str]]:
-        """Creates experiments as a Cartesian product of methods and datasets.
+        """Creates experiments as a Cartesian product of algorithms and datasets.
 
         Returns:
             List[Tuple[str, str]]: A list of tuples where each tuple 
                 represents (data_path, method).
         """
-        if all(isinstance(method, str) for method in self.methods):
-            method_combinations = [(method,) for method in self.methods]
+        if all(isinstance(method, str) for method in self.algorithms):
+            method_combinations = [(method,) for method in self.algorithms]
         else:
-            method_combinations = zip(*self.methods)
+            method_combinations = zip(*self.algorithms)
 
         experiments = deque(itertools.product(self.data_paths, method_combinations))
         return experiments
@@ -307,9 +308,11 @@ class TrainingManager:
                 X_train, X_test, y_train, y_test = data_split.get_train_test()
 
                 models = [
-                    self.method_config[method_name].instantiate() 
+                    next(algo for algo in self.algorithm_config 
+                         if algo.name == method_name).instantiate()
                     for method_name in method_names
-                    ]
+                ]
+
                 if len(models) == 1:
                     model_kwargs = {"model": models[0]}
                 else:
@@ -327,7 +330,7 @@ class TrainingManager:
                     self.experiment_paths[data_path[0]] = [experiment_dir]
 
                 eval_manager = EvaluationManager(
-                    self.method_config, self.metric_config, experiment_dir,
+                    self.algorithm_config, self.metric_config, experiment_dir,
                     self.logger
                 )
                 workflow_instance = workflow(
