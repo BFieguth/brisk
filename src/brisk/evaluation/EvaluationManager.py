@@ -28,6 +28,8 @@ import sklearn.base as base
 import sklearn.metrics as metrics
 matplotlib.use('Agg')
 
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+
 class EvaluationManager:
     """A class for evaluating machine learning models and generating visualizations.
 
@@ -36,12 +38,12 @@ class EvaluationManager:
     is designed to be used within a training workflow.
 
     Attributes:
-        method_config (dict): Configuration for model methods.
+        algorithm_config (dict): Configuration for model methods.
         metric_config (object): Configuration for evaluation metrics.
     """
     def __init__(
         self, 
-        method_config: Dict[str, Any], 
+        algorithm_config: List[AlgorithmWrapper], 
         metric_config: Any, 
         output_dir: str,
         logger: Optional[logging.Logger]=None
@@ -50,12 +52,12 @@ class EvaluationManager:
         Initializes the EvaluationManager with method and scoring configurations.
 
         Args:
-            method_config (Dict[str, Any]): Configuration for model methods.
+            algorithm_config (Dict[str, Any]): Configuration for model methods.
             metric_config (Any): Configuration for evaluation metrics.
             output_dir (str): Directory to save results.
             logger (Optional[logging.Logger]): Logger instance to use.
         """
-        self.method_config = method_config
+        self.algorithm_config = algorithm_config
         self.metric_config = metric_config
         self.output_dir = output_dir
         self.logger = logger
@@ -579,7 +581,10 @@ class EvaluationManager:
         
         self.logger.info(f"Starting hyperparameter optimization for {model.__class__.__name__}")
         score = self.metric_config.get_scorer(scorer)
-        param_grid = self.method_config[method_name].get_hyperparam_grid()
+        param_grid = next(
+            algo.get_hyperparam_grid() for algo in self.algorithm_config 
+            if algo.name == method_name
+            )
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
         search = searcher(
@@ -587,8 +592,9 @@ class EvaluationManager:
             scoring=score
         )
         search_result = search.fit(X_train, y_train)
-        tuned_model = self.method_config[method_name].instantiate_tuned(
-            search_result.best_params_
+        tuned_model = next(
+            algo.instantiate_tuned(search_result.best_params_) 
+            for algo in self.algorithm_config if algo.name == method_name
             )
         tuned_model.fit(X_train, y_train)
         self.logger.info(f"Hyperparameter optimization for {model.__class__.__name__} complete.")
