@@ -14,6 +14,7 @@ from PIL import Image
 import shutil
 
 import jinja2
+import joblib
 import pandas as pd
 
 class ReportManager():
@@ -56,6 +57,7 @@ class ReportManager():
             autoescape=jinja2.select_autoescape(["html", "xml"])
         )
         self.method_map = collections.OrderedDict([
+            ("serialized_model", self.report_serialized_model),
             ("evaluate_model", self.report_evaluate_model),
             ("evaluate_model_cv", self.report_evaluate_model_cv),
             ("compare_models", self.report_compare_models),
@@ -189,6 +191,8 @@ class ReportManager():
                 file_metadata[file] = self._get_json_metadata(file_path)
             if file.endswith(".png"):
                 file_metadata[file] = self._get_image_metadata(file_path)
+            if file.endswith(".pkl"):
+                file_metadata[file] = {"method": "serialized_model"}
 
         # Step 2: Prepare content based on extracted metadata
         content = []
@@ -302,6 +306,9 @@ class ReportManager():
                 return json.load(f)
         elif file_path.endswith(".png"):
             return file_path
+        elif file_path.endswith(".pkl"):
+            with open(file_path, "rb") as f:
+                return joblib.load(f)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
@@ -500,6 +507,52 @@ class ReportManager():
         result_html += "</tbody></table>"
 
         return result_html
+
+    def report_serialized_model(self, data: dict, metadata: dict) -> str:
+        """Generate an HTML section describing a serialized model.
+        
+        Args:
+            data (dict): The loaded joblib object containing the model
+            metadata (dict): Additional metadata about the model
+            
+        Returns:
+            str: HTML formatted string describing the model
+        """
+        model_name = data.__class__.__name__
+        params = data.get_params()
+        
+        default_model = data.__class__()
+        default_params = default_model.get_params()
+
+        non_default_params = {
+            param: value for param, value in params.items() 
+            if value != default_params[param]
+        }
+        
+        html = [
+            f"<h2>Summary: {model_name}</h2>",
+            "<div class='model-details'>"
+        ]
+        
+        if non_default_params:
+            html.extend([
+                "<p>Non-Default Parameters:</p>",
+                "<table class='params-table'>",
+                "<tr><th>Parameter</th><th>Value</th></tr>"
+            ])
+            
+            for param, value in sorted(non_default_params.items()):
+                html.append(f"<tr><td>{param}</td><td>{value}</td></tr>")
+            
+            html.extend([
+                "</table>"
+            ])
+        else:
+            html.append("<p>All parameters are using default values</p>")
+        
+        html.append("</div>")
+            
+        return "\n".join(html)
 
     def generate_summary_tables(self) -> str:
         """Generates HTML summary tables for each dataset, displaying model metrics.
