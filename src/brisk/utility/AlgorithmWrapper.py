@@ -22,6 +22,7 @@ class AlgorithmWrapper:
     def __init__(
         self, 
         name: str, 
+        display_name: str,
         algorithm_class: Type, 
         default_params: Optional[Dict[str, Any]] = None, 
         hyperparam_grid: Optional[Dict[str, Any]] = None
@@ -37,6 +38,7 @@ class AlgorithmWrapper:
                 for model tuning.
         """
         self.name = name
+        self.display_name = display_name
         self.algorithm_class = algorithm_class
         self.default_params = default_params if default_params else {}
         self.hyperparam_grid = hyperparam_grid if hyperparam_grid else {}

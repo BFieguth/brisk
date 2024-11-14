@@ -2,10 +2,10 @@
 
 This module provides configuration settings for different classification algorithms. 
 Each algorithm is wrapped in a `AlgorithmWrapper` which includes the algorithms's 
-name, its class, default parameters, and hyperparameter space for optimization.
+display_name, its class, default parameters, and hyperparameter space for optimization.
 
 """
-from typing import Dict
+from typing import List
 
 import numpy as np
 import sklearn.linear_model as linear
@@ -18,9 +18,10 @@ import sklearn.neural_network as neural
 
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
-CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
-    "logistic": AlgorithmWrapper(
-        name="Logistic Regression",
+CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper] = [
+    AlgorithmWrapper(
+        name="logistic",
+        display_name="Logistic Regression",
         algorithm_class=linear.LogisticRegression,
         default_params={"max_iter": 10000},
         hyperparam_grid={
@@ -29,8 +30,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'C': list(np.arange(1, 30, 0.5)),
             }
     ),
-    "svc": AlgorithmWrapper(
-        name="Support Vector Classification",
+    AlgorithmWrapper(
+        name="svc",
+        display_name="Support Vector Classification",
         algorithm_class=svm.SVC,
         default_params={"max_iter": 10000},
         hyperparam_grid={
@@ -39,8 +41,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'gamma': ['scale', 'auto', 0.001, 0.01, 0.1],
         }
     ),
-    "linear_svc": AlgorithmWrapper(
-        name="Linear Support Vector Classification",
+    AlgorithmWrapper(
+        name="linear_svc",
+        display_name="Linear Support Vector Classification",
         algorithm_class=svm.LinearSVC,
         default_params={"max_iter": 10000},
         hyperparam_grid={
@@ -48,8 +51,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             "penalty": ["l1", "l2"],
         }
     ),
-    "knn_classifier": AlgorithmWrapper(
-        name="k-Nearest Neighbours Classifier",
+    AlgorithmWrapper(
+        name="knn_classifier",
+        display_name="k-Nearest Neighbours Classifier",
         algorithm_class=neighbors.KNeighborsClassifier,
         hyperparam_grid={
             'n_neighbors': list(range(1,5,2)),
@@ -58,8 +62,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'leaf_size': list(range(5, 50, 5)),
         }
     ),   
-    "dtc": AlgorithmWrapper(
-        name="Decision Tree Classifier",
+    AlgorithmWrapper(
+        name="dtc",
+        display_name="Decision Tree Classifier",
         algorithm_class=tree.DecisionTreeClassifier,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
@@ -67,8 +72,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             "max_depth": list(range(5, 25, 5)) + [None],           
         }
     ),
-    "rf_classifier": AlgorithmWrapper(
-        name="Random Forest Classifier",
+        AlgorithmWrapper(
+        name="rf_classifier",
+        display_name="Random Forest Classifier",
         algorithm_class=ensemble.RandomForestClassifier,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
@@ -78,8 +84,9 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'max_depth': list(range(5, 25, 5)) + [None],
         }
     ),
-    "gbm_classifier": AlgorithmWrapper(
-        name="Gradient Boosting Machine Classifier",
+    AlgorithmWrapper(
+        name="gbm_classifier",
+        display_name="Gradient Boosting Machine Classifier",
         algorithm_class=ensemble.GradientBoostingClassifier,
         hyperparam_grid={
             'loss': ['squared_error', 'absolute_error', 'huber'],
@@ -87,23 +94,26 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'n_estimators': list(range(50, 200, 10)),   
         } 
     ),
-    "adaboost_classifier": AlgorithmWrapper(
-        name="Adaboost Classifier",
+    AlgorithmWrapper(
+        name="adaboost_classifier",
+        display_name="Adaboost Classifier",
         algorithm_class=ensemble.AdaBoostClassifier,
         hyperparam_grid={
             'n_estimators': list(range(50, 200, 10)),  
             'learning_rate': list(np.arange(0.01, 3, 0.1)), 
         }
     ),
-    "gaussian_nb": AlgorithmWrapper(
-        name="Gaussian Naive Bayes",
+    AlgorithmWrapper(
+        name="gaussian_nb",
+        display_name="Gaussian Naive Bayes",
         algorithm_class=nb.GaussianNB,
         hyperparam_grid={
             "var_smoothing": [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4]
         }
     ),
-    "mlp_classifier": AlgorithmWrapper(
-        name="Multi-Layer Perceptron Classification",
+    AlgorithmWrapper(
+        name="mlp_classifier",
+        display_name="Multi-Layer Perceptron Classification",
         algorithm_class=neural.MLPClassifier,
         default_params={"max_iter": 20000},
         hyperparam_grid={
@@ -115,21 +125,24 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'learning_rate': ['constant', 'invscaling', 'adaptive']   
         }
     ),
-    "ridge_classifier": AlgorithmWrapper(
-        name="Ridge Classifier",
+    AlgorithmWrapper(
+        name="ridge_classifier",
+        display_name="Ridge Classifier",
         algorithm_class=linear.RidgeClassifier,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    "bagging_classifier": AlgorithmWrapper(
-        name="Bagging Classifier",
+    AlgorithmWrapper(
+        name="bagging_classifier",
+        display_name="Bagging Classifier",
         algorithm_class=ensemble.BaggingClassifier,
         hyperparam_grid={
             'n_estimators': list(range(10, 160, 20)),
         }
     ),
-    "xtree_classifier": AlgorithmWrapper(
-        name="Extra Tree Classifier",
+    AlgorithmWrapper(
+        name="xtree_classifier",
+        display_name="Extra Tree Classifier",
         algorithm_class=ensemble.ExtraTreesClassifier,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
@@ -139,11 +152,12 @@ CLASSIFICATION_ALGORITHMS: Dict[str, AlgorithmWrapper] = {
             'max_depth': list(range(5, 25, 5)) + [None]
         }
     ),
-    "voting_classifier": AlgorithmWrapper(
-        name="Voting Classifier",
+    AlgorithmWrapper(
+        name=   "voting_classifier",
+        display_name="Voting Classifier",
         algorithm_class=ensemble.VotingClassifier,
         hyperparam_grid={
             "voting": ["hard", "soft"],
         }
     )
-}
+]
