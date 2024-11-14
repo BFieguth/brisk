@@ -31,17 +31,10 @@ class MockDataManager:
 
 
 class MockEvaluationManager:
-    def __init__(self, method_config, metric_config):
-        self.method_config = method_config
+    def __init__(self, algorithm_config, metric_config):
+        self.algorithm_config = algorithm_config
         self.metric_config = metric_config
-
-    # def with_config(self, **kwargs):
-    #     """Simulate creating a copy of the evaluator with additional configuration."""
-    #     eval_copy = copy.copy(self)
-    #     for key, value in kwargs.items():
-    #         setattr(eval_copy, key, value)
-    #     return eval_copy
-    
+   
 
 class MockDataSplitInfo:
     def __init__(
@@ -75,19 +68,21 @@ class MockDataSplitInfo:
 class TestTrainingManager:
 
     @pytest.fixture
-    def method_config(self):
-        return {
-            "linear": AlgorithmWrapper(
-                name="Linear Regression",
+    def algorithm_config(self):
+        return [
+            AlgorithmWrapper(
+                name="linear",
+                display_name="Linear Regression",
                 algorithm_class=Mock()
             ),
-            "ridge": AlgorithmWrapper(
-                name="Ridge Regression",
+            AlgorithmWrapper(
+                name="ridge",
+                display_name="Ridge Regression",
                 algorithm_class=Mock(),
                 default_params={"max_iter": 10000},
                 hyperparam_grid={"alpha": [0.1, 0.2]}
             ),
-        }
+        ]
     
     @pytest.fixture
     def metric_config(self):
@@ -111,7 +106,7 @@ class TestTrainingManager:
         }
     
     @pytest.fixture
-    def methods(self):
+    def algorithms(self):
         return ['linear', 'ridge']
 
     @pytest.fixture
@@ -119,14 +114,14 @@ class TestTrainingManager:
         return [('data1.csv', ''), ('data2.csv', '')]
 
     @pytest.fixture
-    def training_manager(self, method_config, metric_config, methods, data_paths):
+    def training_manager(self, algorithm_config, metric_config, algorithms, data_paths):
         with patch('brisk.training.TrainingManager.EvaluationManager', MockEvaluationManager), \
              patch('brisk.training.TrainingManager.DataSplitInfo', MockDataSplitInfo):
             tm = TrainingManager(
-                method_config=method_config,
+                algorithm_config=algorithm_config,
                 metric_config=metric_config,
                 data_manager=MockDataManager(),
-                methods=methods,
+                algorithms=algorithms,
                 data_paths=data_paths,
                 verbose=False
             )
@@ -138,35 +133,35 @@ class TestTrainingManager:
         with patch("brisk.reporting.ReportManager.ReportManager") as MockReportManager:
             yield MockReportManager
     
-    def test_init(self, training_manager, method_config, metric_config, methods, data_paths):
+    def test_init(self, training_manager, algorithm_config, metric_config, algorithms, data_paths):
         """Test the __init__ method."""
-        assert training_manager.method_config == method_config
+        assert training_manager.algorithm_config == algorithm_config
         assert training_manager.metric_config == metric_config
         assert isinstance(training_manager.DataManager, MockDataManager)
-        assert training_manager.methods == methods
+        assert training_manager.algorithms == algorithms
         assert training_manager.data_paths == data_paths
         assert hasattr(training_manager, 'data_splits')
         assert hasattr(training_manager, 'experiments')
 
     def test_validate_methods_valid(self, training_manager):
-        """Test _validate_methods with valid methods."""
-        training_manager._validate_methods()
+        """Test _validate_algorithms with valid algorithms."""
+        training_manager._validate_algorithms()
 
-    def test_validate_methods_invalid(self, method_config, metric_config, data_paths):
-        """Test _validate_methods with invalid methods."""
+    def test_validate_methods_invalid(self, algorithm_config, metric_config, data_paths):
+        """Test _validate_algorithms with invalid algorithms."""
         invalid_methods = ['linear', 'invalid_method']
         with pytest.raises(ValueError) as exc_info:
             with patch('brisk.training.TrainingManager.EvaluationManager', MockEvaluationManager), \
                  patch('brisk.data.DataSplitInfo.DataSplitInfo', MockDataSplitInfo):
                 TrainingManager(
-                    method_config=method_config,
+                    algorithm_config=algorithm_config,
                     metric_config=metric_config,
                     data_manager=MockDataManager(),
-                    methods=invalid_methods,
+                    algorithms=invalid_methods,
                     data_paths=data_paths,
                     verbose=False
                 )
-        assert "The following methods are not included in the configuration: ['invalid_method']" in str(exc_info.value)
+        assert "The following algorithms are not included in the configuration: ['invalid_method']" in str(exc_info.value)
 
     def test_get_data_splits(self, training_manager):
         """Test _get_data_splits method."""
