@@ -225,7 +225,10 @@ class TestReportManager:
         assert "<td>Std dev</td>" in result_html
         assert "<td>1.23456</td>" in result_html
         assert "<td>1.65432</td>" in result_html
-        assert "No image found at ../../hist_box_plot/feature_1_hist_box.png" in result_html
+        
+        expected_path = os.path.normpath("../../hist_box_plot/feature_1_hist_box.png")
+        expected_error = f"No image found at {expected_path}"
+        assert expected_error in result_html
         
     def test_report_correlation_matrix(self, report_manager, tmpdir):
         correlation_image = tmpdir.join("correlation_matrix.png")

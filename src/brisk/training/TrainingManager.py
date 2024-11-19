@@ -177,7 +177,7 @@ class TrainingManager:
         # full_path = os.path.join(results_dir, experiment_dir)
 
         experiment_path = f"{dataset_name}/{method_name}"
-        full_path = os.path.join(results_dir, experiment_path)
+        full_path = os.path.normpath(os.path.join(results_dir, experiment_path))
 
         if not os.path.exists(full_path):
             os.makedirs(full_path)
@@ -298,7 +298,7 @@ class TrainingManager:
             if dataset_name not in experiment_results:
                 experiment_results[dataset_name] = []
 
-            tqdm.write(f"\n{"-" * 80}")
+            tqdm.write(f"\n{'=' * 80}")
             tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
 
             start_time = time.time()
@@ -357,7 +357,7 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time)
                 })
                 tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
-                tqdm.write(f"\n{"-" * 80}")
+                tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
 
             except Exception as e:
@@ -377,7 +377,7 @@ class TrainingManager:
                     "error": str(e)
                 })
                 tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
-                tqdm.write(f"\n{"-" * 80}")
+                tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
             
         pbar.close()
