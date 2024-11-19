@@ -205,9 +205,8 @@ class TestTrainingManager:
             expected_dir = os.path.normpath(os.path.join(mock_results_dir, 'data1', method_name))
             experiment_dir = os.path.normpath(experiment_dir)
             assert experiment_dir == expected_dir
-            
             # Verify that os.makedirs was called with the expected directory
-            mock_makedirs.assert_called_once_with(expected_dir)
+            mock_makedirs.assert_called_once_with(os.path.normpath(expected_dir))
 
     def test_save_scalers(self, training_manager, tmpdir):
         """Test _save_scalers method."""
