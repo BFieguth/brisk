@@ -177,7 +177,7 @@ class TrainingManager:
         # full_path = os.path.join(results_dir, experiment_dir)
 
         experiment_path = f"{dataset_name}/{method_name}"
-        full_path = os.path.join(results_dir, experiment_path)
+        full_path = os.path.normpath(os.path.join(results_dir, experiment_path))
 
         if not os.path.exists(full_path):
             os.makedirs(full_path)
