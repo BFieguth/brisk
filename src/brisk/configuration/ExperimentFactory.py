@@ -49,7 +49,6 @@ class ExperimentFactory:
 
             for algo_group in algorithm_groups:
                 models = {}
-                hyperparam_grids = {}
                 
                 if len(algo_group) == 1:
                     algo_name = algo_group[0]
@@ -57,8 +56,7 @@ class ExperimentFactory:
                         algo_name, 
                         group_algo_config.get(algo_name)
                     )
-                    models["model"] = wrapper.instantiate()
-                    hyperparam_grids["model"] = wrapper.hyperparam_grid
+                    models["model"] = wrapper
                 else:
                     for i, algo_name in enumerate(algo_group):
                         model_key = f"model{i+1}"
@@ -66,14 +64,12 @@ class ExperimentFactory:
                             algo_name, 
                             group_algo_config.get(algo_name)
                         )
-                        models[model_key] = wrapper.instantiate()
-                        hyperparam_grids[model_key] = wrapper.hyperparam_grid
+                        models[model_key] = wrapper
                 
                 experiment = Experiment(
                     group_name=experiment_group,
                     dataset=dataset_path,
                     algorithms=models,
-                    hyperparameters=hyperparam_grids
                 )
                 experiments.append(experiment)
         
@@ -88,16 +84,16 @@ class ExperimentFactory:
         if algo_name not in self.algorithm_config:
             raise KeyError(f"Algorithm '{algo_name}' not found in configuration")
             
-        wrapper = self.algorithm_config[algo_name]
+        original_wrapper = self.algorithm_config[algo_name]
         
+        wrapper = AlgorithmWrapper(
+            name=original_wrapper.name,
+            display_name=original_wrapper.display_name,
+            algorithm_class=original_wrapper.algorithm_class,
+            default_params=original_wrapper.default_params.copy(),
+            hyperparam_grid=original_wrapper.hyperparam_grid.copy()
+        )
         if config:
-            wrapper = AlgorithmWrapper(
-                name=wrapper.name,
-                display_name=wrapper.display_name,
-                algorithm_class=wrapper.algorithm_class,
-                default_params=wrapper.default_params.copy(),
-                hyperparam_grid=wrapper.hyperparam_grid.copy()
-            )
             wrapper.hyperparam_grid.update(config)
             
         return wrapper
