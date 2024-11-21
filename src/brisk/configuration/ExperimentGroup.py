@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from brisk.data.DataManager import DataManager
+from brisk.utility.utility import find_project_root
 
 @dataclass
 class ExperimentGroup:
@@ -35,7 +36,7 @@ class ExperimentGroup:
         Raises:
             FileNotFoundError: If project root (.briskconfig) cannot be found
         """
-        project_root = self._find_project_root()
+        project_root = find_project_root()
         datasets_dir = project_root / 'datasets'
         return [datasets_dir / dataset for dataset in self.datasets]
 
@@ -56,27 +57,6 @@ class ExperimentGroup:
         self._validate_datasets()
         self._validate_algorithm_config()
         self._validate_data_config()
-    
-    def _find_project_root(self) -> Path:
-        """Find the project root directory containing .briskconfig.
-        
-        Searches current directory and parent directories for .briskconfig file.
-        
-        Returns:
-            Path to project root directory
-            
-        Raises:
-            FileNotFoundError: If .briskconfig cannot be found in any parent 
-            directory
-        """
-        current = Path.cwd()
-        while current != current.parent:
-            if (current / '.briskconfig').exists():
-                return current
-            current = current.parent
-        raise FileNotFoundError(
-            "Could not find .briskconfig in any parent directory"
-        )
 
     def _validate_name(self):
         """Validate experiment group name.

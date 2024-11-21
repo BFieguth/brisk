@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 
 from brisk.configuration.ExperimentGroup import ExperimentGroup
+from brisk.utility.utility import find_project_root
 
 @pytest.fixture
 def mock_project_root(tmp_path, monkeypatch):
@@ -43,6 +44,13 @@ def missing_dataset_group(mock_project_root):
         datasets=[],
         algorithms=["linear", "ridge"]
     )
+
+
+@pytest.fixture(autouse=True)
+def reset_project_root_cache():
+    """Clear the project root cache after each test"""
+    yield
+    find_project_root.cache_clear()
 
 
 class TestExperimentGroup:
@@ -135,15 +143,11 @@ class TestExperimentGroup:
 
 def test_project_root_not_found(tmp_path, monkeypatch):
     """Test FileNotFoundError when .briskconfig is not found"""
-    # Change working directory to a temporary directory without .briskconfig
     monkeypatch.chdir(tmp_path)
+    find_project_root.cache_clear()  # Clear before this specific test
     
     with pytest.raises(FileNotFoundError, match="Could not find .briskconfig"):
-        ExperimentGroup(
-            name="test_group",
-            datasets=["test.csv"],
-            algorithms=["linear"]
-        )
+        find_project_root()
 
 def test_nested_project_root(tmp_path, monkeypatch):
     """Test finding .briskconfig in parent directory"""
@@ -162,8 +166,8 @@ def test_nested_project_root(tmp_path, monkeypatch):
     
     # Change working directory to nested directory
     monkeypatch.chdir(nested_dir)
+    find_project_root.cache_clear()  # Clear before this specific test
     
-    # Should find .briskconfig in parent
     group = ExperimentGroup(
         name="test_group",
         datasets=["test.csv"],

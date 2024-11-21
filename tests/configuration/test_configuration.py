@@ -11,8 +11,7 @@ from brisk.configuration.ConfigurationManager import ConfigurationManager
 @pytest.fixture
 def mock_validation():
     """Mock only the validation methods of ExperimentGroup"""
-    with patch('brisk.configuration.ExperimentGroup.ExperimentGroup.__post_init__'), \
-         patch('brisk.configuration.ExperimentGroup.ExperimentGroup._find_project_root'):
+    with patch('brisk.configuration.ExperimentGroup.ExperimentGroup.__post_init__'):
         yield
 
 
@@ -82,4 +81,3 @@ class TestConfiguration:
         
         manager = basic_config.build()
         assert isinstance(manager, ConfigurationManager)
-        
