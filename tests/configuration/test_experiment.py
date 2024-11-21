@@ -12,8 +12,7 @@ def single_model():
     return Experiment(
         group_name="test_group",
         dataset=Path("data/test.csv"),
-        algorithms={"model": LinearRegression()},
-        hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
+        algorithms={"model": LinearRegression()}
     )
 
 
@@ -27,10 +26,6 @@ def multiple_models():
             "model1": LinearRegression(),
             "model2": RandomForestRegressor()
         },
-        hyperparameters={
-            "model1": {"alpha": np.logspace(-3, 0, 100)},
-            "model2": {"n_estimators": np.arange(10, 100, 10)}
-        }   
     )
 
 
@@ -54,8 +49,7 @@ class TestExperiment:
             Experiment(
                 group_name="test",
                 dataset="test.csv",
-                algorithms={"wrong_key": LinearRegression()},
-                hyperparameters={}
+                algorithms={"wrong_key": LinearRegression()}
             )
 
         with pytest.raises(ValueError, match="Multiple models must use keys"):
@@ -66,7 +60,6 @@ class TestExperiment:
                     "model1": LinearRegression(),
                     "wrong_key": Ridge()
                 },
-                hyperparameters={}
             )
 
     def test_string_to_path_conversion(self):
@@ -74,8 +67,7 @@ class TestExperiment:
         exp = Experiment(
             group_name="test",
             dataset="test.csv",
-            algorithms={"model": LinearRegression()},
-            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
+            algorithms={"model": LinearRegression()}
         )
         assert isinstance(exp.dataset, Path)
 
@@ -89,8 +81,7 @@ class TestExperiment:
         exp2 = Experiment(
             group_name="test_group",
             dataset="data/test.csv",
-            algorithms={"model": LinearRegression()},
-            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
+            algorithms={"model": LinearRegression()}
         )
         assert single_model.experiment_name == exp2.experiment_name
 
@@ -99,14 +90,12 @@ class TestExperiment:
         exp1 = Experiment(
             group_name="test_group",
             dataset="test.csv",
-            algorithms={"model": LinearRegression()},
-            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
+            algorithms={"model": LinearRegression()}
         )
         exp2 = Experiment(
             group_name="test_group",
             dataset="test.csv",
             algorithms={"model": RandomForestRegressor()},
-            hyperparameters={"model": {"n_estimators": np.arange(10, 100, 10)}}
         )
         assert exp1.experiment_name != exp2.experiment_name
 
@@ -124,7 +113,6 @@ class TestExperiment:
                 group_name=123,
                 dataset="test.csv",
                 algorithms={"model": LinearRegression()},
-                hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
             )
 
         with pytest.raises(ValueError, match="At least one algorithm must be provided"):
@@ -132,7 +120,6 @@ class TestExperiment:
                 group_name="test",
                 dataset="test.csv",
                 algorithms={},
-                hyperparameters={}
             )
 
         with pytest.raises(ValueError, match="Algorithms must be a dictionary"):
@@ -140,5 +127,4 @@ class TestExperiment:
                 group_name="test",
                 dataset="test.csv",
                 algorithms=[LinearRegression()],
-                hyperparameters={}
             )

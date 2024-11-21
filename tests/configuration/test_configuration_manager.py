@@ -204,14 +204,17 @@ from sklearn.linear_model import LinearRegression
             exp for exp in manager.experiment_queue 
             if len(exp.algorithms) == 1
         )
-        assert isinstance(single_exp.algorithms["model"], LinearRegression)
-        
+        assert isinstance(single_exp.algorithms["model"], AlgorithmWrapper)
+        assert single_exp.algorithms["model"].algorithm_class == LinearRegression
+
         multi_exps = [
             exp for exp in manager.experiment_queue 
             if len(exp.algorithms) == 2
         ]
         assert len(multi_exps) == 2
         for exp in multi_exps:
-            assert isinstance(exp.algorithms["model1"], Ridge)
-            assert isinstance(exp.algorithms["model2"], ElasticNet)
+            assert isinstance(exp.algorithms["model1"], AlgorithmWrapper)
+            assert isinstance(exp.algorithms["model2"], AlgorithmWrapper)
+            assert exp.algorithms["model1"].algorithm_class == Ridge
+            assert exp.algorithms["model2"].algorithm_class == ElasticNet
             

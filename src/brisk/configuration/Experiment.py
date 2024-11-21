@@ -3,7 +3,7 @@ import pathlib
 from typing import Dict, Any, Optional, List
 import hashlib
 
-from sklearn import base
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 @dataclasses.dataclass
 class Experiment:
@@ -32,8 +32,7 @@ class Experiment:
     """
     group_name: str
     dataset: pathlib.Path
-    algorithms: Dict[str, base.BaseEstimator]
-    hyperparameters: Dict[str, Dict[str, Any]]
+    algorithms: Dict[str, AlgorithmWrapper]
 
     @property
     def full_name(self) -> str:
@@ -104,14 +103,7 @@ class Experiment:
                     f"Multiple models must use keys {expected_keys}"
                 )
 
-        if set(self.algorithms.keys()) != set(self.hyperparameters.keys()):
-            raise ValueError(
-                "Hyperparameter grids must match algorithms keys exactly. "
-                f"Algorithms: {list(self.algorithms.keys())}, "
-                f"Grids: {list(self.hyperparameters.keys())}"
-            )
-
-    def get_model_kwargs(self) -> Dict[str, base.BaseEstimator]:
+    def get_model_kwargs(self) -> Dict[str, AlgorithmWrapper]:
         """Get models in the format expected by workflow.
         
         Returns:

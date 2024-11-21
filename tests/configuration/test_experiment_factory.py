@@ -57,7 +57,8 @@ class TestExperimentFactory:
         assert exp.group_name == "test_data"
         assert len(exp.algorithms) == 1
         assert "model" in exp.algorithms
-        assert isinstance(exp.algorithms["model"], LinearRegression)
+        assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
+        assert exp.algorithms["model"].algorithm_class == LinearRegression
 
     def test_multiple_separate_algorithms(self, factory, mock_project_root, monkeypatch):
         """Test creation of separate experiments for multiple algorithms."""
@@ -130,12 +131,12 @@ class TestExperimentFactory:
         exp = experiments[0]
         
         # Check hyperparameter grid was updated
-        assert "alpha" in exp.hyperparameters["model"]
-        assert len(exp.hyperparameters["model"]["alpha"]) == 10
+        assert "alpha" in exp.algorithms["model"].hyperparam_grid
+        assert len(exp.algorithms["model"].hyperparam_grid["alpha"]) == 10
         
         # Check default params weren't modified
-        assert exp.algorithms["model"].alpha == 1.0
-        assert exp.algorithms["model"].l1_ratio == 0.5
+        assert exp.algorithms["model"].default_params["alpha"] == 1.0
+        assert exp.algorithms["model"].default_params["l1_ratio"] == 0.5
 
     def test_invalid_algorithm(self, factory, mock_project_root, monkeypatch):
         """Test handling of invalid algorithm name."""
@@ -166,10 +167,15 @@ class TestExperimentFactory:
         # Check single algorithm experiment
         single = next(exp for exp in experiments if len(exp.algorithms) == 1)
         assert "model" in single.algorithms
-        assert isinstance(single.algorithms["model"], LinearRegression)
+        assert isinstance(single.algorithms["model"], AlgorithmWrapper)
+        assert single.algorithms["model"].algorithm_class == LinearRegression
         
         # Check grouped algorithm experiment
         grouped = next(exp for exp in experiments if len(exp.algorithms) == 2)
         assert "model1" in grouped.algorithms
         assert "model2" in grouped.algorithms
+        assert isinstance(grouped.algorithms["model1"], AlgorithmWrapper)
+        assert isinstance(grouped.algorithms["model2"], AlgorithmWrapper)
+        assert grouped.algorithms["model1"].algorithm_class == Ridge
+        assert grouped.algorithms["model2"].algorithm_class == ElasticNet
         
