@@ -4,19 +4,6 @@ from pathlib import Path
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.utility.utility import find_project_root
 
-@pytest.fixture
-def mock_project_root(tmp_path, monkeypatch):
-    """Create a temporary project structure"""
-    (tmp_path / '.briskconfig').touch()
-    datasets_dir = tmp_path / 'datasets'
-    datasets_dir.mkdir()
-    (datasets_dir / 'test.csv').touch()
-    (datasets_dir / 'another_dataset.csv').touch()
-    monkeypatch.setattr('brisk.configuration.ExperimentGroup.find_project_root', lambda: tmp_path)
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
-
-
 @pytest.fixture 
 def valid_group(mock_project_root):
     """Create a valid experiment group"""
@@ -47,11 +34,11 @@ def missing_dataset_group(mock_project_root):
     )
 
 
-@pytest.fixture(autouse=True)
-def reset_project_root_cache():
-    """Clear the project root cache after each test"""
-    yield
-    find_project_root.cache_clear()
+# @pytest.fixture(autouse=True)
+# def reset_project_root_cache():
+#     """Clear the project root cache after each test"""
+#     yield
+#     find_project_root.cache_clear()
 
 
 class TestExperimentGroup:

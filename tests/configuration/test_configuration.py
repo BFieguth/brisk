@@ -9,33 +9,6 @@ from brisk.configuration.Configuration import Configuration
 from brisk.configuration.ConfigurationManager import ConfigurationManager
 
 @pytest.fixture
-def mock_project_root(tmp_path):
-    """Create a temporary project structure for testing.
-    
-    Creates:
-    - .briskconfig file
-    - data.py with BASE_DATA_MANAGER
-    - datasets directory
-    """
-    # Create project structure
-    (tmp_path / '.briskconfig').touch()
-    
-    # Create datasets directory
-    datasets_dir = tmp_path / 'datasets'
-    datasets_dir.mkdir()
-    (datasets_dir / 'data.csv').touch()
-    
-    # Create data.py with BASE_DATA_MANAGER
-    data_py = """
-from brisk.data.DataManager import DataManager
-BASE_DATA_MANAGER = DataManager()
-"""
-    (tmp_path / 'data.py').write_text(data_py)
-    
-    return tmp_path
-
-
-@pytest.fixture
 def mock_validation():
     """Mock only the validation methods of ExperimentGroup"""
     with patch('brisk.configuration.ExperimentGroup.ExperimentGroup.__post_init__'):
