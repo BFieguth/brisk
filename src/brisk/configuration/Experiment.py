@@ -33,6 +33,7 @@ class Experiment:
     group_name: str
     dataset: pathlib.Path
     algorithms: Dict[str, base.BaseEstimator]
+    hyperparameters: Dict[str, Dict[str, Any]]
 
     @property
     def full_name(self) -> str:
@@ -102,6 +103,13 @@ class Experiment:
                 raise ValueError(
                     f"Multiple models must use keys {expected_keys}"
                 )
+
+        if set(self.algorithms.keys()) != set(self.hyperparameters.keys()):
+            raise ValueError(
+                "Hyperparameter grids must match algorithms keys exactly. "
+                f"Algorithms: {list(self.algorithms.keys())}, "
+                f"Grids: {list(self.hyperparameters.keys())}"
+            )
 
     def get_model_kwargs(self) -> Dict[str, base.BaseEstimator]:
         """Get models in the format expected by workflow.

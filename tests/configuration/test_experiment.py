@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor
+import numpy as np
 
 from brisk.configuration.Experiment import Experiment
 
@@ -11,7 +12,8 @@ def single_model():
     return Experiment(
         group_name="test_group",
         dataset=Path("data/test.csv"),
-        algorithms={"model": LinearRegression()}
+        algorithms={"model": LinearRegression()},
+        hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
     )
 
 
@@ -24,7 +26,11 @@ def multiple_models():
         algorithms={
             "model1": LinearRegression(),
             "model2": RandomForestRegressor()
-        }
+        },
+        hyperparameters={
+            "model1": {"alpha": np.logspace(-3, 0, 100)},
+            "model2": {"n_estimators": np.arange(10, 100, 10)}
+        }   
     )
 
 
@@ -48,7 +54,8 @@ class TestExperiment:
             Experiment(
                 group_name="test",
                 dataset="test.csv",
-                algorithms={"wrong_key": LinearRegression()}
+                algorithms={"wrong_key": LinearRegression()},
+                hyperparameters={}
             )
 
         with pytest.raises(ValueError, match="Multiple models must use keys"):
@@ -58,7 +65,8 @@ class TestExperiment:
                 algorithms={
                     "model1": LinearRegression(),
                     "wrong_key": Ridge()
-                }
+                },
+                hyperparameters={}
             )
 
     def test_string_to_path_conversion(self):
@@ -66,7 +74,8 @@ class TestExperiment:
         exp = Experiment(
             group_name="test",
             dataset="test.csv",
-            algorithms={"model": LinearRegression()}
+            algorithms={"model": LinearRegression()},
+            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
         )
         assert isinstance(exp.dataset, Path)
 
@@ -80,7 +89,8 @@ class TestExperiment:
         exp2 = Experiment(
             group_name="test_group",
             dataset="data/test.csv",
-            algorithms={"model": LinearRegression()}
+            algorithms={"model": LinearRegression()},
+            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
         )
         assert single_model.experiment_name == exp2.experiment_name
 
@@ -89,12 +99,14 @@ class TestExperiment:
         exp1 = Experiment(
             group_name="test_group",
             dataset="test.csv",
-            algorithms={"model": LinearRegression()}
+            algorithms={"model": LinearRegression()},
+            hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
         )
         exp2 = Experiment(
             group_name="test_group",
             dataset="test.csv",
-            algorithms={"model": RandomForestRegressor()}
+            algorithms={"model": RandomForestRegressor()},
+            hyperparameters={"model": {"n_estimators": np.arange(10, 100, 10)}}
         )
         assert exp1.experiment_name != exp2.experiment_name
 
@@ -111,20 +123,22 @@ class TestExperiment:
             Experiment(
                 group_name=123,
                 dataset="test.csv",
-                algorithms={"model": LinearRegression()}
+                algorithms={"model": LinearRegression()},
+                hyperparameters={"model": {"alpha": np.logspace(-3, 0, 100)}}
             )
 
         with pytest.raises(ValueError, match="At least one algorithm must be provided"):
             Experiment(
                 group_name="test",
                 dataset="test.csv",
-                algorithms={}
+                algorithms={},
+                hyperparameters={}
             )
 
         with pytest.raises(ValueError, match="Algorithms must be a dictionary"):
             Experiment(
                 group_name="test",
                 dataset="test.csv",
-                algorithms=[LinearRegression()]
+                algorithms=[LinearRegression()],
+                hyperparameters={}
             )
-            
