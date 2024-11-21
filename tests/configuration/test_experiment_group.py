@@ -12,11 +12,12 @@ def mock_project_root(tmp_path, monkeypatch):
     datasets_dir.mkdir()
     (datasets_dir / 'test.csv').touch()
     (datasets_dir / 'another_dataset.csv').touch()
+    monkeypatch.setattr('brisk.configuration.ExperimentGroup.find_project_root', lambda: tmp_path)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture 
 def valid_group(mock_project_root):
     """Create a valid experiment group"""
     return ExperimentGroup(
@@ -55,7 +56,7 @@ def reset_project_root_cache():
 
 class TestExperimentGroup:
     def test_valid_creation(self, valid_group):
-        """Test creation with valid parameters"""
+        """Test creation with valid parameters"""  
         assert valid_group.name == "test_group"
         assert valid_group.datasets == ["test.csv"]
         assert valid_group.algorithms == ["linear", "ridge"]
