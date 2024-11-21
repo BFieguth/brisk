@@ -19,6 +19,24 @@ def mock_validation():
 def basic_config(mock_project_root, monkeypatch):
     """Create a basic configuration with mocked project root."""
     monkeypatch.chdir(mock_project_root)
+    (mock_project_root / 'algorithms.py').write_text("""
+from sklearn.linear_model import LinearRegression, Ridge
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+
+ALGORITHM_CONFIG = [
+    AlgorithmWrapper(
+        name="linear",
+        display_name="Linear Regression",
+        algorithm_class=LinearRegression
+    ),
+    AlgorithmWrapper(
+        name="ridge",
+        display_name="Ridge Regression",
+        algorithm_class=Ridge
+    )
+]
+""")
+
     return Configuration(default_algorithms=["linear", "ridge"])
 
 
