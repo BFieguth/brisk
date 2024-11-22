@@ -65,7 +65,6 @@ class TestDataManager:
                 split_method="shuffle", scale_method="fake_scaler"
                 )
 
-
     @mock.patch("pandas.read_csv")
     def test_load_data_csv(self, mock_read_csv, mock_data):
         """
@@ -222,25 +221,25 @@ class TestDataManager:
             test_size=0.2, split_method="shuffle", random_state=42
             )
 
-        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+        split = splitter.split(
             "data.csv"
             )
 
-        assert len(X_train) == 8
-        assert len(X_test) == 2
-        assert len(y_train) == 8
-        assert len(y_test) == 2
+        assert len(split.X_train) == 8
+        assert len(split.X_test) == 2
+        assert len(split.y_train) == 8
+        assert len(split.y_test) == 2
 
-        assert len(X_train) + len(X_test) == len(mock_data)
-        assert len(y_train) + len(y_test) == len(mock_data)
+        assert len(split.X_train) + len(split.X_test) == len(mock_data)
+        assert len(split.y_train) + len(split.y_test) == len(mock_data)
 
-        assert isinstance(X_train, pd.DataFrame)
-        assert isinstance(X_test, pd.DataFrame)
-        assert isinstance(y_train, pd.Series)
-        assert isinstance(y_test, pd.Series)
+        assert isinstance(split.X_train, pd.DataFrame)
+        assert isinstance(split.X_test, pd.DataFrame)
+        assert isinstance(split.y_train, pd.Series)
+        assert isinstance(split.y_test, pd.Series)
 
-        assert scaler == None
-        assert feature_names == ['feature1', 'feature2']
+        assert split.scaler == None
+        assert split.features == ['feature1', 'feature2']
 
     @mock.patch("pandas.read_csv")
     def test_kfold_split(self, mock_read_csv, mock_data):
@@ -251,25 +250,25 @@ class TestDataManager:
         splitter = DataManager(
             n_splits=2, split_method="kfold", random_state=42
             )
-        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+        split = splitter.split(
             "data.csv"
             )
 
-        assert len(X_train) == 5
-        assert len(X_test) == 5
-        assert len(y_train) == 5
-        assert len(y_test) == 5
+        assert len(split.X_train) == 5
+        assert len(split.X_test) == 5
+        assert len(split.y_train) == 5
+        assert len(split.y_test) == 5
 
-        assert len(X_train) + len(X_test) == len(mock_data)
-        assert len(y_train) + len(y_test) == len(mock_data)
+        assert len(split.X_train) + len(split.X_test) == len(mock_data)
+        assert len(split.y_train) + len(split.y_test) == len(mock_data)
 
-        assert isinstance(X_train, pd.DataFrame)
-        assert isinstance(X_test, pd.DataFrame)
-        assert isinstance(y_train, pd.Series)
-        assert isinstance(y_test, pd.Series)
+        assert isinstance(split.X_train, pd.DataFrame)
+        assert isinstance(split.X_test, pd.DataFrame)
+        assert isinstance(split.y_train, pd.Series)
+        assert isinstance(split.y_test, pd.Series)
 
-        assert scaler == None
-        assert feature_names == ['feature1', 'feature2']
+        assert split.scaler == None
+        assert split.features == ['feature1', 'feature2']
 
     @mock.patch("pandas.read_csv")
     def test_shuffle_split_grouped(self, mock_read_csv, mock_data):
@@ -283,25 +282,25 @@ class TestDataManager:
             random_state=42
             )
 
-        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+        split = splitter.split(
             "data.csv"
             )
 
-        assert len(X_train) == 8
-        assert len(X_test) == 2
-        assert len(y_train) == 8
-        assert len(y_test) == 2
+        assert len(split.X_train) == 8
+        assert len(split.X_test) == 2
+        assert len(split.y_train) == 8
+        assert len(split.y_test) == 2
 
-        assert len(X_train) + len(X_test) == len(mock_data)
-        assert len(y_train) + len(y_test) == len(mock_data)
+        assert len(split.X_train) + len(split.X_test) == len(mock_data)
+        assert len(split.y_train) + len(split.y_test) == len(mock_data)
 
-        assert isinstance(X_train, pd.DataFrame)
-        assert isinstance(X_test, pd.DataFrame)
-        assert isinstance(y_train, pd.Series)
-        assert isinstance(y_test, pd.Series)
+        assert isinstance(split.X_train, pd.DataFrame)
+        assert isinstance(split.X_test, pd.DataFrame)
+        assert isinstance(split.y_train, pd.Series)
+        assert isinstance(split.y_test, pd.Series)
 
-        assert scaler == None
-        assert feature_names == ['feature2']
+        assert split.scaler == None
+        assert split.features == ['feature2']
 
     @mock.patch("pandas.read_csv")
     def test_shuffle_split_categorical(self, mock_read_csv, mock_data):
@@ -315,25 +314,25 @@ class TestDataManager:
             categorical_features=["feature1"], random_state=42
             )
 
-        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+        split = splitter.split(
             "data.csv"
             )
 
-        assert len(X_train) == 8
-        assert len(X_test) == 2
-        assert len(y_train) == 8
-        assert len(y_test) == 2
+        assert len(split.X_train) == 8
+        assert len(split.X_test) == 2
+        assert len(split.y_train) == 8
+        assert len(split.y_test) == 2
 
-        assert len(X_train) + len(X_test) == len(mock_data)
-        assert len(y_train) + len(y_test) == len(mock_data)
+        assert len(split.X_train) + len(split.X_test) == len(mock_data)
+        assert len(split.y_train) + len(split.y_test) == len(mock_data)
 
-        assert isinstance(X_train, pd.DataFrame)
-        assert isinstance(X_test, pd.DataFrame)
-        assert isinstance(y_train, pd.Series)
-        assert isinstance(y_test, pd.Series)
+        assert isinstance(split.X_train, pd.DataFrame)
+        assert isinstance(split.X_test, pd.DataFrame)
+        assert isinstance(split.y_train, pd.Series)
+        assert isinstance(split.y_test, pd.Series)
 
-        assert scaler == None
-        assert feature_names == ['feature1' ,'feature2']
+        assert split.scaler == None
+        assert split.features == ['feature1' ,'feature2']
 
     @mock.patch("pandas.read_csv")
     def test_shuffle_split_scaler(self, mock_read_csv, mock_data):
@@ -347,25 +346,25 @@ class TestDataManager:
             random_state=42
             )
 
-        X_train, X_test, y_train, y_test, scaler, feature_names = splitter.split(
+        split = splitter.split(
             "data.csv"
             )
 
-        assert len(X_train) == 8
-        assert len(X_test) == 2
-        assert len(y_train) == 8
-        assert len(y_test) == 2
+        assert len(split.X_train) == 8
+        assert len(split.X_test) == 2
+        assert len(split.y_train) == 8
+        assert len(split.y_test) == 2
 
-        assert len(X_train) + len(X_test) == len(mock_data)
-        assert len(y_train) + len(y_test) == len(mock_data)
+        assert len(split.X_train) + len(split.X_test) == len(mock_data)
+        assert len(split.y_train) + len(split.y_test) == len(mock_data)
 
-        assert isinstance(X_train, pd.DataFrame)
-        assert isinstance(X_test, pd.DataFrame)
-        assert isinstance(y_train, pd.Series)
-        assert isinstance(y_test, pd.Series)
+        assert isinstance(split.X_train, pd.DataFrame)
+        assert isinstance(split.X_test, pd.DataFrame)
+        assert isinstance(split.y_train, pd.Series)
+        assert isinstance(split.y_test, pd.Series)
 
-        assert isinstance(scaler, preprocessing.StandardScaler)
-        assert feature_names == ['feature1' ,'feature2']
+        assert isinstance(split.scaler, preprocessing.StandardScaler)
+        assert split.features == ['feature1' ,'feature2']
 
     def test_set_scaler_standard(self, data_splitter):
         """
@@ -425,3 +424,69 @@ class TestDataManager:
             match="Invalid combination of stratified and group_column for the specified split method."
             ):
             data_splitter._set_splitter()
+
+    def test_split_caching(self, mock_data):
+        """Test that splits are cached and reused correctly."""
+        with mock.patch("pandas.read_csv", return_value=mock_data) as mock_read:
+            manager = DataManager(test_size=0.2)
+            
+            split1 = manager.split(
+                data_path="data.csv",
+                group_name="test_group",
+                filename="data"
+            )
+            assert mock_read.call_count == 1
+            assert len(manager._splits) == 1
+            assert "test_group_data" in manager._splits
+            
+            split2 = manager.split(
+                data_path="data.csv",
+                group_name="test_group",
+                filename="data"
+            )
+            assert mock_read.call_count == 1  # No additional read
+            assert split1 is split2  # Same object returned
+            
+            # Different group name should create new split
+            split3 = manager.split(
+                data_path="data.csv",
+                group_name="other_group",
+                filename="data"
+            )
+            assert mock_read.call_count == 2
+            assert len(manager._splits) == 2
+            assert split1 is not split3
+            
+    def test_split_without_group(self, mock_data):
+        """Test that splits without group info use data_path as key."""
+        with mock.patch("pandas.read_csv", return_value=mock_data) as mock_read:
+            manager = DataManager(test_size=0.2)
+            
+            # Split without group should use data_path as key
+            split1 = manager.split(data_path="data.csv")
+            assert mock_read.call_count == 1
+            assert len(manager._splits) == 1
+            assert "data.csv" in manager._splits
+            
+            # Same path should return cached version
+            split2 = manager.split(data_path="data.csv")
+            assert mock_read.call_count == 1
+            assert split1 is split2
+            
+    def test_split_validation(self):
+        """Test validation of group_name and filename parameters."""
+        manager = DataManager()
+        
+        # Missing filename when group_name provided
+        with pytest.raises(ValueError, match="Both group_name and filename must be provided together"):
+            manager.split(
+                data_path="data.csv",
+                group_name="test_group"
+            )
+            
+        # Missing group_name when filename provided
+        with pytest.raises(ValueError, match="Both group_name and filename must be provided together"):
+            manager.split(
+                data_path="data.csv",
+                filename="data"
+            )
