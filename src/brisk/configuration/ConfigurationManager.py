@@ -30,6 +30,7 @@ class ConfigurationManager:
         self.base_data_manager = self._load_base_data_manager()
         self.data_managers = self._create_data_managers()
         self.experiment_queue = self._create_experiment_queue()
+        self._create_data_splits()
 
     def _load_base_data_manager(self) -> DataManager:
         """Load default DataManager configuration from project's data.py.
@@ -170,3 +171,16 @@ class ConfigurationManager:
             all_experiments.extend(experiments)
             
         return all_experiments
+
+    def _create_data_splits(self):
+        """Create DataSplitInfo instances for all datasets in experiment groups."""
+        for group in self.experiment_groups:
+            data_manager = self.data_managers[group.name]
+            for dataset_path in group.dataset_paths:
+                # Create split with group name and filename for caching
+                data_manager.split(
+                    data_path=str(dataset_path),
+                    group_name=group.name,
+                    filename=dataset_path.stem
+                )
+
