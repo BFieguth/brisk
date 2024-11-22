@@ -1,6 +1,6 @@
 import dataclasses
 import collections
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple
 from importlib import util
 
 from brisk.data.DataManager import DataManager
@@ -9,6 +9,7 @@ from brisk.configuration.ExperimentFactory import ExperimentFactory
 from brisk.utility.utility import find_project_root
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.utility.utility import format_dict
+from brisk.data.DataSplitInfo import DataSplitInfo
 
 class ConfigurationManager:
     """Manages experiment configurations and DataManager instances.
@@ -34,6 +35,7 @@ class ConfigurationManager:
         self.experiment_queue = self._create_experiment_queue()
         self._create_data_splits()
         self._create_logfile()
+        self.output_structure = self._get_output_structure()
 
     def _load_base_data_manager(self) -> DataManager:
         """Load default DataManager configuration from project's data.py.
@@ -245,3 +247,23 @@ class ConfigurationManager:
                 ])
 
         self.logfile = "\n".join(md_content)
+
+    def _get_output_structure(self) -> Dict[str, Dict[str, Tuple[str, str]]]:
+        """Get the directory structure for experiment outputs.
+        
+        Returns:
+            Dict mapping group names to dict of {dataset_name: (data_path, group_name)}
+            This provides the information needed to retrieve DataSplitInfo from DataManager
+        """
+        output_structure = {}
+        
+        for group in self.experiment_groups:
+            dataset_info = {}
+            
+            for dataset_path in group.dataset_paths:
+                dataset_info[dataset_path.stem] = (str(dataset_path), group.name)
+                
+            output_structure[group.name] = dataset_info
+            
+        return output_structure
+        
