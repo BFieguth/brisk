@@ -7,6 +7,8 @@ Exports:
 
 from typing import Any, Dict, Optional, Type
 
+from brisk.utility.utility import format_dict
+
 class AlgorithmWrapper:
     """A wrapper class for machine learning algorithms.
 
@@ -80,3 +82,27 @@ class AlgorithmWrapper:
             Dict[str, Any]: A dictionary representing the hyperparameter grid.
         """
         return self.hyperparam_grid
+
+    def to_markdown(self) -> str:
+        """Creates a markdown representation of the algorithm configuration.
+        
+        Returns:
+            str: Markdown formatted string describing the algorithm
+        """
+        md = [
+            f"### {self.display_name} (`{self.name}`)",
+            "",
+            f"- **Algorithm Class**: `{self.algorithm_class.__name__}`",
+            "",
+            "**Default Parameters:**",
+            "```python",
+            format_dict(self.default_params),
+            "```",
+            "",
+            "**Hyperparameter Grid:**",
+            "```python",
+            format_dict(self.hyperparam_grid),
+            "```"
+        ]
+        return "\n".join(md)
+    

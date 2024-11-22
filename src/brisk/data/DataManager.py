@@ -295,3 +295,32 @@ class DataManager:
         )
         self._splits[split_key] = split
         return split
+
+    def to_markdown(self) -> str:
+        """Creates a markdown representation of the DataManager configuration.
+        
+        Returns:
+            str: Markdown formatted string describing the configuration
+        """
+        config = {
+            'test_size': self.test_size,
+            'n_splits': self.n_splits,
+            'split_method': self.split_method,
+            'group_column': self.group_column,
+            'stratified': self.stratified,
+            'random_state': self.random_state,
+            'scale_method': self.scale_method,
+            'categorical_features': self.categorical_features,
+        }
+        
+        md = [
+            "```python",
+            "DataManager Configuration:",
+        ]
+        
+        for key, value in config.items():
+            if value is not None and (isinstance(value, list) and value or not isinstance(value, list)):
+                md.append(f"{key}: {value}")
+        
+        md.append("```")
+        return "\n".join(md)

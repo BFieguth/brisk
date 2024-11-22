@@ -27,3 +27,10 @@ def find_project_root() -> pathlib.Path:
     raise FileNotFoundError(
         "Could not find .briskconfig in any parent directory"
     )
+
+
+def format_dict(d: dict) -> str:
+    """Helper function to format dictionary with each key-value on new line."""
+    if not d:
+        return "{}"
+    return "\n".join(f"{key!r}: {value!r}," for key, value in d.items())
