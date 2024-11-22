@@ -8,6 +8,7 @@ from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.configuration.ExperimentFactory import ExperimentFactory
 from brisk.utility.utility import find_project_root
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.utility.utility import format_dict
 
 class ConfigurationManager:
     """Manages experiment configurations and DataManager instances.
@@ -27,10 +28,12 @@ class ConfigurationManager:
         """
         self.experiment_groups = experiment_groups
         self.project_root = find_project_root()
+        self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
         self.data_managers = self._create_data_managers()
         self.experiment_queue = self._create_experiment_queue()
         self._create_data_splits()
+        self._create_logfile()
 
     def _load_base_data_manager(self) -> DataManager:
         """Load default DataManager configuration from project's data.py.
@@ -162,8 +165,7 @@ class ConfigurationManager:
         Returns:
             Deque of Experiment instances ready to run
         """
-        algorithm_config = self._load_algorithm_config()
-        factory = ExperimentFactory(algorithm_config)
+        factory = ExperimentFactory(self.algorithm_config)
         
         all_experiments = collections.deque()
         for group in self.experiment_groups:
@@ -177,10 +179,69 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             data_manager = self.data_managers[group.name]
             for dataset_path in group.dataset_paths:
-                # Create split with group name and filename for caching
                 data_manager.split(
                     data_path=str(dataset_path),
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
 
+    def _create_logfile(self):
+        """Create a markdown string describing the configuration.
+        
+        Returns:
+            str: Markdown formatted configuration description
+        """
+        md_content = [
+            "## Default Algorithm Configuration"
+        ]
+
+        # Add default algorithm configurations
+        for algo in self.algorithm_config:
+            md_content.append(algo.to_markdown())
+            md_content.append("")
+
+        # Add experiment group configurations
+        for group in self.experiment_groups:
+            md_content.extend([
+                f"## Experiment Group: {group.name}",
+                ""
+            ])
+
+            # Add group-specific algorithm configurations
+            if group.algorithm_config:
+                md_content.extend([
+                    "### Algorithm Configurations",
+                    "```python",
+                    format_dict(group.algorithm_config),
+                    "```",
+                    ""
+                ])
+
+            # Add DataManager configuration
+            data_manager = self.data_managers[group.name]
+            md_content.extend([
+                "### DataManager Configuration",
+                data_manager.to_markdown(),
+                ""
+            ])
+
+            # Add dataset information
+            md_content.append("### Datasets")
+            for dataset_path in group.dataset_paths:
+                split_info = data_manager.split(
+                    data_path=str(dataset_path),
+                    group_name=group.name,
+                    filename=dataset_path.stem
+                )
+                
+                md_content.extend([
+                    f"#### {dataset_path.name}",
+                    "Features:",
+                    "```python",
+                    f"Categorical: {split_info.categorical_features}",
+                    f"Continuous: {split_info.continuous_features}",
+                    "```",
+                    ""
+                ])
+
+        self.logfile = "\n".join(md_content)
