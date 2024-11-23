@@ -70,7 +70,7 @@ class TestConfigurationManager:
         
         group = ExperimentGroup(
             name="test_group",
-            datasets=["data1.csv"],
+            datasets=["data.csv"],
             algorithms=["linear"]
         )
         
@@ -88,18 +88,18 @@ class TestConfigurationManager:
         groups = [
             ExperimentGroup(
                 name="group1",
-                datasets=["data1.csv"],
+                datasets=["data.csv"],
                 algorithms=["linear"]
             ),
             ExperimentGroup(
                 name="group2",
-                datasets=["data2.csv"],
+                datasets=["data_OLD.csv"],
                 algorithms=["ridge"],
                 data_config={"test_size": 0.3}
             ),
             ExperimentGroup(
                 name="group3",
-                datasets=["data1.csv"],
+                datasets=["test.csv"],
                 algorithms=["elasticnet"]
             )
         ]
@@ -124,7 +124,7 @@ BASE_DATA_MANAGER = DataManager()
         
         group = ExperimentGroup(
             name="test",
-            datasets=["data1.csv"],
+            datasets=["data.csv"],
             algorithms=["linear"]
         )
         
@@ -134,10 +134,26 @@ BASE_DATA_MANAGER = DataManager()
     def test_invalid_data_file(self, mock_project_root, monkeypatch):
         """Test error handling for data.py without BASE_DATA_MANAGER."""
         monkeypatch.chdir(mock_project_root)
-        
+
+        # Create datasets directory and sample data file
         datasets_dir = mock_project_root / 'datasets'
-        (datasets_dir / 'data1.csv').touch()
-        
+        datasets_dir.mkdir(exist_ok=True)
+        (datasets_dir / 'data.csv').write_text("col1,col2\n1,2\n3,4")
+
+        # Create required algorithms.py with minimal config
+        (mock_project_root / 'algorithms.py').write_text("""
+from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from sklearn.linear_model import LinearRegression
+ALGORITHM_CONFIG = [
+    AlgorithmWrapper(
+        name="linear", 
+        display_name="Linear Regression", 
+        algorithm_class=LinearRegression
+    )
+]
+""")
+
+        # Create invalid data.py (missing BASE_DATA_MANAGER)
         (mock_project_root / 'data.py').write_text("""
 from brisk.data.DataManager import DataManager
 # Missing BASE_DATA_MANAGER
@@ -145,7 +161,7 @@ from brisk.data.DataManager import DataManager
         
         group = ExperimentGroup(
             name="test",
-            datasets=["data1.csv"],
+            datasets=["data.csv"],
             algorithms=["linear"]
         )
         
@@ -185,12 +201,12 @@ from sklearn.linear_model import LinearRegression
         groups = [
             ExperimentGroup(
                 name="single",
-                datasets=["data1.csv"],
+                datasets=["data.csv"],
                 algorithms=["linear"]
             ),
             ExperimentGroup(
                 name="multiple",
-                datasets=["data1.csv", "data2.csv"],
+                datasets=["data.csv", "data_OLD.csv"],
                 algorithms=[["ridge", "elasticnet"]]
             )
         ]
