@@ -42,10 +42,10 @@ class Experiment:
             String combining group name and full model class names.
             Example: 'baseline_LinearRegression_RandomForestRegressor'
         """
-        model_names = "_".join(
-            model.__class__.__name__ for model in self.algorithms.values()
+        algo_names = "_".join(
+            algo.name for algo in self.algorithms.values()
         )
-        return f"{self.group_name}_{model_names}"
+        return f"{self.group_name}_{algo_names}"
     
     @property
     def experiment_name(self) -> str:
