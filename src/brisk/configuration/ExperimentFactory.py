@@ -45,7 +45,6 @@ class ExperimentFactory:
 
         for dataset_path in group.dataset_paths:
             dataset_name = dataset_path.stem
-            experiment_group = f"{group.name}_{dataset_name}"
 
             for algo_group in algorithm_groups:
                 models = {}
@@ -67,7 +66,7 @@ class ExperimentFactory:
                         models[model_key] = wrapper
                 
                 experiment = Experiment(
-                    group_name=experiment_group,
+                    group_name=group.name,
                     dataset=dataset_path,
                     algorithms=models,
                 )

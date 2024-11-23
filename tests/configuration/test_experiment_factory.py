@@ -54,7 +54,7 @@ class TestExperimentFactory:
         assert len(experiments) == 1
         
         exp = experiments[0]
-        assert exp.group_name == "test_data"
+        assert exp.group_name == "test"
         assert len(exp.algorithms) == 1
         assert "model" in exp.algorithms
         assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
@@ -110,7 +110,7 @@ class TestExperimentFactory:
         assert len(experiments) == 2
         
         names = {exp.group_name for exp in experiments}
-        assert names == {"test_data", "test_data_OLD"}
+        assert names == {"test", "test"}
 
     def test_algorithm_config(self, factory, mock_project_root, monkeypatch):
         """Test application of algorithm configuration."""
