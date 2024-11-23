@@ -30,9 +30,9 @@ section {
 /* Container for the sections */
 .section-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(48%, 1fr)); /* Two columns, responsive */
-    grid-gap: 20px; /* Space between columns and rows */
-    margin: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
 }
 
 /* Style for individual sections */
@@ -121,4 +121,80 @@ table {
     border-spacing: 0 8px;
     width: 80%;
     margin: 0 auto;
+}
+
+.experiment-section {
+    border-radius: 8px;
+    margin: 0;
+    padding: 20px;
+}
+
+/* First column */
+.experiment-section:nth-child(4n + 1) {
+    background-color: #14274A;
+}
+
+.experiment-section:nth-child(4n + 3) {
+    background-color: #1E3A8A;
+}
+
+/* Second column */
+.experiment-section:nth-child(4n + 2) {
+    background-color: #1E3A8A;
+}
+
+.experiment-section:nth-child(4n + 4) {
+    background-color: #14274A;
+}
+
+.section-header {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+}
+
+.section-header h2 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.section-header h3 {
+    color: #7f8c8d;
+    margin: 5px 0 0 0;
+    font-size: 1.2em;
+}
+
+.experiment-list {
+    padding: 10px 0;
+}
+
+.experiment-list h4 {
+    color: #ffffff;
+    margin: 0 0 10px 0;
+}
+
+.experiment-list ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.experiment-list li {
+    margin: 5px 0;
+}
+
+.dataset-link {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.dataset-link a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.dataset-link a:hover {
+    text-decoration: underline;
 }

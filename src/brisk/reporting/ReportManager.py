@@ -37,7 +37,7 @@ class ReportManager():
         self, 
         result_dir: str, 
         experiment_paths: dict,
-        data_distribution_paths: dict
+        output_structure: dict
     ):
         """Initializes the ReportManager with directories for results and experiment paths.
 
@@ -47,6 +47,7 @@ class ReportManager():
                 experiment directories.
         """
         package_dir = os.path.dirname(os.path.abspath(__file__))
+        self.result_dir = result_dir
         self.templates_dir = os.path.join(package_dir, 'templates')
         self.styles_dir = os.path.join(package_dir, 'styles')
 
@@ -102,7 +103,7 @@ class ReportManager():
 
         self.current_dataset = None
         self.summary_metrics = {}
-        self.data_distribution_paths = data_distribution_paths
+        self.output_structure = output_structure
 
     def create_report(self) -> None:
         """Generates the HTML report.
@@ -119,49 +120,53 @@ class ReportManager():
         # Step 1: Create the index page with links to experiments pages for each dataset
         index_template = self.env.get_template("index.html")
 
-        # Prepare the dataset entries for the index page
-        datasets = []
-        for dataset, experiments in self.experiment_paths.items():
-            dataset_file = os.path.basename(dataset)
-            dataset_name = os.path.splitext(dataset_file)[0]
-            datasets.append({
-                'dataset_file': dataset_file,
-                'dataset_name': dataset_name,
-                'experiment_pages': [
-                    (os.path.basename(experiment), f"{dataset_name}_{os.path.basename(experiment)}") 
-                    for experiment in experiments
-                    ]
-            })
-            self.create_dataset_page(dataset_name)
-
-            # Create individual experiments pages
-            for experiment in experiments:
-                self.create_experiment_page(experiment, dataset)
+        # Prepare the group/dataset entries for the index page
+        groups = []
+        for group_name, datasets in self.experiment_paths.items():
+            group_data = {
+                'name': group_name,
+                'datasets': []
+            }
+            
+            for dataset_name, experiments in datasets.items():
+                dataset_data = {
+                    'name': dataset_name,
+                    'experiments': list(experiments.keys())
+                }
+                group_data['datasets'].append(dataset_data)
+                
+                # Create dataset page
+                self.create_dataset_page(group_name, dataset_name)
+                
+                # Create experiment pages
+                for exp_name, exp_dir in experiments.items():
+                    self.create_experiment_page(
+                        exp_dir, 
+                        f"{group_name}/{dataset_name}"
+                    )
+            
+            groups.append(group_data)
 
         # Create summary table
         summary_table_html = None
         if self.summary_metrics:
             summary_table_html = self.generate_summary_tables()
 
-        # Copy CSS files into the report directory
-        shutil.copy(
-            os.path.join(self.styles_dir, "index.css"), 
-            os.path.join(self.report_dir, "index.css")
-            )
-        shutil.copy(
-            os.path.join(self.styles_dir, "experiment.css"), 
-            os.path.join(self.report_dir, "experiment.css")
-            )
-        shutil.copy(
-            os.path.join(self.styles_dir, "dataset.css"), 
-            os.path.join(self.report_dir, "dataset.css")
+        # Copy CSS files
+        for css_file in ['index.css', 'experiment.css', 'dataset.css']:
+            shutil.copy(
+                os.path.join(self.styles_dir, css_file),
+                os.path.join(self.report_dir, css_file)
             )
 
         # Render the index page
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         index_output = index_template.render(
-            datasets=datasets, timestamp=timestamp, summary_table=summary_table_html
-            )
+            groups=groups,
+            timestamp=timestamp,
+            summary_table=summary_table_html
+        )
+        
         index_path = os.path.join(self.report_dir, 'index.html')
         with open(index_path, 'w') as f:
             f.write(index_output)
@@ -220,9 +225,18 @@ class ReportManager():
         with open(experiment_page_path, 'w') as f:
             f.write(experiment_output)
 
-    def create_dataset_page(self, dataset_name) -> None:
+    def create_dataset_page(self, group_name: str, dataset_name: str) -> None:
+        """Creates an HTML page showing dataset distribution information.
+        
+        Args:
+            group_name: Name of the experiment group
+            dataset_name: Name of the dataset
+        """
         dataset_template = self.env.get_template("dataset.html")
-        dataset_dir = self.data_distribution_paths[dataset_name]
+        dataset_dir = os.path.join(
+            self.result_dir, group_name, dataset_name, "split_distribution"
+        )
+            
         files = os.listdir(dataset_dir)
         content = []
 
@@ -245,8 +259,17 @@ class ReportManager():
                     content.append(report_method(file_path))
 
         content_str = "".join(content)
-        rendered_html = dataset_template.render(dataset_name=dataset_name, content=content_str)
-        output_file_path = os.path.join(self.report_dir, f"{dataset_name}.html")
+        rendered_html = dataset_template.render(
+            group_name=group_name,
+            dataset_name=dataset_name, 
+            content=content_str
+        )
+        
+        # Include group name in output file path
+        output_file_path = os.path.join(
+            self.report_dir, 
+            f"{group_name}_{dataset_name}.html"
+        )
         with open(output_file_path, 'w') as f:
             f.write(rendered_html)
 

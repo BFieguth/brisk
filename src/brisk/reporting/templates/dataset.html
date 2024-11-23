@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ dataset_name }}</title>
+    <title>Dataset Analysis - {{ group_name }}/{{ dataset_name }}</title>
     <link rel="stylesheet" href="./dataset.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>Dataset: {{ dataset_name }}</header>
-
-    <div>
-        {{ content | safe }}  <!-- Render the full content as HTML -->
+    <header>
+        <h1>Dataset Analysis</h1>
+        <h2>{{ group_name }} / {{ dataset_name }}</h2>
+    </header>
+    <div class="content">
+        {{ content | safe }}
     </div>
-    
 </body>
 </html>
