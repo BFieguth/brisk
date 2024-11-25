@@ -99,8 +99,15 @@ class ExperimentGroup:
             ValueError: If algorithm_config contains undefined algorithms
         """
         if self.algorithm_config:
+
+            flat_algorithms = [
+                algo for sublist in self.algorithms 
+                if isinstance(sublist, list)
+                for algo in sublist
+            ] if any(isinstance(x, list) for x in self.algorithms) else self.algorithms
+
             invalid_algorithms = (
-                set(self.algorithm_config.keys()) - set(self.algorithms)
+                set(self.algorithm_config.keys()) - set(flat_algorithms)
             )
             if invalid_algorithms:
                 raise ValueError(
