@@ -290,7 +290,7 @@ from sklearn.linear_model import LinearRegression
         def mock_spec_from_file_location(name, location, *args, **kwargs):
             if name == 'algorithms':  # If module is 'algorithms.py', return None
                 return None
-            return original_spec_from_file_location(name, location, *args, **kwargs)
+            return original_spec_from_file_location(name, location, *args, **kwargs) # pragma: no cover
             
         monkeypatch.setattr('importlib.util.spec_from_file_location', mock_spec_from_file_location)
 
