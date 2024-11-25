@@ -17,6 +17,8 @@ import pandas as pd
 import sklearn.model_selection as model_selection
 import sklearn.preprocessing as preprocessing
 
+from brisk.data.DataSplitInfo import DataSplitInfo
+
 class DataManager:
     """Handles the data splitting logic for creating train-test splits.
 
@@ -64,6 +66,7 @@ class DataManager:
 
         self._validate_config()
         self.splitter = self._set_splitter()
+        self._splits = {}
 
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
@@ -222,7 +225,9 @@ class DataManager:
     def split(
         self, 
         data_path: str, 
-        table_name: Optional[str] = None
+        table_name: Optional[str] = None,
+        group_name: Optional[str] = None,
+        filename: Optional[str] = None,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """
         Splits the data based on the preconfigured splitter.
@@ -240,11 +245,22 @@ class DataManager:
                 - y_train (pd.Series): The training target variable.
                 - y_test (pd.Series): The testing target variable.
         """
+        if bool(group_name) != bool(filename):
+            raise ValueError(
+                "Both group_name and filename must be provided together. "
+                f"Got: group_name={group_name}, filename={filename}"
+            )
+        
+        split_key = f"{group_name}_{filename}" if group_name else data_path
+
+        if split_key in self._splits:
+            print(f"Using cached split for {split_key}")
+            return self._splits[split_key]
+
         df = self._load_data(data_path, table_name)
         X = df.iloc[:, :-1]
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
-        scaler = None
         
         if self.group_column:
             X = X.drop(columns=self.group_column)
@@ -262,8 +278,49 @@ class DataManager:
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
+        scaler = None
         if self.scale_method:
             scaler = self._set_scaler()
             scaler.fit(X_train[continuous_features])
 
-        return X_train, X_test, y_train, y_test, scaler, feature_names
+        split = DataSplitInfo(
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            filename=data_path,
+            scaler=scaler,
+            features=feature_names,
+            categorical_features=self.categorical_features
+        )
+        self._splits[split_key] = split
+        return split
+
+    def to_markdown(self) -> str:
+        """Creates a markdown representation of the DataManager configuration.
+        
+        Returns:
+            str: Markdown formatted string describing the configuration
+        """
+        config = {
+            'test_size': self.test_size,
+            'n_splits': self.n_splits,
+            'split_method': self.split_method,
+            'group_column': self.group_column,
+            'stratified': self.stratified,
+            'random_state': self.random_state,
+            'scale_method': self.scale_method,
+            'categorical_features': self.categorical_features,
+        }
+        
+        md = [
+            "```python",
+            "DataManager Configuration:",
+        ]
+        
+        for key, value in config.items():
+            if value is not None and (isinstance(value, list) and value or not isinstance(value, list)):
+                md.append(f"{key}: {value}")
+        
+        md.append("```")
+        return "\n".join(md)

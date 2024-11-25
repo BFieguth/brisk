@@ -18,18 +18,32 @@
         {{ summary_table|safe }}
      </div>
 
-    <!-- Dataset sections -->
+    <!-- Experiment Containers -->
     <div class="section-container">
-        {% for dataset in datasets %}
-        <section class="dataset-section">
-            <!-- <h2>{{ dataset.dataset_name }}</h2> -->
-            <h2><a href="{{ dataset.dataset_name }}.html">{{ dataset.dataset_name }}</a></h2>
-            <ul>
-                {% for experiment_page in dataset.experiment_pages %}
-                <li><a href="{{ experiment_page[1] }}.html">{{ experiment_page[0] }}</a></li>
-                {% endfor %}
-            </ul>
-        </section>
+        {% for group in groups %}
+            {% for dataset in group.datasets %}
+            <section class="experiment-section">
+                <div class="section-header">
+                    <h2>{{ group.name }}</h2>
+                    <h3>{{ dataset.name }}</h3>
+                </div>
+                <div class="experiment-list">
+                    <h4>Experiments:</h4>
+                    <ul>
+                        {% for experiment in dataset.experiments %}
+                        <li>
+                            <a href="{{ dataset.name }}_{{ experiment }}.html">
+                                {{ experiment }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="dataset-link">
+                        <a href="{{ group.name }}_{{ dataset.name }}.html">View Data Split Analysis</a>
+                    </div>
+                </div>
+            </section>
+            {% endfor %}
         {% endfor %}
     </div>
 </body>

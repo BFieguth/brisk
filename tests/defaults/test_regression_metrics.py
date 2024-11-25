@@ -1,6 +1,6 @@
 import numpy as np
 
-from brisk.config.RegressionMetrics import concordance_correlation_coefficient
+from brisk.defaults.RegressionMetrics import concordance_correlation_coefficient
 
 def test_concordance_correlation_coefficient():
     """

@@ -31,10 +31,18 @@ def create(project_name):
 
     with open(os.path.join(project_dir, 'settings.py'), 'w') as f:
         f.write("""# settings.py
-TRAINING_MANAGER_CONFIG = {
-    "algorithms": [],
-    "data_paths": []
-}
+from brisk.configuration.Configuration import Configuration, ConfigurationManager
+
+def create_configuration() -> ConfigurationManager:
+    config = Configuration(
+        default_algorithms = ["linear"],
+    )
+
+    config.add_experiment_group(
+        name="group_name",
+    )
+                
+    return config.build()
                 
 WORKFLOW_CONFIG = {
 
@@ -54,16 +62,16 @@ ALGORITHM_CONFIG = [
         f.write("""# metrics.py
 import brisk
                 
-METRIC_CONFIG = [
-    brisk.MetricWrapper(),
-]                       
+METRIC_CONFIG = brisk.MetricManager(
+    brisk.MetricWrapper()
+)                   
 """)
 
     with open(os.path.join(project_dir, 'data.py'), 'w') as f:
         f.write("""# data.py
 from brisk.data.DataManager import DataManager                
 
-DataManager = DataManager(
+BASE_DATA_MANAGER = DataManager(
     test_size = 0.2,
     n_splits = 5
 )              
@@ -72,18 +80,18 @@ DataManager = DataManager(
     with open(os.path.join(project_dir, 'training.py'), 'w') as f:
         f.write("""# training.py
 from brisk.training.TrainingManager import TrainingManager
-from algorithms import ALGORITHM_CONFIG
 from metrics import METRIC_CONFIG
-from data import DataManager
-from settings import TRAINING_MANAGER_CONFIG
+from settings import create_configuration
                                 
+config = create_configuration()
+
 # Define the TrainingManager for experiments
 manager = TrainingManager(
-    algorithm_config=ALGORITHM_CONFIG,
     metric_config=METRIC_CONFIG,
-    data_manager=DataManager,
-    algorithms=TRAINING_MANAGER_CONFIG.get("algorithms"),
-    data_paths=TRAINING_MANAGER_CONFIG.get("data_paths")
+    data_managers=config.data_managers,
+    experiments=config.experiment_queue,
+    logfile=config.logfile,
+    output_structure=config.output_structure
 )                 
 """)
     
