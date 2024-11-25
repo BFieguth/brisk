@@ -24,23 +24,6 @@ def valid_group_two_datasets(mock_project_root):
     )
 
 
-@pytest.fixture
-def missing_dataset_group(mock_project_root):
-    """Create a valid experiment group"""
-    return ExperimentGroup(
-        name="test_group",
-        datasets=[],
-        algorithms=["linear", "ridge"]
-    )
-
-
-# @pytest.fixture(autouse=True)
-# def reset_project_root_cache():
-#     """Clear the project root cache after each test"""
-#     yield
-#     find_project_root.cache_clear()
-
-
 class TestExperimentGroup:
     def test_valid_creation(self, valid_group):
         """Test creation with valid parameters"""  

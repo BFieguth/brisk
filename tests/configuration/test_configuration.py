@@ -9,13 +9,6 @@ from brisk.configuration.Configuration import Configuration
 from brisk.configuration.ConfigurationManager import ConfigurationManager
 
 @pytest.fixture
-def mock_validation():
-    """Mock only the validation methods of ExperimentGroup"""
-    with patch('brisk.configuration.ExperimentGroup.ExperimentGroup.__post_init__'):
-        yield
-
-
-@pytest.fixture
 def basic_config(mock_project_root, monkeypatch):
     """Create a basic configuration with mocked project root."""
     monkeypatch.chdir(mock_project_root)
