@@ -3,6 +3,7 @@ from pathlib import Path
 from sklearn.linear_model import LinearRegression, Ridge, ElasticNet
 import numpy as np
 import collections
+import importlib
 
 from brisk.configuration.ConfigurationManager import ConfigurationManager
 from brisk.configuration.ExperimentGroup import ExperimentGroup
@@ -61,6 +62,14 @@ ALGORITHM_CONFIG = [
     (datasets_dir / 'data2.csv').touch()
     
     return mock_project_root
+
+
+@pytest.fixture
+def mock_project_missing_data_file(mock_project_files):
+    """Create project files but remove data.py."""
+    data_file = mock_project_files / 'data.py'
+    data_file.unlink()
+    return mock_project_files
 
 
 class TestConfigurationManager:
@@ -207,7 +216,10 @@ from sklearn.linear_model import LinearRegression
             ExperimentGroup(
                 name="multiple",
                 datasets=["data.csv", "data_OLD.csv"],
-                algorithms=[["ridge", "elasticnet"]]
+                algorithms=[["ridge", "elasticnet"]],
+                algorithm_config={
+                    "ridge": {"alpha": np.logspace(-3, 3, 5)},
+                }
             )
         ]
         
@@ -234,3 +246,60 @@ from sklearn.linear_model import LinearRegression
             assert exp.algorithms["model1"].algorithm_class == Ridge
             assert exp.algorithms["model2"].algorithm_class == ElasticNet
             
+    def test_missing_data_file(self, mock_project_missing_data_file, monkeypatch):
+        """Test error handling for missing data file."""
+        monkeypatch.chdir(mock_project_missing_data_file)
+
+        group = ExperimentGroup(
+            name="test_group",
+            datasets=["data.csv"],
+            algorithms=["linear"]
+        )
+        
+        with pytest.raises(FileNotFoundError, match="Data file not found:"):
+            ConfigurationManager([group])
+
+    def test_unloadable_data_file(self, mock_project_files, monkeypatch):
+        """Test error handling for invalid data.py file."""
+        monkeypatch.chdir(mock_project_files)
+        
+        original_spec_from_file_location = importlib.util.spec_from_file_location
+        
+        def mock_spec_from_file_location(name, location, *args, **kwargs):
+            if name == 'data':  # If module is 'data.py', return None
+                return None
+            return original_spec_from_file_location(name, location, *args, **kwargs)
+            
+        monkeypatch.setattr('importlib.util.spec_from_file_location', mock_spec_from_file_location)
+
+        group = ExperimentGroup(
+            name="test_group",
+            datasets=["data.csv"],
+            algorithms=["linear"]
+        )
+        
+        with pytest.raises(ImportError, match="Failed to load data module"):
+            ConfigurationManager([group])
+                
+    def test_unloadable_algorithm_file(self, mock_project_files, monkeypatch):
+        """Test error handling for invalid data.py file."""
+        monkeypatch.chdir(mock_project_files)
+        
+        original_spec_from_file_location = importlib.util.spec_from_file_location
+        
+        def mock_spec_from_file_location(name, location, *args, **kwargs):
+            if name == 'algorithms':  # If module is 'algorithms.py', return None
+                return None
+            return original_spec_from_file_location(name, location, *args, **kwargs)
+            
+        monkeypatch.setattr('importlib.util.spec_from_file_location', mock_spec_from_file_location)
+
+        group = ExperimentGroup(
+            name="test_group",
+            datasets=["data.csv"],
+            algorithms=["linear"]
+        )
+        
+        with pytest.raises(ImportError, match="Failed to load algorithms module"):
+            ConfigurationManager([group])
+                                
