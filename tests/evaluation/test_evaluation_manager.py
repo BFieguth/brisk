@@ -11,49 +11,53 @@ from pathlib import Path
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
+
+@pytest.fixture
+def sample_data():
+    X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
+    y = pd.Series(np.random.rand(100))
+    return X, y
+
+
+@pytest.fixture
+def eval_manager(tmpdir):
+    algorithm_config = [
+        AlgorithmWrapper(
+            name="random_forest",
+            display_name="Random Forest",
+            algorithm_class=RandomForestRegressor,
+            default_params={'n_jobs': 1},
+            hyperparam_grid={
+                'n_estimators': list(range(20, 160, 20))
+            }
+        ),
+    ]
+    metric_config = MagicMock()
+    metric_config.get_name.return_value = "Mean Absolute Error"
+    metric_config.get_metric.return_value = mean_absolute_error
+    metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
+    return EvaluationManager(
+        algorithm_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
+        )
+
+
+@pytest.fixture
+def model(sample_data):
+    X, y = sample_data
+    model = RandomForestRegressor(n_estimators=10, n_jobs=1)
+    model.fit(X, y) 
+    return model
+
+
+@pytest.fixture()
+def model2(sample_data):
+    X, y = sample_data
+    model2 = Ridge(alpha=0.1)
+    model2.fit(X, y)
+    return model2
+
+
 class TestEvaluationManager:
-
-    @pytest.fixture
-    def sample_data(self):
-        X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
-        y = pd.Series(np.random.rand(100))
-        return X, y
-
-    @pytest.fixture
-    def eval_manager(self, tmpdir):
-        algorithm_config = [
-            AlgorithmWrapper(
-                name="random_forest",
-                display_name="Random Forest",
-                algorithm_class=RandomForestRegressor,
-                default_params={'n_jobs': 1},
-                hyperparam_grid={
-                    'n_estimators': list(range(20, 160, 20))
-                }
-            ),
-        ]
-        metric_config = MagicMock()
-        metric_config.get_name.return_value = "Mean Absolute Error"
-        metric_config.get_metric.return_value = mean_absolute_error
-        metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
-        return EvaluationManager(
-            algorithm_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
-            )
-
-    @pytest.fixture
-    def model(self, sample_data):
-        X, y = sample_data
-        model = RandomForestRegressor(n_estimators=10, n_jobs=1)
-        model.fit(X, y) 
-        return model
-    
-    @pytest.fixture()
-    def model2(self, sample_data):
-        X, y = sample_data
-        model2 = Ridge(alpha=0.1)
-        model2.fit(X, y)
-        return model2
-
     def test_evaluate_model(self, eval_manager, model, sample_data, tmpdir):
         X, y = sample_data
         filename = tmpdir.join("evaluation_result")
