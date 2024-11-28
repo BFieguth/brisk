@@ -11,7 +11,7 @@ import collections
 from importlib import util
 from typing import List, Dict, Tuple
 
-from brisk.data import DataManager
+from brisk.data import data_manager
 from brisk.configuration import experiment_group
 from brisk.configuration import experiment_factory
 from brisk.utility import utility
@@ -46,7 +46,7 @@ class ConfigurationManager:
         self._create_logfile()
         self.output_structure = self._get_output_structure()
 
-    def _load_base_data_manager(self) -> DataManager.DataManager:
+    def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
         
         Looks for data.py in project root and loads BASE_DATA_MANAGER.
@@ -138,7 +138,7 @@ class ConfigurationManager:
             if name != "self"
         }
 
-    def _create_data_managers(self) -> Dict[str, DataManager.DataManager]:
+    def _create_data_managers(self) -> Dict[str, data_manager.DataManager]:
         """Create minimal set of DataManager instances.
         
         Groups ExperimentGroups by their data_config and creates one
@@ -163,7 +163,7 @@ class ConfigurationManager:
                 base_params = self._get_base_params()
                 new_params = dict(config)
                 base_params.update(new_params)
-                manager = DataManager.DataManager(**base_params)
+                manager = data_manager.DataManager(**base_params)
 
             for name in group_names:
                 managers[name] = manager

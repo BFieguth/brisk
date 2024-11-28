@@ -22,7 +22,7 @@ import inspect
 import pathlib
 from typing import Dict, Any, List, Optional
 
-from brisk.data import DataManager
+from brisk.data import data_manager
 from brisk.utility import utility
 
 @dataclasses.dataclass
@@ -150,7 +150,7 @@ class ExperimentGroup:
         if self.data_config:
             valid_data_params = set(
                 inspect.signature(
-                    DataManager.DataManager.__init__
+                    data_manager.DataManager.__init__
                 ).parameters.keys()
             )
             valid_data_params.remove("self")

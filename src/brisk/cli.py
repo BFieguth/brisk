@@ -111,7 +111,7 @@ METRIC_CONFIG = brisk.MetricManager(
     with open(
         os.path.join(project_dir, 'data.py'), 'w', encoding='utf-8') as f:
         f.write("""# data.py
-from brisk.data.DataManager import DataManager                
+from brisk.data.data_manager import DataManager                
 
 BASE_DATA_MANAGER = DataManager(
     test_size = 0.2,
@@ -334,7 +334,7 @@ def create_data(
     n_classes: int,
     random_state: int,
     dataset_name: str
-    ) -> None:
+    ):
     """Create synthetic data and add it to the project.
 
     This command generates synthetic datasets for either classification or

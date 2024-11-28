@@ -53,7 +53,7 @@ ALGORITHM_CONFIG = [
 def mock_reg_data_py(tmp_path):
     data_path = tmp_path / 'data.py'
     data_py = """
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 
 BASE_DATA_MANAGER = DataManager(
     test_size=0.2, 

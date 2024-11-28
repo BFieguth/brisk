@@ -19,7 +19,7 @@ import joblib
 import pandas as pd
 from tqdm import tqdm
 
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 from brisk.data.DataSplitInfo import DataSplitInfo
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.training.Workflow import Workflow

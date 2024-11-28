@@ -7,7 +7,7 @@ import pathlib
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 class TestConfigurationManager:
@@ -46,7 +46,7 @@ class TestConfigurationManager:
         data_file.unlink()
         # Incorrect data.py file
         data_file.write_text("""
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 data_manager = DataManager()
 """
         )

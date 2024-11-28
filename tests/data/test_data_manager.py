@@ -8,7 +8,7 @@ from sklearn.model_selection import (
     )
 from sklearn import preprocessing
 
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 
 
 class TestDataManager:

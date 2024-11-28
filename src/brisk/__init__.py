@@ -3,7 +3,7 @@ from brisk.defaults.RegressionMetrics import REGRESSION_METRICS
 from brisk.defaults.ClassificationAlgorithms import CLASSIFICATION_ALGORITHMS
 from brisk.defaults.ClassificationMetrics import CLASSIFICATION_METRICS 
 
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 from brisk.evaluation.MetricManager import MetricManager
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager

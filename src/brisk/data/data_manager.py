@@ -8,14 +8,13 @@ Exports:
     - DataManager: A class for configuring and generating train-test splits or 
         cross-validation folds.
 """
-
 import os
 import sqlite3
 from typing import Optional, Tuple
 
 import pandas as pd
-import sklearn.model_selection as model_selection
-import sklearn.preprocessing as preprocessing
+from sklearn import model_selection
+from sklearn import preprocessing
 
 from brisk.data.DataSplitInfo import DataSplitInfo
 
@@ -27,19 +26,22 @@ class DataManager:
     cross-validation folds. Supports splitting based on groupings.
 
     Attributes:
-        test_size (float): The proportion of the dataset to allocate to the test set.
-        n_splits (int): The number of splits for cross-validation (if applicable).
-        split_method (str): The method used for splitting ("shuffle" or "kfold").
+        test_size (float): The proportion of the dataset to allocate to the test 
+        set.
+        n_splits (int): The number of splits for cross-validation.
+        split_method (str): The method used for splitting 
+        ("shuffle" or "kfold").
         group_column (Optional[str]): The column used for grouping (if any).
-        stratified (bool): Whether to use stratified sampling or cross-validation.
+        stratified (bool): Whether to use stratified sampling or 
+        cross-validation.
         random_state (Optional[int]): The random seed for reproducibility.
     """
     def __init__(
-        self, 
-        test_size: float = 0.2, 
+        self,
+        test_size: float = 0.2,
         n_splits: int = 5,
-        split_method: str = "shuffle", 
-        group_column: Optional[str] = None, 
+        split_method: str = "shuffle",
+        group_column: Optional[str] = None,
         stratified: bool = False,
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
@@ -48,12 +50,30 @@ class DataManager:
         """Initializes the DataManager with custom splitting strategies.
 
         Args:
-            test_size (float): The proportion of the dataset to allocate to the test set. Defaults to 0.2.
-            n_splits (int): Number of splits for cross-validation. Defaults to 5.
-            split_method (str): The method to use for splitting ("shuffle" or "kfold"). Defaults to "shuffle".
-            group_column (Optional[str]): The column to use for grouping (if any). Defaults to None.
-            stratified (bool): Whether to use stratified sampling or cross-validation. Defaults to False.
-            random_state (Optional[int]): The random seed for reproducibility. Defaults to None.
+            test_size (float): The proportion of the dataset to allocate to the 
+            test set. Defaults to 0.2.
+            
+            n_splits (int): Number of splits for cross-validation. 
+            Defaults to 5.
+            
+            split_method (str): The method to use for splitting 
+            ("shuffle" or "kfold"). Defaults to "shuffle".
+            
+            group_column (Optional[str]): The column to use for grouping 
+            (if any). Defaults to None.
+            
+            stratified (bool): Whether to use stratified sampling or 
+            cross-validation. Defaults to False.
+            
+            random_state (Optional[int]): The random seed for reproducibility. 
+            Defaults to None.
+            
+            scale_method (Optional[str]): The method to use for scaling 
+            ("standard", "minmax", "robust", "maxabs", "normalizer"). 
+            Defaults to None.
+            
+            categorical_features (Optional[list]): The features to use for 
+            categorical scaling. Defaults to None.
         """
         self.test_size = test_size
         self.split_method = split_method
@@ -72,8 +92,8 @@ class DataManager:
         """Validates the provided configuration for splitting.
 
         Raises:
-            ValueError: If an invalid split method or incompatible combination of
-                        group column and stratification is provided.
+            ValueError: If an invalid split method or incompatible combination 
+            of group column and stratification is provided.
         """
         valid_split_methods = ["shuffle", "kfold"]
         if self.split_method not in valid_split_methods:
@@ -82,15 +102,15 @@ class DataManager:
                 "Choose 'shuffle' or 'kfold'."
                 )
 
-        if (self.group_column and 
-            self.stratified and 
+        if (self.group_column and
+            self.stratified and
             self.split_method == "shuffle"
             ):
             raise ValueError(
                 "Group stratified shuffle is not supported. "
                 "Use split_method='kfold' for grouped and stratified splits."
                 )
-        
+
         valid_scale_methods = [
             "standard", "minmax", "robust", "maxabs", "normalizer", None
             ]
@@ -101,10 +121,11 @@ class DataManager:
                 )
 
     def _set_splitter(self):
-        """Selects and returns the appropriate splitter based on the configuration.
+        """Selects the appropriate splitter based on the configuration.
 
         Returns:
-            sklearn.model_selection._BaseKFold or sklearn.model_selection._Splitter: 
+            sklearn.model_selection._BaseKFold or 
+            sklearn.model_selection._Splitter: 
                 The initialized splitter object based on the configuration.
 
         Raises:
@@ -114,45 +135,45 @@ class DataManager:
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
                 return model_selection.GroupShuffleSplit(
-                    n_splits=1, test_size=self.test_size, 
+                    n_splits=1, test_size=self.test_size,
                     random_state=self.random_state
                     )
-            
+
             elif self.stratified and not self.group_column:
                 return model_selection.StratifiedShuffleSplit(
-                    n_splits=1, test_size=self.test_size, 
+                    n_splits=1, test_size=self.test_size,
                     random_state=self.random_state
                     )
-            
+
             elif not self.stratified and not self.group_column:
                 return model_selection.ShuffleSplit(
-                    n_splits=1, test_size=self.test_size, 
+                    n_splits=1, test_size=self.test_size,
                     random_state=self.random_state
                     )
-            
+
         elif self.split_method == "kfold":
             if self.group_column and not self.stratified:
                 return model_selection.GroupKFold(n_splits=self.n_splits)
-            
+
             elif self.stratified and not self.group_column:
                 return model_selection.StratifiedKFold(
-                    n_splits=self.n_splits, 
-                    shuffle=True if self.random_state else False, 
-                    random_state=self.random_state
-                    )
-            
-            elif not self.stratified and not self.group_column:
-                return model_selection.KFold(
-                    n_splits=self.n_splits, 
+                    n_splits=self.n_splits,
                     shuffle=True if self.random_state else False,
                     random_state=self.random_state
                     )
-            
+
+            elif not self.stratified and not self.group_column:
+                return model_selection.KFold(
+                    n_splits=self.n_splits,
+                    shuffle=True if self.random_state else False,
+                    random_state=self.random_state
+                    )
+
             elif self.group_column and self.stratified:
                 return model_selection.StratifiedGroupKFold(
                     n_splits=self.n_splits
                     )
-            
+
         raise ValueError(
             "Invalid combination of stratified and group_column for "
             "the specified split method."
@@ -173,13 +194,13 @@ class DataManager:
 
         if self.scale_method == "normalizer":
             return preprocessing.Normalizer()
-        
+
         else:
             return None
 
     def _load_data(
-        self, 
-        data_path: str, 
+        self,
+        data_path: str,
         table_name: Optional[str] = None
     ) -> pd.DataFrame:
         """Loads data from a CSV, Excel file, or SQL database.
@@ -198,24 +219,24 @@ class DataManager:
         """
         file_extension = os.path.splitext(data_path)[1].lower()
 
-        if file_extension == '.csv':
+        if file_extension == ".csv":
             return pd.read_csv(data_path)
-        
-        elif file_extension in ['.xls', '.xlsx']:
+
+        elif file_extension in [".xls", ".xlsx"]:
             return pd.read_excel(data_path)
-        
-        elif file_extension in ['.db', '.sqlite']:
+
+        elif file_extension in [".db", ".sqlite"]:
             if table_name is None:
                 raise ValueError(
                     "For SQL databases, 'table_name' must be provided."
                     )
-            
+
             conn = sqlite3.connect(data_path)
             query = f"SELECT * FROM {table_name}"
             df = pd.read_sql(query, conn)
             conn.close()
             return df
-        
+
         else:
             raise ValueError(
                 f"Unsupported file format: {file_extension}. "
@@ -223,8 +244,8 @@ class DataManager:
                 )
 
     def split(
-        self, 
-        data_path: str, 
+        self,
+        data_path: str,
         table_name: Optional[str] = None,
         group_name: Optional[str] = None,
         filename: Optional[str] = None,
@@ -250,7 +271,7 @@ class DataManager:
                 "Both group_name and filename must be provided together. "
                 f"Got: group_name={group_name}, filename={filename}"
             )
-        
+
         split_key = f"{group_name}_{filename}" if group_name else data_path
 
         if split_key in self._splits:
@@ -258,12 +279,12 @@ class DataManager:
             return self._splits[split_key]
 
         df = self._load_data(data_path, table_name)
-        X = df.iloc[:, :-1]
+        X = df.iloc[:, :-1] # pylint: disable=C0103
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
-        
+
         if self.group_column:
-            X = X.drop(columns=self.group_column)
+            X = X.drop(columns=self.group_column) # pylint: disable=C0103
 
         if self.categorical_features:
             continuous_features = [
@@ -275,7 +296,7 @@ class DataManager:
         feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx] # pylint: disable=C0103
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
         scaler = None
@@ -303,24 +324,27 @@ class DataManager:
             str: Markdown formatted string describing the configuration
         """
         config = {
-            'test_size': self.test_size,
-            'n_splits': self.n_splits,
-            'split_method': self.split_method,
-            'group_column': self.group_column,
-            'stratified': self.stratified,
-            'random_state': self.random_state,
-            'scale_method': self.scale_method,
-            'categorical_features': self.categorical_features,
+            "test_size": self.test_size,
+            "n_splits": self.n_splits,
+            "split_method": self.split_method,
+            "group_column": self.group_column,
+            "stratified": self.stratified,
+            "random_state": self.random_state,
+            "scale_method": self.scale_method,
+            "categorical_features": self.categorical_features,
         }
-        
+
         md = [
             "```python",
             "DataManager Configuration:",
         ]
-        
+
         for key, value in config.items():
-            if value is not None and (isinstance(value, list) and value or not isinstance(value, list)):
+            if (value is not None
+                and (isinstance(value, list) and value
+                or not isinstance(value, list))
+                ):
                 md.append(f"{key}: {value}")
-        
+
         md.append("```")
         return "\n".join(md)
