@@ -1,49 +1,28 @@
 import pytest
-from pathlib import Path
 from sklearn.linear_model import LinearRegression, Ridge, ElasticNet
 import numpy as np
+import importlib
 
 from brisk.configuration.ExperimentFactory import ExperimentFactory
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 @pytest.fixture
-def mock_algorithm_config():
-    """Create mock algorithm configurations."""
-    return [
-        AlgorithmWrapper(
-            name="linear",
-            display_name="Linear Regression",
-            algorithm_class=LinearRegression,
-        ),
-        AlgorithmWrapper(
-            name="ridge",
-            display_name="Ridge Regression",
-            algorithm_class=Ridge,
-            default_params={"alpha": 1.0},
-            hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
-        ),
-        AlgorithmWrapper(
-            name="elasticnet",
-            display_name="Elastic Net",
-            algorithm_class=ElasticNet,
-            default_params={"alpha": 1.0, "l1_ratio": 0.5},
-            hyperparam_grid={"alpha": np.logspace(-3, 0, 100), "l1_ratio": np.logspace(-3, 0, 100)}
-        )
-    ]
-
-
-@pytest.fixture
-def factory(mock_algorithm_config):
+def factory(mock_reg_algorithms_py, tmp_path):
     """Create ExperimentFactory instance."""
-    return ExperimentFactory(mock_algorithm_config)
+    algorithms_path = tmp_path / 'algorithms.py'
+    spec = importlib.util.spec_from_file_location(
+        "algorithms", str(algorithms_path)
+        )
+    algorithms_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(algorithms_module)
+    algorithm_config = algorithms_module.ALGORITHM_CONFIG
+    return ExperimentFactory(algorithm_config)
 
 
 class TestExperimentFactory:
-    def test_single_algorithm(self, factory, mock_project_root, monkeypatch):
+    def test_single_algorithm(self, factory, mock_regression_project):
         """Test creation of experiment with single algorithm."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
@@ -60,10 +39,8 @@ class TestExperimentFactory:
         assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
         assert exp.algorithms["model"].algorithm_class == LinearRegression
 
-    def test_multiple_separate_algorithms(self, factory, mock_project_root, monkeypatch):
+    def test_multiple_separate_algorithms(self, factory, mock_regression_project):
         """Test creation of separate experiments for multiple algorithms."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
@@ -78,10 +55,8 @@ class TestExperimentFactory:
             assert len(exp.algorithms) == 1
             assert "model" in exp.algorithms
 
-    def test_combined_algorithms(self, factory, mock_project_root, monkeypatch):
+    def test_combined_algorithms(self, factory, mock_regression_project):
         """Test creation of single experiment with multiple algorithms."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
@@ -96,13 +71,11 @@ class TestExperimentFactory:
         assert "model1" in exp.algorithms
         assert "model2" in exp.algorithms
 
-    def test_multiple_datasets(self, factory, mock_project_root, monkeypatch):
-        """Test creation of experiments for multiple datasets."""
-        monkeypatch.chdir(mock_project_root)
-        
+    def test_multiple_datasets(self, factory, mock_regression_project):
+        """Test creation of experiments for multiple datasets."""      
         group = ExperimentGroup(
             name="test",
-            datasets=["data.csv", "data_OLD.csv"],
+            datasets=["data.csv", "data2.csv"],
             algorithms=["linear"]
         )
         
@@ -112,10 +85,8 @@ class TestExperimentFactory:
         names = {exp.group_name for exp in experiments}
         assert names == {"test", "test"}
 
-    def test_algorithm_config(self, factory, mock_project_root, monkeypatch):
+    def test_algorithm_config(self, factory, mock_regression_project):
         """Test application of algorithm configuration."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
@@ -135,13 +106,10 @@ class TestExperimentFactory:
         assert len(exp.algorithms["model"].hyperparam_grid["alpha"]) == 10
         
         # Check default params weren't modified
-        assert exp.algorithms["model"].default_params["alpha"] == 1.0
-        assert exp.algorithms["model"].default_params["l1_ratio"] == 0.5
+        assert exp.algorithms["model"].default_params["alpha"] == 0.1
 
-    def test_invalid_algorithm(self, factory, mock_project_root, monkeypatch):
+    def test_invalid_algorithm(self, factory, mock_regression_project):
         """Test handling of invalid algorithm name."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
@@ -151,10 +119,8 @@ class TestExperimentFactory:
         with pytest.raises(KeyError, match="Algorithm 'invalid_algo' not found"):
             factory.create_experiments(group)
 
-    def test_mixed_algorithm_groups(self, factory, mock_project_root, monkeypatch):
+    def test_mixed_algorithm_groups(self, factory, mock_regression_project):
         """Test handling of mixed single and grouped algorithms."""
-        monkeypatch.chdir(mock_project_root)
-        
         group = ExperimentGroup(
             name="test",
             datasets=["data.csv"],
