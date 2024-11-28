@@ -25,6 +25,7 @@ import importlib
 import inspect
 import os
 import sys
+from typing import Optional, Union
 
 import click
 import pandas as pd
@@ -45,8 +46,20 @@ def cli():
     required=True,
     help='Name of the project directory.'
 )
-def create(project_name):
-    """Create a new project directory."""
+def create(project_name: str) -> None:
+    """Create a new project directory.
+
+    This command initializes a new project directory with the specified name.
+    It creates the necessary configuration files, including .briskconfig,
+    settings.py, algorithms.py, metrics.py, data.py, training.py, and a
+    workflow file.
+
+    Args:
+        project_name (str): The name of the project directory to create.
+
+    Example:
+        python cli.py create -n my_project
+    """
     project_dir = os.path.join(os.getcwd(), project_name)
     os.makedirs(project_dir, exist_ok=True)
 
@@ -154,8 +167,20 @@ class MyWorkflow(Workflow):
     help='Specify the workflow file (without .py) in workflows/'
 )
 @click.argument('extra_args', nargs=-1)
-def run(workflow, extra_args):
-    """Run experiments using the specified workflow."""
+def run(workflow: str, extra_args: tuple) -> None:
+    """Run experiments using the specified workflow.
+
+    This command executes experiments based on the specified workflow file.
+    It loads the workflow class and runs the experiments defined within it,
+    passing any additional arguments provided by the user.
+
+    Args:
+        workflow (str): The name of the workflow file (without .py) to run.
+        extra_args (tuple): Additional arguments to pass to the workflow.
+
+    Example:
+        python cli.py run -w my_workflow --arg1=value1 --arg2=value2
+    """
     extra_arg_dict = parse_extra_args(extra_args)
 
     try:
@@ -219,8 +244,21 @@ def run(workflow, extra_args):
     default=None,
     help='Name to save the dataset as.'
 )
-def load_data(dataset, dataset_name):
-    """Load a dataset from sklearn into the project."""
+def load_data(dataset: str, dataset_name: Optional[str] = None) -> None:
+    """Load a dataset from sklearn into the project.
+
+    This command loads a specified dataset from scikit-learn and saves it
+    as a CSV file in the project's datasets directory. If a dataset name
+    is provided, it will be used as the filename; otherwise, the default
+    dataset name will be used.
+
+    Args:
+        dataset (str): The name of the dataset to load.
+        dataset_name (str, optional): The name to save the dataset as.
+
+    Example:
+        python cli.py load_data --dataset iris --dataset_name my_iris_data
+    """
     try:
         project_root = find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
@@ -290,14 +328,32 @@ def load_data(dataset, dataset_name):
     help='Name of the dataset file to be saved.'
 )
 def create_data(
-    data_type,
-    n_samples,
-    n_features,
-    n_classes,
-    random_state,
-    dataset_name
-    ):
-    """Create synthetic data and add it to the project."""
+    data_type: str,
+    n_samples: int,
+    n_features: int,
+    n_classes: int,
+    random_state: int,
+    dataset_name: str
+    ) -> None:
+    """Create synthetic data and add it to the project.
+
+    This command generates synthetic datasets for either classification or
+    regression tasks based on the specified parameters. The generated dataset
+    is saved as a CSV file in the project's datasets directory.
+
+    Args:
+        data_type (str): The type of synthetic dataset to create 
+        ('classification' or 'regression').
+        n_samples (int): The number of samples to generate.
+        n_features (int): The number of features for the dataset.
+        n_classes (int): The number of classes for classification data.
+        random_state (int): The random state for reproducibility.
+        dataset_name (str): The name of the dataset file to be saved.
+
+    Example:
+        python cli.py create_data --data_type classification --n_samples 200 
+        --n_features 10 --n_classes 3 --dataset_name my_synthetic_data
+    """
     try:
         project_root = find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
@@ -334,7 +390,7 @@ def create_data(
         print(f"Error: {e}")
 
 
-def load_sklearn_dataset(name):
+def load_sklearn_dataset(name: str) -> Union[dict, None]:
     """Load a dataset from sklearn by name."""
     datasets_map = {
         'iris': datasets.load_iris,
@@ -349,7 +405,7 @@ def load_sklearn_dataset(name):
         return None
 
 
-def parse_extra_args(extra_args):
+def parse_extra_args(extra_args: tuple) -> dict:
     arg_dict = {}
     for arg in extra_args:
         key, value = arg.split('=')
@@ -389,7 +445,7 @@ def load_module_object(
     module_filename: str,
     object_name: str,
     required: bool = True
-) -> object:
+) -> Union[object, None]:
     """
     Dynamically loads an object from a specified module file.
 
