@@ -80,7 +80,7 @@ class Workflow(abc.ABC):
         raise NotImplementedError("Subclass must implement the workflow method.")
     
     # Delegate EvalutationManager
-    def evaluate_model(
+    def evaluate_model( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -102,7 +102,7 @@ class Workflow(abc.ABC):
         """
         return self.evaluator.evaluate_model(model, X, y, metrics, filename)
 
-    def evaluate_model_cv(
+    def evaluate_model_cv( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -128,7 +128,7 @@ class Workflow(abc.ABC):
             model, X, y, metrics, filename, cv=cv
             )
 
-    def compare_models(
+    def compare_models( # pragma: no cover
         self, 
         *models: base.BaseEstimator,
         X: pd.DataFrame, 
@@ -154,7 +154,7 @@ class Workflow(abc.ABC):
         """
         return self.evaluator.compare_models(*models, X=X, y=y, metrics=metrics, filename=filename, calculate_diff=calculate_diff)
 
-    def plot_pred_vs_obs(
+    def plot_pred_vs_obs( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -174,7 +174,7 @@ class Workflow(abc.ABC):
         """
         return self.evaluator.plot_pred_vs_obs(model, X, y_true, filename)
 
-    def plot_learning_curve(
+    def plot_learning_curve( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X_train: pd.DataFrame, 
@@ -205,7 +205,7 @@ class Workflow(abc.ABC):
             n_jobs=n_jobs, metric=metric, filename=filename
             )
 
-    def plot_feature_importance(
+    def plot_feature_importance( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -237,7 +237,7 @@ class Workflow(abc.ABC):
             model, X, y, filter, feature_names, filename, metric, num_rep
             )
 
-    def plot_residuals(
+    def plot_residuals( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -257,7 +257,7 @@ class Workflow(abc.ABC):
         """
         return self.evaluator.plot_residuals(model, X, y, filename)
 
-    def plot_model_comparison(
+    def plot_model_comparison( # pragma: no cover
         self, 
         *models: base.BaseEstimator, 
         X: pd.DataFrame, 
@@ -279,7 +279,7 @@ class Workflow(abc.ABC):
         """
         return self.evaluator.plot_model_comparison(*models, X=X, y=y, metric=metric, filename=filename)
 
-    def hyperparameter_tuning(
+    def hyperparameter_tuning( # pragma: no cover
         self, 
         model: base.BaseEstimator, 
         method: str, 
@@ -316,7 +316,7 @@ class Workflow(abc.ABC):
             kf, num_rep, n_jobs, plot_results=plot_results
             )
 
-    def confusion_matrix(
+    def confusion_matrix( # pragma: no cover
         self,
         model: Any,
         X: np.ndarray,
@@ -340,7 +340,7 @@ class Workflow(abc.ABC):
             model, X, y, filename
         )
     
-    def plot_confusion_heatmap(
+    def plot_confusion_heatmap( # pragma: no cover
         self,
         model: Any,
         X: np.ndarray,
@@ -364,7 +364,7 @@ class Workflow(abc.ABC):
             model, X, y, filename
         )
 
-    def plot_roc_curve(
+    def plot_roc_curve( # pragma: no cover
         self,
         model: Any,
         X: np.ndarray,
@@ -387,7 +387,7 @@ class Workflow(abc.ABC):
             model, X, y, filename
         )
 
-    def plot_precision_recall_curve(
+    def plot_precision_recall_curve( # pragma: no cover
         self,
         model: Any,
         X: np.ndarray,

@@ -1,11 +1,10 @@
 import pytest
-from pathlib import Path
 
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.utility.utility import find_project_root
 
 @pytest.fixture 
-def valid_group(mock_project_root):
+def valid_group(mock_regression_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
@@ -15,30 +14,13 @@ def valid_group(mock_project_root):
 
 
 @pytest.fixture
-def valid_group_two_datasets(mock_project_root):
+def valid_group_two_datasets(mock_regression_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
         datasets=["test.csv", "another_dataset.csv"],
         algorithms=["linear", "ridge"]
     )
-
-
-@pytest.fixture
-def missing_dataset_group(mock_project_root):
-    """Create a valid experiment group"""
-    return ExperimentGroup(
-        name="test_group",
-        datasets=[],
-        algorithms=["linear", "ridge"]
-    )
-
-
-# @pytest.fixture(autouse=True)
-# def reset_project_root_cache():
-#     """Clear the project root cache after each test"""
-#     yield
-#     find_project_root.cache_clear()
 
 
 class TestExperimentGroup:
@@ -48,7 +30,7 @@ class TestExperimentGroup:
         assert valid_group.datasets == ["test.csv"]
         assert valid_group.algorithms == ["linear", "ridge"]
 
-    def test_invalid_name(self, mock_project_root):
+    def test_invalid_name(self, mock_regression_project):
         """Test creation with invalid name"""
         with pytest.raises(ValueError, match="must be a non-empty string"):
             ExperimentGroup(name="", datasets=["test.csv"])
@@ -62,7 +44,7 @@ class TestExperimentGroup:
         with pytest.raises(ValueError, match="must be a non-empty string"):
             ExperimentGroup(name=1, datasets=["test.csv"])
 
-    def test_missing_dataset(self, mock_project_root):
+    def test_missing_dataset(self, mock_regression_project):
         """Test creation with non-existent dataset"""
         with pytest.raises(FileNotFoundError, match="Dataset not found"):
             ExperimentGroup(
@@ -70,7 +52,7 @@ class TestExperimentGroup:
                 datasets=["nonexistent.csv"]
             )
 
-    def test_invalid_algorithm_config(self, mock_project_root):
+    def test_invalid_algorithm_config(self, mock_regression_project):
         """Test creation with invalid algorithm configuration"""
         with pytest.raises(
             ValueError, 
@@ -83,7 +65,7 @@ class TestExperimentGroup:
                 algorithm_config={"ridge": {"alpha": 1.0}}
             )
 
-    def test_invalid_data_config(self, mock_project_root):
+    def test_invalid_data_config(self, mock_regression_project):
         """Test creation with invalid data configuration"""
         with pytest.raises(ValueError, match="Invalid DataManager parameters"):
             ExperimentGroup(
@@ -92,11 +74,11 @@ class TestExperimentGroup:
                 data_config={"invalid_param": 1.0}
             )
 
-    def test_dataset_paths(self, valid_group_two_datasets, mock_project_root):
+    def test_dataset_paths(self, valid_group_two_datasets, mock_regression_project):
         """Test dataset_paths property"""
         expected_paths = [
-            mock_project_root / 'datasets' / 'test.csv',
-            mock_project_root / 'datasets' / 'another_dataset.csv'
+            mock_regression_project / 'datasets' / 'test.csv',
+            mock_regression_project / 'datasets' / 'another_dataset.csv'
         ]
         assert valid_group_two_datasets.dataset_paths == expected_paths
 
@@ -111,7 +93,7 @@ class TestExperimentGroup:
         {"scale_method": "standard"},
         None
     ])
-    def test_valid_data_configs(self, mock_project_root, data_config):
+    def test_valid_data_configs(self, mock_regression_project, data_config):
         """Test various valid data configurations"""
         group = ExperimentGroup(
             name="test",
@@ -120,7 +102,7 @@ class TestExperimentGroup:
         )
         assert group.data_config == data_config
 
-    def test_missing_datasets(self, mock_project_root):
+    def test_missing_datasets(self, mock_regression_project):
         """Test creation with missing dataset"""
         with pytest.raises(ValueError, match="At least one dataset must be specified"):
             ExperimentGroup(

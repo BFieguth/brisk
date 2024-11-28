@@ -125,3 +125,29 @@ class TestWorkflowClass:
             match="Subclass must implement the workflow method."
             ):
             temp_workflow.workflow()
+
+    def test_method_delegation(self):
+        """Test that unknown attributes are properly delegated to evaluator."""
+        class MockEvaluator:
+            def test_method(self):
+                return "test_result"
+        
+        mock_evaluator = MockEvaluator()        
+        workflow = MockWorkflow(
+            evaluator=mock_evaluator,
+            X_train=pd.DataFrame(),
+            X_test=pd.DataFrame(),
+            y_train=pd.Series(),
+            y_test=pd.Series(),
+            output_dir="",
+            method_names=[],
+            feature_names=[],
+            model_kwargs={}
+        )
+        
+        # Test that the method is properly delegated
+        assert workflow.test_method() == "test_result"
+        
+        # Test that non-existent attributes raise AttributeError
+        with pytest.raises(AttributeError, match="'nonexistent_method' not found"):
+            workflow.nonexistent_method()

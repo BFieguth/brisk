@@ -4,56 +4,84 @@ import pandas as pd
 import numpy as np
 from unittest.mock import MagicMock, patch, mock_open
 import matplotlib.pyplot as plt
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import Ridge 
 from sklearn.metrics import mean_absolute_error, make_scorer
 from pathlib import Path
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
+
+@pytest.fixture
+def sample_data():
+    X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
+    y = pd.Series(np.random.rand(100))
+    return X, y
+
+
+@pytest.fixture
+def sample_data_cat():
+    X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
+    y = pd.Series(np.random.choice([0, 1], size=100))
+    return X, y
+
+
+@pytest.fixture
+def eval_manager(tmpdir):
+    algorithm_config = [
+        AlgorithmWrapper(
+            name="random_forest",
+            display_name="Random Forest",
+            algorithm_class=RandomForestRegressor,
+            default_params={'n_jobs': 1},
+            hyperparam_grid={
+                'n_estimators': list(range(20, 160, 20))
+            }
+        ),
+    ]
+    metric_config = MagicMock()
+    metric_config.get_name.return_value = "Mean Absolute Error"
+    metric_config.get_metric.return_value = mean_absolute_error
+    metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
+    return EvaluationManager(
+        algorithm_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
+        )
+
+
+@pytest.fixture
+def model(sample_data):
+    X, y = sample_data
+    model = RandomForestRegressor(n_estimators=10, n_jobs=1)
+    model.fit(X, y) 
+    return model
+
+
+@pytest.fixture
+def model_classifier(sample_data_cat):
+    X, y = sample_data_cat
+    model = RandomForestClassifier(n_estimators=10, n_jobs=1)
+    model.fit(X, y) 
+    return model
+
+
+@pytest.fixture()
+def model2(sample_data):
+    X, y = sample_data
+    model2 = Ridge(alpha=0.1)
+    model2.fit(X, y)
+    return model2
+
+
+@pytest.fixture
+def model_with_proba():
+    """Mock binary classification model with predict_proba."""
+    class MockModel:
+        def predict_proba(self, X):
+            return np.random.rand(X.shape[0], 2)
+    return MockModel()
+
+
 class TestEvaluationManager:
-
-    @pytest.fixture
-    def sample_data(self):
-        X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
-        y = pd.Series(np.random.rand(100))
-        return X, y
-
-    @pytest.fixture
-    def eval_manager(self, tmpdir):
-        algorithm_config = [
-            AlgorithmWrapper(
-                name="random_forest",
-                display_name="Random Forest",
-                algorithm_class=RandomForestRegressor,
-                default_params={'n_jobs': 1},
-                hyperparam_grid={
-                    'n_estimators': list(range(20, 160, 20))
-                }
-            ),
-        ]
-        metric_config = MagicMock()
-        metric_config.get_name.return_value = "Mean Absolute Error"
-        metric_config.get_metric.return_value = mean_absolute_error
-        metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
-        return EvaluationManager(
-            algorithm_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
-            )
-
-    @pytest.fixture
-    def model(self, sample_data):
-        X, y = sample_data
-        model = RandomForestRegressor(n_estimators=10, n_jobs=1)
-        model.fit(X, y) 
-        return model
-    
-    @pytest.fixture()
-    def model2(self, sample_data):
-        X, y = sample_data
-        model2 = Ridge(alpha=0.1)
-        model2.fit(X, y)
-        return model2
-
     def test_evaluate_model(self, eval_manager, model, sample_data, tmpdir):
         X, y = sample_data
         filename = tmpdir.join("evaluation_result")
@@ -246,6 +274,63 @@ class TestEvaluationManager:
 
             eval_manager._plot_3d_surface(param_grid, search_result, param_names, method_name, metadata)
             
+            mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
+            mock_save_plot.assert_called_once()
+            eval_manager.logger.info.assert_called()
+
+    def test_confusion_matrix(self, eval_manager, model_classifier, sample_data_cat):
+        """Test the confusion_matrix method of EvaluationManager."""
+        X, y = sample_data_cat
+        filename = "confusion_matrix"
+
+        with patch("os.makedirs") as mock_makedirs, \
+            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_to_json") as mock_save_json:
+
+            eval_manager.confusion_matrix(model_classifier, X, y, filename)
+
+            mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
+            mock_save_json.assert_called_once()
+            eval_manager.logger.info.assert_called()
+
+    def test_plot_confusion_heatmap(self, eval_manager, model_classifier, sample_data_cat):
+        """Test the plot_confusion_heatmap method of EvaluationManager."""
+        X, y = sample_data_cat
+        filename = "confusion_heatmap"
+
+        with patch("os.makedirs") as mock_makedirs, \
+            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+
+            eval_manager.plot_confusion_heatmap(model_classifier, X, y, filename)
+
+            mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
+            mock_save_plot.assert_called_once()
+            eval_manager.logger.info.assert_called()
+
+    def test_plot_roc_curve(self, eval_manager, model_with_proba, sample_data_cat):
+        """Test the plot_roc_curve method of EvaluationManager."""
+        X, y = sample_data_cat
+
+        filename = "roc_curve"
+
+        with patch("os.makedirs") as mock_makedirs, \
+            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+
+            eval_manager.plot_roc_curve(model_with_proba, X, y, filename)
+
+            mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
+            mock_save_plot.assert_called_once()
+            eval_manager.logger.info.assert_called()
+
+    def test_plot_precision_recall_curve(self, eval_manager, model_with_proba, sample_data_cat):
+        """Test the plot_precision_recall_curve method of EvaluationManager."""
+        X, y = sample_data_cat
+        filename = "precision_recall_curve"
+
+        with patch("os.makedirs") as mock_makedirs, \
+            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+
+            eval_manager.plot_precision_recall_curve(model_with_proba, X, y, filename)
+
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
             mock_save_plot.assert_called_once()
             eval_manager.logger.info.assert_called()

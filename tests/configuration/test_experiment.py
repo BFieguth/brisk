@@ -131,3 +131,30 @@ class TestExperiment:
         assert list(kwargs.keys()) == ["model1", "model2"]
         assert isinstance(kwargs["model1"], AlgorithmWrapper)
         assert isinstance(kwargs["model2"], AlgorithmWrapper)
+
+    def test_invalid_group_name(self, linear_wrapper):
+        """Test validation of group name."""
+        with pytest.raises(ValueError, match="Group name must be a string"):
+            Experiment(
+                group_name=123,
+                dataset="test.csv",
+                algorithms={"model": linear_wrapper}
+            )
+
+    def test_invalid_algorithms(self, linear_wrapper):
+        """Test validation of algorithms."""
+        with pytest.raises(ValueError, match="Algorithms must be a dictionary"):
+            Experiment(
+                group_name="test",
+                dataset="test.csv",
+                algorithms=[linear_wrapper]
+            )
+        
+    def test_missing_algorithms(self, linear_wrapper):
+        """Test validation of algorithms."""
+        with pytest.raises(ValueError, match="At least one algorithm must be provided"):
+            Experiment(
+                group_name="test",
+                dataset="test.csv",
+                algorithms={}
+            )
