@@ -45,7 +45,7 @@ class DataManager:
         stratified: bool = False,
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
-        categorical_features: Optional[list] = []
+        categorical_features: Optional[list] = None
     ):
         """Initializes the DataManager with custom splitting strategies.
 
@@ -82,8 +82,9 @@ class DataManager:
         self.n_splits = n_splits
         self.random_state = random_state
         self.scale_method = scale_method
-        self.categorical_features = categorical_features
-
+        self.categorical_features = self._set_categorical_features(
+            categorical_features
+            )
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
@@ -178,6 +179,14 @@ class DataManager:
             "Invalid combination of stratified and group_column for "
             "the specified split method."
             )
+
+    def _set_categorical_features(
+        self,
+        categorical_features: Optional[list]
+        ) -> list:
+        if categorical_features is None:
+            return []
+        return categorical_features
 
     def _set_scaler(self):
         if self.scale_method == "standard":
