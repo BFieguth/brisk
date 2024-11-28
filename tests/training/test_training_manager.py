@@ -13,7 +13,7 @@ from brisk.training.TrainingManager import TrainingManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.data.DataSplitInfo import DataSplitInfo
 from brisk.training.Workflow import Workflow
-from brisk.configuration.Experiment import Experiment
+from brisk.configuration.experiment import Experiment
 
 class MockDataManager:
     def split(self, data_path, group_name, filename):

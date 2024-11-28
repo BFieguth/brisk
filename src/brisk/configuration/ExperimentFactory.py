@@ -1,7 +1,7 @@
 from collections import deque
 from typing import List, Dict, Any, Deque, Union
 
-from brisk.configuration.Experiment import Experiment
+from brisk.configuration.experiment import Experiment
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 

@@ -26,7 +26,7 @@ from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
 from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
-from brisk.configuration.Experiment import Experiment
+from brisk.configuration.experiment import Experiment
 from brisk.utility.utility import format_dict
 
 class TrainingManager:

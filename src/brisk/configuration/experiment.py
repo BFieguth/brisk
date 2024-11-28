@@ -1,17 +1,24 @@
-import dataclasses
-import pathlib
-from typing import Dict, Any, Optional, List
-import hashlib
+"""experiment.py
 
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+This module defines the Experiment class, which represents a single experiment 
+within the Brisk framework. The Experiment dataclass store the data path, group
+name and algorithms to use.
+"""
+
+import dataclasses
+import hashlib
+import pathlib
+from typing import Dict
+
+from brisk.utility import AlgorithmWrapper
 
 @dataclasses.dataclass
 class Experiment:
     """Configuration for a single experiment run.
     
-    Encapsulates all information needed for one experiment run, including dataset 
-    path, model instances, and group organization. Provides validation and consistent
-    naming for experiment organization.
+    Encapsulates all information needed for one experiment run, including 
+    dataset path, model instances, and group organization. Provides validation 
+    and consistent naming for experiment organization.
     
     Attributes:
         group_name: Name of the experiment group for organization
@@ -32,7 +39,7 @@ class Experiment:
     """
     group_name: str
     dataset: pathlib.Path
-    algorithms: Dict[str, AlgorithmWrapper]
+    algorithms: Dict[str, AlgorithmWrapper.AlgorithmWrapper]
 
     @property
     def full_name(self) -> str:
@@ -46,7 +53,7 @@ class Experiment:
             algo.name for algo in self.algorithms.values()
         )
         return f"{self.group_name}_{algo_names}"
-    
+
     @property
     def experiment_name(self) -> str:
         """Generate a consistent, unique, and concise name for this experiment.
@@ -82,16 +89,16 @@ class Experiment:
         """
         if not isinstance(self.dataset, pathlib.Path):
             self.dataset = pathlib.Path(self.dataset)
-                       
+
         if not isinstance(self.group_name, str):
             raise ValueError("Group name must be a string")
-            
+
         if not isinstance(self.algorithms, dict):
             raise ValueError("Algorithms must be a dictionary")
-            
+
         if not self.algorithms:
             raise ValueError("At least one algorithm must be provided")
-            
+
         # Validate model naming convention
         if len(self.algorithms) == 1:
             if list(self.algorithms.keys()) != ["model"]:
@@ -103,7 +110,7 @@ class Experiment:
                     f"Multiple models must use keys {expected_keys}"
                 )
 
-    def get_model_kwargs(self) -> Dict[str, AlgorithmWrapper]:
+    def get_model_kwargs(self) -> Dict[str, AlgorithmWrapper.AlgorithmWrapper]:
         """Get models in the format expected by workflow.
         
         Returns:
@@ -112,4 +119,3 @@ class Experiment:
             For multiple models: {"model1": inst1, "model2": inst2, ...}
         """
         return self.algorithms
-    
