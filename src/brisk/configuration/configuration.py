@@ -16,7 +16,7 @@ Usage Example:
 
 from typing import List, Dict, Optional, Any
 
-from brisk.configuration.ConfigurationManager import ConfigurationManager
+from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 
 class Configuration:

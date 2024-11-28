@@ -5,7 +5,7 @@ import collections
 import importlib
 import pathlib
 
-from brisk.configuration.ConfigurationManager import ConfigurationManager
+from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.ExperimentGroup import ExperimentGroup
 from brisk.data.DataManager import DataManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
