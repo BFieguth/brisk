@@ -1,12 +1,31 @@
-from dataclasses import dataclass
-from inspect import signature
-from pathlib import Path
+"""experiment_group.py
+
+This module defines the ExperimentGroup class, which serves as a container 
+for configurations related to a group of experiments within the Brisk framework. 
+The ExperimentGroup class manages datasets, algorithms, and their respective 
+configurations, ensuring that all necessary parameters are validated before 
+execution.
+
+Usage Example:
+    >>> from brisk.configuration.experiment_group import ExperimentGroup
+    >>> group = ExperimentGroup(
+    ...     name="baseline",
+    ...     datasets=["data.csv"],
+    ...     algorithms=["linear"],
+    ...     data_config={"test_size": 0.2}
+    ... )
+    >>> dataset_paths = group.dataset_paths
+"""
+
+import dataclasses
+import inspect
+import pathlib
 from typing import Dict, Any, List, Optional
 
-from brisk.data.DataManager import DataManager
-from brisk.utility.utility import find_project_root
+from brisk.data import DataManager
+from brisk.utility import utility
 
-@dataclass
+@dataclasses.dataclass
 class ExperimentGroup:
     """Container for experiment group configuration
 
@@ -15,7 +34,8 @@ class ExperimentGroup:
     
     Attributes:
         name: Unique identifier for the experiment group
-        datasets: List of dataset filenames relative to project's datasets directory
+        datasets: List of dataset filenames relative to project's datasets 
+        directory
         data_config: Optional configuration for DataManager
         algorithms: Optional list of algorithms to use
         algorithm_config: Optional configuration for algorithms
@@ -27,7 +47,7 @@ class ExperimentGroup:
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None
 
     @property
-    def dataset_paths(self) -> List[Path]:
+    def dataset_paths(self) -> List[pathlib.Path]:
         """Get full paths to datasets relative to project root.
         
         Returns:
@@ -36,8 +56,8 @@ class ExperimentGroup:
         Raises:
             FileNotFoundError: If project root (.briskconfig) cannot be found
         """
-        project_root = find_project_root()
-        datasets_dir = project_root / 'datasets'
+        project_root = utility.find_project_root()
+        datasets_dir = project_root / "datasets"
         return [datasets_dir / dataset for dataset in self.datasets]
 
     def __post_init__(self):
@@ -68,7 +88,7 @@ class ExperimentGroup:
         """
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError("Experiment group name must be a non-empty string")
-    
+
     def _validate_datasets(self):
         """Validate dataset specifications.
         
@@ -82,18 +102,19 @@ class ExperimentGroup:
         """
         if not self.datasets:
             raise ValueError("At least one dataset must be specified")
-        
+
         for dataset, path in zip(self.datasets, self.dataset_paths):
             if not path.exists():
                 raise FileNotFoundError(
                     f"Dataset not found: {dataset}\n"
                     f"Expected location: {path}"
                 )
-            
+
     def _validate_algorithm_config(self):
         """Validate algorithm configuration.
-        
-        Ensures all algorithms in algorithm_config are present in the algorithms list.
+
+        Ensures all algorithms in algorithm_config are present in the algorithms 
+        list.
         
         Raises:
             ValueError: If algorithm_config contains undefined algorithms
@@ -101,10 +122,12 @@ class ExperimentGroup:
         if self.algorithm_config:
 
             flat_algorithms = [
-                algo for sublist in self.algorithms 
+                algo for sublist in self.algorithms
                 if isinstance(sublist, list)
                 for algo in sublist
-            ] if any(isinstance(x, list) for x in self.algorithms) else self.algorithms
+            ] if any(
+                isinstance(x, list) for x in self.algorithms
+            ) else self.algorithms
 
             invalid_algorithms = (
                 set(self.algorithm_config.keys()) - set(flat_algorithms)
@@ -114,7 +137,7 @@ class ExperimentGroup:
                     f"Algorithm config contains algorithms not in the list of "
                     f"algorithms: {invalid_algorithms}"
                 )
-    
+
     def _validate_data_config(self):
         """Validate DataManager configuration parameters.
         
@@ -126,7 +149,9 @@ class ExperimentGroup:
         """
         if self.data_config:
             valid_data_params = set(
-                signature(DataManager.__init__).parameters.keys()
+                inspect.signature(
+                    DataManager.DataManager.__init__
+                ).parameters.keys()
             )
             valid_data_params.remove("self")
 
@@ -136,4 +161,3 @@ class ExperimentGroup:
                     f"Invalid DataManager parameters: {invalid_params}\n"
                     f"Valid parameters are: {valid_data_params}"
                 )
-            

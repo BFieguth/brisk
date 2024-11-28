@@ -4,7 +4,7 @@ import numpy as np
 import importlib
 
 from brisk.configuration.experiment_factory import ExperimentFactory
-from brisk.configuration.ExperimentGroup import ExperimentGroup
+from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 
 @pytest.fixture

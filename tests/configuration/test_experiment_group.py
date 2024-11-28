@@ -1,6 +1,6 @@
 import pytest
 
-from brisk.configuration.ExperimentGroup import ExperimentGroup
+from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.utility.utility import find_project_root
 
 @pytest.fixture 

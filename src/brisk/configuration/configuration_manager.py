@@ -12,7 +12,7 @@ from importlib import util
 from typing import List, Dict, Tuple
 
 from brisk.data import DataManager
-from brisk.configuration import ExperimentGroup
+from brisk.configuration import experiment_group
 from brisk.configuration import experiment_factory
 from brisk.utility import utility
 from brisk.utility import AlgorithmWrapper
@@ -29,7 +29,7 @@ class ConfigurationManager:
     """
     def __init__(
         self,
-        experiment_groups: List[ExperimentGroup.ExperimentGroup]
+        experiment_groups: List[experiment_group.ExperimentGroup]
     ):
         """Initialize ConfigurationManager.
         

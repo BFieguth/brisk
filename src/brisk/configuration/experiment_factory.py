@@ -19,7 +19,7 @@ import collections
 from typing import List, Dict, Any, Deque, Union
 
 from brisk.configuration import experiment
-from brisk.configuration import ExperimentGroup
+from brisk.configuration import experiment_group
 from brisk.utility import AlgorithmWrapper
 
 class ExperimentFactory:
@@ -47,7 +47,7 @@ class ExperimentFactory:
 
     def create_experiments(
         self,
-        group: ExperimentGroup.ExperimentGroup
+        group: experiment_group.ExperimentGroup
     ) -> Deque[experiment.Experiment]:
         """Create queue of experiments from an experiment group.
         

@@ -17,7 +17,7 @@ Usage Example:
 from typing import List, Dict, Optional, Any
 
 from brisk.configuration.configuration_manager import ConfigurationManager
-from brisk.configuration.ExperimentGroup import ExperimentGroup
+from brisk.configuration.experiment_group import ExperimentGroup
 
 class Configuration:
     """User interface for defining experiment configurations.
