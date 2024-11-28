@@ -13,7 +13,7 @@ from typing import List, Dict, Tuple
 
 from brisk.data import DataManager
 from brisk.configuration import ExperimentGroup
-from brisk.configuration import ExperimentFactory
+from brisk.configuration import experiment_factory
 from brisk.utility import utility
 from brisk.utility import AlgorithmWrapper
 
@@ -180,7 +180,7 @@ class ConfigurationManager:
         Returns:
             Deque of Experiment instances ready to run
         """
-        factory = ExperimentFactory.ExperimentFactory(self.algorithm_config)
+        factory = experiment_factory.ExperimentFactory(self.algorithm_config)
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
