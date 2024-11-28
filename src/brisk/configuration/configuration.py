@@ -55,7 +55,7 @@ class Configuration:
         data_config: Optional[Dict[str, Any]] = None,
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
-    ):
+    ) -> None:
         """Add a new experiment group configuration.
         
         Args:
@@ -90,7 +90,7 @@ class Configuration:
         """
         return ConfigurationManager(self.experiment_groups)
 
-    def _check_name_exists(self, name: str):
+    def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
         
         Args:
