@@ -17,6 +17,7 @@ Usage Example:
 import json
 import logging
 import os
+from typing import Any, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,14 +50,14 @@ class DataSplitInfo:
     """
     def __init__(
         self,
-        X_train, # pylint: disable=C0103
-        X_test, # pylint: disable=C0103
-        y_train,
-        y_test,
-        filename,
-        scaler=None,
-        features=None,
-        categorical_features=None
+        X_train: pd.DataFrame, # pylint: disable=C0103
+        X_test: pd.DataFrame, # pylint: disable=C0103
+        y_train: pd.Series,
+        y_test: pd.Series,
+        filename: str,
+        scaler: Optional[Any] = None,
+        features: Optional[List[str]] = None,
+        categorical_features: Optional[List[str]] = None
     ):
         """
         Initialize the DataSplitInfo to store all the data related to a split.
@@ -135,7 +136,16 @@ class DataSplitInfo:
             }
 
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
-        """Calculate descriptive statistics for a continuous feature."""
+        """Calculate descriptive statistics for a continuous feature.
+
+        Args:
+            feature_series (pd.Series): The series of continuous feature values.
+
+        Returns:
+            dict: A dictionary containing descriptive statistics such as mean, 
+            median, standard deviation, variance, min, max, range, percentiles, 
+            skewness, kurtosis, and coefficient of variation.
+        """
         stats = {
             "mean": feature_series.mean(),
             "median": feature_series.median(),
@@ -161,6 +171,16 @@ class DataSplitInfo:
         feature_series: pd.Series,
         feature_name: str
     ) -> dict:
+        """Calculate statistics for a categorical feature.
+
+        Args:
+            feature_series (pd.Series): Series of categorical feature values.
+            feature_name (str): The name of the categorical feature.
+
+        Returns:
+            dict: A dictionary containing frequency counts, proportions, number 
+            of unique values, entropy, and Chi-Square test results.
+        """
         stats = {
             "frequency": feature_series.value_counts().to_dict(),
             "proportion": feature_series.value_counts(normalize=True).to_dict(),
@@ -203,6 +223,12 @@ class DataSplitInfo:
         feature_name: str,
         output_dir: str
     ) -> None:
+        """Create and save histograms and boxplots for a given feature.
+
+        Args:
+            feature_name (str): The name of the feature to plot.
+            output_dir (str): The directory where the plots will be saved.
+        """
         os.makedirs(output_dir, exist_ok=True)
 
         train_series = self.X_train[feature_name].dropna()
@@ -246,8 +272,13 @@ class DataSplitInfo:
         plt.savefig(plot_path)
         plt.close()
 
-    def _plot_correlation_matrix(self, output_dir: str):
-        """Plot and save the correlation matrix for continuous features."""
+    def _plot_correlation_matrix(self, output_dir: str) -> None:
+        """Plot and save the correlation matrix for continuous features.
+
+        Args:
+            output_dir (str): The directory where the correlation matrix plot 
+            will be saved.
+        """
         os.makedirs(output_dir, exist_ok=True)
 
         correlation_matrix = self.X_train[self.continuous_features].corr()
@@ -273,16 +304,14 @@ class DataSplitInfo:
         plt.savefig(plot_path)
         plt.close()
 
-    def _plot_categorical_pie(self, feature_name: str, output_dir: str):
+    def _plot_categorical_pie(self, feature_name: str, output_dir: str) -> None:
         """
         Creates a pie chart to visualize the frequency distribution of a 
         categorical feature.
 
         Args:
-            feature_series (pd.Series): The categorical feature data to plot.
             feature_name (str): The name of the feature for the chart title.
-            output_dir (str): The file path to save the pie chart. If None, 
-            it will display the chart.
+            output_dir (str): The directory where the pie chart will be saved.
         """
         os.makedirs(output_dir, exist_ok=True)
 
@@ -311,9 +340,8 @@ class DataSplitInfo:
         plt.savefig(plot_path)
         plt.close()
 
-    def get_train(self):
-        """
-        Returns the training features.
+    def get_train(self) -> Tuple[pd.DataFrame, pd.Series]:
+        """Returns the training features.
 
         Returns:
             Tuple[pd.DataFrame, pd.Series]: A tuple containing the training 
@@ -339,9 +367,8 @@ class DataSplitInfo:
             return X_train_scaled, self.y_train
         return self.X_train, self.y_train
 
-    def get_test(self):
-        """
-        Returns the testing features.
+    def get_test(self) -> Tuple[pd.DataFrame, pd.Series]:
+        """Returns the testing features.
 
         Returns:
             Tuple[pd.DataFrame, pd.Series]: A tuple containing the testing 
@@ -367,9 +394,10 @@ class DataSplitInfo:
             return X_test_scaled, self.y_test
         return self.X_test, self.y_test
 
-    def get_train_test(self):
-        """
-        Returns both the training and testing split.
+    def get_train_test(
+        self
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        """Returns both the training and testing split.
 
         Returns:
             Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple 
@@ -380,8 +408,13 @@ class DataSplitInfo:
         X_test, y_test = self.get_test() # pylint: disable=C0103
         return X_train, X_test, y_train, y_test
 
-    def save_distribution(self, dataset_dir):
-        """Save the continuous and categorical statistics to JSON files."""
+    def save_distribution(self, dataset_dir: str) -> None:
+        """Save the continuous and categorical statistics to JSON files.
+
+        Args:
+            dataset_dir (str): The directory where the statistics JSON files 
+            and visualizations will be saved.
+        """
         os.makedirs(dataset_dir, exist_ok=True)
 
         if self.continuous_stats:
