@@ -23,7 +23,7 @@ from brisk.data.data_manager import DataManager
 from brisk.data.data_split_info import DataSplitInfo
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.training.Workflow import Workflow
-from brisk.evaluation.EvaluationManager import EvaluationManager
+from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
 from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
 from brisk.configuration.experiment import Experiment

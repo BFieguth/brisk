@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from brisk.evaluation.EvaluationManager import EvaluationManager
+from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.training.Workflow import Workflow
 
 class MockWorkflow(Workflow): # pragma: no cover

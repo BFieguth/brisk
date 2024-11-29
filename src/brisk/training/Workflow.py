@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import sklearn.base as base
 
-from brisk.evaluation.EvaluationManager import EvaluationManager
+from brisk.evaluation.evaluation_manager import EvaluationManager
 
 class Workflow(abc.ABC):
     """Base class for machine learning workflows.
