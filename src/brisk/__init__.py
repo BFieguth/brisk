@@ -4,7 +4,7 @@ from brisk.defaults.classification_algorithms import CLASSIFICATION_ALGORITHMS
 from brisk.defaults.classification_metrics import CLASSIFICATION_METRICS 
 
 from brisk.data.data_manager import DataManager
-from brisk.evaluation.MetricManager import MetricManager
+from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.reporting.ReportManager import ReportManager
 from brisk.training.TrainingManager import TrainingManager

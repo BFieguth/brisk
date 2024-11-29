@@ -1,4 +1,5 @@
-"""Provides the MetricManager class for managing and retrieving evaluation metrics.
+"""Provides the MetricManager class for managing and retrieving evaluation 
+metrics.
 
 Exports:
     - MetricManager: A class to manage metrics used for model evaluation. It 
@@ -7,7 +8,7 @@ Exports:
 """
 from typing import Callable, List
 
-from brisk.utility.MetricWrapper import MetricWrapper
+from brisk.utility import MetricWrapper
 
 class MetricManager:
     """A class to manage scoring metrics.
@@ -23,18 +24,21 @@ class MetricManager:
         """Initializes the MetricManager with a set of MetricWrapper instances.
 
         Args:
-            metric_wrappers: Instances of MetricWrapper for each metric to include.
+            metric_wrappers: Instances of MetricWrapper for each metric to 
+            include.
         """
         self._metrics_by_name = {}
         self._abbreviations_to_name = {}
         for wrapper in metric_wrappers:
             self._add_metric(wrapper)
 
-    def _add_metric(self, wrapper: MetricWrapper):
+    def _add_metric(self, wrapper: MetricWrapper.MetricWrapper):
         # Remove old abbreviation
         if wrapper.name in self._metrics_by_name:
             old_wrapper = self._metrics_by_name[wrapper.name]
-            if old_wrapper.abbr and old_wrapper.abbr in self._abbreviations_to_name:
+            if (old_wrapper.abbr
+                and old_wrapper.abbr in self._abbreviations_to_name
+                ):
                 del self._abbreviations_to_name[old_wrapper.abbr]
 
         self._metrics_by_name[wrapper.name] = wrapper
@@ -61,7 +65,7 @@ class MetricManager:
             ValueError: If the metric is not found.
         """
         name = self._resolve_identifier(identifier)
-        return self._metrics_by_name[name]._func_with_params
+        return self._metrics_by_name[name].get_func_with_params()
 
     def get_scorer(self, identifier: str) -> Callable:
         """Retrieve a scoring callable by its full name or abbreviation.
@@ -79,7 +83,8 @@ class MetricManager:
         return self._metrics_by_name[name].scorer
 
     def get_name(self, identifier: str) -> str:
-        """Retrieve a metrics name, formatted for plots/tables, by its full name or abbreviation.
+        """Retrieve a metrics name, formatted for plots/tables, by its full 
+        name or abbreviation.
 
         Args:
             identifier (str): The full name or abbreviation of the metric.
@@ -95,4 +100,3 @@ class MetricManager:
 
     def list_metrics(self) -> List[str]:
         return list(self._metrics_by_name.keys())
-    
