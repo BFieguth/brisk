@@ -1,6 +1,6 @@
 from brisk.defaults.RegressionAlgorithms import REGRESSION_ALGORITHMS
 from brisk.defaults.RegressionMetrics import REGRESSION_METRICS
-from brisk.defaults.ClassificationAlgorithms import CLASSIFICATION_ALGORITHMS
+from brisk.defaults.classification_algorithms import CLASSIFICATION_ALGORITHMS
 from brisk.defaults.ClassificationMetrics import CLASSIFICATION_METRICS 
 
 from brisk.data.data_manager import DataManager
