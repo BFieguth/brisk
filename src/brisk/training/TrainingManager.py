@@ -20,7 +20,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from brisk.data.data_manager import DataManager
-from brisk.data.DataSplitInfo import DataSplitInfo
+from brisk.data.data_split_info import DataSplitInfo
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.training.Workflow import Workflow
 from brisk.evaluation.EvaluationManager import EvaluationManager

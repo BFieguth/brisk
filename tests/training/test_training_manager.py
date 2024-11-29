@@ -11,7 +11,7 @@ from pathlib import Path
 
 from brisk.training.TrainingManager import TrainingManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
-from brisk.data.DataSplitInfo import DataSplitInfo
+from brisk.data.data_split_info import DataSplitInfo
 from brisk.training.Workflow import Workflow
 from brisk.configuration.experiment import Experiment
 

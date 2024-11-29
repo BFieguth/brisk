@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn import model_selection
 from sklearn import preprocessing
 
-from brisk.data import DataSplitInfo
+from brisk.data import data_split_info
 
 class DataManager:
     """Handles the data splitting logic for creating train-test splits.
@@ -313,7 +313,7 @@ class DataManager:
             scaler = self._set_scaler()
             scaler.fit(X_train[continuous_features])
 
-        split = DataSplitInfo.DataSplitInfo(
+        split = data_split_info.DataSplitInfo(
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,

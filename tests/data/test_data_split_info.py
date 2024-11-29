@@ -4,7 +4,7 @@ import numpy as np
 import scipy
 
 from sklearn.preprocessing import StandardScaler
-from brisk.data.DataSplitInfo import DataSplitInfo
+from brisk.data.data_split_info import DataSplitInfo
 
 class TestDataSplitInfo:
 
