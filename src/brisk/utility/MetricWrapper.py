@@ -1,3 +1,4 @@
+import copy
 from functools import partial
 
 from sklearn.metrics import make_scorer
@@ -41,4 +42,7 @@ class MetricWrapper:
         """
         self.params.update(params)
         self._apply_params()
-        
+    
+    def get_func_with_params(self):
+        """Returns the metric function with applied parameters."""
+        return copy.deepcopy(self._func_with_params)
