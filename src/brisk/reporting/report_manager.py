@@ -364,7 +364,7 @@ class ReportManager():
         elif file_path.endswith(".png"):
             return file_path
         elif file_path.endswith(".pkl"):
-            with open(file_path, "rb", encoding="utf-8") as f:
+            with open(file_path, "rb") as f:
                 return joblib.load(f)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
@@ -582,11 +582,17 @@ class ReportManager():
 
         return result_html
 
-    def report_serialized_model(self, data: dict) -> str:
+    def report_serialized_model(
+        self,
+        data: dict,
+        metadata: dict # pylint: disable=W0613
+    ) -> str:
         """Generate an HTML section describing a serialized model.
         
         Args:
             data (dict): The loaded joblib object containing the model
+
+            metadata (dict): The metadata containing model information.
 
         Returns:
             str: HTML formatted string describing the model
