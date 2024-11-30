@@ -12,5 +12,5 @@ from brisk.training.workflow import Workflow
 from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 from brisk.utility.MetricWrapper import MetricWrapper
 from brisk.utility.alert_mailer import AlertMailer
-from brisk.utility.CreateMetric import create_metric
+from brisk.utility.utility import create_metric
 from brisk.utility.logging_util import TqdmLoggingHandler, FileFormatter

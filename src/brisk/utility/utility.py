@@ -1,6 +1,8 @@
 import pathlib
 import functools
 
+from sklearn import metrics
+
 @functools.lru_cache
 def find_project_root() -> pathlib.Path:
     """Find the project root directory containing .briskconfig.
@@ -34,3 +36,13 @@ def format_dict(d: dict) -> str:
     if not d:
         return "{}"
     return "\n".join(f"{key!r}: {value!r}," for key, value in d.items())
+
+
+def create_metric(func, name, abbr=None):
+    scorer = metrics.make_scorer(func)
+    return {
+        "func": func,
+        "scorer": scorer,
+        "abbr": abbr,
+        "display_name": name
+    }
