@@ -8,8 +8,8 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import Ridge 
 from sklearn.metrics import mean_absolute_error, make_scorer
 from pathlib import Path
-from brisk.evaluation.EvaluationManager import EvaluationManager
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.evaluation.evaluation_manager import EvaluationManager
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 
 
 @pytest.fixture
@@ -88,7 +88,7 @@ class TestEvaluationManager:
         metrics = ["mean_absolute_error"]
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_to_json") as mock_save_json:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_to_json") as mock_save_json:
 
             eval_manager.evaluate_model(model, X, y, metrics, filename)
 
@@ -102,7 +102,7 @@ class TestEvaluationManager:
         metrics = ["mean_absolute_error"]
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_to_json") as mock_save_json:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_to_json") as mock_save_json:
             
             eval_manager.evaluate_model_cv(model, X, y, metrics, filename)
            
@@ -116,7 +116,7 @@ class TestEvaluationManager:
         metrics = ["mean_absolute_error"]
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_to_json") as mock_save_json:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_to_json") as mock_save_json:
         
             result = eval_manager.compare_models(model, model2, X=X, y=y, metrics=metrics, filename=filename)
            
@@ -130,7 +130,7 @@ class TestEvaluationManager:
         filename = tmpdir.join("pred_vs_obs_plot")
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
            
             eval_manager.plot_pred_vs_obs(model, X, y, filename)
            
@@ -143,7 +143,7 @@ class TestEvaluationManager:
         filename = tmpdir.join("learning_curve")
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
             
             eval_manager.plot_learning_curve(
                 model, X, y, filename=filename, n_jobs=1
@@ -158,11 +158,11 @@ class TestEvaluationManager:
         filename = tmpdir.join("feature_importance")
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
             
             eval_manager.plot_feature_importance(
-                model, X, y, filter=3, feature_names=feature_names, filename=filename,
-                metric="mean_absolute_error", num_rep=1
+                model, X, y, threshold=3, feature_names=feature_names,
+                filename=filename, metric="mean_absolute_error", num_rep=1
             )
             
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
@@ -174,7 +174,7 @@ class TestEvaluationManager:
         filename = tmpdir.join("residuals_plot")
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
             
             eval_manager.plot_residuals(model, X, y, filename)
             
@@ -185,7 +185,7 @@ class TestEvaluationManager:
     def test_hyperparameter_tuning(self, eval_manager, model, sample_data):
         X, y = sample_data
 
-        with patch("brisk.evaluation.EvaluationManager.EvaluationManager._plot_hyperparameter_performance") as mock_plot:
+        with patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_hyperparameter_performance") as mock_plot:
 
             tuned_model = eval_manager.hyperparameter_tuning(
                 model=model, method="grid", method_name="random_forest", X_train=X, y_train=y,
@@ -216,7 +216,7 @@ class TestEvaluationManager:
         filename = "model_comparison"
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager.plot_model_comparison(*models, X=X, y=y, metric=metric, filename=filename)
             
@@ -231,8 +231,8 @@ class TestEvaluationManager:
         method_name = "random_forest"
         metadata = {"test": "data"}
 
-        with patch("brisk.evaluation.EvaluationManager.EvaluationManager._plot_1d_performance") as mock_plot_1d, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._plot_3d_surface") as mock_plot_3d:
+        with patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_1d_performance") as mock_plot_1d, \
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_3d_surface") as mock_plot_3d:
 
             eval_manager._plot_hyperparameter_performance(param_grid, search_result, method_name, metadata)
             
@@ -253,7 +253,7 @@ class TestEvaluationManager:
         metadata = {"test": "data"}
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager._plot_1d_performance(param_values, mean_test_score, param_name, method_name, metadata)
             
@@ -270,7 +270,7 @@ class TestEvaluationManager:
         metadata = {"test": "data"}
 
         with patch("os.makedirs") as mock_makedirs, \
-             patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+             patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager._plot_3d_surface(param_grid, search_result, param_names, method_name, metadata)
             
@@ -284,7 +284,7 @@ class TestEvaluationManager:
         filename = "confusion_matrix"
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_to_json") as mock_save_json:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_to_json") as mock_save_json:
 
             eval_manager.confusion_matrix(model_classifier, X, y, filename)
 
@@ -298,7 +298,7 @@ class TestEvaluationManager:
         filename = "confusion_heatmap"
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager.plot_confusion_heatmap(model_classifier, X, y, filename)
 
@@ -313,7 +313,7 @@ class TestEvaluationManager:
         filename = "roc_curve"
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager.plot_roc_curve(model_with_proba, X, y, filename)
 
@@ -327,7 +327,7 @@ class TestEvaluationManager:
         filename = "precision_recall_curve"
 
         with patch("os.makedirs") as mock_makedirs, \
-            patch("brisk.evaluation.EvaluationManager.EvaluationManager._save_plot") as mock_save_plot:
+            patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
             eval_manager.plot_precision_recall_curve(model_with_proba, X, y, filename)
 
@@ -344,7 +344,9 @@ class TestEvaluationManager:
             eval_manager._save_to_json(data, str(output_path), metadata)
 
             # Verify that the file was opened and json was written
-            mock_file.assert_called_once_with(str(output_path), "w")
+            mock_file.assert_called_once_with(
+                str(output_path), "w", encoding="utf-8"
+                )
             
             # Check that metadata was added to the data dictionary
             data_with_metadata = data.copy()

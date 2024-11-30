@@ -1,7 +1,7 @@
 import pytest
 from unittest import mock
 
-from brisk.utility.AlertMailer import AlertMailer
+from brisk.utility.alert_mailer import AlertMailer
 
 class TestAlertMailer:
     """Test class for AlertMailer."""

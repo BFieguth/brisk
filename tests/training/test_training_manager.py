@@ -9,11 +9,11 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from brisk.training.TrainingManager import TrainingManager
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
-from brisk.data.DataSplitInfo import DataSplitInfo
-from brisk.training.Workflow import Workflow
-from brisk.configuration.Experiment import Experiment
+from brisk.training.training_manager import TrainingManager
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+from brisk.data.data_split_info import DataSplitInfo
+from brisk.training.workflow import Workflow
+from brisk.configuration.experiment import Experiment
 
 class MockDataManager:
     def split(self, data_path, group_name, filename):
@@ -116,7 +116,7 @@ class TestTrainingManager:
 
     def test_get_results_dir(self, training_manager):
         """Test results directory creation with timestamp."""
-        with patch('brisk.training.TrainingManager.datetime') as mock_datetime:
+        with patch('brisk.training.training_manager.datetime') as mock_datetime:
             mock_datetime.now.return_value.strftime.return_value = "01_01_2024_00_00_00"
             result = training_manager._get_results_dir()
             assert result == os.path.join("results", "01_01_2024_00_00_00")
@@ -134,7 +134,7 @@ class TestTrainingManager:
         assert exp_dir == expected_path
         assert os.path.exists(exp_dir)
 
-    @patch('brisk.training.TrainingManager.ReportManager')
+    @patch('brisk.training.training_manager.report.ReportManager')
     def test_run_experiments_success(self, mock_report_manager, training_manager, tmp_path):
         """Test successful experiment run."""
         # Mock workflow
@@ -143,7 +143,7 @@ class TestTrainingManager:
         mock_workflow_instance = Mock()
         mock_workflow.return_value = mock_workflow_instance
 
-        with patch('brisk.training.TrainingManager.os.makedirs'), \
+        with patch('brisk.training.training_manager.os.makedirs'), \
              patch.object(training_manager, '_get_results_dir', return_value=str(tmp_path)), \
              patch.object(training_manager, '_save_config_log'), \
              patch.object(training_manager, '_save_data_distributions'), \
@@ -177,7 +177,7 @@ class TestTrainingManager:
         file_handler.setLevel(logging.WARNING)
         logger.addHandler(file_handler)
 
-        with patch('brisk.training.TrainingManager.os.makedirs'), \
+        with patch('brisk.training.training_manager.os.makedirs'), \
             patch.object(training_manager, '_get_results_dir', return_value=str(tmp_path)), \
             patch.object(training_manager, '_save_config_log'), \
             patch.object(training_manager, '_save_data_distributions'), \

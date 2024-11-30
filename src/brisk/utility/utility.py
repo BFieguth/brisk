@@ -1,5 +1,12 @@
+"""utility.py
+
+This module contains various utility functions that facilitate common 
+operations within the Brisk framework.
+"""
 import pathlib
 import functools
+
+from sklearn import metrics
 
 @functools.lru_cache
 def find_project_root() -> pathlib.Path:
@@ -12,7 +19,8 @@ def find_project_root() -> pathlib.Path:
         Path to project root directory
         
     Raises:
-        FileNotFoundError: If .briskconfig cannot be found in any parent directory
+        FileNotFoundError: If .briskconfig cannot be found in any parent 
+        directory
     
     Example:
         >>> root = find_project_root()
@@ -21,7 +29,7 @@ def find_project_root() -> pathlib.Path:
     """
     current = pathlib.Path.cwd()
     while current != current.parent:
-        if (current / '.briskconfig').exists():
+        if (current / ".briskconfig").exists():
             return current
         current = current.parent
     raise FileNotFoundError(
@@ -34,3 +42,13 @@ def format_dict(d: dict) -> str:
     if not d:
         return "{}"
     return "\n".join(f"{key!r}: {value!r}," for key, value in d.items())
+
+
+def create_metric(func, name, abbr=None):
+    scorer = metrics.make_scorer(func)
+    return {
+        "func": func,
+        "scorer": scorer,
+        "abbr": abbr,
+        "display_name": name
+    }

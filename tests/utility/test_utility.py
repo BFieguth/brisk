@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.dummy import DummyRegressor
 from sklearn import metrics
 
-from brisk.utility.CreateMetric import create_metric 
+from brisk.utility.utility import create_metric 
 
 def custom_absolute_error(y_true, y_pred): # pragma: no cover
     """Custom metric to calculate the mean absolute error."""

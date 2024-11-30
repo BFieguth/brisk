@@ -6,8 +6,7 @@ Exports:
 
 import configparser
 import smtplib
-import email.mime.text as text
-import email.mime.multipart as multipart
+from email.mime import text, multipart
 
 class AlertMailer:
     """A class to send notification emails.
@@ -20,7 +19,7 @@ class AlertMailer:
         sender_password (str): The password for the sender"s email account.
         sender_email (str): The sender"s email address.
     """
-    
+
     def __init__(self, config_path: str):
         """Initializes AlertMailer with email credentials.
 
@@ -34,9 +33,9 @@ class AlertMailer:
         self.sender_email: str = config["Email"]["email_address"]
 
     def send_email(
-        self, 
-        receiver_email: str, 
-        subject: str, 
+        self,
+        receiver_email: str,
+        subject: str,
         body: str
     ) -> None:
         """Send an email using SMTP.
@@ -58,11 +57,11 @@ class AlertMailer:
             server.sendmail(
                 self.sender_email, receiver_email, message.as_string()
                 )
-        
+
     def send_error_message(
-        self, 
-        receiver_email: str, 
-        exception: str, 
+        self,
+        receiver_email: str,
+        exception: str,
         traceback: str
     ) -> None:
         """Sends an error notification email.

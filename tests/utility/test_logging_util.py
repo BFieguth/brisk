@@ -3,7 +3,7 @@ import logging
 import sys
 from unittest import mock, TestCase
 
-from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
+from brisk.utility.logging_util import TqdmLoggingHandler, FileFormatter
 
 class TestTqdmLoggingHandler(TestCase):
     def setUp(self):
@@ -46,7 +46,7 @@ class TestTqdmLoggingHandler(TestCase):
     def test_emit_exception_handling(self, mock_handle_error):
         with mock.patch.object(
             self.handler, "format", 
-            side_effect=Exception("Mocked formatting exception")
+            side_effect=ValueError("Mocked formatting exception")
             ):
             self.logger.info("This should trigger an exception in emit")
 

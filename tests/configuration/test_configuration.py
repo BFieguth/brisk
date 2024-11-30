@@ -1,6 +1,6 @@
 import pytest
-from brisk.configuration.Configuration import Configuration
-from brisk.configuration.ConfigurationManager import ConfigurationManager
+from brisk.configuration.configuration import Configuration
+from brisk.configuration.configuration_manager import ConfigurationManager
 
 @pytest.fixture
 def configuration():

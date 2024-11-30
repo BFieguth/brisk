@@ -1,7 +1,23 @@
+"""configuration.py
+
+This module defines the Configuration class, which serves as a user interface 
+for defining experiment configurations within the Brisk framework. It allows 
+users to create and manage experiment groups, specify the datasets to use, 
+algorithms, and their configurations.
+
+Usage Example:
+    >>> config = Configuration(default_algorithms=["linear", "ridge"])
+    >>> config.add_experiment_group(
+    ...     name="baseline",
+    ...     datasets=["data.csv"]
+    ... )
+    >>> manager = config.build()
+"""
+
 from typing import List, Dict, Optional, Any
 
-from brisk.configuration.ConfigurationManager import ConfigurationManager
-from brisk.configuration.ExperimentGroup import ExperimentGroup
+from brisk.configuration.configuration_manager import ConfigurationManager
+from brisk.configuration.experiment_group import ExperimentGroup
 
 class Configuration:
     """User interface for defining experiment configurations.
@@ -32,14 +48,14 @@ class Configuration:
         self.default_algorithms = default_algorithms
 
     def add_experiment_group(
-        self, 
+        self,
         *,
-        name: str, 
-        datasets: List[str], 
+        name: str,
+        datasets: List[str],
         data_config: Optional[Dict[str, Any]] = None,
-        algorithms: Optional[List[str]] = None, 
-        algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None, 
-    ):
+        algorithms: Optional[List[str]] = None,
+        algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> None:
         """Add a new experiment group configuration.
         
         Args:
@@ -58,10 +74,10 @@ class Configuration:
         self._check_name_exists(name)
         self.experiment_groups.append(
             ExperimentGroup(
-                name, 
-                datasets, 
+                name,
+                datasets,
                 data_config,
-                algorithms, 
+                algorithms,
                 algorithm_config
             )
         )
@@ -73,8 +89,8 @@ class Configuration:
             ConfigurationManager containing processed experiment configurations
         """
         return ConfigurationManager(self.experiment_groups)
-    
-    def _check_name_exists(self, name: str):
+
+    def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
         
         Args:

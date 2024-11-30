@@ -1,15 +1,21 @@
-import dataclasses
-import collections
-from typing import List, Dict, Tuple
-from importlib import util
+"""configuration_manager.py
 
-from brisk.data.DataManager import DataManager
-from brisk.configuration.ExperimentGroup import ExperimentGroup
-from brisk.configuration.ExperimentFactory import ExperimentFactory
-from brisk.utility.utility import find_project_root
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
-from brisk.utility.utility import format_dict
-from brisk.data.DataSplitInfo import DataSplitInfo
+This module defines the ConfigurationManager class, which is responsible for 
+managing experiment configurations and creating DataManager instances. The 
+ConfigurationManager processes configurations for experiment groups, ensuring 
+that DataManager instances are created efficiently and reused when 
+configurations match.
+"""
+
+import collections
+from importlib import util
+from typing import List, Dict, Tuple
+
+from brisk.data import data_manager
+from brisk.configuration import experiment_group
+from brisk.configuration import experiment_factory
+from brisk.utility import utility
+from brisk.utility import algorithm_wrapper
 
 class ConfigurationManager:
     """Manages experiment configurations and DataManager instances.
@@ -21,14 +27,17 @@ class ConfigurationManager:
         experiment_groups: List of experiment group configurations
         data_managers: Mapping of unique configurations to DataManager instances
     """
-    def __init__(self, experiment_groups: List[ExperimentGroup]):
+    def __init__(
+        self,
+        experiment_groups: List[experiment_group.ExperimentGroup]
+    ):
         """Initialize ConfigurationManager.
         
         Args:
             experiment_groups: List of experiment group configurations
         """
         self.experiment_groups = experiment_groups
-        self.project_root = find_project_root()
+        self.project_root = utility.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
         self.data_managers = self._create_data_managers()
@@ -37,7 +46,7 @@ class ConfigurationManager:
         self._create_logfile()
         self.output_structure = self._get_output_structure()
 
-    def _load_base_data_manager(self) -> DataManager:
+    def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
         
         Looks for data.py in project root and loads BASE_DATA_MANAGER.
@@ -47,35 +56,36 @@ class ConfigurationManager:
             
         Raises:
             FileNotFoundError: If data.py is not found in project root
-            ImportError: If data.py cannot be loaded or BASE_DATA_MANAGER is not defined
+            ImportError: If data.py cannot be loaded or BASE_DATA_MANAGER is 
+            not defined
             
         Note:
             data.py must define BASE_DATA_MANAGER = DataManager(...)
         """
-        data_file = self.project_root / 'data.py'
-        
+        data_file = self.project_root / "data.py"
+
         if not data_file.exists():
             raise FileNotFoundError(
                 f"Data file not found: {data_file}\n"
                 f"Please create data.py with BASE_DATA_MANAGER configuration"
             )
-        
-        spec = util.spec_from_file_location('data', data_file)
+
+        spec = util.spec_from_file_location("data", data_file)
         if spec is None or spec.loader is None:
             raise ImportError(f"Failed to load data module from {data_file}")
-            
+
         data_module = util.module_from_spec(spec)
         spec.loader.exec_module(data_module)
-        
-        if not hasattr(data_module, 'BASE_DATA_MANAGER'):
+
+        if not hasattr(data_module, "BASE_DATA_MANAGER"):
             raise ImportError(
                 f"BASE_DATA_MANAGER not found in {data_file}\n"
                 f"Please define BASE_DATA_MANAGER = DataManager(...)"
             )
-        
+
         return data_module.BASE_DATA_MANAGER
 
-    def _load_algorithm_config(self) -> List[AlgorithmWrapper]:
+    def _load_algorithm_config(self) -> List[algorithm_wrapper.AlgorithmWrapper]:
         """Load algorithm configuration from project's algorithms.py.
         
         Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.
@@ -85,32 +95,35 @@ class ConfigurationManager:
             
         Raises:
             FileNotFoundError: If algorithms.py is not found in project root
-            ImportError: If algorithms.py cannot be loaded or ALGORITHM_CONFIG is not defined
+            ImportError: If algorithms.py cannot be loaded or ALGORITHM_CONFIG 
+            is not defined
             
         Note:
             algorithms.py must define ALGORITHM_CONFIG = [...]
         """
-        algo_file = self.project_root / 'algorithms.py'
-        
+        algo_file = self.project_root / "algorithms.py"
+
         if not algo_file.exists():
             raise FileNotFoundError(
                 f"Algorithm config file not found: {algo_file}\n"
                 f"Please create algorithms.py with ALGORITHM_CONFIG list"
             )
-        
-        spec = util.spec_from_file_location('algorithms', algo_file)
+
+        spec = util.spec_from_file_location("algorithms", algo_file)
         if spec is None or spec.loader is None:
-            raise ImportError(f"Failed to load algorithms module from {algo_file}")
-            
+            raise ImportError(
+                f"Failed to load algorithms module from {algo_file}"
+                )
+
         algo_module = util.module_from_spec(spec)
         spec.loader.exec_module(algo_module)
-        
-        if not hasattr(algo_module, 'ALGORITHM_CONFIG'):
+
+        if not hasattr(algo_module, "ALGORITHM_CONFIG"):
             raise ImportError(
                 f"ALGORITHM_CONFIG not found in {algo_file}\n"
                 f"Please define ALGORITHM_CONFIG = [...]"
             )
-        
+
         return algo_module.ALGORITHM_CONFIG
 
     def _get_base_params(self) -> Dict:
@@ -122,10 +135,10 @@ class ConfigurationManager:
         return {
             name: getattr(self.base_data_manager, name)
             for name in self.base_data_manager.__init__.__code__.co_varnames
-            if name != 'self'
+            if name != "self"
         }
-    
-    def _create_data_managers(self) -> Dict[str, DataManager]:
+
+    def _create_data_managers(self) -> Dict[str, data_manager.DataManager]:
         """Create minimal set of DataManager instances.
         
         Groups ExperimentGroups by their data_config and creates one
@@ -150,13 +163,13 @@ class ConfigurationManager:
                 base_params = self._get_base_params()
                 new_params = dict(config)
                 base_params.update(new_params)
-                manager = DataManager(**base_params)
+                manager = data_manager.DataManager(**base_params)
 
             for name in group_names:
                 managers[name] = manager
 
         return managers
-    
+
     def _create_experiment_queue(self) -> collections.deque:
         """Create queue of experiments from all ExperimentGroups.
         
@@ -167,17 +180,19 @@ class ConfigurationManager:
         Returns:
             Deque of Experiment instances ready to run
         """
-        factory = ExperimentFactory(self.algorithm_config)
-        
+        factory = experiment_factory.ExperimentFactory(self.algorithm_config)
+
         all_experiments = collections.deque()
         for group in self.experiment_groups:
             experiments = factory.create_experiments(group)
             all_experiments.extend(experiments)
-            
+
         return all_experiments
 
     def _create_data_splits(self):
-        """Create DataSplitInfo instances for all datasets in experiment groups."""
+        """
+        Create DataSplitInfo instances for all datasets in experiment groups.
+        """
         for group in self.experiment_groups:
             data_manager = self.data_managers[group.name]
             for dataset_path in group.dataset_paths:
@@ -214,7 +229,7 @@ class ConfigurationManager:
                 md_content.extend([
                     "### Algorithm Configurations",
                     "```python",
-                    format_dict(group.algorithm_config),
+                    utility.format_dict(group.algorithm_config),
                     "```",
                     ""
                 ])
@@ -235,7 +250,7 @@ class ConfigurationManager:
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
-                
+
                 md_content.extend([
                     f"#### {dataset_path.name}",
                     "Features:",
@@ -252,18 +267,22 @@ class ConfigurationManager:
         """Get the directory structure for experiment outputs.
         
         Returns:
-            Dict mapping group names to dict of {dataset_name: (data_path, group_name)}
-            This provides the information needed to retrieve DataSplitInfo from DataManager
+            Dict[str, Dict[str, Tuple[str, str]]]: A dictionary where each key 
+            is the name of an experiment group, and each value is another 
+            dictionary. The inner dictionary maps dataset names to a tuple 
+            containing the path to the dataset output and the name of the 
+            experiment group.
         """
         output_structure = {}
-        
+
         for group in self.experiment_groups:
             dataset_info = {}
-            
+
             for dataset_path in group.dataset_paths:
-                dataset_info[dataset_path.stem] = (str(dataset_path), group.name)
-                
+                dataset_info[dataset_path.stem] = (
+                    str(dataset_path), group.name
+                    )
+
             output_structure[group.name] = dataset_info
-            
+
         return output_structure
-        

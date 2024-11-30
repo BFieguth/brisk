@@ -5,10 +5,10 @@ import collections
 import importlib
 import pathlib
 
-from brisk.configuration.ConfigurationManager import ConfigurationManager
-from brisk.configuration.ExperimentGroup import ExperimentGroup
-from brisk.data.DataManager import DataManager
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.configuration.configuration_manager import ConfigurationManager
+from brisk.configuration.experiment_group import ExperimentGroup
+from brisk.data.data_manager import DataManager
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 
 class TestConfigurationManager:
     def test_initialization(self, mock_regression_project):
@@ -46,7 +46,7 @@ class TestConfigurationManager:
         data_file.unlink()
         # Incorrect data.py file
         data_file.write_text("""
-from brisk.data.DataManager import DataManager
+from brisk.data.data_manager import DataManager
 data_manager = DataManager()
 """
         )

@@ -8,7 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from brisk.reporting.ReportManager import ReportManager
+from brisk.reporting.report_manager import ReportManager
 
 class TestReportManager:
 
@@ -53,4 +53,6 @@ class TestReportManager:
                 
                 # Verify HTML file creation for the dataset page
                 dataset_page_path = Path(report_manager.report_dir) / f"{group_name}_{dataset_name}.html"
-                mock_file_write.assert_any_call(str(dataset_page_path), "w")
+                mock_file_write.assert_any_call(
+                    str(dataset_page_path), "w", encoding="utf-8"
+                )

@@ -7,49 +7,52 @@ Exports:
 
 import collections
 from datetime import datetime
-import itertools
 import logging
 import os
 import time
-import traceback
-from typing import List, Dict, Tuple, Callable, Optional
+from typing import Dict, Tuple
 import warnings
- 
+
 import joblib
-import pandas as pd
 from tqdm import tqdm
 
-from brisk.data.DataManager import DataManager
-from brisk.data.DataSplitInfo import DataSplitInfo
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
-from brisk.training.Workflow import Workflow
-from brisk.evaluation.EvaluationManager import EvaluationManager
-from brisk.reporting.ReportManager import ReportManager
-from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
-from brisk.configuration.Experiment import Experiment
-from brisk.utility.utility import format_dict
+from brisk.data import data_manager
+from brisk.evaluation import evaluation_manager
+from brisk.reporting import report_manager as report
+from brisk.utility import logging_util
+from brisk.configuration import experiment
+from brisk.utility import utility
 
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.
 
-    The TrainingManager coordinates the training of models using various algorithms, 
-    evaluates them on different datasets, and generates reports. It integrates with 
-    EvaluationManager for model evaluation and ReportManager for generating HTML reports.
+    The TrainingManager coordinates the training of models using various 
+    algorithms, evaluates them on different datasets, and generates reports. 
+    It integrates with EvaluationManager for model evaluation and ReportManager
+    for generating HTML reports.
 
     Attributes:
         metric_config (lis): Configuration of scoring metrics.
-        DataManager (DataManager): Instance of the DataManager class for train-test splits.
+
+        DataManager (DataManager): Instance of the DataManager class for 
+        train-test splits.
+
         algorithms (list): List of algorithms to apply to each dataset.
-        data_paths (list): List of tuples containing dataset paths and table names.
-        results_dir (str, optional): Directory to store results. Defaults to None.
-        EvaluationManager (EvaluationManager): Instance of the EvaluationManager 
-            class for handling evaluations.
+
+        data_paths (list): List of tuples containing dataset paths and table 
+        names.
+
+        results_dir (str, optional): Directory to store results. Defaults to 
+        None.
+
+        EvaluationManager (EvaluationManager): Instance of the EvaluationManager
+        class for handling evaluations.
     """
     def __init__(
-        self, 
-        metric_config: Dict[str, Dict], 
-        data_managers: Dict[str, DataManager],
-        experiments: collections.deque[Experiment],
+        self,
+        metric_config: Dict[str, Dict],
+        data_managers: Dict[str, data_manager.DataManager],
+        experiments: collections.deque[experiment.Experiment],
         logfile: str,
         output_structure: Dict[str, Dict[str, Tuple[str, str]]],
         verbose=False
@@ -58,9 +61,15 @@ class TrainingManager:
 
         Args:
             metric_config (Dict[str, Dict]): Configuration of scoring metrics.
-            data_managers (Dict[str, DataManager]): Dictionary of DataManager instances.
-            experiments (collections.deque[Experiment]): A deque of Experiment instances.
-            logfile (str): A markdown formatted string describing the configuration.
+
+            data_managers (Dict[str, DataManager]): Dictionary of DataManager 
+            instances.
+            
+            experiments (collections.deque[Experiment]): A deque of Experiment 
+            instances.
+            
+            logfile (str): A markdown formatted string describing the 
+            configuration.
         """
         self.metric_config = metric_config
         self.verbose = verbose
@@ -73,7 +82,7 @@ class TrainingManager:
                 lambda: {}
             )
         )
-    
+
     def _get_results_dir(self) -> str:
         """Generates a results directory name based on the current timestamp.
 
@@ -85,7 +94,7 @@ class TrainingManager:
         return results_dir
 
     def _get_experiment_dir(
-        self, 
+        self,
         results_dir: str,
         group_name: str,
         dataset_name: str,
@@ -95,7 +104,10 @@ class TrainingManager:
 
         Args:
             method_name (str): The name of the method being used.
-            data_path (Tuple[str, str]): The dataset path and table name (if applicable).
+
+            data_path (Tuple[str, str]): The dataset path and table name 
+            (if applicable).
+            
             results_dir (str): The root directory for storing results.
 
         Returns:
@@ -106,22 +118,26 @@ class TrainingManager:
         )
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        return full_path   
+        return full_path
 
     def run_experiments(
-        self, 
+        self,
         workflow,
         workflow_config = None,
         results_name = None,
         create_report: bool = True
     ) -> None:
-        """Runs the user-defined workflow for each experiment and optionally generates reports.
+        """Runs the user-defined workflow for each experiment and optionally 
+        generates reports.
 
         Args:
-            workflow (Workflow): An instance of the Workflow class to define training steps.
+            workflow (Workflow): An instance of the Workflow class to define 
+            training steps.
+            
             workflow_config: Variables to pass the workflow class.
+            
             create_report (bool): Whether to generate an HTML report after all 
-                experiments. Defaults to True.
+            experiments. Defaults to True.
 
         Returns:
             None
@@ -131,10 +147,20 @@ class TrainingManager:
             return f"{int(mins)}m {int(secs)}s"
 
 
-        def log_warning(message, category, filename, lineno, file=None, line=None, dataset_name=None, experiment_name=None):
-            """Custom warning handler that logs warnings with specific formatting."""
+        def log_warning(
+            message,
+            category,
+            filename,
+            lineno,
+            dataset_name=None,
+            experiment_name=None
+        ):
+            """
+            Custom warning handler that logs warnings with specific formatting.
+            """
             log_message = (
-                f"\n\nDataset Name: {dataset_name} \nExperiment Name: {experiment_name}\n\n"
+                f"\n\nDataset Name: {dataset_name} \n"
+                f"Experiment Name: {experiment_name}\n\n"
                 f"Warning in {filename} at line {lineno}:\n"
                 f"Category: {category.__name__}\n\n"
                 f"Message: {message}\n"
@@ -157,7 +183,7 @@ class TrainingManager:
             if os.path.exists(results_dir):
                 raise FileExistsError(
                     f"Results directory '{results_dir}' already exists."
-                    )
+                )
         os.makedirs(results_dir, exist_ok=False)
 
         self._save_config_log(
@@ -165,45 +191,67 @@ class TrainingManager:
             )
         self._save_data_distributions(results_dir, self.output_structure)
         self.logger = self._setup_logger(results_dir)
-        pbar = tqdm(total=len(self.experiments), desc="Running Experiments", unit="experiment")
+        pbar = tqdm(
+            total=len(self.experiments),
+            desc="Running Experiments",
+            unit="experiment"
+        )
 
         while self.experiments:
-            experiment = self.experiments.popleft()
-            group_name = experiment.group_name
-            dataset_name = experiment.dataset.stem
-            experiment_name = experiment.full_name
+            current_experiment = self.experiments.popleft()
+            group_name = current_experiment.group_name
+            dataset_name = current_experiment.dataset.stem
+            experiment_name = current_experiment.full_name
 
-            warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: log_warning(
-                message, category, filename, lineno, file, line, dataset_name, experiment_name
+            warnings.showwarning = (
+                lambda message, category, filename, lineno: log_warning(
+                    message,
+                    category,
+                    filename,
+                    lineno,
+                    dataset_name,
+                    experiment_name
+                )
             )
 
             tqdm.write(f"\n{'=' * 80}")
-            tqdm.write(f"\nStarting experiment '{experiment_name}' on dataset '{dataset_name}'.")
+            tqdm.write(
+                f"\nStarting experiment '{experiment_name}' on dataset "
+                f"'{dataset_name}'."
+            )
 
             start_time = time.time()
 
             try:
                 data_split = self.data_managers[group_name].split(
-                    data_path=experiment.dataset,
+                    data_path=current_experiment.dataset,
                     group_name=group_name,
                     filename=dataset_name
                 )
-                X_train, X_test, y_train, y_test = data_split.get_train_test()
-
+                X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
                 algo_kwargs = {
-                    key: algo.instantiate() for key, algo in experiment.algorithms.items()
+                    key: algo.instantiate()
+                    for key, algo in current_experiment.algorithms.items()
                 }
-                algo_names = [algo.name for algo in experiment.algorithms.values()]
+                algo_names = [
+                    algo.name
+                    for algo in current_experiment.algorithms.values()
+                ]
 
                 experiment_dir = self._get_experiment_dir(
                     results_dir, group_name, dataset_name, experiment_name
                 )
 
                 # Save each experiment_dir for reporting
-                self.experiment_paths[group_name][dataset_name][experiment_name] = experiment_dir
+                (self.experiment_paths
+                 [group_name]
+                 [dataset_name]
+                 [experiment_name]) = experiment_dir
 
-                eval_manager = EvaluationManager(
-                    list(experiment.algorithms.values()), self.metric_config, experiment_dir,
+                eval_manager = evaluation_manager.EvaluationManager(
+                    list(current_experiment.algorithms.values()),
+                    self.metric_config,
+                    experiment_dir,
                     self.logger
                 )
 
@@ -230,10 +278,15 @@ class TrainingManager:
                     "status": "PASSED",
                     "time_taken": format_time(elapsed_time)
                 })
-                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' PASSED in {format_time(elapsed_time)}.")
+                tqdm.write(
+                    f"\nExperiment '{experiment_name}' on dataset "
+                    f"'{dataset_name}' PASSED in {format_time(elapsed_time)}."
+                )
                 tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
 
+            # TODO (Issue #68): refactor to avoid bare except here.
+            # Should also reduce the size of the try block.
             except Exception as e:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
@@ -250,21 +303,26 @@ class TrainingManager:
                     "time_taken": format_time(elapsed_time),
                     "error": str(e)
                 })
-                tqdm.write(f"\nExperiment '{experiment_name}' on dataset '{dataset_name}' FAILED in {format_time(elapsed_time)}.")
+                tqdm.write(
+                    f"\nExperiment '{experiment_name}' on dataset "
+                    f"'{dataset_name}' FAILED in {format_time(elapsed_time)}."
+                )
                 tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
-            
+
         pbar.close()
         self._print_experiment_summary(experiment_results)
 
         # Delete error_log.txt if it is empty
         logging.shutdown()
         error_log_path = os.path.join(results_dir, "error_log.txt")
-        if os.path.exists(error_log_path) and os.path.getsize(error_log_path) == 0:
+        if (os.path.exists(error_log_path)
+            and os.path.getsize(error_log_path) == 0
+            ):
             os.remove(error_log_path)
 
         if create_report:
-            report_manager = ReportManager(
+            report_manager = report.ReportManager(
                 results_dir, self.experiment_paths, self.output_structure
                 )
             report_manager.create_report()
@@ -275,41 +333,48 @@ class TrainingManager:
         print("\n" + "="*70)
         print("EXPERIMENT SUMMARY")
         print("="*70)
-        
+
         for group_name, datasets in experiment_results.items():
             print(f"\nGroup: {group_name}")
             print("="*70)
-            
+
             for dataset_name, experiments in datasets.items():
                 print(f"\nDataset: {dataset_name}")
                 print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}")
                 print("-"*70)
-                
+
                 for result in experiments:
-                    print(f"{result['experiment']:<50} {result['status']:<10} {result['time_taken']:<10}")
-            
+                    print(
+                        f"{result['experiment']:<50} {result['status']:<10} "
+                        f"{result['time_taken']:<10}"
+                    )
             print("="*70)
 
     def _setup_logger(self, results_dir):
         """Set up logging for the TrainingManager.
 
         Logs to both file and console, using different levels for each        
-        """ 
+        """
         logger = logging.getLogger("TrainingManager")
         logger.setLevel(logging.DEBUG)
 
-        file_handler = logging.FileHandler(os.path.join(results_dir, "error_log.txt"))
+        file_handler = logging.FileHandler(
+            os.path.join(results_dir, "error_log.txt")
+        )
         file_handler.setLevel(logging.WARNING)
 
-        console_handler = TqdmLoggingHandler()
+        console_handler = logging_util.TqdmLoggingHandler()
         if self.verbose:
             console_handler.setLevel(logging.INFO)
         else:
             console_handler.setLevel(logging.ERROR)
 
-        formatter = logging.Formatter("\n%(asctime)s - %(levelname)s - %(message)s")
-        file_formatter = FileFormatter("%(asctime)s - %(levelname)s - %(message)s")
-        
+        formatter = logging.Formatter(
+            "\n%(asctime)s - %(levelname)s - %(message)s"
+        )
+        file_formatter = logging_util.FileFormatter(
+            "%(asctime)s - %(levelname)s - %(message)s"
+        )
         file_handler.setFormatter(file_formatter)
         console_handler.setFormatter(formatter)
 
@@ -319,12 +384,13 @@ class TrainingManager:
         return logger
 
     def _save_config_log(self, results_dir, workflow, workflow_config, logfile):
-        """Saves the workflow configuration and class name to a config log file."""
+        """Saves the workflow configuration and class name to a config log file.
+        """
         config_log_path = os.path.join(results_dir, "config_log.md")
-        
+
         # Split the logfile back into a list
         config_content = logfile.split("\n")
-        
+
         # Create the header content
         workflow_md = [
             "# Experiment Configuration Log",
@@ -334,22 +400,26 @@ class TrainingManager:
             f"### Workflow Class: `{workflow.__name__}`",
             ""
         ]
-        
+
         if workflow_config:
             workflow_md.extend([
                 "### Configuration:",
                 "```python",
-                format_dict(workflow_config),
+                utility.format_dict(workflow_config),
                 "```",
                 ""
             ])
-        
+
         full_content = "\n".join(workflow_md + config_content)
-        
-        with open(config_log_path, 'w') as f:
+
+        with open(config_log_path, "w", encoding="utf-8") as f:
             f.write(full_content)
 
-    def _save_data_distributions(self, result_dir: str, output_structure: Dict[str, Dict[str, Tuple[str, str]]]):
+    def _save_data_distributions(
+        self,
+        result_dir: str,
+        output_structure: Dict[str, Dict[str, Tuple[str, str]]]
+    ) -> None:
         """Save data distribution information for each dataset.
         
         Args:
@@ -359,25 +429,26 @@ class TrainingManager:
         for group_name, datasets in output_structure.items():
             group_dir = os.path.join(result_dir, group_name)
             os.makedirs(group_dir, exist_ok=True)
-            data_manager = self.data_managers[group_name]
-            
+            group_data_manager = self.data_managers[group_name]
+
             for dataset_name, (data_path, group_name) in datasets.items():
-                split_info = data_manager.split(
+                split_info = group_data_manager.split(
                     data_path=data_path,
                     group_name=group_name,
                     filename=dataset_name
                 )
-                
+
                 dataset_dir = os.path.join(group_dir, dataset_name)
                 os.makedirs(dataset_dir, exist_ok=True)
-                
+
                 split_info.save_distribution(
                     os.path.join(dataset_dir, "split_distribution")
                     )
-                
-                if hasattr(split_info, 'scaler') and split_info.scaler:
+
+                if hasattr(split_info, "scaler") and split_info.scaler:
+                    split_name = split_info.scaler.__class__.__name__
                     scaler_path = os.path.join(
-                        dataset_dir, 
-                        f"{dataset_name}_{split_info.scaler.__class__.__name__}.joblib"
+                        dataset_dir,
+                        f"{dataset_name}_{split_name}.joblib"
                     )
                     joblib.dump(split_info.scaler, scaler_path)

@@ -3,8 +3,8 @@ from pathlib import Path
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor
 
-from brisk.configuration.Experiment import Experiment
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.configuration.experiment import Experiment
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 
 @pytest.fixture
 def linear_wrapper():
