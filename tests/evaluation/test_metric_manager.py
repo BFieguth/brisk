@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from brisk.evaluation.metric_manager import MetricManager
-from brisk.utility.MetricWrapper import MetricWrapper
+from brisk.utility.metric_wrapper import MetricWrapper
 from brisk.defaults.regression_metrics import REGRESSION_METRICS
 
 class TestMetricManager:

@@ -8,7 +8,7 @@ Exports:
 """
 from typing import Callable, List
 
-from brisk.utility import MetricWrapper
+from brisk.utility import metric_wrapper
 
 class MetricManager:
     """A class to manage scoring metrics.
@@ -32,7 +32,7 @@ class MetricManager:
         for wrapper in metric_wrappers:
             self._add_metric(wrapper)
 
-    def _add_metric(self, wrapper: MetricWrapper.MetricWrapper):
+    def _add_metric(self, wrapper: metric_wrapper.MetricWrapper):
         # Remove old abbreviation
         if wrapper.name in self._metrics_by_name:
             old_wrapper = self._metrics_by_name[wrapper.name]

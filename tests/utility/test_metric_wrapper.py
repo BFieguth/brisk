@@ -1,7 +1,7 @@
 import pytest
 import sklearn.metrics as metrics
 
-from brisk.utility.MetricWrapper import MetricWrapper
+from brisk.utility.metric_wrapper import MetricWrapper
 
 @pytest.fixture
 def metric_wrapper():
