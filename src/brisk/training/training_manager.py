@@ -340,13 +340,13 @@ class TrainingManager:
 
             for dataset_name, experiments in datasets.items():
                 print(f"\nDataset: {dataset_name}")
-                print(f"{"Experiment":<50} {"Status":<10} {"Time":<10}")
+                print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}")
                 print("-"*70)
 
                 for result in experiments:
                     print(
-                        f"{result["experiment"]:<50} {result["status"]:<10} "
-                        f"{result["time_taken"]:<10}"
+                        f"{result['experiment']:<50} {result['status']:<10} "
+                        f"{result['time_taken']:<10}"
                     )
             print("="*70)
 
