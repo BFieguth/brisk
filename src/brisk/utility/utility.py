@@ -1,3 +1,8 @@
+"""utility.py
+
+This module contains various utility functions that facilitate common 
+operations within the Brisk framework.
+"""
 import pathlib
 import functools
 
@@ -14,7 +19,8 @@ def find_project_root() -> pathlib.Path:
         Path to project root directory
         
     Raises:
-        FileNotFoundError: If .briskconfig cannot be found in any parent directory
+        FileNotFoundError: If .briskconfig cannot be found in any parent 
+        directory
     
     Example:
         >>> root = find_project_root()
@@ -23,7 +29,7 @@ def find_project_root() -> pathlib.Path:
     """
     current = pathlib.Path.cwd()
     while current != current.parent:
-        if (current / '.briskconfig').exists():
+        if (current / ".briskconfig").exists():
             return current
         current = current.parent
     raise FileNotFoundError(
