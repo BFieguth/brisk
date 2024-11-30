@@ -1,17 +1,26 @@
-import logging
-import sys 
+"""logging_util.py
 
-from tqdm import tqdm
+This module provides custom logging handlers and formatters to enhance the 
+logging capabilities within the Brisk framework. It includes a handler for 
+logging progress with TQDM and a custom formatter for file logging that 
+adds visual separators between log entries.
+"""
+import logging
+import sys
+
+import tqdm
 
 class TqdmLoggingHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            stream = sys.stderr if record.levelno >= logging.ERROR else sys.stdout
-            tqdm.write(msg, file=stream)
+            stream = (sys.stderr
+                      if record.levelno >= logging.ERROR
+                      else sys.stdout)
+            tqdm.tqdm.write(msg, file=stream)
             self.flush()
 
-        except Exception:
+        except (ValueError, TypeError):
             self.handleError(record)
 
 
@@ -21,4 +30,3 @@ class FileFormatter(logging.Formatter):
         original_message = super().format(record)
         # Add the spacer before each log entry
         return f"{spacer_line}\n{original_message}\n"
-    
