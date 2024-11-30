@@ -271,20 +271,28 @@ class Workflow(abc.ABC):
         model: base.BaseEstimator,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
-        filename: str
+        filename: str,
+        add_fit_line: bool = False
     ) -> None:
         """Plot the residuals of the model and save the plot.
 
         Args:
             model (BaseEstimator): The trained machine learning model.
+          
             X (pd.DataFrame): The feature data.
+            
             y (pd.Series): The true target values.
+            
             filename (str): The name of the output PNG file (without extension).
+
+            add_fit_line (bool): Whether to add a line of best fit to the plot.
 
         Returns:
             None
         """
-        return self.evaluator.plot_residuals(model, X, y, filename)
+        return self.evaluator.plot_residuals(
+            model, X, y, filename, add_fit_line=add_fit_line
+        )
 
     def plot_model_comparison( # pragma: no cover
         self,
