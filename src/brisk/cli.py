@@ -70,7 +70,7 @@ def create(project_name: str) -> None:
     with open(
         os.path.join(project_dir, 'settings.py'), 'w', encoding='utf-8') as f:
         f.write("""# settings.py
-from brisk.configuration.Configuration import Configuration, ConfigurationManager
+from brisk.configuration.configuration import Configuration, ConfigurationManager
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
@@ -122,7 +122,7 @@ BASE_DATA_MANAGER = DataManager(
     with open(
         os.path.join(project_dir, 'training.py'), 'w', encoding='utf-8') as f:
         f.write("""# training.py
-from brisk.training.TrainingManager import TrainingManager
+from brisk.training.training_manager import TrainingManager
 from metrics import METRIC_CONFIG
 from settings import create_configuration
                                 
@@ -149,7 +149,7 @@ manager = TrainingManager(
         f.write("""# workflow.py
 # Define the workflow for training and evaluating models
 
-from brisk.training.Workflow import Workflow
+from brisk.training.workflow import Workflow
 
 class MyWorkflow(Workflow):
     def workflow(self):
