@@ -214,7 +214,7 @@ class TrainingManager:
                 )
             )
 
-            tqdm.write(f"\n{"=" * 80}")
+            tqdm.write(f"\n{'=' * 80}")
             tqdm.write(
                 f"\nStarting experiment '{experiment_name}' on dataset "
                 f"'{dataset_name}'."
@@ -282,7 +282,7 @@ class TrainingManager:
                     f"\nExperiment '{experiment_name}' on dataset "
                     f"'{dataset_name}' PASSED in {format_time(elapsed_time)}."
                 )
-                tqdm.write(f"\n{"-" * 80}")
+                tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
 
             # TODO (Issue #68): refactor to avoid bare except here.
@@ -307,7 +307,7 @@ class TrainingManager:
                     f"\nExperiment '{experiment_name}' on dataset "
                     f"'{dataset_name}' FAILED in {format_time(elapsed_time)}."
                 )
-                tqdm.write(f"\n{"-" * 80}")
+                tqdm.write(f"\n{'-' * 80}")
                 pbar.update(1)
 
         pbar.close()
