@@ -12,7 +12,7 @@ from pathlib import Path
 from brisk.training.training_manager import TrainingManager
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.data.data_split_info import DataSplitInfo
-from brisk.training.Workflow import Workflow
+from brisk.training.workflow import Workflow
 from brisk.configuration.experiment import Experiment
 
 class MockDataManager:

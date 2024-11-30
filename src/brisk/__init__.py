@@ -8,7 +8,7 @@ from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.reporting.report_manager import ReportManager
 from brisk.training.training_manager import TrainingManager
-from brisk.training.Workflow import Workflow
+from brisk.training.workflow import Workflow
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.utility.MetricWrapper import MetricWrapper
 from brisk.utility.ArgManager import ArgManager

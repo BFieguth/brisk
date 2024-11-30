@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from brisk.evaluation.evaluation_manager import EvaluationManager
-from brisk.training.Workflow import Workflow
+from brisk.training.workflow import Workflow
 
 class MockWorkflow(Workflow): # pragma: no cover
 

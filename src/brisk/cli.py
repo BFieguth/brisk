@@ -31,7 +31,7 @@ import click
 import pandas as pd
 from sklearn import datasets
 
-from brisk.training.Workflow import Workflow
+from brisk.training.workflow import Workflow
 
 @click.group()
 def cli():
