@@ -163,8 +163,8 @@ class EvaluationManager:
         self._save_to_json(results, output_path, metadata)
 
         scores_log = "\n".join([
-            f"{metric}: mean={res['mean_score']:.4f}, "
-            f"std_dev={res['std_dev']:.4f}"
+            f"{metric}: mean={res['mean_score']:.4f}, " # pylint: disable=W1405
+            f"std_dev={res['std_dev']:.4f}" # pylint: disable=W1405
             for metric, res in results.items()
             if metric != "_metadata"
         ])
@@ -498,15 +498,21 @@ class EvaluationManager:
         model: base.BaseEstimator,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
-        filename: str
+        filename: str,
+        add_fit_line: bool = False
     ) -> None:
         """Plot the residuals of the model and save the plot.
 
         Args:
             model (BaseEstimator): The trained machine learning model.
+            
             X (pd.DataFrame): The feature data.
+            
             y (pd.Series): The true target values.
+            
             filename (str): The name of the output PNG file (without extension).
+
+            add_fit_line (bool): Whether to add a line of best fit to the plot.
 
         Returns:
             None
@@ -521,6 +527,15 @@ class EvaluationManager:
         plt.ylabel("Residual", fontsize=12)
         plt.title("Residual Plot", fontsize=16)
         plt.legend()
+
+        if add_fit_line:
+            fit = np.polyfit(y, residuals, 1)
+            fit_line = np.polyval(fit, y)
+            plt.plot(
+                y, fit_line, color="blue", linestyle="-",
+                label="Line of Best Fit"
+                )
+            plt.legend()
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
