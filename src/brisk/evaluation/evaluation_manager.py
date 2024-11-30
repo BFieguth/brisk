@@ -163,8 +163,8 @@ class EvaluationManager:
         self._save_to_json(results, output_path, metadata)
 
         scores_log = "\n".join([
-            f"{metric}: mean={res["mean_score"]:.4f}, "
-            f"std_dev={res["std_dev"]:.4f}"
+            f"{metric}: mean={res['mean_score']:.4f}, "
+            f"std_dev={res['std_dev']:.4f}"
             for metric, res in results.items()
             if metric != "_metadata"
         ])
