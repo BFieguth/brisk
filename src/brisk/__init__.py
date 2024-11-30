@@ -7,11 +7,11 @@ from brisk.data.data_manager import DataManager
 from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.reporting.report_manager import ReportManager
-from brisk.training.TrainingManager import TrainingManager
+from brisk.training.training_manager import TrainingManager
 from brisk.training.Workflow import Workflow
 from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
 from brisk.utility.MetricWrapper import MetricWrapper
 from brisk.utility.ArgManager import ArgManager
 from brisk.utility.AlertMailer import AlertMailer
 from brisk.utility.CreateMetric import create_metric
-from brisk.utility.logging import TqdmLoggingHandler, FileFormatter
+from brisk.utility.logging_util import TqdmLoggingHandler, FileFormatter
