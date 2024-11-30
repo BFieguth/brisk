@@ -11,6 +11,7 @@
 
 ## Checklist
 - [ ] Code follows project style guidelines
+- [ ] pylint checks pass
 - [ ] Comments added for complex logic
 - [ ] Documentation updated (if needed)
 - [ ] No new warnings generated
