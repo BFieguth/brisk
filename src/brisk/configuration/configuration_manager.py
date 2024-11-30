@@ -15,7 +15,7 @@ from brisk.data import data_manager
 from brisk.configuration import experiment_group
 from brisk.configuration import experiment_factory
 from brisk.utility import utility
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
 class ConfigurationManager:
     """Manages experiment configurations and DataManager instances.
@@ -85,7 +85,7 @@ class ConfigurationManager:
 
         return data_module.BASE_DATA_MANAGER
 
-    def _load_algorithm_config(self) -> List[AlgorithmWrapper.AlgorithmWrapper]:
+    def _load_algorithm_config(self) -> List[algorithm_wrapper.AlgorithmWrapper]:
         """Load algorithm configuration from project's algorithms.py.
         
         Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.

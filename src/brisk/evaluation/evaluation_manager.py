@@ -28,7 +28,7 @@ import sklearn.model_selection as model_select
 import sklearn.metrics as sk_metrics
 from sklearn import tree
 
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
 matplotlib.use("Agg")
 
@@ -46,7 +46,7 @@ class EvaluationManager:
     """
     def __init__(
         self,
-        algorithm_config: List[AlgorithmWrapper.AlgorithmWrapper],
+        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
         metric_config: Any,
         output_dir: str,
         logger: Optional[logging.Logger]=None

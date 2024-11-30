@@ -1,4 +1,5 @@
-"""Provides the AlgorithmWrapper class for managing and instantiating machine learning algorithms.
+"""Provides the AlgorithmWrapper class for managing and instantiating machine 
+learning algorithms.
 
 Exports:
     - AlgorithmWrapper: A class to handle model instantiation and tuning, 
@@ -12,32 +13,41 @@ from brisk.utility.utility import format_dict
 class AlgorithmWrapper:
     """A wrapper class for machine learning algorithms.
 
-    This class provides methods to easily instantiate models with default parameters 
-    or tuned hyperparameters. It also manages hyperparameter grids for tuning.
+    This class provides methods to easily instantiate models with default 
+    parameters or tuned hyperparameters. It also manages hyperparameter grids 
+    for tuning.
 
     Attributes:
         name (str): The name of the algorithm.
+        
         algorithm_class (Type): The class of the algorithm.
+        
         default_params (dict): The default parameters for the algorithm.
-        hyperparam_grid (dict): The hyperparameter grid for tuning the algorithm.
+        
+        hyperparam_grid (dict): The hyperparameter grid for tuning the 
+        algorithm.
     """
     def __init__(
-        self, 
-        name: str, 
+        self,
+        name: str,
         display_name: str,
-        algorithm_class: Type, 
-        default_params: Optional[Dict[str, Any]] = None, 
+        algorithm_class: Type,
+        default_params: Optional[Dict[str, Any]] = None,
         hyperparam_grid: Optional[Dict[str, Any]] = None
     ):
         """Initializes the AlgorithmWrapper with a model class.
 
         Args:
             name (str): The name of the model.
-            algorithm_class (Type): The class of the algorithm to be instantiated.
+
+            algorithm_class (Type): The class of the algorithm to be 
+            instantiated.
+            
             default_params (Optional[Dict[str, Any]]): The default parameters to 
-                pass to the model during instantiation.
+            pass to the model during instantiation.
+            
             hyperparam_grid (Optional[Dict[str, Any]]): The hyperparameter grid 
-                for model tuning.
+            for model tuning.
         """
         self.name = name
         self.display_name = display_name
@@ -47,12 +57,15 @@ class AlgorithmWrapper:
 
     def __setitem__(self, key, value):
         """Override item setting to update default_params or hyperparam_grid."""
-        if key == 'default_params':
+        if key == "default_params":
             self.default_params.update(value)
-        elif key == 'hyperparam_grid':
+        elif key == "hyperparam_grid":
             self.hyperparam_grid.update(value)
         else:
-            raise KeyError(f"Invalid key: {key}. Allowed keys: 'default_params', 'hyperparam_grid'")
+            raise KeyError(
+                f"Invalid key: {key}. "
+                "Allowed keys: 'default_params', 'hyperparam_grid'"
+            )
 
     def instantiate(self) -> Any:
         """Instantiates the model with the default parameters.
@@ -63,7 +76,10 @@ class AlgorithmWrapper:
         return self.algorithm_class(**self.default_params)
 
     def instantiate_tuned(self, best_params: Dict[str, Any]) -> Any:
-        """Instantiates a new model with the tuned parameters, includes max_iter if present.
+        """Instantiates a new model with the tuned parameters.
+        
+        If max_iter is specified in the default_params, it will be included in 
+        the tuned parameters.
 
         Args:
             best_params (Dict[str, Any]): The tuned hyperparameters.
@@ -71,8 +87,8 @@ class AlgorithmWrapper:
         Returns:
             Any: A new instance of the model with the tuned hyperparameters.
         """
-        if 'max_iter' in self.default_params:
-            best_params['max_iter'] = self.default_params['max_iter']
+        if "max_iter" in self.default_params:
+            best_params["max_iter"] = self.default_params["max_iter"]
         return self.algorithm_class(**best_params)
 
     def get_hyperparam_grid(self) -> Dict[str, Any]:
@@ -105,4 +121,3 @@ class AlgorithmWrapper:
             "```"
         ]
         return "\n".join(md)
-    

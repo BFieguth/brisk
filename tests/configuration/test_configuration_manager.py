@@ -8,7 +8,7 @@ import pathlib
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.data.data_manager import DataManager
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 
 class TestConfigurationManager:
     def test_initialization(self, mock_regression_project):

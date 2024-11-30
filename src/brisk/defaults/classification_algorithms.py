@@ -16,10 +16,10 @@ from sklearn import naive_bayes
 from sklearn import neighbors
 from sklearn import neural_network
 
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
-CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
-    AlgorithmWrapper.AlgorithmWrapper(
+CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
+    algorithm_wrapper.AlgorithmWrapper(
         name="logistic",
         display_name="Logistic Regression",
         algorithm_class=linear_model.LogisticRegression,
@@ -30,7 +30,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "C": list(np.arange(1, 30, 0.5)),
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="svc",
         display_name="Support Vector Classification",
         algorithm_class=svm.SVC,
@@ -41,7 +41,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1],
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="linear_svc",
         display_name="Linear Support Vector Classification",
         algorithm_class=svm.LinearSVC,
@@ -51,7 +51,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "penalty": ["l1", "l2"],
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="knn_classifier",
         display_name="k-Nearest Neighbours Classifier",
         algorithm_class=neighbors.KNeighborsClassifier,
@@ -62,7 +62,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "leaf_size": list(range(5, 50, 5)),
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="dtc",
         display_name="Decision Tree Classifier",
         algorithm_class=tree.DecisionTreeClassifier,
@@ -72,7 +72,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None],           
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="rf_classifier",
         display_name="Random Forest Classifier",
         algorithm_class=ensemble.RandomForestClassifier,
@@ -84,7 +84,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None],
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="gbm_classifier",
         display_name="Gradient Boosting Machine Classifier",
         algorithm_class=ensemble.GradientBoostingClassifier,
@@ -94,7 +94,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "n_estimators": list(range(50, 200, 10)),   
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="adaboost_classifier",
         display_name="Adaboost Classifier",
         algorithm_class=ensemble.AdaBoostClassifier,
@@ -103,7 +103,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "learning_rate": list(np.arange(0.01, 3, 0.1)), 
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="gaussian_nb",
         display_name="Gaussian Naive Bayes",
         algorithm_class=naive_bayes.GaussianNB,
@@ -111,7 +111,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "var_smoothing": [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="mlp_classifier",
         display_name="Multi-Layer Perceptron Classification",
         algorithm_class=neural_network.MLPClassifier,
@@ -125,14 +125,14 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "learning_rate": ["constant", "invscaling", "adaptive"]   
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="ridge_classifier",
         display_name="Ridge Classifier",
         algorithm_class=linear_model.RidgeClassifier,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="bagging_classifier",
         display_name="Bagging Classifier",
         algorithm_class=ensemble.BaggingClassifier,
@@ -140,7 +140,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "n_estimators": list(range(10, 160, 20)),
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="xtree_classifier",
         display_name="Extra Tree Classifier",
         algorithm_class=ensemble.ExtraTreesClassifier,
@@ -152,7 +152,7 @@ CLASSIFICATION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="voting_classifier",
         display_name="Voting Classifier",
         algorithm_class=ensemble.VotingClassifier,

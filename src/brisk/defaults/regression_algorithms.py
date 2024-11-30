@@ -17,29 +17,29 @@ from sklearn import neural_network
 from sklearn import svm
 from sklearn import tree
 
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
-REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
-    AlgorithmWrapper.AlgorithmWrapper(
+REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
+    algorithm_wrapper.AlgorithmWrapper(
         name="linear",
         display_name="Linear Regression",
         algorithm_class=linear_model.LinearRegression
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="ridge",
         display_name="Ridge Regression",
         algorithm_class=linear_model.Ridge,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="lasso",
         display_name="LASSO Regression",
         algorithm_class=linear_model.Lasso,
         default_params={"alpha": 0.1, "max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="bridge",
         display_name="Bayesian Ridge Regression",
         algorithm_class=linear_model.BayesianRidge,
@@ -51,7 +51,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="elasticnet",
         display_name="Elastic Net Regression",
         algorithm_class=linear_model.ElasticNet,
@@ -61,7 +61,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "l1_ratio": list(np.arange(0.1, 1, 0.1))
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="dtr",
         display_name="Decision Tree Regression",
         algorithm_class=tree.DecisionTreeRegressor,
@@ -72,7 +72,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="rf",
         display_name="Random Forest",
         algorithm_class=ensemble.RandomForestRegressor,
@@ -84,7 +84,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="gbr",
         display_name="Gradient Boosting Regression",
         algorithm_class=ensemble.GradientBoostingRegressor,
@@ -94,7 +94,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "n_estimators": list(range(50, 200, 10)),
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="adaboost",
         display_name="AdaBoost Regression",
         algorithm_class=ensemble.AdaBoostRegressor,
@@ -104,7 +104,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "loss": ["linear", "square", "exponential"] 
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="svr",
         display_name="Support Vector Regression",
         algorithm_class=svm.SVR,
@@ -115,7 +115,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="mlp",
         display_name="Multi-Layer Perceptron Regression",
         algorithm_class=neural_network.MLPRegressor,
@@ -129,7 +129,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "learning_rate": ["constant", "invscaling", "adaptive"]   
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="knn",
         display_name="K-Nearest Neighbour Regression",
         algorithm_class=neighbors.KNeighborsRegressor,
@@ -140,17 +140,17 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "leaf_size": list(range(5, 50, 5))
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="lars",
         display_name="Least Angle Regression",
         algorithm_class=linear_model.Lars
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="omp",
         display_name="Orthogonal Matching Pursuit",
         algorithm_class=linear_model.OrthogonalMatchingPursuit
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="ard",
         display_name="Bayesian ARD Regression",
         algorithm_class=linear_model.ARDRegression,
@@ -162,7 +162,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="passagg",
         display_name="Passive Aggressive Regressor",
         algorithm_class=linear_model.PassiveAggressiveRegressor,
@@ -171,7 +171,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "C": list(np.arange(1, 100, 1))
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="kridge",
         display_name="Kernel Ridge",
         algorithm_class=kernel_ridge.KernelRidge,
@@ -179,7 +179,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "alpha": np.logspace(-3, 0, 100)
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="nusvr",
         display_name="Nu Support Vector Regression",
         algorithm_class=svm.NuSVR,
@@ -190,7 +190,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1]
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="rnn",
         display_name="Radius Nearest Neighbour",
         algorithm_class=neighbors.RadiusNeighborsRegressor,
@@ -201,7 +201,7 @@ REGRESSION_ALGORITHMS: List[AlgorithmWrapper.AlgorithmWrapper] = [
             "leaf_size": list(range(10, 60, 10))
         }
     ),
-    AlgorithmWrapper.AlgorithmWrapper(
+    algorithm_wrapper.AlgorithmWrapper(
         name="xtree",
         display_name="Extra Tree Regressor",
         algorithm_class=ensemble.ExtraTreesRegressor,

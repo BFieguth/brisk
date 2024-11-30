@@ -5,7 +5,7 @@ import importlib
 
 from brisk.configuration.experiment_factory import ExperimentFactory
 from brisk.configuration.experiment_group import ExperimentGroup
-from brisk.utility.AlgorithmWrapper import AlgorithmWrapper
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper
 
 @pytest.fixture
 def factory(mock_reg_algorithms_py, tmp_path):

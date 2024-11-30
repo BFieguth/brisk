@@ -10,7 +10,7 @@ import hashlib
 import pathlib
 from typing import Dict
 
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
 @dataclasses.dataclass
 class Experiment:
@@ -39,7 +39,7 @@ class Experiment:
     """
     group_name: str
     dataset: pathlib.Path
-    algorithms: Dict[str, AlgorithmWrapper.AlgorithmWrapper]
+    algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
 
     @property
     def full_name(self) -> str:
@@ -110,7 +110,7 @@ class Experiment:
                     f"Multiple models must use keys {expected_keys}"
                 )
 
-    def get_model_kwargs(self) -> Dict[str, AlgorithmWrapper.AlgorithmWrapper]:
+    def get_model_kwargs(self) -> Dict[str, algorithm_wrapper.AlgorithmWrapper]:
         """Get models in the format expected by workflow.
         
         Returns:

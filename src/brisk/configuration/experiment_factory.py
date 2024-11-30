@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Deque, Union
 
 from brisk.configuration import experiment
 from brisk.configuration import experiment_group
-from brisk.utility import AlgorithmWrapper
+from brisk.utility import algorithm_wrapper
 
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.
@@ -33,7 +33,7 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: List[AlgorithmWrapper.AlgorithmWrapper]
+        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper]
     ):
         """Initialize factory with algorithm configuration.
         
@@ -103,7 +103,7 @@ class ExperimentFactory:
         self,
         algo_name: str,
         config: Dict[str, Any] | None = None
-    ) -> AlgorithmWrapper.AlgorithmWrapper:
+    ) -> algorithm_wrapper.AlgorithmWrapper:
         """Get algorithm wrapper with updated configuration."""
         if algo_name not in self.algorithm_config:
             raise KeyError(
@@ -112,7 +112,7 @@ class ExperimentFactory:
 
         original_wrapper = self.algorithm_config[algo_name]
 
-        wrapper = AlgorithmWrapper.AlgorithmWrapper(
+        wrapper = algorithm_wrapper.AlgorithmWrapper(
             name=original_wrapper.name,
             display_name=original_wrapper.display_name,
             algorithm_class=original_wrapper.algorithm_class,
