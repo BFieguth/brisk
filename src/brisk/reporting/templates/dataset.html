@@ -9,8 +9,10 @@
 </head>
 <body>
     <header>
-        <h1>Dataset Analysis</h1>
-        <h2>{{ group_name }} / {{ dataset_name }}</h2>
+        Dataset Analysis: {{ group_name }} / {{ dataset_name }}
+        <div style="font-size: 14px; color: grey;">
+            Version: {{ version }}
+        </div>
     </header>
     <div class="content">
         {{ content | safe }}

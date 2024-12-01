@@ -8,7 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>Experiment: {{ experiment_name }}</header>
+    <header>
+        Experiment: {{ experiment_name }}
+        <div style="font-size: 14px; color: grey;">
+            Version: {{ version }}
+        </div>
+    </header>
 
     <div>
         {{ content | safe }}  <!-- Render the full content as HTML -->

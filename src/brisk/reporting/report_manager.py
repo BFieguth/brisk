@@ -17,6 +17,8 @@ import jinja2
 import joblib
 import pandas as pd
 
+from brisk.version import __version__
+
 class ReportManager():
     """A class for creating HTML reports from evaluation results.
 
@@ -181,7 +183,8 @@ class ReportManager():
         index_output = index_template.render(
             groups=groups,
             timestamp=timestamp,
-            summary_table=summary_table_html
+            summary_table=summary_table_html,
+            version=__version__
         )
 
         index_path = os.path.join(self.report_dir, "index.html")
@@ -236,7 +239,8 @@ class ReportManager():
         experiment_output = experiment_template.render(
             experiment_name=experiment_name,
             file_metadata=file_metadata,
-            content=content_str
+            content=content_str,
+            version=__version__
         )
         experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, "w", encoding="utf-8") as f:
@@ -283,7 +287,8 @@ class ReportManager():
         rendered_html = dataset_template.render(
             group_name=group_name,
             dataset_name=dataset_name,
-            content=content_str
+            content=content_str,
+            version=__version__
         )
 
         # Include group name in output file path
