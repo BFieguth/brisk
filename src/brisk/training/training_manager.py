@@ -22,6 +22,7 @@ from brisk.reporting import report_manager as report
 from brisk.utility import logging_util
 from brisk.configuration import experiment
 from brisk.utility import utility
+from brisk.version import __version__
 
 class TrainingManager:
     """A class to manage the training and evaluation of machine learning models.
@@ -349,6 +350,7 @@ class TrainingManager:
                         f"{result['time_taken']:<10}"
                     )
             print("="*70)
+        print("\nModels trained using Brisk version", __version__)
 
     def _setup_logger(self, results_dir):
         """Set up logging for the TrainingManager.
