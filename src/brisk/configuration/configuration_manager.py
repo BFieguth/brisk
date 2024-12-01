@@ -86,7 +86,9 @@ class ConfigurationManager:
 
         return data_module.BASE_DATA_MANAGER
 
-    def _load_algorithm_config(self) -> List[algorithm_wrapper.AlgorithmWrapper]:
+    def _load_algorithm_config(
+        self
+    ) -> List[algorithm_wrapper.AlgorithmWrapper]:
         """Load algorithm configuration from project's algorithms.py.
         
         Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.
@@ -195,9 +197,9 @@ class ConfigurationManager:
         Create DataSplitInfo instances for all datasets in experiment groups.
         """
         for group in self.experiment_groups:
-            data_manager = self.data_managers[group.name]
+            group_data_manager = self.data_managers[group.name]
             for dataset_path in group.dataset_paths:
-                data_manager.split(
+                group_data_manager.split(
                     data_path=str(dataset_path),
                     group_name=group.name,
                     filename=dataset_path.stem
@@ -236,17 +238,17 @@ class ConfigurationManager:
                 ])
 
             # Add DataManager configuration
-            data_manager = self.data_managers[group.name]
+            group_data_manager = self.data_managers[group.name]
             md_content.extend([
                 "### DataManager Configuration",
-                data_manager.to_markdown(),
+                group_data_manager.to_markdown(),
                 ""
             ])
 
             # Add dataset information
             md_content.append("### Datasets")
             for dataset_path in group.dataset_paths:
-                split_info = data_manager.split(
+                split_info = group_data_manager.split(
                     data_path=str(dataset_path),
                     group_name=group.name,
                     filename=dataset_path.stem
