@@ -69,6 +69,18 @@ class Experiment:
         short_hash = hash_obj.hexdigest()
         return f"{self.group_name}_{short_hash}"
 
+    @property
+    def name(self) -> str:
+        """Return a name for the experiment, prioritizing full_name if under 
+        30 characters.
+        
+        Returns:
+            String: Either full_name or experiment_name based on length.
+        """
+        if len(self.full_name) < 30:
+            return self.full_name
+        return self.experiment_name
+
     def __post_init__(self):
         """Validate experiment configuration after initialization.
         

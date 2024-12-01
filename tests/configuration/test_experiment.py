@@ -60,6 +60,15 @@ def multiple_models(linear_wrapper, rf_wrapper):
         }
     )
 
+@pytest.fixture
+def long_name(linear_wrapper):
+    """Create a simple experiment with one model."""
+    return Experiment(
+        group_name="a_very_long_group_name_indeed",
+        dataset=Path("data/test.csv"),
+        algorithms={"model": linear_wrapper}
+    )
+
 
 class TestExperiment:
     def test_valid_single_model(self, single_model, linear_wrapper):
@@ -101,6 +110,12 @@ class TestExperiment:
         """Test full_name property format."""
         expected = "test_group_linear_rf"
         assert multiple_models.full_name == expected
+
+    def test_name_format(self, long_name):
+        """Test name property format."""
+        assert long_name.experiment_name == "a_very_long_group_name_indeed_bfa2c5a2"
+        assert long_name.full_name == "a_very_long_group_name_indeed_linear"
+        assert long_name.name == "a_very_long_group_name_indeed_bfa2c5a2"
 
     def test_experiment_name_consistency(self, single_model, linear_wrapper):
         """Test experiment_name is consistent across instantiations."""
