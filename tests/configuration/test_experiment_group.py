@@ -1,3 +1,5 @@
+import textwrap
+
 import pytest
 
 from brisk.configuration.experiment_group import ExperimentGroup
@@ -9,7 +11,8 @@ def valid_group(mock_regression_project):
     return ExperimentGroup(
         name="test_group",
         datasets=["test.csv"],
-        algorithms=["linear", "ridge"]
+        algorithms=["linear", "ridge"],
+        description="This is a test description"
     )
 
 
@@ -19,7 +22,8 @@ def valid_group_two_datasets(mock_regression_project):
     return ExperimentGroup(
         name="test_group",
         datasets=["test.csv", "another_dataset.csv"],
-        algorithms=["linear", "ridge"]
+        algorithms=["linear", "ridge"],
+        description="This is a long description that should be wrapped over multiple lines since nobody wants to scroll across the screen to read this useless message."
     )
 
 
@@ -111,6 +115,29 @@ class TestExperimentGroup:
                 algorithms=["linear", "ridge"]
             )
 
+    def test_short_description(self, valid_group):
+        """Test short description is not modified"""
+        assert valid_group.description == "This is a test description"
+
+    def test_long_description(self, valid_group_two_datasets):
+        """Test long description is wrapped"""
+        expected_string = textwrap.dedent("""
+        This is a long description that should be wrapped over
+        multiple lines since nobody wants to scroll across the
+        screen to read this useless message.
+        """).strip()
+        assert valid_group_two_datasets.description == expected_string
+
+    def test_invalid_description(self, mock_regression_project):
+        """Test invalid description raises ValueError"""
+        with pytest.raises(ValueError, match="Description must be a string"):
+            ExperimentGroup(
+                name="test",
+                datasets=["test.csv"],
+                description=1
+            )
+
+
 def test_project_root_not_found(tmp_path, monkeypatch):
     """Test FileNotFoundError when .briskconfig is not found"""
     monkeypatch.chdir(tmp_path)
@@ -118,6 +145,7 @@ def test_project_root_not_found(tmp_path, monkeypatch):
     
     with pytest.raises(FileNotFoundError, match="Could not find .briskconfig"):
         find_project_root()
+
 
 def test_nested_project_root(tmp_path, monkeypatch):
     """Test finding .briskconfig in parent directory"""
@@ -143,5 +171,5 @@ def test_nested_project_root(tmp_path, monkeypatch):
         datasets=["test.csv"],
         algorithms=["linear"]
     )
-    
+
     assert group.dataset_paths[0] == project_root / 'datasets' / 'test.csv'
