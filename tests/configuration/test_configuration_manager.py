@@ -302,6 +302,7 @@ data_manager = DataManager()
 ```
 
 ## Experiment Group: group1
+#### Description: 
 
 ### DataManager Configuration
 ```python
@@ -322,6 +323,7 @@ Continuous: ['x', 'y']
 ```
 
 ## Experiment Group: group2
+#### Description: 
 
 ### Algorithm Configurations
 ```python

@@ -224,6 +224,7 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             md_content.extend([
                 f"## Experiment Group: {group.name}",
+                f"#### Description: {group.description}",
                 ""
             ])
 
