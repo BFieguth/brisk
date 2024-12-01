@@ -27,11 +27,13 @@ class TestReportManager:
                 "dataset1": ("data/test.csv", "group1")
             }
         }
+        description_map = {}
 
         return ReportManager(
             result_dir=str(result_dir),
             experiment_paths=experiment_paths,
-            output_structure=output_structure
+            output_structure=output_structure,
+            description_map=description_map
         )
 
     def test_create_dataset_page(self, report_manager, tmpdir):

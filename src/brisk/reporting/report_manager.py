@@ -48,7 +48,8 @@ class ReportManager():
         self,
         result_dir: str,
         experiment_paths: dict,
-        output_structure: dict
+        output_structure: dict,
+        description_map: dict
     ):
         """Initializes the ReportManager with directories for results and 
         experiment paths.
@@ -59,6 +60,12 @@ class ReportManager():
             
             experiment_paths (dict): Dictionary mapping datasets to their 
             experiment directories.
+
+            output_structure (dict): Dictionary describing the structure of 
+            the output directories.
+
+            description_map (dict): Dictionary mapping group names to 
+            descriptions.
         """
         package_dir = os.path.dirname(os.path.abspath(__file__))
         self.result_dir = result_dir
@@ -122,6 +129,7 @@ class ReportManager():
         self.current_dataset = None
         self.summary_metrics = {}
         self.output_structure = output_structure
+        self.description_map = description_map
 
     def create_report(self) -> None:
         """Generates the HTML report.
@@ -184,7 +192,8 @@ class ReportManager():
             groups=groups,
             timestamp=timestamp,
             summary_table=summary_table_html,
-            version=__version__
+            version=__version__,
+            description_map=self.description_map
         )
 
         index_path = os.path.join(self.report_dir, "index.html")

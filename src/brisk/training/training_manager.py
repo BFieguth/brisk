@@ -65,7 +65,7 @@ class TrainingManager:
         self.metric_config = metric_config
         self.verbose = verbose
         self.data_managers = config_manager.data_managers
-        self.experiments = config_manager.experiments
+        self.experiments = config_manager.experiment_queue
         self.logfile = config_manager.logfile
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
@@ -315,7 +315,8 @@ class TrainingManager:
 
         if create_report:
             report_manager = report.ReportManager(
-                results_dir, self.experiment_paths, self.output_structure
+                results_dir, self.experiment_paths, self.output_structure,
+                self.description_map
                 )
             report_manager.create_report()
 
