@@ -193,7 +193,7 @@ class TrainingManager:
             current_experiment = self.experiments.popleft()
             group_name = current_experiment.group_name
             dataset_name = current_experiment.dataset.stem
-            experiment_name = current_experiment.full_name
+            experiment_name = current_experiment.name
 
             warnings.showwarning = (
                 lambda message, category, filename, lineno: log_warning(
