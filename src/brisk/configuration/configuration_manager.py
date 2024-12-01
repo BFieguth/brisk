@@ -45,6 +45,7 @@ class ConfigurationManager:
         self._create_data_splits()
         self._create_logfile()
         self.output_structure = self._get_output_structure()
+        self.description_map = self._create_description_map()
 
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
@@ -286,3 +287,17 @@ class ConfigurationManager:
             output_structure[group.name] = dataset_info
 
         return output_structure
+
+    def _create_description_map(self) -> Dict[str, str]:
+        """Create a mapping of group names to descriptions.
+
+        Only includes groups with non-empty descriptions.
+
+        Returns:
+            Dict[str, str]: Mapping of group names to descriptions
+        """
+        return {
+            group.name: group.description
+            for group in self.experiment_groups
+            if group.description != ""
+        }

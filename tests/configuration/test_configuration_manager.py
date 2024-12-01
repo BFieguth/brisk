@@ -4,6 +4,7 @@ import numpy as np
 import collections
 import importlib
 import pathlib
+import textwrap
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
@@ -375,3 +376,33 @@ Continuous: ['x', 'y']
         }
         
         assert output_structure == expected_output_structure
+
+    def test_create_description_map(self, mock_regression_project):
+        """Test the _create_description_map method of ConfigurationManager."""
+        group1 = ExperimentGroup(
+            name="group1",
+            datasets=["data.csv"],
+            algorithms=["linear"],
+            description="This is a test description"
+        )
+        group2 = ExperimentGroup(
+            name="group2",
+            datasets=["data.csv"],
+            algorithms=["ridge"],
+            description="This is another test description that needs to be wrapped and stored properly."
+        )
+        group3 = ExperimentGroup(
+            name="group3",
+            datasets=["data.csv"],
+            algorithms=["elasticnet"]
+        )
+        manager = ConfigurationManager([group1, group2, group3])
+        expected_group2_description = textwrap.dedent("""
+        This is another test description that needs to be wrapped
+        and stored properly.
+        """).strip()
+
+        assert manager.description_map == {
+            "group1": "This is a test description",
+            "group2": expected_group2_description
+        }
