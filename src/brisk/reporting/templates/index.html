@@ -29,6 +29,9 @@
                 <div class="section-header">
                     <h2>{{ group.name }}</h2>
                     <h3>{{ dataset.name }}</h3>
+                    {% if group.name in description_map %}
+                        <p style="color: grey;">Description: {{ description_map[group.name] }}</p>
+                    {% endif %}
                 </div>
                 <div class="experiment-list">
                     <h4>Experiments:</h4>

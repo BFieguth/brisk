@@ -45,6 +45,7 @@ class ConfigurationManager:
         self._create_data_splits()
         self._create_logfile()
         self.output_structure = self._get_output_structure()
+        self.description_map = self._create_description_map()
 
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
@@ -85,7 +86,9 @@ class ConfigurationManager:
 
         return data_module.BASE_DATA_MANAGER
 
-    def _load_algorithm_config(self) -> List[algorithm_wrapper.AlgorithmWrapper]:
+    def _load_algorithm_config(
+        self
+    ) -> List[algorithm_wrapper.AlgorithmWrapper]:
         """Load algorithm configuration from project's algorithms.py.
         
         Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.
@@ -194,9 +197,9 @@ class ConfigurationManager:
         Create DataSplitInfo instances for all datasets in experiment groups.
         """
         for group in self.experiment_groups:
-            data_manager = self.data_managers[group.name]
+            group_data_manager = self.data_managers[group.name]
             for dataset_path in group.dataset_paths:
-                data_manager.split(
+                group_data_manager.split(
                     data_path=str(dataset_path),
                     group_name=group.name,
                     filename=dataset_path.stem
@@ -221,6 +224,7 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             md_content.extend([
                 f"## Experiment Group: {group.name}",
+                f"#### Description: {group.description}",
                 ""
             ])
 
@@ -235,17 +239,17 @@ class ConfigurationManager:
                 ])
 
             # Add DataManager configuration
-            data_manager = self.data_managers[group.name]
+            group_data_manager = self.data_managers[group.name]
             md_content.extend([
                 "### DataManager Configuration",
-                data_manager.to_markdown(),
+                group_data_manager.to_markdown(),
                 ""
             ])
 
             # Add dataset information
             md_content.append("### Datasets")
             for dataset_path in group.dataset_paths:
-                split_info = data_manager.split(
+                split_info = group_data_manager.split(
                     data_path=str(dataset_path),
                     group_name=group.name,
                     filename=dataset_path.stem
@@ -286,3 +290,17 @@ class ConfigurationManager:
             output_structure[group.name] = dataset_info
 
         return output_structure
+
+    def _create_description_map(self) -> Dict[str, str]:
+        """Create a mapping of group names to descriptions.
+
+        Only includes groups with non-empty descriptions.
+
+        Returns:
+            Dict[str, str]: Mapping of group names to descriptions
+        """
+        return {
+            group.name: group.description
+            for group in self.experiment_groups
+            if group.description != ""
+        }

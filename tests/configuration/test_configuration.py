@@ -27,6 +27,7 @@ class TestConfiguration:
         assert group.algorithms == ["linear", "ridge"]
         assert group.data_config is None
         assert group.algorithm_config is None
+        assert group.description == ""
 
     def test_add_experiment_group_custom_algorithms(self, mock_regression_project, configuration):
         """Test adding experiment group with custom algorithms"""
@@ -35,7 +36,8 @@ class TestConfiguration:
             name="custom_group",
             datasets=["data.csv"],
             algorithms=["elasticnet"],
-            algorithm_config=algorithm_config
+            algorithm_config=algorithm_config,
+            description="This is a test description"
         )
         
         group = configuration.experiment_groups[0]
@@ -43,7 +45,7 @@ class TestConfiguration:
         assert group.datasets == ["data.csv"]
         assert group.algorithms == ["elasticnet"]
         assert group.algorithm_config == algorithm_config
-
+        assert group.description == "This is a test description"
     def test_duplicate_name(self, mock_regression_project, configuration):
         """Test adding experiment group with duplicate name"""
         # Add first group

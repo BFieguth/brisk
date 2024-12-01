@@ -20,6 +20,7 @@ Usage Example:
 import dataclasses
 import inspect
 import pathlib
+import textwrap
 from typing import Dict, Any, List, Optional
 
 from brisk.data import data_manager
@@ -34,17 +35,24 @@ class ExperimentGroup:
     
     Attributes:
         name: Unique identifier for the experiment group
+        
         datasets: List of dataset filenames relative to project's datasets 
         directory
+        
         data_config: Optional configuration for DataManager
+        
         algorithms: Optional list of algorithms to use
+        
         algorithm_config: Optional configuration for algorithms
+
+        description: Optional description for the experiment group
     """
     name: str
     datasets: List[str]
     data_config: Optional[Dict[str, Any]] = None
     algorithms: Optional[List[str]] = None
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None
+    description: Optional[str] = ""
 
     @property
     def dataset_paths(self) -> List[pathlib.Path]:
@@ -77,6 +85,7 @@ class ExperimentGroup:
         self._validate_datasets()
         self._validate_algorithm_config()
         self._validate_data_config()
+        self._validate_description()
 
     def _validate_name(self):
         """Validate experiment group name.
@@ -161,3 +170,16 @@ class ExperimentGroup:
                     f"Invalid DataManager parameters: {invalid_params}\n"
                     f"Valid parameters are: {valid_data_params}"
                 )
+
+    def _validate_description(self):
+        """Validate experiment group description is a string and wrap at 60 
+        characters.
+        """
+        if not isinstance(self.description, str):
+            raise ValueError("Description must be a string")
+
+        wrapped_description = textwrap.fill(
+            self.description,
+            width=60
+        )
+        self.description = wrapped_description

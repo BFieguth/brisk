@@ -16,11 +16,10 @@ import warnings
 import joblib
 from tqdm import tqdm
 
-from brisk.data import data_manager
 from brisk.evaluation import evaluation_manager
 from brisk.reporting import report_manager as report
 from brisk.utility import logging_util
-from brisk.configuration import experiment
+from brisk.configuration import configuration
 from brisk.utility import utility
 from brisk.version import __version__
 
@@ -52,10 +51,7 @@ class TrainingManager:
     def __init__(
         self,
         metric_config: Dict[str, Dict],
-        data_managers: Dict[str, data_manager.DataManager],
-        experiments: collections.deque[experiment.Experiment],
-        logfile: str,
-        output_structure: Dict[str, Dict[str, Tuple[str, str]]],
+        config_manager: configuration.ConfigurationManager,
         verbose=False
     ):
         """Initializes the TrainingManager.
@@ -63,21 +59,16 @@ class TrainingManager:
         Args:
             metric_config (Dict[str, Dict]): Configuration of scoring metrics.
 
-            data_managers (Dict[str, DataManager]): Dictionary of DataManager 
-            instances.
-            
-            experiments (collections.deque[Experiment]): A deque of Experiment 
-            instances.
-            
-            logfile (str): A markdown formatted string describing the 
-            configuration.
+            config_manager (ConfigurationManager): Instance of 
+            ConfigurationManager with data needed to run experiments
         """
         self.metric_config = metric_config
         self.verbose = verbose
-        self.data_managers = data_managers
-        self.experiments = experiments
-        self.logfile = logfile
-        self.output_structure = output_structure
+        self.data_managers = config_manager.data_managers
+        self.experiments = config_manager.experiment_queue
+        self.logfile = config_manager.logfile
+        self.output_structure = config_manager.output_structure
+        self.description_map = config_manager.description_map
         self.experiment_paths = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: {}
@@ -215,7 +206,7 @@ class TrainingManager:
                 )
             )
 
-            tqdm.write(f"\n{'=' * 80}")
+            tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
             tqdm.write(
                 f"\nStarting experiment '{experiment_name}' on dataset "
                 f"'{dataset_name}'."
@@ -283,7 +274,7 @@ class TrainingManager:
                     f"\nExperiment '{experiment_name}' on dataset "
                     f"'{dataset_name}' PASSED in {format_time(elapsed_time)}."
                 )
-                tqdm.write(f"\n{'-' * 80}")
+                tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
                 pbar.update(1)
 
             # TODO (Issue #68): refactor to avoid bare except here.
@@ -308,7 +299,7 @@ class TrainingManager:
                     f"\nExperiment '{experiment_name}' on dataset "
                     f"'{dataset_name}' FAILED in {format_time(elapsed_time)}."
                 )
-                tqdm.write(f"\n{'-' * 80}")
+                tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
                 pbar.update(1)
 
         pbar.close()
@@ -324,7 +315,8 @@ class TrainingManager:
 
         if create_report:
             report_manager = report.ReportManager(
-                results_dir, self.experiment_paths, self.output_structure
+                results_dir, self.experiment_paths, self.output_structure,
+                self.description_map
                 )
             report_manager.create_report()
 
@@ -341,13 +333,13 @@ class TrainingManager:
 
             for dataset_name, experiments in datasets.items():
                 print(f"\nDataset: {dataset_name}")
-                print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}")
+                print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}") # pylint: disable=W1405
                 print("-"*70)
 
                 for result in experiments:
                     print(
-                        f"{result['experiment']:<50} {result['status']:<10} "
-                        f"{result['time_taken']:<10}"
+                        f"{result['experiment']:<50} {result['status']:<10} " # pylint: disable=W1405
+                        f"{result['time_taken']:<10}" # pylint: disable=W1405
                     )
             print("="*70)
         print("\nModels trained using Brisk version", __version__)
