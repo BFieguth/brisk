@@ -55,16 +55,23 @@ class Configuration:
         data_config: Optional[Dict[str, Any]] = None,
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
+        description: Optional[str] = ""
     ) -> None:
         """Add a new experiment group configuration.
         
         Args:
             name: Unique identifier for the group
+            
             datasets: List of dataset paths relative to project root
+            
             data_config: Optional configuration for DataManager
+            
             algorithms: Optional list of algorithms (uses defaults if None)
+            
             algorithm_config: Optional algorithm-specific configurations
-        
+            
+            description: Optional description for the experiment group
+            
         Raises:
             ValueError: If group name already exists
         """
@@ -78,7 +85,8 @@ class Configuration:
                 datasets,
                 data_config,
                 algorithms,
-                algorithm_config
+                algorithm_config,
+                description
             )
         )
 
