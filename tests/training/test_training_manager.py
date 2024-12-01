@@ -94,13 +94,21 @@ def output_structure():
 
 
 @pytest.fixture
-def training_manager(metric_config, data_managers, experiments, output_structure):
+def config_manager(data_managers, experiments, output_structure):
+    mock_config_manager = MagicMock()    
+    mock_config_manager.data_managers = data_managers
+    mock_config_manager.experiments = experiments
+    mock_config_manager.logfile = "# Test Config"
+    mock_config_manager.output_structure = output_structure
+    mock_config_manager.description_map = {}
+    return mock_config_manager
+
+
+@pytest.fixture
+def training_manager(metric_config, config_manager):
     return TrainingManager(
         metric_config=metric_config,
-        data_managers=data_managers,
-        experiments=experiments,
-        logfile="# Test Config",
-        output_structure=output_structure,
+        config_manager=config_manager,
         verbose=False
     )
 

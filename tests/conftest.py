@@ -93,10 +93,7 @@ config = create_configuration()
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     metric_config=METRIC_CONFIG,
-    data_managers=config.data_managers,
-    experiments=config.experiment_queue,
-    logfile=config.logfile,
-    output_structure=config.output_structure
+    config_manager=config
 )             
 """
     training_path.write_text(training_py)
