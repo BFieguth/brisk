@@ -83,7 +83,10 @@ class ExperimentFactory:
                     models["model"] = wrapper
                 else:
                     for i, algo_name in enumerate(algo_group):
-                        model_key = f"model{i+1}"
+                        if i == 0:
+                            model_key = "model"
+                        else:
+                            model_key = f"model{i+1}"
                         wrapper = self._get_algorithm_wrapper(
                             algo_name,
                             group_algo_config.get(algo_name)

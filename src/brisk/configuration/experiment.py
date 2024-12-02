@@ -116,7 +116,10 @@ class Experiment:
             if list(self.algorithms.keys()) != ["model"]:
                 raise ValueError('Single model must use key "model"')
         else:
-            expected_keys = [f"model{i+1}" for i in range(len(self.algorithms))]
+            expected_keys = [
+                "model" if i == 0 else f"model{i+1}" 
+                for i in range(len(self.algorithms))
+            ]
             if list(self.algorithms.keys()) != expected_keys:
                 raise ValueError(
                     f"Multiple models must use keys {expected_keys}"
@@ -128,6 +131,6 @@ class Experiment:
         Returns:
             Dictionary of model instances with standardized keys.
             For single model: {"model": instance}
-            For multiple models: {"model1": inst1, "model2": inst2, ...}
+            For multiple models: {"model": inst1, "model2": inst2, ...}
         """
         return self.algorithms
