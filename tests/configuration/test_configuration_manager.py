@@ -232,9 +232,9 @@ data_manager = DataManager()
         ]
         assert len(multi_exps) == 2
         for exp in multi_exps:
-            assert isinstance(exp.algorithms["model1"], AlgorithmWrapper)
+            assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
             assert isinstance(exp.algorithms["model2"], AlgorithmWrapper)
-            assert exp.algorithms["model1"].algorithm_class == Ridge
+            assert exp.algorithms["model"].algorithm_class == Ridge
             assert exp.algorithms["model2"].algorithm_class == ElasticNet
             
     def test_create_logfile(self, mock_regression_project):
