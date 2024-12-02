@@ -7,6 +7,7 @@ simpler to manage and use various metrics in the Brisk framework.
 """
 import copy
 import functools
+import inspect
 
 from sklearn import metrics
 from typing import Callable, Any, Optional
@@ -57,10 +58,11 @@ class MetricWrapper:
             **default_params: Default parameters for the metric function.
         """
         self.name = name
-        self.func = func
+        self.func = self._ensure_split_metadata_param(func)
         self.display_name = display_name
         self.abbr = abbr if abbr else name
         self.params = default_params
+        self.params["split_metadata"] = {}
         self._apply_params()
 
     def _apply_params(self):
@@ -80,3 +82,18 @@ class MetricWrapper:
     def get_func_with_params(self):
         """Returns the metric function with applied parameters."""
         return copy.deepcopy(self._func_with_params)
+
+    def _ensure_split_metadata_param(self, func: Callable) -> Callable:
+        """Wraps the provided function to ensure it accepts split_metadata as 
+        a kwarg."""
+        sig = inspect.signature(func)
+
+        if "split_metadata" not in sig.parameters:
+            def wrapped_func(y_true, y_pred, split_metadata=None, **kwargs): # pylint: disable=unused-argument
+                return func(y_true, y_pred, **kwargs)
+
+            wrapped_func.__name__ = func.__name__
+            wrapped_func.__qualname__ = func.__qualname__
+            wrapped_func.__doc__ = func.__doc__
+            return wrapped_func
+        return func

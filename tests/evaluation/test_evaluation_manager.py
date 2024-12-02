@@ -44,8 +44,9 @@ def eval_manager(tmpdir):
     metric_config.get_metric.return_value = mean_absolute_error
     metric_config.get_scorer.return_value = make_scorer(mean_absolute_error)
     return EvaluationManager(
-        algorithm_config, metric_config, output_dir=str(tmpdir), logger=MagicMock()
-        )
+        algorithm_config, metric_config, output_dir=str(tmpdir), 
+        split_metadata={}, logger=MagicMock()
+    )
 
 
 @pytest.fixture

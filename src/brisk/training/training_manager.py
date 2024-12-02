@@ -244,6 +244,7 @@ class TrainingManager:
                     list(current_experiment.algorithms.values()),
                     self.metric_config,
                     experiment_dir,
+                    data_split.get_split_metadata(),
                     self.logger
                 )
 

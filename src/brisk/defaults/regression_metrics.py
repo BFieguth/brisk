@@ -6,6 +6,7 @@ are sourced from the scikit-learn library and provide various ways to
 evaluate the performance of regression models. Additionally, it includes 
 a custom implementation of Lin's Concordance Correlation Coefficient (CCC).
 """
+from typing import Dict, Any
 
 import numpy as np
 import scipy
@@ -36,6 +37,17 @@ def concordance_correlation_coefficient(
     numerator = 2 * corr * sd_true * sd_pred
     denominator = var_true + var_pred + (mean_true - mean_pred)**2
     return numerator / denominator
+
+
+def adjusted_r2_score(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    split_metadata: Dict[str, Any]
+) -> float:
+    r2 = _regression.r2_score(y_true, y_pred)
+    adjusted_r2 = (1 - (1 - r2) * (len(y_true) - 1) /
+                   (len(y_true) - split_metadata["num_features"] - 1))
+    return adjusted_r2
 
 
 REGRESSION_METRICS = [
@@ -112,4 +124,10 @@ REGRESSION_METRICS = [
         abbr="NegMAE",
         greater_is_better=False
     ),
+    metric_wrapper.MetricWrapper(
+        name="adjusted_r2_score",
+        func=adjusted_r2_score,
+        display_name="Adjusted R2 Score",
+        abbr="AdjR2"
+    )
 ]

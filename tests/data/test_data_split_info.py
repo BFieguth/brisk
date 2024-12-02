@@ -361,3 +361,10 @@ class TestDataSplitInfo:
             data_info.X_train['categorical_feature'], 'categorical_feature'
             )
         assert stats['chi_square'] is None
+
+    def test_get_split_metadata(self, sample_data):
+        """Test get_split_metadata."""
+        data_info = DataSplitInfo(**sample_data)
+        metadata = data_info.get_split_metadata()
+        assert metadata['num_features'] == 3
+        assert metadata['num_samples'] == 150

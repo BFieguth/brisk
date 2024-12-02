@@ -17,7 +17,7 @@ Usage Example:
 import json
 import logging
 import os
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -441,3 +441,14 @@ class DataSplitInfo:
                 self._plot_categorical_pie(
                     feature, os.path.join(dataset_dir, "pie_plot")
                     )
+
+    def get_split_metadata(self) -> Dict[str, Any]:
+        """Returns the split metadata used in certain metric calculations.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the split metadata.
+        """
+        return {
+            "num_features": len(self.X_train.columns),
+            "num_samples": len(self.X_train) + len(self.X_test)
+        }
