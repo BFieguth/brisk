@@ -55,7 +55,7 @@ def multiple_models(linear_wrapper, rf_wrapper):
         group_name="test_group",
         dataset=Path("data/test.csv"),
         algorithms={
-            "model1": linear_wrapper,
+            "model": linear_wrapper,
             "model2": rf_wrapper
         }
     )
@@ -82,9 +82,9 @@ class TestExperiment:
     def test_valid_multiple_models(self, multiple_models):
         """Test creation with multiple models."""
         assert len(multiple_models.algorithms) == 2
-        assert isinstance(multiple_models.algorithms["model1"], AlgorithmWrapper)
+        assert isinstance(multiple_models.algorithms["model"], AlgorithmWrapper)
         assert isinstance(multiple_models.algorithms["model2"], AlgorithmWrapper)
-        assert multiple_models.algorithms["model1"].algorithm_class == LinearRegression
+        assert multiple_models.algorithms["model"].algorithm_class == LinearRegression
         assert multiple_models.algorithms["model2"].algorithm_class == RandomForestRegressor
 
     def test_invalid_model_keys(self, linear_wrapper, ridge_wrapper):
@@ -143,8 +143,8 @@ class TestExperiment:
     def test_get_model_kwargs(self, multiple_models):
         """Test get_model_kwargs returns correct format."""
         kwargs = multiple_models.get_model_kwargs()
-        assert list(kwargs.keys()) == ["model1", "model2"]
-        assert isinstance(kwargs["model1"], AlgorithmWrapper)
+        assert list(kwargs.keys()) == ["model", "model2"]
+        assert isinstance(kwargs["model"], AlgorithmWrapper)
         assert isinstance(kwargs["model2"], AlgorithmWrapper)
 
     def test_invalid_group_name(self, linear_wrapper):

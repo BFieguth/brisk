@@ -68,7 +68,7 @@ class TestExperimentFactory:
         
         exp = experiments[0]
         assert len(exp.algorithms) == 2
-        assert "model1" in exp.algorithms
+        assert "model" in exp.algorithms
         assert "model2" in exp.algorithms
 
     def test_multiple_datasets(self, factory, mock_regression_project):
@@ -138,10 +138,9 @@ class TestExperimentFactory:
         
         # Check grouped algorithm experiment
         grouped = next(exp for exp in experiments if len(exp.algorithms) == 2)
-        assert "model1" in grouped.algorithms
+        assert "model" in grouped.algorithms
         assert "model2" in grouped.algorithms
-        assert isinstance(grouped.algorithms["model1"], AlgorithmWrapper)
+        assert isinstance(grouped.algorithms["model"], AlgorithmWrapper)
         assert isinstance(grouped.algorithms["model2"], AlgorithmWrapper)
-        assert grouped.algorithms["model1"].algorithm_class == Ridge
+        assert grouped.algorithms["model"].algorithm_class == Ridge
         assert grouped.algorithms["model2"].algorithm_class == ElasticNet
-        

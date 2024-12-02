@@ -196,7 +196,7 @@ class TrainingManager:
             experiment_name = current_experiment.name
 
             warnings.showwarning = (
-                lambda message, category, filename, lineno: log_warning(
+                lambda message, category, filename, lineno, file=None, line=None: log_warning( # pylint: disable=line-too-long
                     message,
                     category,
                     filename,
