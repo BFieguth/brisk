@@ -6,6 +6,46 @@
     <title>Brisk Report</title>
     <link rel="stylesheet" href="./index.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        function sortTable(table, col) {
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const th = table.querySelector('th:nth-child(' + (col + 1) + ')');
+            const isAsc = !th.classList.contains('asc');
+            
+            // Remove sorting classes from all headers
+            table.querySelectorAll('th').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Add sorting class to current header
+            th.classList.add(isAsc ? 'asc' : 'desc');
+            
+            rows.sort((a, b) => {
+                const aCol = a.querySelector('td:nth-child(' + (col + 1) + ')').textContent;
+                const bCol = b.querySelector('td:nth-child(' + (col + 1) + ')').textContent;
+                
+                if (aCol === 'N/A') return 1;
+                if (bCol === 'N/A') return -1;
+                
+                // Extract numbers from strings like "0.111 (0.016)"
+                const aMatch = aCol.match(/^(-?\\d+\\.?\\d*)/);
+                const bMatch = bCol.match(/^(-?\\d+\\.?\\d*)/);
+                
+                if (aMatch && bMatch) {
+                    const aNum = parseFloat(aMatch[0]);
+                    const bNum = parseFloat(bMatch[0]);
+                    return isAsc ? aNum - bNum : bNum - aNum;
+                }
+                
+                return isAsc ? 
+                    aCol.localeCompare(bCol) : 
+                    bCol.localeCompare(aCol);
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
 </head>
 <body>
     <!-- Header bar -->

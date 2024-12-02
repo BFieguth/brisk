@@ -648,32 +648,34 @@ class ReportManager():
         return "\n".join(html)
 
     def generate_summary_tables(self) -> str:
-        """Generates HTML summary tables for each dataset, displaying model 
-        metrics.
+        """Generates sortable HTML summary tables for each dataset, displaying 
+        model metrics.
 
         Returns:
-            str: HTML block containing summary tables for all datasets.
+            str: HTML block containing sortable summary tables for all datasets.
         """
         summary_html = ""
-
         for dataset, models in self.summary_metrics.items():
             summary_html += f"<h2>Summary for {dataset}</h2>"
-
-            # Extract all the metrics to be used as columns
             all_metrics = set()
             for model_metrics in models.values():
                 all_metrics.update(model_metrics.keys())
 
             summary_html += """
-            <table>
+            <table class="sortable">
                 <thead>
                     <tr>
-                        <th>Model</th>
             """
 
-            # Add a column for each metric
-            for metric in all_metrics:
-                summary_html += f"<th>{metric}</th>"
+            # Add headers with onclick handlers
+            summary_html += (
+                '<th onclick="sortTable(this.closest(\'table\'), 0)">Model</th>'
+                )
+            for idx, metric in enumerate(all_metrics, 1):
+                summary_html += (
+                    f'<th onclick="sortTable(this.closest(\'table\'), {idx})">'
+                    f'{metric}</th>'
+                    )
 
             summary_html += "</tr></thead><tbody>"
 
