@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+import inspect
 
 import pytest
 
@@ -147,4 +148,16 @@ class TestMetricManager:
             "neg_mean_absolute_error"
         ]
         assert all(name in metric_names for name in regression_metric_names)
-        
+
+    def test_set_split_metadata(self, metric_manager):
+        """Test that the split_metadata is set correctly for all metric 
+        functions."""
+        split_metadata_input = {
+            "test_value": 10,
+            "test_value_2": 5.3
+        }
+        metric_manager.set_split_metadata(split_metadata_input)
+        for wrapper in metric_manager._metrics_by_name.values():
+            func = wrapper.get_func_with_params()
+            paramaters = inspect.signature(func).parameters
+            assert paramaters["split_metadata"].default == split_metadata_input

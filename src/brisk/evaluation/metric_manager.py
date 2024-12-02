@@ -6,7 +6,7 @@ Exports:
         supports both accessing the metric functions and the corresponding 
         scoring callables.
 """
-from typing import Callable, List
+from typing import Callable, List, Dict, Any
 
 from brisk.utility import metric_wrapper
 
@@ -100,3 +100,7 @@ class MetricManager:
 
     def list_metrics(self) -> List[str]:
         return list(self._metrics_by_name.keys())
+
+    def set_split_metadata(self, split_metadata: Dict[str, Any]):
+        for wrapper in self._metrics_by_name.values():
+            wrapper.set_params(split_metadata=split_metadata)
