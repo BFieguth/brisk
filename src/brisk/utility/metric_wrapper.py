@@ -88,10 +88,10 @@ class MetricWrapper:
         a kwarg."""
         sig = inspect.signature(func)
 
-        if 'split_metadata' not in sig.parameters:
-            def wrapped_func(y_true, y_pred, split_metadata=None, **kwargs):
+        if "split_metadata" not in sig.parameters:
+            def wrapped_func(y_true, y_pred, split_metadata=None, **kwargs): # pylint: disable=unused-argument
                 return func(y_true, y_pred, **kwargs)
-            
+
             wrapped_func.__name__ = func.__name__
             wrapped_func.__qualname__ = func.__qualname__
             wrapped_func.__doc__ = func.__doc__

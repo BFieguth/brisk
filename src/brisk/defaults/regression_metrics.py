@@ -45,7 +45,7 @@ def adjusted_r2_score(
     split_metadata: Dict[str, Any]
 ) -> float:
     r2 = _regression.r2_score(y_true, y_pred)
-    adjusted_r2 = (1 - (1 - r2) * (len(y_true) - 1) / 
+    adjusted_r2 = (1 - (1 - r2) * (len(y_true) - 1) /
                    (len(y_true) - split_metadata["num_features"] - 1))
     return adjusted_r2
 
