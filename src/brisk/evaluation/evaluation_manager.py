@@ -6,6 +6,7 @@ Exports:
         building a training workflow.
 """
 
+import copy
 import datetime
 import inspect
 import itertools
@@ -49,7 +50,8 @@ class EvaluationManager:
         algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
         metric_config: Any,
         output_dir: str,
-        logger: Optional[logging.Logger]=None
+        split_metadata: Dict[str, Any],
+        logger: Optional[logging.Logger]=None,
     ):
         """
         Initialize the EvaluationManager with method and scoring configurations.
@@ -58,10 +60,13 @@ class EvaluationManager:
             algorithm_config (Dict[str, Any]): Configuration for model methods.
             metric_config (Any): Configuration for evaluation metrics.
             output_dir (str): Directory to save results.
+            split_metadata (Dict[str, Any]): Metadata to include in metric 
+            calculations.
             logger (Optional[logging.Logger]): Logger instance to use.
         """
         self.algorithm_config = algorithm_config
-        self.metric_config = metric_config
+        self.metric_config = copy.deepcopy(metric_config)
+        self.metric_config.set_split_metadata(split_metadata)
         self.output_dir = output_dir
         self.logger = logger
 
