@@ -3,6 +3,6 @@
 Exports:
     - __version__: The current version of the brisk-ml package.
 """
-import pkg_resources
+import importlib.metadata
 
-__version__ = pkg_resources.get_distribution("brisk-ml").version
+__version__ = importlib.metadata.version("brisk-ml")
