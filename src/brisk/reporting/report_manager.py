@@ -143,12 +143,10 @@ class ReportManager():
         """
         os.makedirs(self.report_dir, exist_ok=True)
 
-        # Step 1: Create the index page with links to experiments pages
-        # for each dataset
-        index_template = self.env.get_template("index.html")
-
-        # Prepare the group/dataset entries for the index page
+        # Step 1: Create navigation data structure
         groups = []
+        navigation_map = {}
+
         for group_name, datasets in self.experiment_paths.items():
             group_data = {
                 "name": group_name,
@@ -162,15 +160,37 @@ class ReportManager():
                 }
                 group_data["datasets"].append(dataset_data)
 
+                # Create ordered list of experiments for navigation
+                exp_list = []
+                for exp_name, exp_dir in experiments.items():
+                    filename = f"{dataset_name}_{exp_name}"
+                    exp_list.append({
+                        "name": exp_name,
+                        "filename": filename,
+                        "dir": exp_dir
+                    })
+
+                # Set up navigation links for each experiment
+                for i, exp in enumerate(exp_list):
+                    prev_exp = exp_list[i-1] if i > 0 else None
+                    next_exp = exp_list[i+1] if i < len(exp_list)-1 else None
+
+                    navigation_map[exp["filename"]] = {
+                        "prev": prev_exp["filename"] if prev_exp else None,
+                        "next": next_exp["filename"] if next_exp else None,
+                        "group": group_name,
+                        "dataset": dataset_name
+                    }
+
+                    # Create experiment page with navigation info
+                    self.create_experiment_page(
+                        exp["dir"],
+                        f"{group_name}/{dataset_name}",
+                        navigation_map[exp["filename"]]
+                    )
+
                 # Create dataset page
                 self.create_dataset_page(group_name, dataset_name)
-
-                # Create experiment pages
-                for exp_dir in experiments.values():
-                    self.create_experiment_page(
-                        exp_dir,
-                        f"{group_name}/{dataset_name}"
-                    )
 
             groups.append(group_data)
 
@@ -188,6 +208,7 @@ class ReportManager():
 
         # Render the index page
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        index_template = self.env.get_template("index.html")
         index_output = index_template.render(
             groups=groups,
             timestamp=timestamp,
@@ -200,12 +221,19 @@ class ReportManager():
         with open(index_path, "w", encoding="utf-8") as f:
             f.write(index_output)
 
-    def create_experiment_page(self, experiment_dir: str, dataset: str) -> None:
+    def create_experiment_page(
+        self,
+        experiment_dir: str,
+        dataset: str,
+        navigation: dict
+    ) -> None:
         """Creates an HTML page for each experiment.
 
         Args:
             experiment_dir (str): Path to the experiment directory.
             dataset (str): The name of the dataset being evaluated.
+            navigation (dict): Navigation information containing links to next
+            and previous experiment pages.
 
         Returns:
             None
@@ -249,7 +277,8 @@ class ReportManager():
             experiment_name=experiment_name,
             file_metadata=file_metadata,
             content=content_str,
-            version=__version__
+            version=__version__,
+            navigation=navigation
         )
         experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, "w", encoding="utf-8") as f:

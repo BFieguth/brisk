@@ -9,9 +9,25 @@
 </head>
 <body>
     <header>
-        Experiment: {{ experiment_name }}
-        <div style="font-size: 14px; color: grey;">
-            Version: {{ version }}
+        <div class="header-content">
+            <div class="title">
+                Experiment: {{ experiment_name }}
+                <div style="font-size: 14px; color: grey;">
+                    Version: {{ version }}
+                </div>
+            </div>
+            <div class="navigation">
+                <div class="nav-group">
+                    <a href="{{ navigation.prev }}.html" class="nav-button {% if not navigation.prev %}disabled{% endif %}">← Previous</a>
+                    <a href="index.html" class="nav-button">Index</a>
+                    <a href="{{ navigation.next }}.html" class="nav-button {% if not navigation.next %}disabled{% endif %}">Next →</a>
+                </div>
+                <div class="breadcrumb-container">
+                    <div class="breadcrumb">
+                        {{ navigation.group }} / {{ navigation.dataset }}
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
