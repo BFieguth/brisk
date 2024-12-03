@@ -8,10 +8,12 @@ Exports:
 import ast
 import collections
 import datetime
+import inspect
 import json
 import os
 from PIL import Image
 import shutil
+from typing import Type
 
 import jinja2
 import joblib
@@ -643,12 +645,11 @@ class ReportManager():
         model_name = data.__class__.__name__
         params = data.get_params()
 
-        default_model = data.__class__()
-        default_params = default_model.get_params()
+        default_params = self.get_default_params(data.__class__)
 
         non_default_params = {
             param: value for param, value in params.items()
-            if value != default_params[param]
+            if value != default_params.get(param)
         }
 
         html = [
@@ -934,3 +935,21 @@ class ReportManager():
             content += feature_html
 
         return content
+
+    def get_default_params(self, model_class: Type) -> dict:
+        """Extracts default parameters from the model class.
+
+        Args:
+            model_class (Type): The class of the model.
+
+        Returns:
+            dict: A dictionary of default parameters.
+        """
+        init_signature = inspect.signature(model_class.__init__)
+        default_params = {}
+
+        for param in init_signature.parameters.values():
+            if param.default is not inspect.Parameter.empty:
+                default_params[param.name] = param.default
+
+        return default_params
