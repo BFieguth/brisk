@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "brisk-ml"
-version = "0.1.0"
+version = "0.1.1"
 description = "A framework that helps train machine learning models using sklearn."
 authors = ["BFieguth <bfieguth@uoguelph.ca>"]
 readme = "README.md"
