@@ -143,12 +143,10 @@ class ReportManager():
         """
         os.makedirs(self.report_dir, exist_ok=True)
 
-        # Step 1: Create the index page with links to experiments pages
-        # for each dataset
-        index_template = self.env.get_template("index.html")
-
-        # Prepare the group/dataset entries for the index page
+        # Step 1: Create navigation data structure
         groups = []
+        navigation_map = {}
+
         for group_name, datasets in self.experiment_paths.items():
             group_data = {
                 "name": group_name,
@@ -162,15 +160,37 @@ class ReportManager():
                 }
                 group_data["datasets"].append(dataset_data)
 
+                # Create ordered list of experiments for navigation
+                exp_list = []
+                for exp_name, exp_dir in experiments.items():
+                    filename = f"{dataset_name}_{exp_name}"
+                    exp_list.append({
+                        "name": exp_name,
+                        "filename": filename,
+                        "dir": exp_dir
+                    })
+
+                # Set up navigation links for each experiment
+                for i, exp in enumerate(exp_list):
+                    prev_exp = exp_list[i-1] if i > 0 else None
+                    next_exp = exp_list[i+1] if i < len(exp_list)-1 else None
+
+                    navigation_map[exp["filename"]] = {
+                        "prev": prev_exp["filename"] if prev_exp else None,
+                        "next": next_exp["filename"] if next_exp else None,
+                        "group": group_name,
+                        "dataset": dataset_name
+                    }
+
+                    # Create experiment page with navigation info
+                    self.create_experiment_page(
+                        exp["dir"],
+                        f"{group_name}/{dataset_name}",
+                        navigation_map[exp["filename"]]
+                    )
+
                 # Create dataset page
                 self.create_dataset_page(group_name, dataset_name)
-
-                # Create experiment pages
-                for exp_dir in experiments.values():
-                    self.create_experiment_page(
-                        exp_dir,
-                        f"{group_name}/{dataset_name}"
-                    )
 
             groups.append(group_data)
 
@@ -188,6 +208,7 @@ class ReportManager():
 
         # Render the index page
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        index_template = self.env.get_template("index.html")
         index_output = index_template.render(
             groups=groups,
             timestamp=timestamp,
@@ -200,12 +221,19 @@ class ReportManager():
         with open(index_path, "w", encoding="utf-8") as f:
             f.write(index_output)
 
-    def create_experiment_page(self, experiment_dir: str, dataset: str) -> None:
+    def create_experiment_page(
+        self,
+        experiment_dir: str,
+        dataset: str,
+        navigation: dict
+    ) -> None:
         """Creates an HTML page for each experiment.
 
         Args:
             experiment_dir (str): Path to the experiment directory.
             dataset (str): The name of the dataset being evaluated.
+            navigation (dict): Navigation information containing links to next
+            and previous experiment pages.
 
         Returns:
             None
@@ -249,7 +277,8 @@ class ReportManager():
             experiment_name=experiment_name,
             file_metadata=file_metadata,
             content=content_str,
-            version=__version__
+            version=__version__,
+            navigation=navigation
         )
         experiment_page_path = os.path.join(self.report_dir, f"{filename}.html")
         with open(experiment_page_path, "w", encoding="utf-8") as f:
@@ -648,32 +677,34 @@ class ReportManager():
         return "\n".join(html)
 
     def generate_summary_tables(self) -> str:
-        """Generates HTML summary tables for each dataset, displaying model 
-        metrics.
+        """Generates sortable HTML summary tables for each dataset, displaying 
+        model metrics.
 
         Returns:
-            str: HTML block containing summary tables for all datasets.
+            str: HTML block containing sortable summary tables for all datasets.
         """
         summary_html = ""
-
         for dataset, models in self.summary_metrics.items():
             summary_html += f"<h2>Summary for {dataset}</h2>"
-
-            # Extract all the metrics to be used as columns
             all_metrics = set()
             for model_metrics in models.values():
                 all_metrics.update(model_metrics.keys())
 
             summary_html += """
-            <table>
+            <table class="sortable">
                 <thead>
                     <tr>
-                        <th>Model</th>
             """
 
-            # Add a column for each metric
-            for metric in all_metrics:
-                summary_html += f"<th>{metric}</th>"
+            # Add headers with onclick handlers
+            summary_html += (
+                '<th onclick="sortTable(this.closest(\'table\'), 0)">Model</th>'
+                )
+            for idx, metric in enumerate(all_metrics, 1):
+                summary_html += (
+                    f'<th onclick="sortTable(this.closest(\'table\'), {idx})">'
+                    f'{metric}</th>'
+                    )
 
             summary_html += "</tr></thead><tbody>"
 

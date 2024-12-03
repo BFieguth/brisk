@@ -198,3 +198,21 @@ table {
 .dataset-link a:hover {
     text-decoration: underline;
 }
+
+.sortable th {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px !important;
+}
+.sortable th::after {
+    content: '↕';
+    position: absolute;
+    right: 8px;
+    color: #666;
+}
+.sortable th.asc::after {
+    content: '↑';
+}
+.sortable th.desc::after {
+    content: '↓';
+}
