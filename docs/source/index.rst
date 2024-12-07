@@ -8,7 +8,6 @@ Brisk |release| documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
    :hidden:
 
    getting_started/index

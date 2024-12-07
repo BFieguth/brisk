@@ -10,7 +10,7 @@ Getting Started with Brisk
             :maxdepth: 2
             :includehidden:
 
-            quickstart
+            quickstart/index
 
     .. grid-item-card::
         :padding: 2
