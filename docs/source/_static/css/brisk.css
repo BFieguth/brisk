@@ -1,4 +1,5 @@
 @import "../basic.css";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 :root {
     /* Font Size */
@@ -9,4 +10,33 @@
     --pst-font-size-h4: 22px;
     --pst-font-size-h5: 18px;
     --pst-font-size-h6: 16px;
+
+    /* Font Family */
+    --pst-font-family-base: 'Montserrat', sans-serif;
+}
+
+/* Prevent link colouring when visited */
+a:visited {
+    color: inherit !important;
+}
+
+html[data-theme="light"] {
+    --pst-color-primary: #FA824C;
+    --pst-color-secondary: #0074D9;
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: #FA824C;
+    --pst-color-secondary: #0074D9;
+}
+
+/* ----------------- */
+/* Navbar */
+/* ----------------- */
+.bd-header {
+    background-color: #005fb3 !important;
+}
+
+.bd-header a {
+    color: #EFF6EE !important;
 }
