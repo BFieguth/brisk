@@ -13,40 +13,74 @@ Brisk |release| documentation
    getting_started/index
    users/index
    api/index
-   dev/contribute
    dev/releases
+   dev/contribute
    users/glossary
 
 Brisk is a framework for training machine learning models using scikit-learn. It
 is designed to streamline the process of training models, with built-in methods
 for analysis and a structured approach to code organization.
 
-Getting Started
-----------------
-Learn the basics of Brisk, including installation, basic concepts, and your first
-machine learning project. Perfect for newcomers to get up and running quickly.
 
-User Guide
---------------
-Comprehensive guide covering all major features of Brisk. Learn about model training,
-evaluation, analysis tools, and best practices for organizing your machine learning projects.
+`Getting Started <getting_started/index.html>`_
+------------------------------------------------
 
-API Reference
---------------
+.. grid:: 1 1 2 2
+
+   .. grid-item::
+      :padding: 2
+
+      Learn the basics of Brisk, including installation, basic concepts, and creating your first
+      machine learning project. Perfect for newcomers to get up and running quickly.
+
+   .. grid-item-card::
+      :padding: 2
+
+      .. toctree::
+         :maxdepth: 1
+
+         getting_started/quickstart/index
+         Project Structure <getting_started/project_structure>
+         Using the CLI <getting_started/brisk_cli>
+
+
+`User Guide <users/index.html>`_
+--------------------------------
+
+.. grid:: 1 1 2 2
+
+   .. grid-item::
+      :padding: 2
+
+      Comprehensive guide covering all major features of Brisk. Learn about model training,
+      evaluation, analysis tools, and best practices for organizing your machine learning projects.
+
+
+   .. grid-item-card::
+      :padding: 2
+
+      .. toctree::
+         :maxdepth: 1
+
+         users/index
+
+
+`API Reference <api/index.html>`_
+---------------------------------
 Detailed documentation of all Brisk classes, methods, and functions. Find complete
 information about the framework's capabilities and how to use them effectively.
 
-Release Notes
---------------
+`Release Notes <dev/releases.html>`_
+------------------------------------
 Stay up to date with the latest changes, improvements, and bug fixes in each version
 of Brisk. Find information about deprecations and migration guides.
 
-Contributing
---------------
+`Contributing <dev/contribute.html>`_
+--------------------------------------
 Want to help improve Brisk? Learn how to contribute to the project, including
 coding standards, pull request guidelines, and development setup.
 
-Glossary
---------------
+`Glossary <users/glossary.html>`_
+---------------------------------
 A comprehensive list of terms and concepts used throughout Brisk, helping you
 understand the terminology used in the framework.
