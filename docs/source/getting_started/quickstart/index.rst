@@ -1,11 +1,12 @@
 Quick Start Guide
 =================
 
-Follow these steps to get up and running with Brisk.
+This quickstart guide will walk you through the process of creating a Brisk
+project. It will cover the basics of how projects are organized and show you how
+to train 
 
 .. toctree::
-    :maxdepth: 2
-    :hidden:
+    :maxdepth: 1
 
     install
     create_project
