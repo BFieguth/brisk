@@ -10,5 +10,4 @@ to train
 
     install
     create_project
-    train_model
-    evaluate_model
+    run_experiments

@@ -1,5 +1,7 @@
-How does Brisk organize a project?
-==================================
+.. _project_structure:  
+
+Project Structure
+=================
 
 Why use multiple files?
 -----------------------

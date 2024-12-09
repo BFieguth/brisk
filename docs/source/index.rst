@@ -3,6 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+=============================
 Brisk |release| documentation
 =============================
 
@@ -23,7 +24,7 @@ for analysis and a structured approach to code organization.
 
 
 Getting Started
----------------
+===============
 
 .. grid:: 1 1 2 2
 
@@ -37,13 +38,16 @@ Getting Started
       :padding: 2
 
       .. toctree::
-         :maxdepth: 2
+         :maxdepth: 1
 
-         getting_started/index
+         getting_started/quickstart/install
+         getting_started/quickstart/index
+         getting_started/project_structure
+         getting_started/brisk_cli
 
 
 User Guide
-----------
+==========
 
 .. grid:: 1 1 2 2
 
@@ -64,21 +68,21 @@ User Guide
 
 
 API Reference
--------------
+=============
 Detailed documentation of all Brisk classes, methods, and functions. Find complete
 information about the framework's capabilities and how to use them effectively.
 
 Release Notes
--------------
+=============
 Stay up to date with the latest changes, improvements, and bug fixes in each version
 of Brisk. Find information about deprecations and migration guides.
 
 Contributing
-------------
+============
 Want to help improve Brisk? Learn how to contribute to the project, including
 coding standards, pull request guidelines, and development setup.
 
 Glossary
---------
+========
 A comprehensive list of terms and concepts used throughout Brisk, helping you
 understand the terminology used in the framework.
