@@ -22,8 +22,8 @@ is designed to streamline the process of training models, with built-in methods
 for analysis and a structured approach to code organization.
 
 
-`Getting Started <getting_started/index.html>`_
-------------------------------------------------
+Getting Started
+---------------
 
 .. grid:: 1 1 2 2
 
@@ -37,15 +37,13 @@ for analysis and a structured approach to code organization.
       :padding: 2
 
       .. toctree::
-         :maxdepth: 1
+         :maxdepth: 2
 
-         getting_started/quickstart/index
-         Project Structure <getting_started/project_structure>
-         Using the CLI <getting_started/brisk_cli>
+         getting_started/index
 
 
-`User Guide <users/index.html>`_
---------------------------------
+User Guide
+----------
 
 .. grid:: 1 1 2 2
 
@@ -65,22 +63,22 @@ for analysis and a structured approach to code organization.
          users/index
 
 
-`API Reference <api/index.html>`_
----------------------------------
+API Reference
+-------------
 Detailed documentation of all Brisk classes, methods, and functions. Find complete
 information about the framework's capabilities and how to use them effectively.
 
-`Release Notes <dev/releases.html>`_
-------------------------------------
+Release Notes
+-------------
 Stay up to date with the latest changes, improvements, and bug fixes in each version
 of Brisk. Find information about deprecations and migration guides.
 
-`Contributing <dev/contribute.html>`_
---------------------------------------
+Contributing
+------------
 Want to help improve Brisk? Learn how to contribute to the project, including
 coding standards, pull request guidelines, and development setup.
 
-`Glossary <users/glossary.html>`_
----------------------------------
+Glossary
+--------
 A comprehensive list of terms and concepts used throughout Brisk, helping you
 understand the terminology used in the framework.

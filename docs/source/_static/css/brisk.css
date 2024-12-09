@@ -20,23 +20,47 @@ a:visited {
     color: inherit !important;
 }
 
+a:hover {
+    color: #B95F89 !important;
+}
+
+/* ----------------- */
+/* Primary Sidebar */
+/* ----------------- */
+.bd-sidebar-primary {
+    --pst-color-primary: #00A878;
+}
+
+/* ----------------- */
+/* Secondary Sidebar */
+/* ----------------- */
+.bd-sidebar-secondary {
+    --pst-color-primary: #00A878;
+}
+
+/* ----------------- */
+/* Light/Dark Theme */
+/* ----------------- */
 html[data-theme="light"] {
-    --pst-color-primary: #FA824C;
-    --pst-color-secondary: #0074D9;
+    --pst-color-primary: #005fb3;
+
+    /* Navbar */
+    .bd-header {
+        background-color: #80c4ff !important;
+    }
+    .bd-header a p {
+        color: #000000 !important;
+    }
 }
 
 html[data-theme="dark"] {
-    --pst-color-primary: #FA824C;
-    --pst-color-secondary: #0074D9;
-}
+    --pst-color-primary: #80c4ff;
 
-/* ----------------- */
-/* Navbar */
-/* ----------------- */
-.bd-header {
-    background-color: #005fb3 !important;
-}
-
-.bd-header a {
-    color: #EFF6EE !important;
+    /* Navbar */
+    .bd-header {
+        background-color: #005fb3 !important;
+    }
+    .bd-header a p {
+        color: #EFEFEF !important;
+    }
 }
