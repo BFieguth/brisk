@@ -397,7 +397,7 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
         'wine': datasets.load_wine,
         'breast_cancer': datasets.load_breast_cancer,
         'diabetes': datasets.load_diabetes,
-        'linnerud': datasets.oad_linnerud
+        'linnerud': datasets.load_linnerud
     }
     if name in datasets_map:
         return datasets_map[name]()
