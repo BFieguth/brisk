@@ -27,7 +27,7 @@ class TestWorkflowClass:
         output_dir = "mock_output_dir"
         algorithm_names = ["mock_model1", "mock_model2"]
         feature_names = ["feature1", "feature2"]
-        model_kwargs = {"model1": MagicMock(), "model2": MagicMock()}
+        algorithm_kwargs = {"model1": MagicMock(), "model2": MagicMock()}
         workflow_config = {"param1": "value1", "param2": "value2"}
 
         return MockWorkflow(
@@ -39,7 +39,7 @@ class TestWorkflowClass:
             output_dir=output_dir, 
             algorithm_names=algorithm_names, 
             feature_names=feature_names, 
-            model_kwargs=model_kwargs,
+            algorithm_kwargs=algorithm_kwargs,
             workflow_config=workflow_config
         )
 
@@ -83,7 +83,7 @@ class TestWorkflowClass:
         output_dir = "output"
         algorithm_names = []
         feature_names = []
-        model_kwargs = {}
+        algorithm_kwargs = {}
 
         with pytest.raises(TypeError):
             Workflow(
@@ -95,7 +95,7 @@ class TestWorkflowClass:
                 output_dir=output_dir, 
                 algorithm_names=algorithm_names, 
                 feature_names=feature_names, 
-                model_kwargs=model_kwargs
+                algorithm_kwargs=algorithm_kwargs
             )
 
     def test_not_implemented_error_direct(self):
@@ -113,11 +113,11 @@ class TestWorkflowClass:
         output_dir = "output"
         algorithm_names = []
         feature_names = []
-        model_kwargs = {}
+        algorithm_kwargs = {}
 
         temp_workflow = TempWorkflow(
             evaluator, X_train, X_test, y_train, y_test, output_dir, 
-            algorithm_names, feature_names, model_kwargs
+            algorithm_names, feature_names, algorithm_kwargs
         )
         
         with pytest.raises(
@@ -142,7 +142,7 @@ class TestWorkflowClass:
             output_dir="",
             algorithm_names=[],
             feature_names=[],
-            model_kwargs={}
+            algorithm_kwargs={}
         )
         
         # Test that the method is properly delegated

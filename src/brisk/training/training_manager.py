@@ -257,7 +257,7 @@ class TrainingManager:
                     output_dir=experiment_dir,
                     algorithm_names=algo_names,
                     feature_names=data_split.features,
-                    model_kwargs=algo_kwargs,
+                    algorithm_kwargs=algo_kwargs,
                     workflow_config=workflow_config
                 )
 

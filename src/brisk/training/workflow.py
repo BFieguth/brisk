@@ -40,7 +40,7 @@ class Workflow(abc.ABC):
         output_dir: str,
         algorithm_names: List[str],
         feature_names: List[str],
-        model_kwargs: Dict[str, Any],
+        algorithm_kwargs: Dict[str, Any],
         workflow_config = None
     ):
         self.evaluator = evaluator
@@ -51,7 +51,7 @@ class Workflow(abc.ABC):
         self.output_dir = output_dir
         self.algorithm_names = algorithm_names
         self.feature_names = feature_names
-        self._unpack_attributes(model_kwargs)
+        self._unpack_attributes(algorithm_kwargs)
         if workflow_config:
             self._unpack_attributes(workflow_config)
 
