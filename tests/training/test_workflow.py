@@ -25,7 +25,7 @@ class TestWorkflowClass:
         y_train = pd.Series([0, 1])
         y_test = pd.Series([1, 0])
         output_dir = "mock_output_dir"
-        method_names = ["mock_model1", "mock_model2"]
+        algorithm_names = ["mock_model1", "mock_model2"]
         feature_names = ["feature1", "feature2"]
         model_kwargs = {"model1": MagicMock(), "model2": MagicMock()}
         workflow_config = {"param1": "value1", "param2": "value2"}
@@ -37,7 +37,7 @@ class TestWorkflowClass:
             y_train=y_train, 
             y_test=y_test, 
             output_dir=output_dir, 
-            method_names=method_names, 
+            algorithm_names=algorithm_names, 
             feature_names=feature_names, 
             model_kwargs=model_kwargs,
             workflow_config=workflow_config
@@ -81,7 +81,7 @@ class TestWorkflowClass:
         y_train = pd.Series()
         y_test = pd.Series()
         output_dir = "output"
-        method_names = []
+        algorithm_names = []
         feature_names = []
         model_kwargs = {}
 
@@ -93,7 +93,7 @@ class TestWorkflowClass:
                 y_train=y_train, 
                 y_test=y_test, 
                 output_dir=output_dir, 
-                method_names=method_names, 
+                algorithm_names=algorithm_names, 
                 feature_names=feature_names, 
                 model_kwargs=model_kwargs
             )
@@ -111,13 +111,13 @@ class TestWorkflowClass:
         y_train = pd.Series()
         y_test = pd.Series()
         output_dir = "output"
-        method_names = []
+        algorithm_names = []
         feature_names = []
         model_kwargs = {}
 
         temp_workflow = TempWorkflow(
             evaluator, X_train, X_test, y_train, y_test, output_dir, 
-            method_names, feature_names, model_kwargs
+            algorithm_names, feature_names, model_kwargs
         )
         
         with pytest.raises(
@@ -140,7 +140,7 @@ class TestWorkflowClass:
             y_train=pd.Series(),
             y_test=pd.Series(),
             output_dir="",
-            method_names=[],
+            algorithm_names=[],
             feature_names=[],
             model_kwargs={}
         )

@@ -255,7 +255,7 @@ class TrainingManager:
                     y_train=y_train,
                     y_test=y_test,
                     output_dir=experiment_dir,
-                    method_names=algo_names,
+                    algorithm_names=algo_names,
                     feature_names=data_split.features,
                     model_kwargs=algo_kwargs,
                     workflow_config=workflow_config

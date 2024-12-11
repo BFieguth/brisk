@@ -27,7 +27,7 @@ class Workflow(abc.ABC):
         y_train (pd.Series): The training target data.
         y_test (pd.Series): The test target data.
         output_dir (str): The directory where results are saved.
-        method_names (List[str]): Names of the methods/models used.
+        algorithm_name (List[str]): Names of the algorithms used.
         model1, model2, ...: The models passed to the workflow.
     """
     def __init__(
@@ -38,7 +38,7 @@ class Workflow(abc.ABC):
         y_train: pd.Series,
         y_test: pd.Series,
         output_dir: str,
-        method_names: List[str],
+        algorithm_names: List[str],
         feature_names: List[str],
         model_kwargs: Dict[str, Any],
         workflow_config = None
@@ -49,7 +49,7 @@ class Workflow(abc.ABC):
         self.y_train = y_train
         self.y_test = y_test
         self.output_dir = output_dir
-        self.method_names = method_names
+        self.algorithm_names = algorithm_names
         self.feature_names = feature_names
         self._unpack_attributes(model_kwargs)
         if workflow_config:
@@ -322,7 +322,7 @@ class Workflow(abc.ABC):
         self,
         model: base.BaseEstimator,
         method: str,
-        method_name: str,
+        algorithm_name: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         scorer: str,
@@ -338,7 +338,7 @@ class Workflow(abc.ABC):
             
             method (str): The search method to use ('grid' or 'random').
             
-            method_name (str): The name of the method for which the 
+            algorithm_name (str): The name of the algorithm for which the 
             hyperparameter grid is being used.
             
             X_train (pd.DataFrame): The training data.
@@ -360,7 +360,7 @@ class Workflow(abc.ABC):
             BaseEstimator: The tuned model.
         """
         return self.evaluator.hyperparameter_tuning(
-            model, method, method_name, X_train, y_train, scorer,
+            model, method, algorithm_name, X_train, y_train, scorer,
             kf, num_rep, n_jobs, plot_results=plot_results
         )
 
