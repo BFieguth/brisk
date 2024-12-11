@@ -35,16 +35,16 @@ class AlgorithmWrapper:
         default_params: Optional[Dict[str, Any]] = None,
         hyperparam_grid: Optional[Dict[str, Any]] = None
     ):
-        """Initializes the AlgorithmWrapper with a model class.
+        """Initializes the AlgorithmWrapper with a algorithm class.
 
         Args:
-            name (str): The name of the model.
+            name (str): The name of the algorithm.
 
             algorithm_class (Type): The class of the algorithm to be 
             instantiated.
             
             default_params (Optional[Dict[str, Any]]): The default parameters to 
-            pass to the model during instantiation.
+            pass to the algorithm during instantiation.
             
             hyperparam_grid (Optional[Dict[str, Any]]): The hyperparameter grid 
             for model tuning.

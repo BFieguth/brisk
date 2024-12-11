@@ -42,7 +42,7 @@ class EvaluationManager:
     is designed to be used within a training workflow.
 
     Attributes:
-        algorithm_config (dict): Configuration for model methods.
+        algorithm_config (dict): Configuration for algorithms.
         metric_config (object): Configuration for evaluation metrics.
     """
     def __init__(
@@ -54,10 +54,10 @@ class EvaluationManager:
         logger: Optional[logging.Logger]=None,
     ):
         """
-        Initialize the EvaluationManager with method and scoring configurations.
+        Initialize the EvaluationManager with algorithm and scoring configurations.
 
         Args:
-            algorithm_config (Dict[str, Any]): Configuration for model methods.
+            algorithm_config (Dict[str, Any]): Configuration for algorithms.
             metric_config (Any): Configuration for evaluation metrics.
             output_dir (str): Directory to save results.
             split_metadata (Dict[str, Any]): Metadata to include in metric 
@@ -610,7 +610,7 @@ class EvaluationManager:
         self,
         model: base.BaseEstimator,
         method: str,
-        method_name: str,
+        algorithm_name: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         scorer: str,
@@ -626,7 +626,7 @@ class EvaluationManager:
 
             method (str): The search method to use ("grid" or "random").
 
-            method_name (str): The name of the method for which the 
+            algorithm_name (str): The name of the algorithm for which the 
             hyperparameter grid is being used.
 
             X_train (pd.DataFrame): The training data.
@@ -663,7 +663,7 @@ class EvaluationManager:
         score = self.metric_config.get_scorer(scorer)
         param_grid = next(
             algo.get_hyperparam_grid() for algo in self.algorithm_config
-            if algo.name == method_name
+            if algo.name == algorithm_name
             )
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
@@ -674,7 +674,7 @@ class EvaluationManager:
         search_result = search.fit(X_train, y_train)
         tuned_model = next(
             algo.instantiate_tuned(search_result.best_params_)
-            for algo in self.algorithm_config if algo.name == method_name
+            for algo in self.algorithm_config if algo.name == algorithm_name
             )
         tuned_model.fit(X_train, y_train)
         self.logger.info(
@@ -685,7 +685,7 @@ class EvaluationManager:
         if plot_results:
             metadata = self._get_metadata(model)
             self._plot_hyperparameter_performance(
-                param_grid, search_result, method_name, metadata
+                param_grid, search_result, algorithm_name, metadata
             )
         return tuned_model
 
@@ -693,7 +693,7 @@ class EvaluationManager:
         self,
         param_grid: Dict[str, Any],
         search_result: Any,
-        method_name: str,
+        algorithm_name: str,
         metadata: Dict[str, Any]
     ) -> None:
         """Plot the performance of hyperparameter tuning.
@@ -704,7 +704,7 @@ class EvaluationManager:
 
             search_result (Any): The result from cross-validation during tuning.
             
-            method_name (str): The name of the model method.
+            algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
 
@@ -721,7 +721,7 @@ class EvaluationManager:
                 param_values=param_grid[param_keys[0]],
                 mean_test_score=search_result.cv_results_["mean_test_score"],
                 param_name=param_keys[0],
-                method_name=method_name,
+                algorithm_name=algorithm_name,
                 metadata=metadata
             )
         elif len(param_keys) == 2:
@@ -729,7 +729,7 @@ class EvaluationManager:
                 param_grid=param_grid,
                 search_result=search_result,
                 param_names=param_keys,
-                method_name=method_name,
+                algorithm_name=algorithm_name,
                 metadata=metadata
             )
         else:
@@ -742,7 +742,7 @@ class EvaluationManager:
         param_values: List[Any],
         mean_test_score: List[float],
         param_name: str,
-        method_name: str,
+        algorithm_name: str,
         metadata: Dict[str, Any]
     ) -> None:
         """Plot the performance of a single hyperparameter.
@@ -752,7 +752,7 @@ class EvaluationManager:
             mean_test_score (List[float]): The mean test scores for each 
                 hyperparameter value.
             param_name (str): The name of the hyperparameter.
-            method_name (str): The name of the model method.
+            algorithm_name (str): The name of the algorithm.
             metadata (Dict[str, Any]): Metadata to be included with the plot.
 
         Returns:
@@ -765,7 +765,7 @@ class EvaluationManager:
         plt.xlabel(param_name, fontsize=12)
         plt.ylabel("Mean Test Score", fontsize=12)
         plt.title(
-            f"Hyperparameter Performance: {method_name} ({param_name})",
+            f"Hyperparameter Performance: {algorithm_name} ({param_name})",
             fontsize=16
             )
 
@@ -778,7 +778,7 @@ class EvaluationManager:
         plt.tight_layout()
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
-            self.output_dir, f"{method_name}_hyperparam_{param_name}.png"
+            self.output_dir, f"{algorithm_name}_hyperparam_{param_name}.png"
             )
         self._save_plot(output_path, metadata)
         self.logger.info(
@@ -790,7 +790,7 @@ class EvaluationManager:
         param_grid: Dict[str, List[Any]],
         search_result: Any,
         param_names: List[str],
-        method_name: str,
+        algorithm_name: str,
         metadata: Dict[str, Any]
     ) -> None:
         """Plot the performance of two hyperparameters in 3D.
@@ -803,7 +803,7 @@ class EvaluationManager:
             
             param_names (List[str]): The names of the two hyperparameters.
             
-            method_name (str): The name of the model method.
+            algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
 
@@ -825,10 +825,10 @@ class EvaluationManager:
         ax.set_xlabel(param_names[0], fontsize=12)
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel("Mean Test Score", fontsize=12)
-        ax.set_title(f"Hyperparameter Performance: {method_name}", fontsize=16)
+        ax.set_title(f"Hyperparameter Performance: {algorithm_name}", fontsize=16)
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
-            self.output_dir, f"{method_name}_hyperparam_3Dplot.png"
+            self.output_dir, f"{algorithm_name}_hyperparam_3Dplot.png"
             )
         self._save_plot(output_path, metadata)
         self.logger.info(
