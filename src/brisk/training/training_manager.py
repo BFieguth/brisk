@@ -75,16 +75,6 @@ class TrainingManager:
             )
         )
 
-    def _get_results_dir(self) -> str:
-        """Generates a results directory name based on the current timestamp.
-
-        Returns:
-            str: The directory name for storing results.
-        """
-        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-        results_dir = os.path.join("results", timestamp)
-        return results_dir
-
     def _get_experiment_dir(
         self,
         results_dir: str,
@@ -141,16 +131,7 @@ class TrainingManager:
             )
         )
 
-        if not results_name:
-            results_dir = self._get_results_dir()
-        else:
-            results_dir = os.path.join("results", results_name)
-            if os.path.exists(results_dir):
-                raise FileExistsError(
-                    f"Results directory '{results_dir}' already exists."
-                )
-        os.makedirs(results_dir, exist_ok=False)
-
+        results_dir = self._create_results_dir(results_name)
         self._save_config_log(
             results_dir, workflow, workflow_config, self.logfile
             )
@@ -447,3 +428,24 @@ class TrainingManager:
         logger = logging.getLogger("TrainingManager")
         logger.warning(log_message)
 
+    def _create_results_dir(self, results_name: str) -> str:
+        """Sets up the results directory.
+
+        Args:
+            results_name: The name of the results directory.
+
+        Returns:
+            str: The results directory.
+        """
+        if not results_name:
+            timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            results_dir = os.path.join("results", timestamp)
+        else:
+            results_dir = os.path.join("results", results_name)
+
+        if os.path.exists(results_dir):
+            raise FileExistsError(
+                f"Results directory '{results_dir}' already exists."
+            )
+        os.makedirs(results_dir, exist_ok=False)
+        return results_dir
