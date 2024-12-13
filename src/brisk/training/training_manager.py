@@ -134,33 +134,6 @@ class TrainingManager:
         Returns:
             None
         """
-        def format_time(seconds):
-            mins, secs = divmod(seconds, 60)
-            return f"{int(mins)}m {int(secs)}s"
-
-
-        def log_warning(
-            message,
-            category,
-            filename,
-            lineno,
-            dataset_name=None,
-            experiment_name=None
-        ):
-            """
-            Custom warning handler that logs warnings with specific formatting.
-            """
-            log_message = (
-                f"\n\nDataset Name: {dataset_name} \n"
-                f"Experiment Name: {experiment_name}\n\n"
-                f"Warning in {filename} at line {lineno}:\n"
-                f"Category: {category.__name__}\n\n"
-                f"Message: {message}\n"
-            )
-            logger = logging.getLogger("TrainingManager")
-            logger.warning(log_message)
-
-
         logging.captureWarnings(True)
         experiment_results = collections.defaultdict(
             lambda: collections.defaultdict(
@@ -196,7 +169,7 @@ class TrainingManager:
             experiment_name = current_experiment.name
 
             warnings.showwarning = (
-                lambda message, category, filename, lineno, file=None, line=None: log_warning( # pylint: disable=line-too-long
+                lambda message, category, filename, lineno, file=None, line=None: self._log_warning( # pylint: disable=line-too-long
                     message,
                     category,
                     filename,
@@ -269,11 +242,11 @@ class TrainingManager:
                 experiment_results[group_name][dataset_name].append({
                     "experiment": experiment_name,
                     "status": "PASSED",
-                    "time_taken": format_time(elapsed_time)
+                    "time_taken": self._format_time(elapsed_time)
                 })
                 tqdm.write(
                     f"\nExperiment '{experiment_name}' on dataset "
-                    f"'{dataset_name}' PASSED in {format_time(elapsed_time)}."
+                    f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
                 )
                 tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
                 pbar.update(1)
@@ -293,12 +266,12 @@ class TrainingManager:
                 experiment_results[group_name][dataset_name].append({
                     "experiment": experiment_name,
                     "status": "FAILED",
-                    "time_taken": format_time(elapsed_time),
+                    "time_taken": self._format_time(elapsed_time),
                     "error": str(e)
                 })
                 tqdm.write(
                     f"\nExperiment '{experiment_name}' on dataset "
-                    f"'{dataset_name}' FAILED in {format_time(elapsed_time)}."
+                    f"'{dataset_name}' FAILED in {self._format_time(elapsed_time)}."
                 )
                 tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
                 pbar.update(1)
@@ -447,3 +420,30 @@ class TrainingManager:
                         f"{dataset_name}_{split_name}.joblib"
                     )
                     joblib.dump(split_info.scaler, scaler_path)
+
+    def _format_time(self, seconds):
+        mins, secs = divmod(seconds, 60)
+        return f"{int(mins)}m {int(secs)}s"
+
+    def _log_warning(
+        self,
+        message,
+        category,
+        filename,
+        lineno,
+        dataset_name=None,
+        experiment_name=None
+    ):
+        """
+        Custom warning handler that logs warnings with specific formatting.
+        """
+        log_message = (
+            f"\n\nDataset Name: {dataset_name} \n"
+            f"Experiment Name: {experiment_name}\n\n"
+            f"Warning in {filename} at line {lineno}:\n"
+            f"Category: {category.__name__}\n\n"
+            f"Message: {message}\n"
+        )
+        logger = logging.getLogger("TrainingManager")
+        logger.warning(log_message)
+
