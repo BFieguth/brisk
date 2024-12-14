@@ -84,7 +84,7 @@ METRIC_CONFIG = brisk.MetricManager(
 def mock_reg_training_py(tmp_path):
     training_path = tmp_path / 'training.py'
     training_py = """
-from brisk.training.TrainingManager import TrainingManager
+from brisk.training.training_manager import TrainingManager
 from metrics import METRIC_CONFIG
 from settings import create_configuration
 
@@ -104,7 +104,7 @@ manager = TrainingManager(
 def mock_reg_settings_py(tmp_path):
     settings_path = tmp_path / 'settings.py'
     settings_py = """
-from brisk.configuration.Configuration import Configuration, ConfigurationManager
+from brisk.configuration.configuration import Configuration, ConfigurationManager
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
