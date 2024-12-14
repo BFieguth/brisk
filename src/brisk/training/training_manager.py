@@ -14,7 +14,7 @@ from typing import Dict, Tuple
 import warnings
 
 import joblib
-from tqdm import tqdm
+import tqdm
 
 from brisk.evaluation import evaluation_manager
 from brisk.reporting import report_manager as report
@@ -70,10 +70,10 @@ class TrainingManager:
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
         self.experiment_paths = collections.defaultdict(
-            lambda: collections.defaultdict(
-                lambda: {}
-            )
+            lambda: collections.defaultdict(lambda: {})
         )
+        self.experiment_results = None
+        self._initialize_experiment_results()
 
     def _get_experiment_dir(
         self,
@@ -124,11 +124,11 @@ class TrainingManager:
         Returns:
             None
         """
-        logging.captureWarnings(True)
-        experiment_results = collections.defaultdict(
-            lambda: collections.defaultdict(
-                list
-            )
+        self._initialize_experiment_results()
+        progress_bar = tqdm.tqdm(
+            total=len(self.experiments),
+            desc="Running Experiments",
+            unit="experiment"
         )
 
         results_dir = self._create_results_dir(results_name)
@@ -137,152 +137,36 @@ class TrainingManager:
             )
         self._save_data_distributions(results_dir, self.output_structure)
         self.logger = self._setup_logger(results_dir)
-        pbar = tqdm(
-            total=len(self.experiments),
-            desc="Running Experiments",
-            unit="experiment"
-        )
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
-            group_name = current_experiment.group_name
-            dataset_name = current_experiment.dataset.stem
-            experiment_name = current_experiment.name
-
-            warnings.showwarning = (
-                lambda message, category, filename, lineno, file=None, line=None: self._log_warning( # pylint: disable=line-too-long
-                    message,
-                    category,
-                    filename,
-                    lineno,
-                    dataset_name,
-                    experiment_name
-                )
+            self._run_single_experiment(
+                current_experiment,
+                workflow,
+                workflow_config,
+                results_dir
             )
+            progress_bar.update(1)
 
-            tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
-            tqdm.write(
-                f"\nStarting experiment '{experiment_name}' on dataset "
-                f"'{dataset_name}'."
-            )
-
-            start_time = time.time()
-
-            try:
-                data_split = self.data_managers[group_name].split(
-                    data_path=current_experiment.dataset,
-                    group_name=group_name,
-                    filename=dataset_name
-                )
-                X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
-                algo_kwargs = {
-                    key: algo.instantiate()
-                    for key, algo in current_experiment.algorithms.items()
-                }
-                algo_names = [
-                    algo.name
-                    for algo in current_experiment.algorithms.values()
-                ]
-
-                experiment_dir = self._get_experiment_dir(
-                    results_dir, group_name, dataset_name, experiment_name
-                )
-
-                # Save each experiment_dir for reporting
-                (self.experiment_paths
-                 [group_name]
-                 [dataset_name]
-                 [experiment_name]) = experiment_dir
-
-                eval_manager = evaluation_manager.EvaluationManager(
-                    list(current_experiment.algorithms.values()),
-                    self.metric_config,
-                    experiment_dir,
-                    data_split.get_split_metadata(),
-                    self.logger
-                )
-
-                workflow_instance = workflow(
-                    evaluator=eval_manager,
-                    X_train=X_train,
-                    X_test=X_test,
-                    y_train=y_train,
-                    y_test=y_test,
-                    output_dir=experiment_dir,
-                    algorithm_names=algo_names,
-                    feature_names=data_split.features,
-                    algorithm_kwargs=algo_kwargs,
-                    workflow_config=workflow_config
-                )
-
-                start_time = time.time()
-                workflow_instance.workflow()
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-
-                experiment_results[group_name][dataset_name].append({
-                    "experiment": experiment_name,
-                    "status": "PASSED",
-                    "time_taken": self._format_time(elapsed_time)
-                })
-                tqdm.write(
-                    f"\nExperiment '{experiment_name}' on dataset "
-                    f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
-                )
-                tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
-                pbar.update(1)
-
-            # TODO (Issue #68): refactor to avoid bare except here.
-            # Should also reduce the size of the try block.
-            except Exception as e:
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                error_message = (
-                    f"\n\nDataset Name: {dataset_name}\n"
-                    f"Experiment Name: {experiment_name}\n\n"
-                    f"Error: {e}"
-                )
-                self.logger.exception(error_message)
-
-                experiment_results[group_name][dataset_name].append({
-                    "experiment": experiment_name,
-                    "status": "FAILED",
-                    "time_taken": self._format_time(elapsed_time),
-                    "error": str(e)
-                })
-                tqdm.write(
-                    f"\nExperiment '{experiment_name}' on dataset "
-                    f"'{dataset_name}' FAILED in {self._format_time(elapsed_time)}."
-                )
-                tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
-                pbar.update(1)
-
-        pbar.close()
-        self._print_experiment_summary(experiment_results)
-
-        # Delete error_log.txt if it is empty
-        logging.shutdown()
-        error_log_path = os.path.join(results_dir, "error_log.txt")
-        if (os.path.exists(error_log_path)
-            and os.path.getsize(error_log_path) == 0
-            ):
-            os.remove(error_log_path)
-
+        self._print_experiment_summary()
+        self._cleanup(results_dir, progress_bar)
         if create_report:
-            report_manager = report.ReportManager(
-                results_dir, self.experiment_paths, self.output_structure,
-                self.description_map
-                )
-            report_manager.create_report()
+            self._create_report(results_dir)
 
-    def _print_experiment_summary(self, experiment_results):
+    def _initialize_experiment_results(self) -> None:
+        """Initialize or reset the experiment results dictionary."""
+        self.experiment_results = collections.defaultdict(
+            lambda: collections.defaultdict(list)
+        )
+
+    def _print_experiment_summary(self):
         """Print the experiment summary organized by group and dataset.
         """
         print("\n" + "="*70)
         print("EXPERIMENT SUMMARY")
         print("="*70)
 
-        for group_name, datasets in experiment_results.items():
+        for group_name, datasets in self.experiment_results.items():
             print(f"\nGroup: {group_name}")
             print("="*70)
 
@@ -304,6 +188,8 @@ class TrainingManager:
 
         Logs to both file and console, using different levels for each        
         """
+        logging.captureWarnings(True)
+
         logger = logging.getLogger("TrainingManager")
         logger.setLevel(logging.DEBUG)
 
@@ -449,3 +335,184 @@ class TrainingManager:
             )
         os.makedirs(results_dir, exist_ok=False)
         return results_dir
+
+    def _setup_workflow(
+        self,
+        current_experiment,
+        workflow,
+        workflow_config,
+        results_dir,
+        group_name,
+        dataset_name,
+        experiment_name
+    ):
+        data_split = self.data_managers[group_name].split(
+            data_path=current_experiment.dataset,
+            group_name=group_name,
+            filename=dataset_name
+        )
+
+        X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
+
+        algo_kwargs = {
+            key: algo.instantiate()
+            for key, algo in current_experiment.algorithms.items()
+        }
+
+        algo_names = [
+            algo.name
+            for algo in current_experiment.algorithms.values()
+        ]
+
+        experiment_dir = self._get_experiment_dir(
+            results_dir, group_name, dataset_name, experiment_name
+        )
+
+        (self.experiment_paths
+         [group_name]
+         [dataset_name]
+         [experiment_name]) = experiment_dir
+
+        eval_manager = evaluation_manager.EvaluationManager(
+            list(current_experiment.algorithms.values()),
+            self.metric_config,
+            experiment_dir,
+            data_split.get_split_metadata(),
+            self.logger
+        )
+
+        workflow_instance = workflow(
+            evaluator=eval_manager,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            output_dir=experiment_dir,
+            algorithm_names=algo_names,
+            feature_names=data_split.features,
+            algorithm_kwargs=algo_kwargs,
+            workflow_config=workflow_config
+        )
+        return workflow_instance
+
+    def _handle_success(
+        self,
+        start_time,
+        group_name,
+        dataset_name,
+        experiment_name
+    ):
+        elapsed_time = time.time() - start_time
+        self.experiment_results[group_name][dataset_name].append({
+            "experiment": experiment_name,
+            "status": "PASSED",
+            "time_taken": self._format_time(elapsed_time)
+        })
+        tqdm.tqdm.write(
+            f"\nExperiment '{experiment_name}' on dataset "
+            f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
+        )
+        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
+
+    def _handle_failure(
+        self,
+        group_name,
+        dataset_name,
+        experiment_name,
+        start_time,
+        error
+    ):
+        elapsed_time = time.time() - start_time
+        error_message = (
+            f"\n\nDataset Name: {dataset_name}\n"
+            f"Experiment Name: {experiment_name}\n\n"
+            f"Error: {error}"
+        )
+        self.logger.exception(error_message)
+
+        self.experiment_results[group_name][dataset_name].append({
+            "experiment": experiment_name,
+            "status": "FAILED",
+            "time_taken": self._format_time(elapsed_time),
+            "error": str(error)
+        })
+        tqdm.tqdm.write(
+            f"\nExperiment '{experiment_name}' on dataset "
+            f"'{dataset_name}' FAILED in {self._format_time(elapsed_time)}."
+        )
+        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
+
+    def _run_single_experiment(
+        self,
+        current_experiment,
+        workflow,
+        workflow_config,
+        results_dir
+    ):
+        success = False
+        start_time = time.time()
+
+        group_name = current_experiment.group_name
+        dataset_name = current_experiment.dataset.stem
+        experiment_name = current_experiment.name
+
+        tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
+        tqdm.tqdm.write(
+            f"\nStarting experiment '{experiment_name}' on dataset "
+            f"'{dataset_name}'."
+        )
+
+        warnings.showwarning = (
+            lambda message, category, filename, lineno, file=None, line=None: self._log_warning( # pylint: disable=line-too-long
+                message,
+                category,
+                filename,
+                lineno,
+                dataset_name,
+                experiment_name
+            )
+        )
+
+        try:
+            workflow_instance = self._setup_workflow(
+                current_experiment, workflow, workflow_config, results_dir,
+                group_name, dataset_name, experiment_name
+            )
+            workflow_instance.workflow()
+            success = True
+
+        # TODO (Issue #68): refactor to avoid bare except here.
+        except Exception as e:
+            self._handle_failure(
+                group_name,
+                dataset_name,
+                experiment_name,
+                start_time,
+                e
+            )
+
+        if success:
+            self._handle_success(
+                start_time,
+                group_name,
+                dataset_name,
+                experiment_name
+            )
+
+    def _cleanup(self, results_dir, progress_bar):
+        """Shuts down logging and deletes error_log.txt if it is empty.
+        """
+        progress_bar.close()
+        logging.shutdown()
+        error_log_path = os.path.join(results_dir, "error_log.txt")
+        if (os.path.exists(error_log_path)
+            and os.path.getsize(error_log_path) == 0
+            ):
+            os.remove(error_log_path)
+
+    def _create_report(self, results_dir):
+        report_manager = report.ReportManager(
+            results_dir, self.experiment_paths, self.output_structure,
+            self.description_map
+            )
+        report_manager.create_report()
