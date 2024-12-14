@@ -75,33 +75,6 @@ class TrainingManager:
         self.experiment_results = None
         self._initialize_experiment_results()
 
-    def _get_experiment_dir(
-        self,
-        results_dir: str,
-        group_name: str,
-        dataset_name: str,
-        experiment_name: str
-    ) -> str:
-        """Creates a meaningful directory name for storing experiment results.
-
-        Args:
-            method_name (str): The name of the method being used.
-
-            data_path (Tuple[str, str]): The dataset path and table name 
-            (if applicable).
-            
-            results_dir (str): The root directory for storing results.
-
-        Returns:
-            str: The full path to the directory for storing experiment results.
-        """
-        full_path = os.path.normpath(
-            os.path.join(results_dir, group_name, dataset_name, experiment_name)
-        )
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        return full_path
-
     def run_experiments(
         self,
         workflow,
@@ -153,70 +126,97 @@ class TrainingManager:
         if create_report:
             self._create_report(results_dir)
 
+    def _run_single_experiment(
+        self,
+        current_experiment,
+        workflow,
+        workflow_config,
+        results_dir
+    ):
+        success = False
+        start_time = time.time()
+
+        group_name = current_experiment.group_name
+        dataset_name = current_experiment.dataset.stem
+        experiment_name = current_experiment.name
+
+        tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
+        tqdm.tqdm.write(
+            f"\nStarting experiment '{experiment_name}' on dataset "
+            f"'{dataset_name}'."
+        )
+
+        warnings.showwarning = (
+            lambda message, category, filename, lineno, file=None, line=None: self._log_warning( # pylint: disable=line-too-long
+                message,
+                category,
+                filename,
+                lineno,
+                dataset_name,
+                experiment_name
+            )
+        )
+
+        try:
+            workflow_instance = self._setup_workflow(
+                current_experiment, workflow, workflow_config, results_dir,
+                group_name, dataset_name, experiment_name
+            )
+            workflow_instance.workflow()
+            success = True
+
+        # TODO (Issue #68): refactor to avoid bare except here.
+        except Exception as e:
+            self._handle_failure(
+                group_name,
+                dataset_name,
+                experiment_name,
+                start_time,
+                e
+            )
+
+        if success:
+            self._handle_success(
+                start_time,
+                group_name,
+                dataset_name,
+                experiment_name
+            )
+
     def _initialize_experiment_results(self) -> None:
         """Initialize or reset the experiment results dictionary."""
         self.experiment_results = collections.defaultdict(
             lambda: collections.defaultdict(list)
         )
 
-    def _print_experiment_summary(self):
-        """Print the experiment summary organized by group and dataset.
+    def _create_results_dir(self, results_name: str) -> str:
+        """Sets up the results directory.
+
+        Args:
+            results_name: The name of the results directory.
+
+        Returns:
+            str: The results directory.
         """
-        print("\n" + "="*70)
-        print("EXPERIMENT SUMMARY")
-        print("="*70)
-
-        for group_name, datasets in self.experiment_results.items():
-            print(f"\nGroup: {group_name}")
-            print("="*70)
-
-            for dataset_name, experiments in datasets.items():
-                print(f"\nDataset: {dataset_name}")
-                print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}") # pylint: disable=W1405
-                print("-"*70)
-
-                for result in experiments:
-                    print(
-                        f"{result['experiment']:<50} {result['status']:<10} " # pylint: disable=W1405
-                        f"{result['time_taken']:<10}" # pylint: disable=W1405
-                    )
-            print("="*70)
-        print("\nModels trained using Brisk version", __version__)
-
-    def _setup_logger(self, results_dir):
-        """Set up logging for the TrainingManager.
-
-        Logs to both file and console, using different levels for each        
-        """
-        logging.captureWarnings(True)
-
-        logger = logging.getLogger("TrainingManager")
-        logger.setLevel(logging.DEBUG)
-
-        file_handler = logging.FileHandler(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        file_handler.setLevel(logging.WARNING)
-
-        console_handler = logging_util.TqdmLoggingHandler()
-        if self.verbose:
-            console_handler.setLevel(logging.INFO)
+        if not results_name:
+            timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            results_dir = os.path.join("results", timestamp)
         else:
-            console_handler.setLevel(logging.ERROR)
+            results_dir = os.path.join("results", results_name)
 
-        formatter = logging.Formatter(
-            "\n%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_formatter = logging_util.FileFormatter(
-            "%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        console_handler.setFormatter(formatter)
+        if os.path.exists(results_dir):
+            raise FileExistsError(
+                f"Results directory '{results_dir}' already exists."
+            )
+        os.makedirs(results_dir, exist_ok=False)
+        return results_dir
 
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
-
-        return logger
+    def _create_report(self, results_dir):
+        report_manager = report.ReportManager(
+            results_dir, self.experiment_paths, self.output_structure,
+            self.description_map
+            )
+        report_manager.create_report()
 
     def _save_config_log(self, results_dir, workflow, workflow_config, logfile):
         """Saves the workflow configuration and class name to a config log file.
@@ -288,53 +288,40 @@ class TrainingManager:
                     )
                     joblib.dump(split_info.scaler, scaler_path)
 
-    def _format_time(self, seconds):
-        mins, secs = divmod(seconds, 60)
-        return f"{int(mins)}m {int(secs)}s"
+    def _setup_logger(self, results_dir):
+        """Set up logging for the TrainingManager.
 
-    def _log_warning(
-        self,
-        message,
-        category,
-        filename,
-        lineno,
-        dataset_name=None,
-        experiment_name=None
-    ):
+        Logs to both file and console, using different levels for each        
         """
-        Custom warning handler that logs warnings with specific formatting.
-        """
-        log_message = (
-            f"\n\nDataset Name: {dataset_name} \n"
-            f"Experiment Name: {experiment_name}\n\n"
-            f"Warning in {filename} at line {lineno}:\n"
-            f"Category: {category.__name__}\n\n"
-            f"Message: {message}\n"
-        )
+        logging.captureWarnings(True)
+
         logger = logging.getLogger("TrainingManager")
-        logger.warning(log_message)
+        logger.setLevel(logging.DEBUG)
 
-    def _create_results_dir(self, results_name: str) -> str:
-        """Sets up the results directory.
+        file_handler = logging.FileHandler(
+            os.path.join(results_dir, "error_log.txt")
+        )
+        file_handler.setLevel(logging.WARNING)
 
-        Args:
-            results_name: The name of the results directory.
-
-        Returns:
-            str: The results directory.
-        """
-        if not results_name:
-            timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-            results_dir = os.path.join("results", timestamp)
+        console_handler = logging_util.TqdmLoggingHandler()
+        if self.verbose:
+            console_handler.setLevel(logging.INFO)
         else:
-            results_dir = os.path.join("results", results_name)
+            console_handler.setLevel(logging.ERROR)
 
-        if os.path.exists(results_dir):
-            raise FileExistsError(
-                f"Results directory '{results_dir}' already exists."
-            )
-        os.makedirs(results_dir, exist_ok=False)
-        return results_dir
+        formatter = logging.Formatter(
+            "\n%(asctime)s - %(levelname)s - %(message)s"
+        )
+        file_formatter = logging_util.FileFormatter(
+            "%(asctime)s - %(levelname)s - %(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
+        console_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
+        return logger
 
     def _setup_workflow(
         self,
@@ -442,62 +429,82 @@ class TrainingManager:
         )
         tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
 
-    def _run_single_experiment(
+    def _log_warning(
         self,
-        current_experiment,
-        workflow,
-        workflow_config,
-        results_dir
+        message,
+        category,
+        filename,
+        lineno,
+        dataset_name=None,
+        experiment_name=None
     ):
-        success = False
-        start_time = time.time()
-
-        group_name = current_experiment.group_name
-        dataset_name = current_experiment.dataset.stem
-        experiment_name = current_experiment.name
-
-        tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
-        tqdm.tqdm.write(
-            f"\nStarting experiment '{experiment_name}' on dataset "
-            f"'{dataset_name}'."
+        """
+        Custom warning handler that logs warnings with specific formatting.
+        """
+        log_message = (
+            f"\n\nDataset Name: {dataset_name} \n"
+            f"Experiment Name: {experiment_name}\n\n"
+            f"Warning in {filename} at line {lineno}:\n"
+            f"Category: {category.__name__}\n\n"
+            f"Message: {message}\n"
         )
+        logger = logging.getLogger("TrainingManager")
+        logger.warning(log_message)
 
-        warnings.showwarning = (
-            lambda message, category, filename, lineno, file=None, line=None: self._log_warning( # pylint: disable=line-too-long
-                message,
-                category,
-                filename,
-                lineno,
-                dataset_name,
-                experiment_name
-            )
+    def _print_experiment_summary(self):
+        """Print the experiment summary organized by group and dataset.
+        """
+        print("\n" + "="*70)
+        print("EXPERIMENT SUMMARY")
+        print("="*70)
+
+        for group_name, datasets in self.experiment_results.items():
+            print(f"\nGroup: {group_name}")
+            print("="*70)
+
+            for dataset_name, experiments in datasets.items():
+                print(f"\nDataset: {dataset_name}")
+                print(f"{'Experiment':<50} {'Status':<10} {'Time':<10}") # pylint: disable=W1405
+                print("-"*70)
+
+                for result in experiments:
+                    print(
+                        f"{result['experiment']:<50} {result['status']:<10} " # pylint: disable=W1405
+                        f"{result['time_taken']:<10}" # pylint: disable=W1405
+                    )
+            print("="*70)
+        print("\nModels trained using Brisk version", __version__)
+
+    def _get_experiment_dir(
+        self,
+        results_dir: str,
+        group_name: str,
+        dataset_name: str,
+        experiment_name: str
+    ) -> str:
+        """Creates a meaningful directory name for storing experiment results.
+
+        Args:
+            method_name (str): The name of the method being used.
+
+            data_path (Tuple[str, str]): The dataset path and table name 
+            (if applicable).
+            
+            results_dir (str): The root directory for storing results.
+
+        Returns:
+            str: The full path to the directory for storing experiment results.
+        """
+        full_path = os.path.normpath(
+            os.path.join(results_dir, group_name, dataset_name, experiment_name)
         )
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        return full_path
 
-        try:
-            workflow_instance = self._setup_workflow(
-                current_experiment, workflow, workflow_config, results_dir,
-                group_name, dataset_name, experiment_name
-            )
-            workflow_instance.workflow()
-            success = True
-
-        # TODO (Issue #68): refactor to avoid bare except here.
-        except Exception as e:
-            self._handle_failure(
-                group_name,
-                dataset_name,
-                experiment_name,
-                start_time,
-                e
-            )
-
-        if success:
-            self._handle_success(
-                start_time,
-                group_name,
-                dataset_name,
-                experiment_name
-            )
+    def _format_time(self, seconds):
+        mins, secs = divmod(seconds, 60)
+        return f"{int(mins)}m {int(secs)}s"
 
     def _cleanup(self, results_dir, progress_bar):
         """Shuts down logging and deletes error_log.txt if it is empty.
@@ -509,10 +516,3 @@ class TrainingManager:
             and os.path.getsize(error_log_path) == 0
             ):
             os.remove(error_log_path)
-
-    def _create_report(self, results_dir):
-        report_manager = report.ReportManager(
-            results_dir, self.experiment_paths, self.output_structure,
-            self.description_map
-            )
-        report_manager.create_report()
