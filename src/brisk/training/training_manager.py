@@ -165,8 +165,16 @@ class TrainingManager:
             workflow_instance.workflow()
             success = True
 
-        # TODO (Issue #68): refactor to avoid bare except here.
-        except Exception as e:
+        except (
+            ValueError,
+            TypeError,
+            AttributeError,
+            KeyError,
+            FileNotFoundError,
+            ImportError,
+            MemoryError,
+            RuntimeError
+        ) as e:
             self._handle_failure(
                 group_name,
                 dataset_name,
