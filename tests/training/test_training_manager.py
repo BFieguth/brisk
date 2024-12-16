@@ -135,8 +135,7 @@ class TestTrainingManager:
 
         with pytest.raises(
             FileExistsError,
-            match=f"Results directory '{os.path.normpath(existing_dir)}' "
-            "already exists."
+            match=f"Results directory '{os.path.normpath(existing_dir)}' already exists." # pylint: disable=line-too-long
         ):
             training_manager._create_results_dir("existing_results")
 
