@@ -1,6 +1,8 @@
 """Unit tests for the TrainingManager class."""
 
-# pylint: disable=protected-access, redefined-outer-name
+# pylint: disable=protected-access, redefined-outer-name, inconsistent-quotes
+# NOTE inconsistent quotes are due to the use of single quotes in some f-strings
+# Double quotes can be used in Python 3.12, but not in Python 3.11 or 3.10.
 
 import collections
 import datetime
@@ -291,7 +293,7 @@ class TestTrainingManager:
         expected_tqdm_calls = (
             "\nExperiment 'experiment1' on dataset 'dataset1' "
             "PASSED in 3m 8s.",
-            f"\n{"-" * 80}"
+            f"\n{'-' * 80}"
         )
 
         training_manager._handle_success(
@@ -326,7 +328,7 @@ class TestTrainingManager:
         expected_tqdm_calls = (
             "\nExperiment 'experiment1' on dataset 'dataset1' "
             "FAILED in 4m 48s.",
-            f"\n{"-" * 80}"
+            f"\n{'-' * 80}"
         )
 
         training_manager._handle_failure(
@@ -418,21 +420,21 @@ class TestTrainingManager:
             mock.call("\nGroup: group1"),
             mock.call("="*70),
             mock.call("\nDataset: dataset1"),
-            mock.call(f"{"Experiment":<50} {"Status":<10} {"Time":<10}"),
+            mock.call(f"{'Experiment':<50} {'Status':<10} {'Time':<10}"),
             mock.call("-"*70),
-            mock.call(f"{"exp1":<50} {"PASSED":<10} {"1m 30s":<10}"),
-            mock.call(f"{"exp2":<50} {"FAILED":<10} {"2m 15s":<10}"),
+            mock.call(f"{'exp1':<50} {'PASSED':<10} {'1m 30s':<10}"),
+            mock.call(f"{'exp2':<50} {'FAILED':<10} {'2m 15s':<10}"),
             mock.call("\nDataset: dataset2"),
-            mock.call(f"{"Experiment":<50} {"Status":<10} {"Time":<10}"),
+            mock.call(f"{'Experiment':<50} {'Status':<10} {'Time':<10}"),
             mock.call("-"*70),
-            mock.call(f"{"exp3":<50} {"PASSED":<10} {"3m 45s":<10}"),
+            mock.call(f"{'exp3':<50} {'PASSED':<10} {'3m 45s':<10}"),
             mock.call("="*70),
             mock.call("\nGroup: group2"),
             mock.call("="*70),
             mock.call("\nDataset: dataset3"),
-            mock.call(f"{"Experiment":<50} {"Status":<10} {"Time":<10}"),
+            mock.call(f"{'Experiment':<50} {'Status':<10} {'Time':<10}"),
             mock.call("-"*70),
-            mock.call(f"{"exp4":<50} {"PASSED":<10} {"4m 5s":<10}"),
+            mock.call(f"{'exp4':<50} {'PASSED':<10} {'4m 5s':<10}"),
             mock.call("="*70),
             mock.call("\nModels trained using Brisk version", __version__)
         ]
