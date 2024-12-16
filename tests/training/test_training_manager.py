@@ -115,10 +115,10 @@ class TestTrainingManager:
         training_manager
     ):
         mock_datetime.now.return_value = datetime.datetime(2024, 1, 1, 12, 0, 0)
-        expected_dir = "results/01_01_2024_12_00_00"
+        expected_dir = os.path.join("results", "01_01_2024_12_00_00")
         results_dir = training_manager._create_results_dir(None)
 
-        assert results_dir == expected_dir
+        assert os.path.normpath(results_dir) == os.path.normpath(expected_dir)
         assert os.path.exists(results_dir)
 
     def test_create_results_dir_with_custom_name(self, training_manager):
@@ -130,12 +130,13 @@ class TestTrainingManager:
         assert os.path.exists(results_dir)
 
     def test_create_results_dir_already_exists(self, training_manager):
-        existing_dir = "results/existing_results"
+        existing_dir = os.path.join("results", "existing_results")
         os.makedirs(existing_dir)
 
         with pytest.raises(
             FileExistsError,
-            match=f"Results directory '{existing_dir}' already exists."
+            match=f"Results directory '{os.path.normpath(existing_dir)}' "
+            "already exists."
         ):
             training_manager._create_results_dir("existing_results")
 
