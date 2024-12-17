@@ -1,3 +1,11 @@
+"""Setup fixtures to use for testing.
+
+There is a fixture for each file that is created in the project structure. The
+mock_regression_project fixture creates the entire project structure and
+returns the path to the root directory. These files can be accessed by passing
+mock_regression_project to the test function and using the path relative to this
+root directory.
+"""
 import pytest
 
 from brisk.utility.utility import find_project_root
@@ -6,8 +14,8 @@ from brisk.utility.utility import find_project_root
 def mock_briskconfig_file(tmp_path):
     """Create a .briskconfig file for testing."""
     briskconfig_path = tmp_path / '.briskconfig'
-    with open(briskconfig_path, 'w') as f:
-        f.write("project_name=brisk-testing")
+    with open(briskconfig_path, 'w', encoding='utf-8') as f:
+        f.write('project_name=brisk-testing')
     return briskconfig_path
 
 
@@ -84,7 +92,7 @@ METRIC_CONFIG = brisk.MetricManager(
 def mock_reg_training_py(tmp_path):
     training_path = tmp_path / 'training.py'
     training_py = """
-from brisk.training.TrainingManager import TrainingManager
+from brisk.training.training_manager import TrainingManager
 from metrics import METRIC_CONFIG
 from settings import create_configuration
 
@@ -104,13 +112,18 @@ manager = TrainingManager(
 def mock_reg_settings_py(tmp_path):
     settings_path = tmp_path / 'settings.py'
     settings_py = """
-from brisk.configuration.Configuration import Configuration, ConfigurationManager
+from brisk.configuration.configuration import Configuration, ConfigurationManager
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
         default_algorithms = ["linear"],
     )
-
+    config.add_experiment_group(
+        name="test_group",
+        description="The group used for unit testing.",
+        datasets=["data.csv"]
+    )
+    
     return config.build()
 
 WORKFLOW_CONFIG = {
@@ -136,25 +149,25 @@ def mock_reg_datasets(tmp_path):
 3.0,4.0,0
 4.0,5.0,1
 5.0,6.0,0""",
-        
+
         'data2.csv': """feature1,feature2,label
 0.1,0.2,A
 0.3,0.4,B
 0.5,0.6,A
 0.7,0.8,B""",
-        
+
         'test.csv': """col1,col2,col3
 1,2,3
 4,5,6
 7,8,9""",
-        
+
         'another_dataset.csv': """value,category,result
 10.0,A,positive
 20.0,B,negative
 30.0,A,positive
 40.0,B,negative"""
     }
-    
+
     for filename, content in sample_data.items():
         (datasets_dir / filename).write_text(content)
 
@@ -162,14 +175,35 @@ def mock_reg_datasets(tmp_path):
 
 
 @pytest.fixture
+def mock_regression_workflow(tmp_path):
+    workflow_dir = tmp_path / 'workflows'
+    workflow_dir.mkdir()
+    workflow_path = workflow_dir / 'test_workflow.py'
+
+    workflow_py = """
+from brisk.training.workflow import Workflow
+
+class Regression(Workflow):
+    def workflow(self):
+        self.model.fit(self.X_train, self.y_train)
+        self.evaluate_model(
+            self.model, self.X_test, self.y_test, ["MAE"], "test_metrics"
+        )
+"""
+    workflow_path.write_text(workflow_py)
+    return workflow_path
+
+
+@pytest.fixture
 def mock_regression_project(
-    mock_briskconfig_file,
-    mock_reg_algorithms_py,
-    mock_reg_data_py,
-    mock_reg_metric_py,
-    mock_reg_training_py,
-    mock_reg_settings_py,
-    mock_reg_datasets,
+    mock_briskconfig_file, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_algorithms_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_data_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_metric_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_training_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_settings_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_reg_datasets, # pylint: disable=unused-argument, redefined-outer-name
+    mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
     tmp_path,
     monkeypatch
 ):
@@ -177,10 +211,9 @@ def mock_regression_project(
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
-    
+
 @pytest.fixture(autouse=True)
 def reset_project_root_cache():
     """Clear the project root cache after each test"""
     yield
     find_project_root.cache_clear()
-    
