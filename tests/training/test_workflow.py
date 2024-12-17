@@ -28,7 +28,6 @@ class TestWorkflowClass:
         algorithm_names = ["mock_model1", "mock_model2"]
         feature_names = ["feature1", "feature2"]
         algorithm_kwargs = {"model1": MagicMock(), "model2": MagicMock()}
-        workflow_config = {"param1": "value1", "param2": "value2"}
 
         return MockWorkflow(
             evaluator=evaluator, 
@@ -39,8 +38,7 @@ class TestWorkflowClass:
             output_dir=output_dir, 
             algorithm_names=algorithm_names, 
             feature_names=feature_names, 
-            algorithm_kwargs=algorithm_kwargs,
-            workflow_config=workflow_config
+            algorithm_kwargs=algorithm_kwargs
         )
 
     def test_unpack_attributes_model_kwargs(self, setup_workflow):
@@ -50,14 +48,6 @@ class TestWorkflowClass:
         assert hasattr(workflow, "model2")
         assert isinstance(workflow.model1, MagicMock)
         assert isinstance(workflow.model2, MagicMock)
-
-    def test_unpack_attributes_workflow_config(self, setup_workflow):
-        """Test that workflow_config parameters are unpacked as attributes."""
-        workflow = setup_workflow
-        assert hasattr(workflow, "param1")
-        assert hasattr(workflow, "param2")
-        assert workflow.param1 == "value1"
-        assert workflow.param2 == "value2"
 
     def test_missing_attribute_error(self, setup_workflow):
         """Test that accessing a missing attribute raises AttributeError with 

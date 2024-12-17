@@ -82,10 +82,6 @@ def create_configuration() -> ConfigurationManager:
     )
                 
     return config.build()
-                
-WORKFLOW_CONFIG = {
-
-}
 """)
 
     with open(
@@ -191,10 +187,6 @@ def run(workflow: str, extra_args: tuple) -> None:
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
-        workflow_config = load_module_object(
-            project_root, 'settings.py', 'WORKFLOW_CONFIG'
-            )
-
         workflow_module = importlib.import_module(f'workflows.{workflow}')
         workflow_classes = [
             obj for name, obj in inspect.getmembers(workflow_module)
@@ -213,10 +205,7 @@ def run(workflow: str, extra_args: tuple) -> None:
 
         workflow_class = workflow_classes[0]
 
-        manager.run_experiments(
-            workflow=workflow_class, workflow_config=workflow_config,
-            **extra_arg_dict
-            )
+        manager.run_experiments(workflow=workflow_class, **extra_arg_dict)
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

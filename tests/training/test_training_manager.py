@@ -261,15 +261,14 @@ class TestTrainingManager:
             )}
         )
         workflow = test_workflow
-        workflow_config = {}
         results_dir = ""
         dataset_name = "data"
         experiment_name = current_experiment.name
         expected_algo_names = ["linear"]
 
         workflow_instance = training_manager._setup_workflow(
-            current_experiment, workflow, workflow_config, results_dir,
-            group_name, dataset_name, experiment_name
+            current_experiment, workflow, results_dir, group_name, dataset_name,
+            experiment_name
         )
 
         assert isinstance(workflow_instance, Workflow)

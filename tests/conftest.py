@@ -125,12 +125,6 @@ def create_configuration() -> ConfigurationManager:
     )
     
     return config.build()
-
-WORKFLOW_CONFIG = {
-    "kfold": 2,
-    "scoring": "CCC",
-    "num_repeats": 2,
-}
 """
     settings_path.write_text(settings_py)
     return settings_path
