@@ -9,6 +9,7 @@ import datetime
 import importlib
 import logging
 import os
+import re
 import sys
 
 import pandas as pd
@@ -130,12 +131,14 @@ class TestTrainingManager:
         assert os.path.exists(results_dir)
 
     def test_create_results_dir_already_exists(self, training_manager):
-        existing_dir = os.path.join("results", "existing_results")
+        existing_dir = os.path.normpath(
+            os.path.join("results", "existing_results")
+        )
         os.makedirs(existing_dir)
 
         with pytest.raises(
             FileExistsError,
-            match=rf"Results directory '{os.path.normpath(existing_dir)}' already exists." # pylint: disable=line-too-long
+            match=f"Results directory '{re.escape(existing_dir)}' already exists." # pylint: disable=line-too-long
         ):
             training_manager._create_results_dir("existing_results")
 
