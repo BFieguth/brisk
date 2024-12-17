@@ -20,7 +20,6 @@ from brisk.evaluation import evaluation_manager, metric_manager
 from brisk.reporting import report_manager as report
 from brisk.utility import logging_util
 from brisk.configuration import configuration
-from brisk.utility import utility
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
@@ -89,7 +88,6 @@ class TrainingManager:
     def run_experiments(
         self,
         workflow: workflow_module.Workflow,
-        workflow_config: Optional[Dict] = None,
         results_name: Optional[str] = None,
         create_report: bool = True
     ) -> None:
@@ -99,8 +97,6 @@ class TrainingManager:
         Args:
             workflow (Workflow): A subclass of the Workflow class that defines 
             the training steps.
-            
-            workflow_config: Variables to pass the workflow class.
 
             results_name (str): The name of the results directory.
 
@@ -118,9 +114,7 @@ class TrainingManager:
         )
 
         results_dir = self._create_results_dir(results_name)
-        self._save_config_log(
-            results_dir, workflow, workflow_config, self.logfile
-            )
+        self._save_config_log(results_dir, workflow, self.logfile)
         self._save_data_distributions(results_dir, self.output_structure)
         self.logger = self._setup_logger(results_dir)
 
@@ -129,7 +123,6 @@ class TrainingManager:
             self._run_single_experiment(
                 current_experiment,
                 workflow,
-                workflow_config,
                 results_dir
             )
             progress_bar.update(1)
@@ -143,7 +136,6 @@ class TrainingManager:
         self,
         current_experiment: experiment.Experiment,
         workflow: workflow_module.Workflow,
-        workflow_config: Optional[Dict],
         results_dir: str
     ) -> None:
         """Runs a single experiment and handles its outcome.
@@ -155,8 +147,6 @@ class TrainingManager:
             current_experiment: The experiment to run.
 
             workflow: Workflow class to use.
-
-            workflow_config: Configuration for the workflow.
 
             results_dir: Directory to store results.
         """
@@ -186,8 +176,8 @@ class TrainingManager:
 
         try:
             workflow_instance = self._setup_workflow(
-                current_experiment, workflow, workflow_config, results_dir,
-                group_name, dataset_name, experiment_name
+                current_experiment, workflow, results_dir, group_name,
+                dataset_name, experiment_name
             )
             workflow_instance.workflow()
             success = True
@@ -257,7 +247,6 @@ class TrainingManager:
         self,
         results_dir: str,
         workflow: workflow_module.Workflow,
-        workflow_config: Optional[Dict],
         logfile: str
     ) -> None:
         """Saves the workflow configuration and class name to a config log file.
@@ -276,15 +265,6 @@ class TrainingManager:
             f"### Workflow Class: `{workflow.__name__}`",
             ""
         ]
-
-        if workflow_config:
-            workflow_md.extend([
-                "### Configuration:",
-                "```python",
-                utility.format_dict(workflow_config),
-                "```",
-                ""
-            ])
 
         full_content = "\n".join(workflow_md + config_content)
 
@@ -368,7 +348,6 @@ class TrainingManager:
         self,
         current_experiment: experiment.Experiment,
         workflow: Type[workflow_module.Workflow],
-        workflow_config: Optional[Dict],
         results_dir: str,
         group_name: str,
         dataset_name: str,
@@ -382,8 +361,6 @@ class TrainingManager:
             current_experiment: Experiment to set up.
 
             workflow: Workflow class to instantiate.
-
-            workflow_config: Configuration for the workflow.
 
             results_dir: Directory for results.
 
@@ -440,8 +417,7 @@ class TrainingManager:
             output_dir=experiment_dir,
             algorithm_names=algo_names,
             feature_names=data_split.features,
-            algorithm_kwargs=algo_kwargs,
-            workflow_config=workflow_config
+            algorithm_kwargs=algo_kwargs
         )
         return workflow_instance
 
