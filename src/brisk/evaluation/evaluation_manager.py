@@ -54,7 +54,8 @@ class EvaluationManager:
         logger: Optional[logging.Logger]=None,
     ):
         """
-        Initialize the EvaluationManager with algorithm and scoring configurations.
+        Initialize the EvaluationManager with algorithm and scoring
+        configurations.
 
         Args:
             algorithm_config (Dict[str, Any]): Configuration for algorithms.
@@ -483,6 +484,15 @@ class EvaluationManager:
                 if above_threshold[i]
                 ]
 
+        num_features = len(feature_names)
+        size_per_feature = 0.1
+        plot_width = max(
+            8, size_per_feature * num_features
+        )
+        plot_height = max(
+            6, size_per_feature * num_features * 0.75
+        )
+        plt.figure(figsize=(plot_width, plot_height))
         plt.barh(feature_names, importance)
         plt.xticks(rotation=90)
         plt.xlabel(f"Importance ({display_name})", fontsize=12)
@@ -825,7 +835,9 @@ class EvaluationManager:
         ax.set_xlabel(param_names[0], fontsize=12)
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel("Mean Test Score", fontsize=12)
-        ax.set_title(f"Hyperparameter Performance: {algorithm_name}", fontsize=16)
+        ax.set_title(
+            f"Hyperparameter Performance: {algorithm_name}", fontsize=16
+        )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
             self.output_dir, f"{algorithm_name}_hyperparam_3Dplot.png"
