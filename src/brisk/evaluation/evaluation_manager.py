@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import plotnine as pn
 
 from sklearn import base
 from sklearn import ensemble
@@ -30,6 +31,7 @@ import sklearn.metrics as sk_metrics
 from sklearn import tree
 
 from brisk.utility import algorithm_wrapper
+from brisk.theme import theme
 
 matplotlib.use("Agg")
 
@@ -285,20 +287,33 @@ class EvaluationManager:
         """
         prediction = model.predict(X)
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y_true, prediction, edgecolors=(0, 0, 0))
-        plt.plot(
-            [min(y_true), max(y_true)], [min(y_true), max(y_true)], "r--", lw=2
-            )
-        plt.xlabel("Observed Values")
-        plt.ylabel("Predicted Values")
-        plt.title("Predicted vs. Observed Values")
-        plt.grid(True)
+        plot_data = pd.DataFrame({
+            "Observed": y_true,
+            "Predicted": prediction
+        })
+        max_range = plot_data[['Observed', 'Predicted']].max().max()
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
+            pn.geom_point(color="black", size=3, stroke=0.25, fill="#0074D9") +
+            pn.geom_abline(
+                slope=1, intercept=0, color="#B95F89", linetype="dashed"
+            ) +
+            pn.labs(
+                x="Observed Values",
+                y="Predicted Values",
+                title="Predicted vs. Observed Values"
+            ) +
+            pn.coord_fixed(
+                xlim=[0, max_range],
+                ylim=[0, max_range]
+            ) +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot=plot)
         self.logger.info(
             "Predicted vs. Observed plot saved to '%s'.", output_path
         )
@@ -1094,7 +1109,7 @@ class EvaluationManager:
             if plot:
                 plot.save(
                     filename=output_path, format="png", metadata=metadata,
-                    height=6, width=8, dpi=200
+                    height=6, width=8, dpi=100
                 )
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
