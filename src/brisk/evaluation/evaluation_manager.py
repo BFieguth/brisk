@@ -73,6 +73,12 @@ class EvaluationManager:
         self.output_dir = output_dir
         self.logger = logger
 
+        self.primary_color = "#0074D9" # Celtic Blue
+        self.secondary_color = "#07004D" # Federal Blue
+        self.background_color = "#C4E0F9" # Columbia Blue
+        self.accent_color = "#00A878" # Jade
+        self.important_color = "#B95F89" # Mulberry
+
     # Evaluation Tools
     def evaluate_model(
         self,
@@ -294,9 +300,12 @@ class EvaluationManager:
         max_range = plot_data[['Observed', 'Predicted']].max().max()
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
-            pn.geom_point(color="black", size=3, stroke=0.25, fill="#0074D9") +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
             pn.geom_abline(
-                slope=1, intercept=0, color="#B95F89", linetype="dashed"
+                slope=1, intercept=0, color=self.important_color, 
+                linetype="dashed"
             ) +
             pn.labs(
                 x="Observed Values",
