@@ -1076,7 +1076,8 @@ class EvaluationManager:
     def _save_plot(
         self,
         output_path: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        plot: Optional[pn.ggplot] = None
     ) -> None:
         """Save the current matplotlib plot to a PNG file, including metadata.
 
@@ -1090,8 +1091,14 @@ class EvaluationManager:
             None
         """
         try:
-            plt.savefig(output_path, format="png", metadata=metadata)
-            plt.close()
+            if plot:
+                plot.save(
+                    filename=output_path, format="png", metadata=metadata,
+                    height=6, width=8, dpi=200
+                )
+            else:
+                plt.savefig(output_path, format="png", metadata=metadata)
+                plt.close()
 
         except IOError as e:
             self.logger.info(f"Failed to save plot to {output_path}: {e}")
