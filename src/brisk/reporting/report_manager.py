@@ -129,7 +129,9 @@ class ReportManager():
         ])
 
         self.current_dataset = None
-        self.summary_metrics = {}
+        self.summary_metrics = collections.defaultdict(
+            lambda: collections.defaultdict(dict)
+        )
         self.output_structure = output_structure
         self.description_map = description_map
 
