@@ -129,7 +129,9 @@ class ReportManager():
         ])
 
         self.current_dataset = None
-        self.summary_metrics = {}
+        self.summary_metrics = collections.defaultdict(
+            lambda: collections.defaultdict(dict)
+        )
         self.output_structure = output_structure
         self.description_map = description_map
 
@@ -457,6 +459,15 @@ class ReportManager():
         Returns:
             str: HTML block representing the cross-validation results.
         """
+        def get_unique_key(summary_metrics, current_database, models):
+            model_key = f"{models} (2)"
+            counter = 2
+            while model_key in summary_metrics[current_database]:
+                counter += 1
+                model_key = f"{models} ({counter})"
+            return model_key
+
+
         model_info = metadata.get("models", ["Unknown model"])
         models = ", ".join(model_info)
 
@@ -470,11 +481,10 @@ class ReportManager():
             <tbody>
         """
 
-        if self.current_dataset not in self.summary_metrics:
-            self.summary_metrics[self.current_dataset] = {}
-
-        if models not in self.summary_metrics[self.current_dataset]:
-            self.summary_metrics[self.current_dataset][models] = {}
+        if models in self.summary_metrics[self.current_dataset]:
+            models = get_unique_key(
+                self.summary_metrics, self.current_dataset, models
+            )
 
         for metric, values in data.items():
             if metric != "_metadata":
