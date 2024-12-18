@@ -32,7 +32,8 @@ def brisk_theme():
         
         # Grid
         panel_grid_major=pn.element_line(color="#D3D3D3", size=0.5),
-                
+        panel_grid_minor=pn.element_line(color="#FAF9F6", size=0.25),
+
         # Text elements
         text=pn.element_text(size=16, family="montserrat"),
         axis_text=pn.element_text(size=10),
