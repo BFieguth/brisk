@@ -516,18 +516,29 @@ class EvaluationManager:
         plot_height = max(
             6, size_per_feature * num_features * 0.75
         )
-        plt.figure(figsize=(plot_width, plot_height))
-        plt.barh(feature_names, importance)
-        plt.xticks(rotation=90)
-        plt.xlabel(f"Importance ({display_name})", fontsize=12)
-        plt.ylabel("Feature", fontsize=12)
-        plt.title("Feature Importance", fontsize=16)
-        plt.tight_layout()
-
+        importance_data = pd.DataFrame({
+            "Feature": feature_names,
+            "Importance": importance
+        })
+        importance_data['Feature'] = pd.Categorical(
+            importance_data['Feature'], 
+            categories=importance_data.sort_values('Importance')['Feature'], 
+            ordered=True
+        )
+        plot = (
+            pn.ggplot(importance_data, pn.aes(x="Feature", y="Importance")) +
+            pn.geom_bar(stat="identity", fill=self.primary_color) +
+            pn.coord_flip() +
+            pn.labs(
+                x="Feature", y=f"Importance ({display_name})",
+                title="Feature Importance"
+            ) +
+            theme.brisk_theme()
+        )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot, plot_height, plot_width)
         self.logger.info(
             "Feature Importance plot saved to '%s'.", output_path
         )
@@ -1101,7 +1112,9 @@ class EvaluationManager:
         self,
         output_path: str,
         metadata: Optional[Dict[str, Any]] = None,
-        plot: Optional[pn.ggplot] = None
+        plot: Optional[pn.ggplot] = None,
+        height = 6,
+        width = 8
     ) -> None:
         """Save the current matplotlib plot to a PNG file, including metadata.
 
@@ -1118,7 +1131,7 @@ class EvaluationManager:
             if plot:
                 plot.save(
                     filename=output_path, format="png", metadata=metadata,
-                    height=6, width=8, dpi=100
+                    height=height, width=width, dpi=100
                 )
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
