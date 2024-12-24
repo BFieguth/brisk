@@ -635,27 +635,32 @@ class EvaluationManager:
             predictions = model.predict(X)
             if scorer is not None:
                 score = scorer(y, predictions)
-                metric_values.append(score)
+                metric_values.append(round(score, 3))
             else:
                 self.logger.info(f"Scorer for {metric} not found.")
                 return
 
-        plt.figure(figsize=(10, 6))
-        bars = plt.bar(model_names, metric_values, color="lightblue")
-        # Add labels to each bar
-        for bar, value in zip(bars, metric_values):
-            plt.text(
-                bar.get_x() + bar.get_width()/2, bar.get_height(),
-                f"{value:.3f}", ha="center", va="bottom"
-                )
-        plt.xlabel("Models", fontsize=12)
-        plt.ylabel(display_name, fontsize=12)
-        plt.title(f"Model Comparison on {display_name}", fontsize=16)
+        plot_data = pd.DataFrame({
+            "Model": model_names,
+            "Score": metric_values,
+        })
+        title = f"Model Comparison on {display_name}"
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Model", y="Score")) +
+            pn.geom_bar(stat="identity", fill=self.primary_color) +
+            pn.geom_text(
+                pn.aes(label="Score"), position=pn.position_stack(vjust=0.5),
+                color="white", size=16
+            ) +
+            pn.ggtitle(title=title) +
+            pn.ylab(display_name) +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(models)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Model Comparison plot saved to '%s'.", output_path
         )
