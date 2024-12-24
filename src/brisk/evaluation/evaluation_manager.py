@@ -570,27 +570,37 @@ class EvaluationManager:
         predictions = model.predict(X)
         residuals = y - predictions
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y, residuals, label="Residuals")
-        plt.axhline(y=0, color="r", linestyle="--")
-        plt.xlabel("Observed", fontsize=12)
-        plt.ylabel("Residual", fontsize=12)
-        plt.title("Residual Plot", fontsize=16)
-        plt.legend()
+        plot_data = pd.DataFrame({
+            "Observed": y,
+            "Residual": residuals
+        })
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Observed", y="Residual")) +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
+            pn.geom_abline(
+                slope=0, intercept=0, color=self.important_color,
+                linetype="dashed", size=1.5
+            ) +
+            pn.ggtitle("Residuals (Observed - Predicted)") +
+            theme.brisk_theme()
+        )
 
         if add_fit_line:
-            fit = np.polyfit(y, residuals, 1)
-            fit_line = np.polyval(fit, y)
-            plt.plot(
-                y, fit_line, color="blue", linestyle="-",
-                label="Line of Best Fit"
+            fit = np.polyfit(plot_data['Observed'], plot_data['Residual'], 1)
+            fit_line = np.polyval(fit, plot_data['Observed'])
+            plot += (
+                pn.geom_line(
+                    pn.aes(x='Observed', y=fit_line, group=1), 
+                    color=self.accent_color, size=1
                 )
-            plt.legend()
+            )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Residuals plot saved to '%s'.", output_path
         )
