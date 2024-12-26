@@ -982,28 +982,42 @@ class EvaluationManager:
         labels = np.unique(y).tolist()
         cm = sk_metrics.confusion_matrix(y, y_pred, labels=labels)
         cm_percent = cm / cm.sum() * 100
-        annotations = np.array([
-            [
-                f"{int(count)}\n({percentage:.1f}%)"
-                for count, percentage in zip(row, percent_row)
-            ]
-            for row, percent_row in zip(cm, cm_percent)
-        ])
 
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(
-            cm_percent, annot=annotations, fmt="", cmap="Blues",
-            xticklabels=labels, yticklabels=labels,
-            cbar_kws={"format": "%.0f%%"}
-            )
-        plt.title("Confusion Matrix Heatmap")
-        plt.xlabel("Predicted Labels")
-        plt.ylabel("True Labels")
+        plot_data = []
+        for true_index, true_label in enumerate(labels):
+            for pred_index, pred_label in enumerate(labels):
+                count = cm[true_index, pred_index]
+                percentage = cm_percent[true_index, pred_index]
+                plot_data.append({
+                    "True Label": true_label,
+                    "Predicted Label": pred_label,
+                    "Percentage": percentage,
+                    "Label": f"{int(count)}\n({percentage:.1f}%)"
+                })
+        plot_data = pd.DataFrame(plot_data)
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x='Predicted Label',
+                y='True Label',
+                fill='Percentage'
+            )) +
+            pn.geom_tile() +
+            pn.geom_text(pn.aes(label='Label'), color='black') +
+            pn.scale_fill_gradient(
+                low="white",
+                high=self.primary_color,
+                name='Percentage (%)',
+                limits=(0, 100)
+            ) +
+            pn.ggtitle('Confusion Matrix Heatmap') +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(f"Confusion matrix heatmap saved to {output_path}")
 
     def plot_roc_curve(
