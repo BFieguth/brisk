@@ -231,18 +231,20 @@ class TestEvaluationManager:
         search_result.cv_results_ = {'mean_test_score': [0.8, 0.85, 0.87]}
         algorithm_name = "random_forest"
         metadata = {"test": "data"}
+        display_name = "Random Forest"
 
         with patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_1d_performance") as mock_plot_1d, \
              patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_3d_surface") as mock_plot_3d:
 
-            eval_manager._plot_hyperparameter_performance(param_grid, search_result, algorithm_name, metadata)
+            eval_manager._plot_hyperparameter_performance(param_grid, search_result, algorithm_name, metadata, display_name)
             
             mock_plot_1d.assert_called_once_with(
                 param_values=param_grid["n_estimators"],
                 mean_test_score=search_result.cv_results_['mean_test_score'],
                 param_name="n_estimators",
                 algorithm_name=algorithm_name,
-                metadata=metadata
+                metadata=metadata,
+                display_name=display_name
             )
             mock_plot_3d.assert_not_called()
 
@@ -252,11 +254,11 @@ class TestEvaluationManager:
         param_name = "n_estimators"
         algorithm_name = "random_forest"
         metadata = {"test": "data"}
-
+        display_name = "Random Forest"
         with patch("os.makedirs") as mock_makedirs, \
              patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
-            eval_manager._plot_1d_performance(param_values, mean_test_score, param_name, algorithm_name, metadata)
+            eval_manager._plot_1d_performance(param_values, mean_test_score, param_name, algorithm_name, metadata, display_name)
             
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
             mock_save_plot.assert_called_once()
@@ -269,11 +271,11 @@ class TestEvaluationManager:
         param_names = ["max_depth", "min_samples_split"]
         algorithm_name = "random_forest"
         metadata = {"test": "data"}
-
+        display_name = "Random Forest"
         with patch("os.makedirs") as mock_makedirs, \
              patch("brisk.evaluation.evaluation_manager.EvaluationManager._save_plot") as mock_save_plot:
 
-            eval_manager._plot_3d_surface(param_grid, search_result, param_names, algorithm_name, metadata)
+            eval_manager._plot_3d_surface(param_grid, search_result, param_names, algorithm_name, metadata, display_name)
             
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
             mock_save_plot.assert_called_once()

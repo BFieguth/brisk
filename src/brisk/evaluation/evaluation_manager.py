@@ -20,7 +20,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+import plotnine as pn
 
 from sklearn import base
 from sklearn import ensemble
@@ -30,6 +30,7 @@ import sklearn.metrics as sk_metrics
 from sklearn import tree
 
 from brisk.utility import algorithm_wrapper
+from brisk.theme import theme
 
 matplotlib.use("Agg")
 
@@ -70,6 +71,12 @@ class EvaluationManager:
         self.metric_config.set_split_metadata(split_metadata)
         self.output_dir = output_dir
         self.logger = logger
+
+        self.primary_color = "#0074D9" # Celtic Blue
+        self.secondary_color = "#07004D" # Federal Blue
+        self.background_color = "#C4E0F9" # Columbia Blue
+        self.accent_color = "#00A878" # Jade
+        self.important_color = "#B95F89" # Mulberry
 
     # Evaluation Tools
     def evaluate_model(
@@ -285,20 +292,36 @@ class EvaluationManager:
         """
         prediction = model.predict(X)
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y_true, prediction, edgecolors=(0, 0, 0))
-        plt.plot(
-            [min(y_true), max(y_true)], [min(y_true), max(y_true)], "r--", lw=2
-            )
-        plt.xlabel("Observed Values")
-        plt.ylabel("Predicted Values")
-        plt.title("Predicted vs. Observed Values")
-        plt.grid(True)
+        plot_data = pd.DataFrame({
+            "Observed": y_true,
+            "Predicted": prediction
+        })
+        max_range = plot_data[["Observed", "Predicted"]].max().max()
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
+            pn.geom_abline(
+                slope=1, intercept=0, color=self.important_color,
+                linetype="dashed"
+            ) +
+            pn.labs(
+                x="Observed Values",
+                y="Predicted Values",
+                title="Predicted vs. Observed Values"
+            ) +
+            pn.coord_fixed(
+                xlim=[0, max_range],
+                ylim=[0, max_range]
+            ) +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot=plot)
         self.logger.info(
             "Predicted vs. Observed plot saved to '%s'.", output_path
         )
@@ -492,18 +515,29 @@ class EvaluationManager:
         plot_height = max(
             6, size_per_feature * num_features * 0.75
         )
-        plt.figure(figsize=(plot_width, plot_height))
-        plt.barh(feature_names, importance)
-        plt.xticks(rotation=90)
-        plt.xlabel(f"Importance ({display_name})", fontsize=12)
-        plt.ylabel("Feature", fontsize=12)
-        plt.title("Feature Importance", fontsize=16)
-        plt.tight_layout()
-
+        importance_data = pd.DataFrame({
+            "Feature": feature_names,
+            "Importance": importance
+        })
+        importance_data["Feature"] = pd.Categorical(
+            importance_data["Feature"],
+            categories=importance_data.sort_values("Importance")["Feature"],
+            ordered=True
+        )
+        plot = (
+            pn.ggplot(importance_data, pn.aes(x="Feature", y="Importance")) +
+            pn.geom_bar(stat="identity", fill=self.primary_color) +
+            pn.coord_flip() +
+            pn.labs(
+                x="Feature", y=f"Importance ({display_name})",
+                title="Feature Importance"
+            ) +
+            theme.brisk_theme()
+        )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot, plot_height, plot_width)
         self.logger.info(
             "Feature Importance plot saved to '%s'.", output_path
         )
@@ -535,27 +569,37 @@ class EvaluationManager:
         predictions = model.predict(X)
         residuals = y - predictions
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y, residuals, label="Residuals")
-        plt.axhline(y=0, color="r", linestyle="--")
-        plt.xlabel("Observed", fontsize=12)
-        plt.ylabel("Residual", fontsize=12)
-        plt.title("Residual Plot", fontsize=16)
-        plt.legend()
+        plot_data = pd.DataFrame({
+            "Observed": y,
+            "Residual": residuals
+        })
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Observed", y="Residual")) +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
+            pn.geom_abline(
+                slope=0, intercept=0, color=self.important_color,
+                linetype="dashed", size=1.5
+            ) +
+            pn.ggtitle("Residuals (Observed - Predicted)") +
+            theme.brisk_theme()
+        )
 
         if add_fit_line:
-            fit = np.polyfit(y, residuals, 1)
-            fit_line = np.polyval(fit, y)
-            plt.plot(
-                y, fit_line, color="blue", linestyle="-",
-                label="Line of Best Fit"
+            fit = np.polyfit(plot_data["Observed"], plot_data["Residual"], 1)
+            fit_line = np.polyval(fit, plot_data["Observed"])
+            plot += (
+                pn.geom_line(
+                    pn.aes(x="Observed", y=fit_line, group=1),
+                    color=self.accent_color, size=1
                 )
-            plt.legend()
+            )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Residuals plot saved to '%s'.", output_path
         )
@@ -590,27 +634,32 @@ class EvaluationManager:
             predictions = model.predict(X)
             if scorer is not None:
                 score = scorer(y, predictions)
-                metric_values.append(score)
+                metric_values.append(round(score, 3))
             else:
                 self.logger.info(f"Scorer for {metric} not found.")
                 return
 
-        plt.figure(figsize=(10, 6))
-        bars = plt.bar(model_names, metric_values, color="lightblue")
-        # Add labels to each bar
-        for bar, value in zip(bars, metric_values):
-            plt.text(
-                bar.get_x() + bar.get_width()/2, bar.get_height(),
-                f"{value:.3f}", ha="center", va="bottom"
-                )
-        plt.xlabel("Models", fontsize=12)
-        plt.ylabel(display_name, fontsize=12)
-        plt.title(f"Model Comparison on {display_name}", fontsize=16)
+        plot_data = pd.DataFrame({
+            "Model": model_names,
+            "Score": metric_values,
+        })
+        title = f"Model Comparison on {display_name}"
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x="Model", y="Score")) +
+            pn.geom_bar(stat="identity", fill=self.primary_color) +
+            pn.geom_text(
+                pn.aes(label="Score"), position=pn.position_stack(vjust=0.5),
+                color="white", size=16
+            ) +
+            pn.ggtitle(title=title) +
+            pn.ylab(display_name) +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(models)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Model Comparison plot saved to '%s'.", output_path
         )
@@ -675,6 +724,10 @@ class EvaluationManager:
             algo.get_hyperparam_grid() for algo in self.algorithm_config
             if algo.name == algorithm_name
             )
+        display_name = next(
+            algo.display_name for algo in self.algorithm_config
+            if algo.name == algorithm_name
+        )
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
         search = searcher(
@@ -695,7 +748,8 @@ class EvaluationManager:
         if plot_results:
             metadata = self._get_metadata(model)
             self._plot_hyperparameter_performance(
-                param_grid, search_result, algorithm_name, metadata
+                param_grid, search_result, algorithm_name, metadata,
+                display_name
             )
         return tuned_model
 
@@ -704,7 +758,8 @@ class EvaluationManager:
         param_grid: Dict[str, Any],
         search_result: Any,
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of hyperparameter tuning.
 
@@ -717,6 +772,8 @@ class EvaluationManager:
             algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
@@ -732,7 +789,8 @@ class EvaluationManager:
                 mean_test_score=search_result.cv_results_["mean_test_score"],
                 param_name=param_keys[0],
                 algorithm_name=algorithm_name,
-                metadata=metadata
+                metadata=metadata,
+                display_name=display_name
             )
         elif len(param_keys) == 2:
             self._plot_3d_surface(
@@ -740,7 +798,8 @@ class EvaluationManager:
                 search_result=search_result,
                 param_names=param_keys,
                 algorithm_name=algorithm_name,
-                metadata=metadata
+                metadata=metadata,
+                display_name=display_name
             )
         else:
             self.logger.info(
@@ -753,7 +812,8 @@ class EvaluationManager:
         mean_test_score: List[float],
         param_name: str,
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of a single hyperparameter.
 
@@ -764,33 +824,35 @@ class EvaluationManager:
             param_name (str): The name of the hyperparameter.
             algorithm_name (str): The name of the algorithm.
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
         """
-        plt.figure(figsize=(10, 6))
-        plt.plot(
-            param_values, mean_test_score, marker="o", linestyle="-", color="b"
-            )
-        plt.xlabel(param_name, fontsize=12)
-        plt.ylabel("Mean Test Score", fontsize=12)
-        plt.title(
-            f"Hyperparameter Performance: {algorithm_name} ({param_name})",
-            fontsize=16
-            )
+        param_name = param_name.capitalize()
+        title = f"Hyperparameter Performance: {display_name}"
+        plot_data = pd.DataFrame({
+            "Hyperparameter": param_values,
+            "Mean Test Score": mean_test_score,
+        })
+        plot = (
+            pn.ggplot(
+                plot_data, pn.aes(x="Hyperparameter", y="Mean Test Score")
+            ) +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
+            pn.geom_line(color=self.primary_color) +
+            pn.ggtitle(title) +
+            pn.xlab(param_name) +
+            theme.brisk_theme()
+        )
 
-        for i, score in enumerate(mean_test_score):
-            plt.text(
-                param_values[i], score, f"{score:.2f}", ha="center", va="bottom"
-                )
-
-        plt.grid(True)
-        plt.tight_layout()
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
             self.output_dir, f"{algorithm_name}_hyperparam_{param_name}.png"
             )
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Hyperparameter performance plot saved to '%s'.", output_path
             )
@@ -801,7 +863,8 @@ class EvaluationManager:
         search_result: Any,
         param_names: List[str],
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of two hyperparameters in 3D.
 
@@ -816,6 +879,8 @@ class EvaluationManager:
             algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
@@ -836,7 +901,7 @@ class EvaluationManager:
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel("Mean Test Score", fontsize=12)
         ax.set_title(
-            f"Hyperparameter Performance: {algorithm_name}", fontsize=16
+            f"Hyperparameter Performance: {display_name}", fontsize=16
         )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
@@ -916,28 +981,42 @@ class EvaluationManager:
         labels = np.unique(y).tolist()
         cm = sk_metrics.confusion_matrix(y, y_pred, labels=labels)
         cm_percent = cm / cm.sum() * 100
-        annotations = np.array([
-            [
-                f"{int(count)}\n({percentage:.1f}%)"
-                for count, percentage in zip(row, percent_row)
-            ]
-            for row, percent_row in zip(cm, cm_percent)
-        ])
 
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(
-            cm_percent, annot=annotations, fmt="", cmap="Blues",
-            xticklabels=labels, yticklabels=labels,
-            cbar_kws={"format": "%.0f%%"}
-            )
-        plt.title("Confusion Matrix Heatmap")
-        plt.xlabel("Predicted Labels")
-        plt.ylabel("True Labels")
+        plot_data = []
+        for true_index, true_label in enumerate(labels):
+            for pred_index, pred_label in enumerate(labels):
+                count = cm[true_index, pred_index]
+                percentage = cm_percent[true_index, pred_index]
+                plot_data.append({
+                    "True Label": true_label,
+                    "Predicted Label": pred_label,
+                    "Percentage": percentage,
+                    "Label": f"{int(count)}\n({percentage:.1f}%)"
+                })
+        plot_data = pd.DataFrame(plot_data)
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x="Predicted Label",
+                y="True Label",
+                fill="Percentage"
+            )) +
+            pn.geom_tile() +
+            pn.geom_text(pn.aes(label="Label"), color="black") +
+            pn.scale_fill_gradient( # pylint: disable=E1123
+                low="white",
+                high=self.primary_color,
+                name="Percentage (%)",
+                limits=(0, 100)
+            ) +
+            pn.ggtitle("Confusion Matrix Heatmap") +
+            theme.brisk_theme()
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(f"Confusion matrix heatmap saved to {output_path}")
 
     def plot_roc_curve(
@@ -977,18 +1056,64 @@ class EvaluationManager:
         fpr, tpr, _ = sk_metrics.roc_curve(y, y_score)
         auc = sk_metrics.roc_auc_score(y, y_score)
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {auc:.2f})", color="blue")
-        plt.plot([0, 1], [0, 1], "k--", label="Random Guessing")
-        plt.xlabel("False Positive Rate")
-        plt.ylabel("True Positive Rate")
-        plt.title(f"ROC Curve for {model.__class__.__name__}")
-        plt.legend(loc="lower right")
+        roc_data = pd.DataFrame({
+            "False Positive Rate": fpr,
+            "True Positive Rate": tpr,
+            "Type": "ROC Curve"
+        })
+        ref_line = pd.DataFrame({
+            "False Positive Rate": [0, 1],
+            "True Positive Rate": [0, 1],
+            "Type": "Random Guessing"
+        })
+        auc_data = pd.DataFrame({
+            "False Positive Rate": np.linspace(0, 1, 500),
+            "True Positive Rate": np.interp(
+                np.linspace(0, 1, 500), fpr, tpr
+            ),
+            "Type": "ROC Curve"
+        })
+        plot_data = pd.concat([roc_data, ref_line])
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x="False Positive Rate",
+                y="True Positive Rate",
+                color="Type",
+                linetype="Type"
+            )) +
+            pn.geom_line(size=1) +
+            pn.geom_area(
+                data=auc_data,
+                fill=self.primary_color,
+                alpha=0.2,
+                show_legend=False
+            ) +
+            pn.annotate(
+                "text",
+                x=0.875,
+                y=0.025,
+                label=f"AUC = {auc:.2f}",
+                color="black",
+                size=12
+            ) +
+            pn.scale_color_manual(
+                values=[self.primary_color, self.important_color],
+                na_value="black"
+            ) +
+            pn.labs(
+                title=f"ROC Curve for {model.__class__.__name__}",
+                color="",
+                linetype=""
+            ) +
+            theme.brisk_theme() +
+            pn.coord_fixed(ratio=1)
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "ROC curve with AUC = %.2f saved to %s", auc, output_path
             )
@@ -1026,20 +1151,49 @@ class EvaluationManager:
         precision, recall, _ = sk_metrics.precision_recall_curve(y, y_score)
         ap_score = sk_metrics.average_precision_score(y, y_score)
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(
-            recall, precision, label=f"PR Curve (AP = {ap_score:.2f})",
-            color="purple"
-            )
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.title("Precision-Recall Curve")
-        plt.legend(loc="lower left")
+        pr_data = pd.DataFrame({
+            "Recall": recall,
+            "Precision": precision,
+            "Type": "PR Curve"
+        })
+        ap_line = pd.DataFrame({
+            "Recall": [0, 1],
+            "Precision": [ap_score, ap_score],
+            "Type": f"AP Score = {ap_score:.2f}"
+        })
+
+        plot_data = pd.concat([pr_data, ap_line])
+
+        print(pr_data)
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x="Recall",
+                y="Precision",
+                color="Type",
+                linetype="Type"
+            )) +
+            pn.geom_line(size=1) +
+            pn.scale_color_manual(
+                values=[self.important_color, self.primary_color],
+                na_value="black"
+            ) +
+            pn.scale_linetype_manual(
+                values=["dashed", "solid"]
+            ) +
+            pn.labs(
+                title=f"Precision-Recall Curve for {model.__class__.__name__}",
+                color="",
+                linetype=""
+            ) +
+            theme.brisk_theme() +
+            pn.coord_fixed(ratio=1)
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Precision-Recall curve with AP = %.2f saved to %s",
             ap_score, output_path
@@ -1076,7 +1230,10 @@ class EvaluationManager:
     def _save_plot(
         self,
         output_path: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        plot: Optional[pn.ggplot] = None,
+        height = 6,
+        width = 8
     ) -> None:
         """Save the current matplotlib plot to a PNG file, including metadata.
 
@@ -1090,8 +1247,14 @@ class EvaluationManager:
             None
         """
         try:
-            plt.savefig(output_path, format="png", metadata=metadata)
-            plt.close()
+            if plot:
+                plot.save(
+                    filename=output_path, format="png", metadata=metadata,
+                    height=height, width=width, dpi=100
+                )
+            else:
+                plt.savefig(output_path, format="png", metadata=metadata)
+                plt.close()
 
         except IOError as e:
             self.logger.info(f"Failed to save plot to {output_path}: {e}")
