@@ -830,29 +830,30 @@ class EvaluationManager:
         Returns:
             None
         """
-        plt.figure(figsize=(10, 6))
-        plt.plot(
-            param_values, mean_test_score, marker="o", linestyle="-", color="b"
-            )
-        plt.xlabel(param_name, fontsize=12)
-        plt.ylabel("Mean Test Score", fontsize=12)
-        plt.title(
-            f"Hyperparameter Performance: {algorithm_name} ({param_name})",
-            fontsize=16
-            )
+        param_name = param_name.capitalize()
+        title = f"Hyperparameter Performance: {display_name}"
+        plot_data = pd.DataFrame({
+            "Hyperparameter": param_values,
+            "Mean Test Score": mean_test_score,
+        })
+        plot = (
+            pn.ggplot(
+                plot_data, pn.aes(x="Hyperparameter", y="Mean Test Score")
+            ) +
+            pn.geom_point(
+                color="black", size=3, stroke=0.25, fill=self.primary_color
+            ) +
+            pn.geom_line(color=self.primary_color) +
+            pn.ggtitle(title) + 
+            pn.xlab(param_name) +
+            theme.brisk_theme()
+        )
 
-        for i, score in enumerate(mean_test_score):
-            plt.text(
-                param_values[i], score, f"{score:.2f}", ha="center", va="bottom"
-                )
-
-        plt.grid(True)
-        plt.tight_layout()
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
             self.output_dir, f"{algorithm_name}_hyperparam_{param_name}.png"
             )
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Hyperparameter performance plot saved to '%s'.", output_path
             )
