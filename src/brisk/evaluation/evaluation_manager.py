@@ -20,7 +20,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import plotnine as pn
 
 from sklearn import base
@@ -297,14 +296,14 @@ class EvaluationManager:
             "Observed": y_true,
             "Predicted": prediction
         })
-        max_range = plot_data[['Observed', 'Predicted']].max().max()
+        max_range = plot_data[["Observed", "Predicted"]].max().max()
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
             pn.geom_point(
                 color="black", size=3, stroke=0.25, fill=self.primary_color
             ) +
             pn.geom_abline(
-                slope=1, intercept=0, color=self.important_color, 
+                slope=1, intercept=0, color=self.important_color,
                 linetype="dashed"
             ) +
             pn.labs(
@@ -520,9 +519,9 @@ class EvaluationManager:
             "Feature": feature_names,
             "Importance": importance
         })
-        importance_data['Feature'] = pd.Categorical(
-            importance_data['Feature'], 
-            categories=importance_data.sort_values('Importance')['Feature'], 
+        importance_data["Feature"] = pd.Categorical(
+            importance_data["Feature"],
+            categories=importance_data.sort_values("Importance")["Feature"],
             ordered=True
         )
         plot = (
@@ -588,11 +587,11 @@ class EvaluationManager:
         )
 
         if add_fit_line:
-            fit = np.polyfit(plot_data['Observed'], plot_data['Residual'], 1)
-            fit_line = np.polyval(fit, plot_data['Observed'])
+            fit = np.polyfit(plot_data["Observed"], plot_data["Residual"], 1)
+            fit_line = np.polyval(fit, plot_data["Observed"])
             plot += (
                 pn.geom_line(
-                    pn.aes(x='Observed', y=fit_line, group=1), 
+                    pn.aes(x="Observed", y=fit_line, group=1),
                     color=self.accent_color, size=1
                 )
             )
@@ -726,7 +725,7 @@ class EvaluationManager:
             if algo.name == algorithm_name
             )
         display_name = next(
-            algo.display_name for algo in self.algorithm_config 
+            algo.display_name for algo in self.algorithm_config
             if algo.name == algorithm_name
         )
 
@@ -844,7 +843,7 @@ class EvaluationManager:
                 color="black", size=3, stroke=0.25, fill=self.primary_color
             ) +
             pn.geom_line(color=self.primary_color) +
-            pn.ggtitle(title) + 
+            pn.ggtitle(title) +
             pn.xlab(param_name) +
             theme.brisk_theme()
         )
@@ -902,7 +901,7 @@ class EvaluationManager:
         ax.set_ylabel(param_names[1], fontsize=12)
         ax.set_zlabel("Mean Test Score", fontsize=12)
         ax.set_title(
-            f"Hyperparameter Performance: {algorithm_name}", fontsize=16
+            f"Hyperparameter Performance: {display_name}", fontsize=16
         )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(
@@ -998,19 +997,19 @@ class EvaluationManager:
 
         plot = (
             pn.ggplot(plot_data, pn.aes(
-                x='Predicted Label',
-                y='True Label',
-                fill='Percentage'
+                x="Predicted Label",
+                y="True Label",
+                fill="Percentage"
             )) +
             pn.geom_tile() +
-            pn.geom_text(pn.aes(label='Label'), color='black') +
-            pn.scale_fill_gradient(
+            pn.geom_text(pn.aes(label="Label"), color="black") +
+            pn.scale_fill_gradient( # pylint: disable=E1123
                 low="white",
                 high=self.primary_color,
-                name='Percentage (%)',
+                name="Percentage (%)",
                 limits=(0, 100)
             ) +
-            pn.ggtitle('Confusion Matrix Heatmap') +
+            pn.ggtitle("Confusion Matrix Heatmap") +
             theme.brisk_theme()
         )
 
@@ -1063,8 +1062,8 @@ class EvaluationManager:
             "Type": "ROC Curve"
         })
         ref_line = pd.DataFrame({
-            'False Positive Rate': [0, 1],
-            'True Positive Rate': [0, 1],
+            "False Positive Rate": [0, 1],
+            "True Positive Rate": [0, 1],
             "Type": "Random Guessing"
         })
         auc_data = pd.DataFrame({
@@ -1099,12 +1098,13 @@ class EvaluationManager:
                 size=12
             ) +
             pn.scale_color_manual(
-                values=[self.primary_color, self.important_color]
+                values=[self.primary_color, self.important_color],
+                na_value="black"
             ) +
             pn.labs(
                 title=f"ROC Curve for {model.__class__.__name__}",
-                color='',
-                linetype=''
+                color="",
+                linetype=""
             ) +
             theme.brisk_theme() +
             pn.coord_fixed(ratio=1)
@@ -1175,15 +1175,16 @@ class EvaluationManager:
             )) +
             pn.geom_line(size=1) +
             pn.scale_color_manual(
-                values=[self.important_color, self.primary_color]
+                values=[self.important_color, self.primary_color],
+                na_value="black"
             ) +
             pn.scale_linetype_manual(
                 values=["dashed", "solid"]
             ) +
             pn.labs(
                 title=f"Precision-Recall Curve for {model.__class__.__name__}",
-                color='',
-                linetype=''
+                color="",
+                linetype=""
             ) +
             theme.brisk_theme() +
             pn.coord_fixed(ratio=1)
