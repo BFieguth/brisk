@@ -1151,20 +1151,48 @@ class EvaluationManager:
         precision, recall, _ = sk_metrics.precision_recall_curve(y, y_score)
         ap_score = sk_metrics.average_precision_score(y, y_score)
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(
-            recall, precision, label=f"PR Curve (AP = {ap_score:.2f})",
-            color="purple"
-            )
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.title("Precision-Recall Curve")
-        plt.legend(loc="lower left")
+        pr_data = pd.DataFrame({
+            "Recall": recall,
+            "Precision": precision,
+            "Type": "PR Curve"
+        })
+        ap_line = pd.DataFrame({
+            "Recall": [0, 1],
+            "Precision": [ap_score, ap_score],
+            "Type": f"AP Score = {ap_score:.2f}"
+        })
+
+        plot_data = pd.concat([pr_data, ap_line])
+
+        print(pr_data)
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x="Recall",
+                y="Precision",
+                color="Type",
+                linetype="Type"
+            )) +
+            pn.geom_line(size=1) +
+            pn.scale_color_manual(
+                values=[self.important_color, self.primary_color]
+            ) +
+            pn.scale_linetype_manual(
+                values=["dashed", "solid"]
+            ) +
+            pn.labs(
+                title=f"Precision-Recall Curve for {model.__class__.__name__}",
+                color='',
+                linetype=''
+            ) +
+            theme.brisk_theme() +
+            pn.coord_fixed(ratio=1)
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Precision-Recall curve with AP = %.2f saved to %s",
             ap_score, output_path
