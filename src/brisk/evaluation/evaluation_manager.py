@@ -725,6 +725,10 @@ class EvaluationManager:
             algo.get_hyperparam_grid() for algo in self.algorithm_config
             if algo.name == algorithm_name
             )
+        display_name = next(
+            algo.display_name for algo in self.algorithm_config 
+            if algo.name == algorithm_name
+        )
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
         search = searcher(
@@ -745,7 +749,8 @@ class EvaluationManager:
         if plot_results:
             metadata = self._get_metadata(model)
             self._plot_hyperparameter_performance(
-                param_grid, search_result, algorithm_name, metadata
+                param_grid, search_result, algorithm_name, metadata,
+                display_name
             )
         return tuned_model
 
@@ -754,7 +759,8 @@ class EvaluationManager:
         param_grid: Dict[str, Any],
         search_result: Any,
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of hyperparameter tuning.
 
@@ -767,6 +773,8 @@ class EvaluationManager:
             algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
@@ -782,7 +790,8 @@ class EvaluationManager:
                 mean_test_score=search_result.cv_results_["mean_test_score"],
                 param_name=param_keys[0],
                 algorithm_name=algorithm_name,
-                metadata=metadata
+                metadata=metadata,
+                display_name=display_name
             )
         elif len(param_keys) == 2:
             self._plot_3d_surface(
@@ -790,7 +799,8 @@ class EvaluationManager:
                 search_result=search_result,
                 param_names=param_keys,
                 algorithm_name=algorithm_name,
-                metadata=metadata
+                metadata=metadata,
+                display_name=display_name
             )
         else:
             self.logger.info(
@@ -803,7 +813,8 @@ class EvaluationManager:
         mean_test_score: List[float],
         param_name: str,
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of a single hyperparameter.
 
@@ -814,6 +825,7 @@ class EvaluationManager:
             param_name (str): The name of the hyperparameter.
             algorithm_name (str): The name of the algorithm.
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
@@ -851,7 +863,8 @@ class EvaluationManager:
         search_result: Any,
         param_names: List[str],
         algorithm_name: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        display_name: str
     ) -> None:
         """Plot the performance of two hyperparameters in 3D.
 
@@ -866,6 +879,8 @@ class EvaluationManager:
             algorithm_name (str): The name of the algorithm.
             
             metadata (Dict[str, Any]): Metadata to be included with the plot.
+
+            display_name (str): The name of the algorithm to use in the labels.
 
         Returns:
             None
