@@ -1057,18 +1057,63 @@ class EvaluationManager:
         fpr, tpr, _ = sk_metrics.roc_curve(y, y_score)
         auc = sk_metrics.roc_auc_score(y, y_score)
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {auc:.2f})", color="blue")
-        plt.plot([0, 1], [0, 1], "k--", label="Random Guessing")
-        plt.xlabel("False Positive Rate")
-        plt.ylabel("True Positive Rate")
-        plt.title(f"ROC Curve for {model.__class__.__name__}")
-        plt.legend(loc="lower right")
+        roc_data = pd.DataFrame({
+            "False Positive Rate": fpr,
+            "True Positive Rate": tpr,
+            "Type": "ROC Curve"
+        })
+        ref_line = pd.DataFrame({
+            'False Positive Rate': [0, 1],
+            'True Positive Rate': [0, 1],
+            "Type": "Random Guessing"
+        })
+        auc_data = pd.DataFrame({
+            "False Positive Rate": np.linspace(0, 1, 500),
+            "True Positive Rate": np.interp(
+                np.linspace(0, 1, 500), fpr, tpr
+            ),
+            "Type": "ROC Curve"
+        })
+        plot_data = pd.concat([roc_data, ref_line])
+
+        plot = (
+            pn.ggplot(plot_data, pn.aes(
+                x="False Positive Rate",
+                y="True Positive Rate",
+                color="Type",
+                linetype="Type"
+            )) +
+            pn.geom_line(size=1) +
+            pn.geom_area(
+                data=auc_data,
+                fill=self.primary_color,
+                alpha=0.2,
+                show_legend=False
+            ) +
+            pn.annotate(
+                "text",
+                x=0.875,
+                y=0.025,
+                label=f"AUC = {auc:.2f}",
+                color="black",
+                size=12
+            ) +
+            pn.scale_color_manual(
+                values=[self.primary_color, self.important_color]
+            ) +
+            pn.labs(
+                title=f"ROC Curve for {model.__class__.__name__}",
+                color='',
+                linetype=''
+            ) +
+            theme.brisk_theme() +
+            pn.coord_fixed(ratio=1)
+        )
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(model)
-        self._save_plot(output_path, metadata)
+        self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "ROC curve with AUC = %.2f saved to %s", auc, output_path
             )
