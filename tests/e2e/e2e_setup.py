@@ -1,26 +1,28 @@
 """Define objects that will be reused by all e2e testing projects.
 """
+import inspect
 import pathlib
 import shutil
 import subprocess
-from typing import List, Optional
+from typing import List, Callable
 
 import brisk
+from brisk.configuration import configuration_manager as conf_manager
 
 def metric_config():
-    METRIC_CONFIG = brisk.MetricManager(
+    metrics = brisk.MetricManager(
         *brisk.REGRESSION_METRICS,
         *brisk.CLASSIFICATION_METRICS
     )
-    return METRIC_CONFIG
+    return metrics
 
 
 def algorithm_config():
-    ALGORITHM_CONFIG = [
+    algorithms = [
         *brisk.REGRESSION_ALGORITHMS,
         *brisk.CLASSIFICATION_ALGORITHMS
     ]
-    return ALGORITHM_CONFIG
+    return algorithms
 
 
 class BaseE2ETest:
@@ -38,21 +40,26 @@ class BaseE2ETest:
         test_name: str,
         project_name: str,
         workflow_name: str,
-        datasets: List[str]
+        datasets: List[str],
+        create_configuration: Callable[[], conf_manager.ConfigurationManager]
     ):
         self.test_name = test_name
         self.project_name = project_name
         self.datasets = datasets
         self.workflow_name = workflow_name
-        self.project_dir: Optional[pathlib.Path] = None
-        self.results_dir: Optional[pathlib.Path] = None
+        self.create_configuration = create_configuration
+        self.e2e_dir = pathlib.Path(__file__).parent
+        self.project_dir = self.e2e_dir / self.project_name
+        self.results_dir = self.project_dir / "results"
+        self.settings_path = self.project_dir / "settings.py"
+        if self.settings_path.exists():
+            self.original_settings = self.settings_path.read_text()
 
     def setup(self):
         """Setup the test project with required datasets."""
-        e2e_dir = pathlib.Path(__file__).parent
-        datasets_dir = e2e_dir / "datasets"
-        self.project_dir = e2e_dir / self.project_name
+        self._write_settings_file()
 
+        datasets_dir = self.e2e_dir / "datasets"
         project_datasets = self.project_dir / "datasets"
         project_datasets.mkdir(exist_ok=True)
 
@@ -61,8 +68,7 @@ class BaseE2ETest:
                 datasets_dir / dataset,
                 project_datasets / dataset
             )
-        
-        self.results_dir = self.project_dir / "results"
+
         if self.results_dir.exists():
             shutil.rmtree(self.results_dir)
 
@@ -70,7 +76,7 @@ class BaseE2ETest:
         """Run the workflow using brisk CLI run command."""
         if not self.project_dir:
             raise RuntimeError("Project not set up. Call setup() first.")
-        
+
         result = subprocess.run(
             [
                 "brisk", "run",
@@ -79,7 +85,8 @@ class BaseE2ETest:
             ],
             cwd=str(self.project_dir),
             capture_output=True,
-            text=True
+            text=True,
+            check=False
         )
 
         if result.returncode != 0:
@@ -88,15 +95,41 @@ class BaseE2ETest:
                 f"stdout: {result.stdout}\n"
                 f"stderr: {result.stderr}"
             )
-        
+
         self.stdout = result.stdout
         self.stderr = result.stderr
 
     def cleanup(self):
-        """Clean up results directory."""
+        """Clean up results directory, datasets and reset settings.py."""
         if self.results_dir and self.results_dir.exists():
             shutil.rmtree(self.results_dir)
-        
+
         project_datasets = self.project_dir / "datasets"
         if project_datasets.exists():
             shutil.rmtree(project_datasets)
+
+        if self.settings_path and self.original_settings:
+            self.settings_path.write_text(self.original_settings)
+
+    def _write_settings_file(self):
+        """
+        Inject the create_configuration function into settings.py at runtime
+        """
+        source = inspect.getsource(self.create_configuration)
+        source_lines = source.splitlines()
+        function_body = source_lines[1:]
+
+        if function_body:
+            indentation = min(len(line) - len(line.lstrip())
+                             for line in function_body if line.strip())
+            function_body = [line[indentation:] for line in function_body]
+
+        function_body = ["    " + line if line.strip() else line
+                        for line in function_body]
+        formatted_source = "\n".join(function_body)
+        settings_content = f"""
+from brisk.configuration.configuration import Configuration
+
+def create_configuration():
+{formatted_source}"""
+        self.settings_path.write_text(settings_content)
