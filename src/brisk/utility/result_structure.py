@@ -125,6 +125,115 @@ class ResultStructure:
     error_log: Optional[ErrorLog]
     html_report: Optional[HTMLReport]
     experiment_groups: Dict[str, ExperimentGroupDirectory]
+
+    def __str__(self):
+        report = []
+        report.append("Result Structure:")
+        report.append(f"Config Log Exists: {self.config_log.file_exists}")
+        report.append(
+            "Error Log Exists: "
+            f"{self.error_log.file_exists if self.error_log else 'N/A'}" # pylint: disable=W1405
+        )
+        report.append(f"HTML Report Exists: {self.html_report.index_exists}")
+
+        for group_name, group in self.experiment_groups.items():
+            report.append(f"\nExperiment Group: {group_name}")
+            for dataset_name, dataset in group.datasets.items():
+                report.append(f"  \nDataset: {dataset_name}")
+                report.append(f"    Scaler Exists: {dataset.scaler_exists}")
+                report.append(
+                    f"    Histogram Exists: {dataset.hist_box_plot_exists}"
+                )
+                report.append(f"    Pie Plot Exists: {dataset.pie_plot_exists}")
+                report.append(
+                    "    Categorical Stats JSON Exists: "
+                    f"{dataset.categorical_stats_json_exists}"
+                )
+                report.append(
+                    "    Continuous Stats JSON Exists: "
+                    f"{dataset.continuous_stats_json_exists}"
+                )
+                report.append(
+                    "    Correlation Matrix Exists: "
+                    f"{dataset.correlation_matrix_exists}"
+                )
+                report.append(
+                    "    Split Distribution Exists: "
+                    f"{dataset.split_distribution_exists}"
+                )
+
+                for experiment_name, experiment in dataset.experiments.items():
+                    report.append(f"    \nExperiment: {experiment_name}")
+                    report.append(f"      Save Model: {experiment.save_model}")
+                    report.append(
+                        f"      Evaluate Model: {experiment.evaluate_model}"
+                    )
+                    report.append(
+                        "      Evaluate Model CV: "
+                        f"{experiment.evaluate_model_cv}"
+                    )
+                    report.append(
+                        f"      Compare Models: {experiment.compare_models}"
+                    )
+                    report.append(
+                        f"      Plot Pred vs Obs: {experiment.plot_pred_vs_obs}"
+                    )
+                    report.append(
+                        "      Plot Learning Curve: "
+                        f"{experiment.plot_learning_curve}"
+                    )
+                    report.append(
+                        "      Plot Feature Importance: "
+                        f"{experiment.plot_feature_importance}"
+                    )
+                    report.append(
+                        f"      Plot Residuals: {experiment.plot_residuals}"
+                    )
+                    report.append(
+                        "      Plot Model Comparison: "
+                        f"{experiment.plot_model_comparison}"
+                    )
+                    report.append(
+                        f"      Confusion Matrix: {experiment.confusion_matrix}"
+                    )
+                    report.append(
+                        "      Plot Confusion Heatmap: "
+                        f"{experiment.plot_confusion_heatmap}"
+                    )
+                    report.append(
+                        f"      Plot ROC Curve: {experiment.plot_roc_curve}"
+                    )
+                    report.append(
+                        "      Plot Precision Recall Curve: "
+                        f"{experiment.plot_precision_recall_curve}"
+                    )
+
+        report.append("\nHTML Report:")
+        report.append(f"  Index Exists: {self.html_report.index_exists}")
+        report.append(
+            f"  Index CSS Exists: {self.html_report.index_css_exists}"
+        )
+        report.append(
+            f"  Experiment CSS Exists: {self.html_report.experiment_css_exists}"
+        )
+        report.append(
+            f"  Dataset CSS Exists: {self.html_report.dataset_css_exists}"
+        )
+
+        report.append("  Dataset Pages:")
+        for page, exists in self.html_report.dataset_pages.items():
+            report.append(
+                f"    {page}: {'Exists' if exists else 'Does not exist'}" # pylint: disable=W1405
+            )
+
+        report.append("  Experiment Pages:")
+        for page, exists in self.html_report.experiment_pages.items():
+            report.append(
+                f"    {page}: {'Exists' if exists else 'Does not exist'}" # pylint: disable=W1405
+            )
+
+        return "\n".join(report)
+
     @classmethod
     def from_config(
         cls,
@@ -249,3 +358,20 @@ class ResultStructure:
         return experiment_groups
 
     @staticmethod
+    def get_workflow_methods_from_dir(experiment_dir):
+        workflow_methods = set()
+
+        if experiment_dir.glob("*.pkl"):
+            workflow_methods.add("save_model")
+
+        for json_file in experiment_dir.glob("*.json"):
+            method = ResultStructure.get_json_metadata(json_file)
+            if method:
+                workflow_methods.add(method)
+
+        for png_file in experiment_dir.glob("*.png"):
+            method = ResultStructure.get_png_metadata(png_file)
+            if method:
+                workflow_methods.add(method)
+
+        return workflow_methods
