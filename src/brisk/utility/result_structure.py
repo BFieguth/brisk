@@ -2,8 +2,44 @@
 This module contains the ResultStructure class, which is used to represent the
 structure of the results directory of a Brisk experiment as booleans.
 """
+
+import ast
 import dataclasses
 from typing import Dict, Optional, Set, Tuple
+
+class MethodCallVisitor(ast.NodeVisitor):
+    """Visitor that extracts method calls from an AST."""
+
+    def __init__(self):
+        self.method_calls = set()
+
+    def visit_Call(self, node): # pylint: disable=C0103
+        """Visit a call node in the AST."""
+        if isinstance(node.func, ast.Attribute):
+            if isinstance(node.func.value, ast.Name):
+                if node.func.value.id == "self":
+                    self.method_calls.add(node.func.attr)
+        self.generic_visit(node)
+
+    @classmethod
+    def extract_workflow_methods(cls, workflow_path: str) -> Set[str]:
+        """Extract all method calls from a workflow file."""
+        with open(workflow_path, "r", encoding="utf-8") as file:
+            tree = ast.parse(file.read())
+
+        visitor = cls()
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                for item in node.body:
+                    if (
+                        isinstance(item, ast.FunctionDef) and
+                        item.name == "workflow"
+                    ):
+                        visitor.visit(item)
+
+        return visitor.method_calls
+
 
 @dataclasses.dataclass
 class ConfigLog:
