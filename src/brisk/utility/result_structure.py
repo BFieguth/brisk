@@ -275,6 +275,135 @@ class ResultStructure:
             experiment_groups=experiment_groups
         )
 
+    @classmethod
+    def from_directory(cls, path: pathlib.Path):
+        root_path = pathlib.Path(path)
+        experiment_groups = {}
+        datasets = {}
+        dataset_pages = {}
+        experiments = {}
+        experiment_pages = {}
+        config_log = ConfigLog(
+            file_exists=root_path.joinpath("config_log.md").exists()
+        )
+        error_log = ErrorLog(
+            file_exists=root_path.joinpath("error_log.txt").exists()
+        )
+
+        for group_dir in root_path.glob("*"):
+            if not group_dir.is_dir() or group_dir.name == "html_report":
+                continue
+
+            group_name = group_dir.name
+            for dataset_dir in group_dir.glob("*"):
+                if not dataset_dir.is_dir():
+                    continue
+
+                dataset_name = dataset_dir.name
+                dataset_file = f"{group_name}_{dataset_name}"
+                dataset_pages[dataset_file] = root_path.joinpath(
+                    f"html_report/{dataset_file}.html"
+                ).exists()
+
+                for exp_dir in dataset_dir.glob("*"):
+                    if (
+                        not exp_dir.is_dir() or
+                        exp_dir.name == "split_distribution"
+                    ):
+                        continue
+
+                    experiment_file = f"{dataset_name}_{exp_dir.name}"
+                    experiment_pages[experiment_file] = root_path.joinpath(
+                        f"html_report/{experiment_file}.html"
+                    ).exists()
+                    workflow_methods = cls.get_workflow_methods_from_dir(
+                        exp_dir
+                    )
+
+                    experiments[exp_dir.name] = ExperimentDirectory(
+                        "save_model" in workflow_methods,
+                        "evaluate_model" in workflow_methods,
+                        "evaluate_model_cv" in workflow_methods,
+                        "compare_models" in workflow_methods,
+                        "plot_pred_vs_obs" in workflow_methods,
+                        "plot_learning_curve" in workflow_methods,
+                        "plot_feature_importance" in workflow_methods,
+                        "plot_residuals" in workflow_methods,
+                        "plot_model_comparison" in workflow_methods,
+                        "confusion_matrix" in workflow_methods,
+                        "plot_confusion_heatmap" in workflow_methods,
+                        "plot_roc_curve" in workflow_methods,
+                        "plot_precision_recall_curve" in workflow_methods
+                    )
+
+                split_distribution_dir = dataset_dir / "split_distribution"
+                hist_box_plot_dir = split_distribution_dir / "hist_box_plot"
+                pie_plot_dir = split_distribution_dir / "pie_plot"
+
+                hist_box_plot_exists = any(hist_box_plot_dir.glob("*.png"))
+                pie_plot_exists = any(pie_plot_dir.glob("*.png"))
+                categorical_stats_json_exists = split_distribution_dir.joinpath(
+                    "categorical_stats.json"
+                ).exists()
+                continuous_stats_json_exists = split_distribution_dir.joinpath(
+                    "continuous_stats.json"
+                ).exists()
+                correlation_matrix_exists = split_distribution_dir.joinpath(
+                    "correlation_matrix.png"
+                ).exists()
+
+                datasets[dataset_dir.name] = DatasetDirectory(
+                    experiments=experiments,
+                    scaler_exists=True,
+                    split_distribution_exists=True,
+                    hist_box_plot_exists=hist_box_plot_exists,
+                    pie_plot_exists=pie_plot_exists,
+                    categorical_stats_json_exists=categorical_stats_json_exists,
+                    continuous_stats_json_exists=continuous_stats_json_exists,
+                    correlation_matrix_exists=correlation_matrix_exists
+                )
+
+            experiment_groups[group_dir.name] = ExperimentGroupDirectory(
+                datasets=datasets
+            )
+
+        html_report = HTMLReport(
+            index_exists=root_path.joinpath(
+                "html_report/index.html"
+            ).exists(),
+            index_css_exists=root_path.joinpath(
+                "html_report/index.css"
+            ).exists(),
+            dataset_css_exists=root_path.joinpath(
+                "html_report/dataset.css"
+            ).exists(),
+            experiment_css_exists=root_path.joinpath(
+                "html_report/experiment.css"
+            ).exists(),
+            dataset_pages=dataset_pages,
+            experiment_pages=experiment_pages,
+        )
+
+        return cls(
+            config_log=config_log,
+            error_log=error_log,
+            html_report=html_report,
+            experiment_groups=experiment_groups
+        )
+
+    @staticmethod
+    def get_png_metadata(file_path: pathlib.Path) -> str:
+        """Extract method name from PNG metadata."""
+        with PIL.Image.open(file_path) as img:
+            metadata = img.info
+            return metadata.get("method", "")
+
+    @staticmethod
+    def get_json_metadata(file_path: pathlib.Path) -> str:
+        """Extract method name from JSON metadata."""
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("_metadata", {}).get("method", "")
 
     @staticmethod
     def get_html_pages_from_groups(
