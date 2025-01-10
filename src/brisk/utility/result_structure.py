@@ -7,11 +7,11 @@ import ast
 import dataclasses
 import json
 import pathlib
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple, List
 
 import PIL
 
-from brisk.configuration import configuration_manager
+from brisk.configuration import configuration_manager, experiment_group
 
 class MethodCallVisitor(ast.NodeVisitor):
     """Visitor that extracts method calls from an AST."""
@@ -425,17 +425,17 @@ class ResultStructure:
 
     @staticmethod
     def get_experiment_groups(
-        groups,
-        workflow_methods,
-        base_scale_method,
-        base_categorical_features
+        groups: List[experiment_group.ExperimentGroup],
+        workflow_methods: Set[str],
+        base_scale_method: bool,
+        base_categorical_features: bool
     ):
         experiment_groups = {}
-        datasets = {}
-        experiments = {}
 
         for group in groups:
+            datasets = {}
             for dataset_name in group.datasets:
+                experiments = {}
                 for algorithm in group.algorithms:
                     experiment_name = f"{group.name}_{algorithm}"
                     experiments[experiment_name] = ExperimentDirectory(
@@ -470,7 +470,7 @@ class ResultStructure:
                     categorical_features_exist = base_categorical_features
 
                 datasets[pathlib.Path(dataset_name).stem] = DatasetDirectory(
-                    experiments=experiments,
+                    experiments=experiments.copy(),
                     scaler_exists=scaler_exists,
                     split_distribution_exists=True,
                     continuous_stats_json_exists=True,
@@ -481,7 +481,7 @@ class ResultStructure:
                 )
 
             experiment_groups[group.name] = ExperimentGroupDirectory(
-                datasets=datasets
+                datasets=datasets.copy()
             )
 
         return experiment_groups
