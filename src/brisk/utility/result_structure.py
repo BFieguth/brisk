@@ -279,9 +279,7 @@ class ResultStructure:
     def from_directory(cls, path: pathlib.Path):
         root_path = pathlib.Path(path)
         experiment_groups = {}
-        datasets = {}
         dataset_pages = {}
-        experiments = {}
         experiment_pages = {}
         config_log = ConfigLog(
             file_exists=root_path.joinpath("config_log.md").exists()
@@ -295,6 +293,8 @@ class ResultStructure:
                 continue
 
             group_name = group_dir.name
+            datasets = {}
+
             for dataset_dir in group_dir.glob("*"):
                 if not dataset_dir.is_dir():
                     continue
@@ -304,6 +304,8 @@ class ResultStructure:
                 dataset_pages[dataset_file] = root_path.joinpath(
                     f"html_report/{dataset_file}.html"
                 ).exists()
+                experiments = {}
+
 
                 for exp_dir in dataset_dir.glob("*"):
                     if (
@@ -351,10 +353,11 @@ class ResultStructure:
                 correlation_matrix_exists = split_distribution_dir.joinpath(
                     "correlation_matrix.png"
                 ).exists()
+                scaler_exists = any(dataset_dir.glob("*.joblib"))
 
                 datasets[dataset_dir.name] = DatasetDirectory(
                     experiments=experiments,
-                    scaler_exists=True,
+                    scaler_exists=scaler_exists,
                     split_distribution_exists=True,
                     hist_box_plot_exists=hist_box_plot_exists,
                     pie_plot_exists=pie_plot_exists,
