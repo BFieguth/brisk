@@ -1,0 +1,9 @@
+{
+    "Concordance Correlation Coefficient": 0.9999988536990488,
+    "Mean Absolute Error": 0.2511642664931165,
+    "_metadata": {
+        "timestamp": "2025-01-10 12:44:42",
+        "method": "evaluate_model",
+        "models": "['Lasso']"
+    }
+}

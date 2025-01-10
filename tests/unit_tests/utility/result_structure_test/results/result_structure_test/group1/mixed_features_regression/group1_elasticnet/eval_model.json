@@ -1,0 +1,9 @@
+{
+    "Concordance Correlation Coefficient": 0.9986137060129638,
+    "Mean Absolute Error": 8.734916301778282,
+    "_metadata": {
+        "timestamp": "2025-01-10 12:44:44",
+        "method": "evaluate_model",
+        "models": "['ElasticNet']"
+    }
+}

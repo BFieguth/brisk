@@ -1,0 +1,9 @@
+{
+    "Concordance Correlation Coefficient": 1.0000000000000002,
+    "Mean Absolute Error": 4.803624165106158e-13,
+    "_metadata": {
+        "timestamp": "2025-01-10 12:44:44",
+        "method": "evaluate_model",
+        "models": "['LinearRegression']"
+    }
+}
