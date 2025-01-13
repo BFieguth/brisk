@@ -70,7 +70,7 @@ class ExperimentFactory:
 
         algorithm_groups = self._normalize_algorithms(group.algorithms)
 
-        for dataset_path in group.dataset_paths:
+        for dataset_path, table_name in group.dataset_paths:
             for algo_group in algorithm_groups:
                 models = {}
 
@@ -95,8 +95,9 @@ class ExperimentFactory:
 
                 exp = experiment.Experiment(
                     group_name=group.name,
-                    dataset=dataset_path,
                     algorithms=models,
+                    dataset_path=dataset_path,
+                    table_name=table_name,
                 )
                 experiments.append(exp)
 

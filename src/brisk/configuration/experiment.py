@@ -8,7 +8,7 @@ name and algorithms to use.
 import dataclasses
 import hashlib
 import pathlib
-from typing import Dict
+from typing import Dict, Optional
 
 from brisk.utility import algorithm_wrapper
 
@@ -38,8 +38,9 @@ class Experiment:
         'baseline_a1b2c3d4'
     """
     group_name: str
-    dataset: pathlib.Path
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
+    dataset_path: pathlib.Path
+    table_name: Optional[str | None]
 
     @property
     def full_name(self) -> str:
@@ -81,6 +82,15 @@ class Experiment:
             return self.full_name
         return self.experiment_name
 
+    @property
+    def dataset_name(self) -> str:
+        """Name of the dataset."""
+        dataset_name = (
+            f"{self.dataset_path.stem}_{self.table_name}" 
+            if self.table_name else self.dataset_path.stem
+        )
+        return dataset_name
+
     def __post_init__(self):
         """Validate experiment configuration after initialization.
         
@@ -99,8 +109,8 @@ class Experiment:
                 - If algorithms is empty
                 - If model keys don't follow naming convention
         """
-        if not isinstance(self.dataset, pathlib.Path):
-            self.dataset = pathlib.Path(self.dataset)
+        if not isinstance(self.dataset_path, pathlib.Path):
+            self.dataset_path = pathlib.Path(self.dataset_path)
 
         if not isinstance(self.group_name, str):
             raise ValueError("Group name must be a string")

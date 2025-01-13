@@ -198,9 +198,10 @@ class ConfigurationManager:
         """
         for group in self.experiment_groups:
             group_data_manager = self.data_managers[group.name]
-            for dataset_path in group.dataset_paths:
+            for dataset_path, table_name in group.dataset_paths:
                 group_data_manager.split(
                     data_path=str(dataset_path),
+                    table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
@@ -248,9 +249,10 @@ class ConfigurationManager:
 
             # Add dataset information
             md_content.append("### Datasets")
-            for dataset_path in group.dataset_paths:
+            for dataset_path, table_name in group.dataset_paths:
                 split_info = group_data_manager.split(
                     data_path=str(dataset_path),
+                    table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
@@ -282,9 +284,13 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             dataset_info = {}
 
-            for dataset_path in group.dataset_paths:
-                dataset_info[dataset_path.stem] = (
-                    str(dataset_path), group.name
+            for dataset_path, table_name in group.dataset_paths:
+                dataset_name = (
+                    f"{dataset_path.stem}_{table_name}" 
+                    if table_name else dataset_path.stem
+                )
+                dataset_info[dataset_name] = (
+                    str(dataset_path), table_name
                     )
 
             output_structure[group.name] = dataset_info

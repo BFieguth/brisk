@@ -14,7 +14,7 @@ Usage Example:
     >>> manager = config.build()
 """
 
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
@@ -51,7 +51,7 @@ class Configuration:
         self,
         *,
         name: str,
-        datasets: List[str],
+        datasets: List[str | Tuple[str, str]],
         data_config: Optional[Dict[str, Any]] = None,
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
@@ -79,6 +79,7 @@ class Configuration:
             algorithms = self.default_algorithms
 
         self._check_name_exists(name)
+        self._check_datasets_type(datasets)
         self.experiment_groups.append(
             ExperimentGroup(
                 name,
@@ -111,3 +112,17 @@ class Configuration:
             raise ValueError(
                 f"Experiment group with name '{name}' already exists"
             )
+
+    def _check_datasets_type(self, datasets) -> None:
+        for dataset in datasets:
+            if isinstance(dataset, str):
+                continue
+            elif isinstance(dataset, tuple):
+                for val in dataset:
+                    if isinstance(val, str):
+                        continue
+            else:
+                raise TypeError(
+                    "datasets must be a list containing strings and/or tuples "
+                    f"of strings. Got {type(datasets)}."
+                    )

@@ -154,7 +154,8 @@ class TrainingManager:
         start_time = time.time()
 
         group_name = current_experiment.group_name
-        dataset_name = current_experiment.dataset.stem
+        # dataset_name = current_experiment.dataset_path.stem
+        dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
 
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
@@ -287,9 +288,10 @@ class TrainingManager:
             os.makedirs(group_dir, exist_ok=True)
             group_data_manager = self.data_managers[group_name]
 
-            for dataset_name, (data_path, group_name) in datasets.items():
+            for dataset_name, (data_path, table_name) in datasets.items():
                 split_info = group_data_manager.split(
                     data_path=data_path,
+                    table_name=table_name,
                     group_name=group_name,
                     filename=dataset_name
                 )
@@ -374,7 +376,8 @@ class TrainingManager:
             Configured workflow instance.
         """
         data_split = self.data_managers[group_name].split(
-            data_path=current_experiment.dataset,
+            data_path=current_experiment.dataset_path,
+            table_name=current_experiment.table_name,
             group_name=group_name,
             filename=dataset_name
         )
