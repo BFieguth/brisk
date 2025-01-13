@@ -1,6 +1,7 @@
 """Define objects that will be reused by all e2e testing projects.
 """
 import inspect
+import os
 import pathlib
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ from typing import List, Callable
 
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
+from brisk.utility import result_structure as rs
 
 def metric_config():
     metrics = brisk.MetricManager(
@@ -133,3 +135,20 @@ from brisk.configuration.configuration import Configuration
 def create_configuration():
 {formatted_source}"""
         self.settings_path.write_text(settings_content)
+
+    def assert_result_strucure(self):
+        result_dir = self.results_dir / self.test_name
+        assert result_dir.exists()
+
+        os.chdir(self.project_dir)
+        config_manager = self.create_configuration()
+        workflow_path = (
+            self.project_dir / "workflows" / f"{self.workflow_name}.py"
+        )
+
+        expected_structure = rs.ResultStructure.from_config(
+            config_manager, workflow_path
+        )
+        actual_structure = rs.ResultStructure.from_directory(result_dir)
+
+        assert expected_structure == actual_structure
