@@ -44,8 +44,9 @@ def single_model(linear_wrapper):
     """Create a simple experiment with one model."""
     return Experiment(
         group_name="test_group",
-        dataset=Path("data/test.csv"),
-        algorithms={"model": linear_wrapper}
+        dataset_path=Path("data/test.csv"),
+        algorithms={"model": linear_wrapper},
+        table_name=None
     )
 
 @pytest.fixture
@@ -53,11 +54,12 @@ def multiple_models(linear_wrapper, rf_wrapper):
     """Create an experiment with multiple models."""
     return Experiment(
         group_name="test_group",
-        dataset=Path("data/test.csv"),
+        dataset_path=Path("data/test.csv"),
         algorithms={
             "model": linear_wrapper,
             "model2": rf_wrapper
-        }
+        },
+        table_name=None
     )
 
 @pytest.fixture
@@ -65,8 +67,9 @@ def long_name(linear_wrapper):
     """Create a simple experiment with one model."""
     return Experiment(
         group_name="a_very_long_group_name_indeed",
-        dataset=Path("data/test.csv"),
-        algorithms={"model": linear_wrapper}
+        dataset_path=Path("data/test.csv"),
+        algorithms={"model": linear_wrapper},
+        table_name=None
     )
 
 
@@ -74,7 +77,7 @@ class TestExperiment:
     def test_valid_single_model(self, single_model, linear_wrapper):
         """Test creation with single model."""
         assert single_model.group_name == "test_group"
-        assert single_model.dataset == Path("data/test.csv")
+        assert single_model.dataset_path == Path("data/test.csv")
         assert len(single_model.algorithms) == 1
         assert isinstance(single_model.algorithms["model"], AlgorithmWrapper)
         assert single_model.algorithms["model"].algorithm_class == LinearRegression
@@ -92,18 +95,20 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Single model must use key"):
             Experiment(
                 group_name="test",
-                dataset="test.csv",
-                algorithms={"wrong_key": linear_wrapper}
+                dataset_path="test.csv",
+                algorithms={"wrong_key": linear_wrapper},
+                table_name=None
             )
 
         with pytest.raises(ValueError, match="Multiple models must use keys"):
             Experiment(
                 group_name="test",
-                dataset="test.csv",
+                dataset_path="test.csv",
                 algorithms={
                     "model1": linear_wrapper,
                     "wrong_key": ridge_wrapper
-                }
+                },
+                table_name=None
             )
 
     def test_full_name_format(self, multiple_models):
@@ -121,8 +126,9 @@ class TestExperiment:
         """Test experiment_name is consistent across instantiations."""
         exp2 = Experiment(
             group_name="test_group",
-            dataset="data/test.csv",
-            algorithms={"model": linear_wrapper}
+            dataset_path="data/test.csv",
+            algorithms={"model": linear_wrapper},
+            table_name=None
         )
         assert single_model.experiment_name == exp2.experiment_name
 
@@ -130,13 +136,15 @@ class TestExperiment:
         """Test experiment_name is unique for different configurations."""
         exp1 = Experiment(
             group_name="test_group",
-            dataset="test.csv",
-            algorithms={"model": linear_wrapper}
+            dataset_path="test.csv",
+            algorithms={"model": linear_wrapper},
+            table_name=None
         )
         exp2 = Experiment(
             group_name="test_group",
-            dataset="test.csv",
-            algorithms={"model": rf_wrapper}
+            dataset_path="test.csv",
+            algorithms={"model": rf_wrapper},
+            table_name=None
         )
         assert exp1.experiment_name != exp2.experiment_name
 
@@ -152,8 +160,9 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Group name must be a string"):
             Experiment(
                 group_name=123,
-                dataset="test.csv",
-                algorithms={"model": linear_wrapper}
+                dataset_path="test.csv",
+                algorithms={"model": linear_wrapper},
+                table_name=None
             )
 
     def test_invalid_algorithms(self, linear_wrapper):
@@ -161,8 +170,9 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Algorithms must be a dictionary"):
             Experiment(
                 group_name="test",
-                dataset="test.csv",
-                algorithms=[linear_wrapper]
+                dataset_path="test.csv",
+                algorithms=[linear_wrapper],
+                table_name=None
             )
         
     def test_missing_algorithms(self, linear_wrapper):
@@ -170,6 +180,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="At least one algorithm must be provided"):
             Experiment(
                 group_name="test",
-                dataset="test.csv",
-                algorithms={}
+                dataset_path="test.csv",
+                algorithms={},
+                table_name=None
             )

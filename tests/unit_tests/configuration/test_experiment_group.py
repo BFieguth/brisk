@@ -84,11 +84,14 @@ class TestExperimentGroup:
             mock_regression_project / 'datasets' / 'test.csv',
             mock_regression_project / 'datasets' / 'another_dataset.csv'
         ]
-        assert valid_group_two_datasets.dataset_paths == expected_paths
+        actual_paths  = [
+            path for path, _ in valid_group_two_datasets.dataset_paths
+        ]
+        assert actual_paths == expected_paths
 
     def test_dataset_paths_exist(self, valid_group_two_datasets):
         """Test that dataset_paths point to existing files"""
-        for path in valid_group_two_datasets.dataset_paths:
+        for path, _ in valid_group_two_datasets.dataset_paths:
             assert path.exists()
 
     @pytest.mark.parametrize("data_config", [
@@ -171,5 +174,5 @@ def test_nested_project_root(tmp_path, monkeypatch):
         datasets=["test.csv"],
         algorithms=["linear"]
     )
-
-    assert group.dataset_paths[0] == project_root / 'datasets' / 'test.csv'
+    path, _ = group.dataset_paths[0]
+    assert path == project_root / 'datasets' / 'test.csv'

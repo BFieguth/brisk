@@ -144,7 +144,7 @@ class TestTrainingManager:
 
     def test_save_data_distribution(self, tmp_path, training_manager):
         class DataManagerNoScaler:
-            def split(self, data_path, group_name, filename): # pylint: disable=unused-argument
+            def split(self, data_path, group_name, table_name, filename): # pylint: disable=unused-argument
                 split_info = DataSplitInfo(
                     X_train=pd.DataFrame([[1, 2], [3, 4]]),
                     X_test=pd.DataFrame([[5, 6]]),
@@ -158,8 +158,10 @@ class TestTrainingManager:
 
 
         class DataManagerWithScaler(DataManagerNoScaler):
-            def split(self, data_path, group_name, filename):
-                split_info = super().split(data_path, group_name, filename)
+            def split(self, data_path, group_name, table_name, filename):
+                split_info = super().split(
+                    data_path, group_name, table_name, filename
+                )
                 split_info.scaler = preprocessing.StandardScaler()
                 return split_info
 
@@ -253,12 +255,13 @@ class TestTrainingManager:
         group_name = "test_group"
         current_experiment = Experiment(
             group_name=group_name,
-            dataset="./datasets/data.csv",
+            dataset_path="./datasets/data.csv",
             algorithms={"model": AlgorithmWrapper(
                 name="linear",
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
-            )}
+            )},
+            table_name=None
         )
         workflow = test_workflow
         results_dir = ""

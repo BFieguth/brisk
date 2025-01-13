@@ -370,10 +370,10 @@ Continuous: ['x', 'y']
         
         expected_output_structure = {
             "group1": {
-                "data": (str(pathlib.Path(tmp_path / "datasets/data.csv")), "group1")
+                "data": (str(pathlib.Path(tmp_path / "datasets/data.csv")), None)
             },
             "group2": {
-                "data": (str(pathlib.Path(tmp_path / "datasets/data.csv")), "group2")
+                "data": (str(pathlib.Path(tmp_path / "datasets/data.csv")), None)
             }
         }
         
