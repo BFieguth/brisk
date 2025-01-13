@@ -440,6 +440,9 @@ class ResultStructure:
             for dataset_name in group.datasets:
                 experiments = {}
                 for algorithm in group.algorithms:
+                    if isinstance(algorithm, list):
+                        algorithm = "_".join(algorithm)
+
                     experiment_name = f"{group.name}_{algorithm}"
                     experiments[experiment_name] = ExperimentDirectory(
                     "save_model" in workflow_methods,
