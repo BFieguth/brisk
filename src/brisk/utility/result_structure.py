@@ -438,6 +438,10 @@ class ResultStructure:
         for group in groups:
             datasets = {}
             for dataset_name in group.datasets:
+                if isinstance(dataset_name, tuple):
+                    dataset_name = (
+                        f"{dataset_name[0].split(".")[0]}_{dataset_name[1]}"
+                    )
                 experiments = {}
                 for algorithm in group.algorithms:
                     if isinstance(algorithm, list):
