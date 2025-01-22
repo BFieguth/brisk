@@ -111,42 +111,9 @@ class TestExperiment:
                 table_name=None
             )
 
-    def test_full_name_format(self, multiple_models):
-        """Test full_name property format."""
-        expected = "test_group_linear_rf"
-        assert multiple_models.full_name == expected
-
     def test_name_format(self, long_name):
         """Test name property format."""
-        assert long_name.experiment_name == "a_very_long_group_name_indeed_bfa2c5a2"
-        assert long_name.full_name == "a_very_long_group_name_indeed_linear"
-        assert long_name.name == "a_very_long_group_name_indeed_bfa2c5a2"
-
-    def test_experiment_name_consistency(self, single_model, linear_wrapper):
-        """Test experiment_name is consistent across instantiations."""
-        exp2 = Experiment(
-            group_name="test_group",
-            dataset_path="data/test.csv",
-            algorithms={"model": linear_wrapper},
-            table_name=None
-        )
-        assert single_model.experiment_name == exp2.experiment_name
-
-    def test_experiment_name_uniqueness(self, linear_wrapper, rf_wrapper):
-        """Test experiment_name is unique for different configurations."""
-        exp1 = Experiment(
-            group_name="test_group",
-            dataset_path="test.csv",
-            algorithms={"model": linear_wrapper},
-            table_name=None
-        )
-        exp2 = Experiment(
-            group_name="test_group",
-            dataset_path="test.csv",
-            algorithms={"model": rf_wrapper},
-            table_name=None
-        )
-        assert exp1.experiment_name != exp2.experiment_name
+        assert long_name.name == "a_very_long_group_name_indeed_linear"
 
     def test_get_model_kwargs(self, multiple_models):
         """Test get_model_kwargs returns correct format."""

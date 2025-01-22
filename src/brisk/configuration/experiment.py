@@ -6,7 +6,6 @@ name and algorithms to use.
 """
 
 import dataclasses
-import hashlib
 import pathlib
 from typing import Dict, Optional
 
@@ -43,7 +42,7 @@ class Experiment:
     table_name: Optional[str | None]
 
     @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         """Generate full descriptive name for logging and debugging.
         
         Returns:
@@ -56,37 +55,10 @@ class Experiment:
         return f"{self.group_name}_{algo_names}"
 
     @property
-    def experiment_name(self) -> str:
-        """Generate a consistent, unique, and concise name for this experiment.
-        
-        Uses blake2b hash of full_name to create a short, unique identifier
-        while maintaining consistent naming across runs.
-        
-        Returns:
-            String in format: '{group_name}_{8_char_hash}'
-            Example: 'baseline_a1b2c3d4'
-        """
-        hash_obj = hashlib.blake2b(self.full_name.encode(), digest_size=4)
-        short_hash = hash_obj.hexdigest()
-        return f"{self.group_name}_{short_hash}"
-
-    @property
-    def name(self) -> str:
-        """Return a name for the experiment, prioritizing full_name if under 
-        30 characters.
-        
-        Returns:
-            String: Either full_name or experiment_name based on length.
-        """
-        if len(self.full_name) < 30:
-            return self.full_name
-        return self.experiment_name
-
-    @property
     def dataset_name(self) -> str:
         """Name of the dataset."""
         dataset_name = (
-            f"{self.dataset_path.stem}_{self.table_name}" 
+            f"{self.dataset_path.stem}_{self.table_name}"
             if self.table_name else self.dataset_path.stem
         )
         return dataset_name
