@@ -7,14 +7,52 @@ import shutil
 import subprocess
 from typing import List, Callable
 
+import numpy as np
+from sklearn import linear_model
+
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
 from brisk.utility import result_structure as rs
 
+def huber_loss(
+    y_true: np.ndarray,
+    y_pred: np.ndarray
+) -> float:
+    DELTA = 1
+    loss = np.where(
+        np.abs(y_true - y_pred) <= DELTA,
+        0.5 * (y_true - y_pred)**2,
+        DELTA * (np.abs(y_true - y_pred) - 0.5 * DELTA)
+    )
+    return np.mean(loss)
+
+
+def fake_metric(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    split_metadata: dict
+) -> float:
+    """Function to check that split_metadata is applied properly"""
+    return np.mean(
+        (y_true - y_pred) / 
+        (split_metadata["num_features"] / split_metadata["num_samples"])
+    )
+
+
 def metric_config():
     metrics = brisk.MetricManager(
         *brisk.REGRESSION_METRICS,
-        *brisk.CLASSIFICATION_METRICS
+        *brisk.CLASSIFICATION_METRICS,
+        brisk.MetricWrapper(
+            name="huber_loss",
+            func=huber_loss,
+            display_name="Huber Loss", 
+        ),
+        brisk.MetricWrapper(
+            name="fake_metric",
+            func=fake_metric,
+            display_name="Fake Metric"
+        ),
     )
     return metrics
 
@@ -22,7 +60,12 @@ def metric_config():
 def algorithm_config():
     algorithms = [
         *brisk.REGRESSION_ALGORITHMS,
-        *brisk.CLASSIFICATION_ALGORITHMS
+        *brisk.CLASSIFICATION_ALGORITHMS,
+        brisk.AlgorithmWrapper(
+            name="linear2",
+            display_name="Linear Regression (Second)",
+            algorithm_class=linear_model.LinearRegression
+        )
     ]
     return algorithms
 
