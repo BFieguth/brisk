@@ -87,11 +87,10 @@ class DataSplitInfo:
         self.y_test = y_test.copy(deep=True)
 
         self.filename = filename
-        self.scaler = scaler
         self.features = features
 
         if categorical_features is None:
-            categorical_features = []
+            categorical_features = self._detect_categorical_features()
 
         self.categorical_features = [
             feature for feature in categorical_features
@@ -101,12 +100,16 @@ class DataSplitInfo:
         self.continuous_features = [
             col for col in X_train.columns
             if col not in self.categorical_features
-            ]
+        ]
+
+        self.scaler = scaler
+        if self.continuous_features:
+            self.scaler = scaler.fit(X_train[self.continuous_features])
 
         self.logger.info(
             "Calculating stats for continuous features in %s split.", 
             self.filename
-            )
+        )
 
         self.continuous_stats = {}
         for feature in self.continuous_features:
@@ -134,6 +137,36 @@ class DataSplitInfo:
                     self.X_test[feature], feature
                     )
             }
+
+    def _detect_categorical_features(self) -> List[str]:
+        """Attempt to detect possible categorical features
+
+        Checks datatype and if less than 5% of the columns have unique values. 
+        """
+        combined_data = pd.concat([self.X_train, self.X_test], axis=0)
+        categorical_features = []
+
+        for column in combined_data.columns:
+            series = combined_data[column]
+            n_unique = series.nunique()
+            n_samples = len(series)
+
+            is_categorical = any([
+                series.dtype == "object",
+                series.dtype == "category",
+                series.dtype == "bool",
+                (n_unique / n_samples < 0.05)
+            ])
+
+            if is_categorical:
+                categorical_features.append(column)
+
+        self.logger.info(
+            "Detected %d categorical features: %s",
+            len(categorical_features),
+            categorical_features
+        )
+        return categorical_features
 
     def _calculate_continuous_stats(self, feature_series: pd.Series) -> dict:
         """Calculate descriptive statistics for a continuous feature.
