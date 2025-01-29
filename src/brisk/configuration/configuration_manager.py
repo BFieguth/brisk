@@ -29,14 +29,17 @@ class ConfigurationManager:
     """
     def __init__(
         self,
-        experiment_groups: List[experiment_group.ExperimentGroup]
+        experiment_groups: List[experiment_group.ExperimentGroup],
+        categorical_features: Dict[str, List[str]]
     ):
         """Initialize ConfigurationManager.
         
         Args:
             experiment_groups: List of experiment group configurations
+            categorical_features: Dict mapping categorical features to dataset
         """
         self.experiment_groups = experiment_groups
+        self.categorical_features = categorical_features
         self.project_root = utility.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
@@ -183,7 +186,9 @@ class ConfigurationManager:
         Returns:
             Deque of Experiment instances ready to run
         """
-        factory = experiment_factory.ExperimentFactory(self.algorithm_config)
+        factory = experiment_factory.ExperimentFactory(
+            self.algorithm_config, self.categorical_features
+        )
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
