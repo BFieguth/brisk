@@ -17,7 +17,7 @@ def factory(mock_reg_algorithms_py, tmp_path):
     algorithms_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(algorithms_module)
     algorithm_config = algorithms_module.ALGORITHM_CONFIG
-    return ExperimentFactory(algorithm_config)
+    return ExperimentFactory(algorithm_config, {})
 
 
 class TestExperimentFactory:
