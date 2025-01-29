@@ -271,7 +271,10 @@ class DataManager:
                 f"Got: group_name={group_name}, filename={filename}"
             )
 
-        split_key = f"{group_name}_{filename}" if group_name else data_path
+        split_key = (
+            f"{group_name}_{filename}_{table_name}" if table_name
+            else f"{group_name}_{filename}"
+        ) if group_name else data_path
 
         if split_key in self._splits:
             print(f"Using cached split for {split_key}")
