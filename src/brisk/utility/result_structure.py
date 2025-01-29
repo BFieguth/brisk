@@ -249,13 +249,13 @@ class ResultStructure:
             False if config_manager.base_data_manager.scale_method is None
             else True
         )
-        base_categorical_features = (
-            False if not config_manager.base_data_manager.categorical_features
-            else True
-        )
+        # base_categorical_features = (
+        #     False if not config_manager.base_data_manager.categorical_features
+        #     else True
+        # )
         experiment_groups = cls.get_experiment_groups(
             config_manager.experiment_groups, workflow_methods,
-            base_scale_method, base_categorical_features
+            base_scale_method, config_manager.categorical_features
         )
         dataset_pages, experiment_pages = cls.get_html_pages_from_groups(
             experiment_groups
@@ -431,13 +431,18 @@ class ResultStructure:
         groups: List[experiment_group.ExperimentGroup],
         workflow_methods: Set[str],
         base_scale_method: bool,
-        base_categorical_features: bool
+        categorical_features: Dict[str, List[str]]
     ):
         experiment_groups = {}
 
         for group in groups:
             datasets = {}
             for dataset_name in group.datasets:
+                categorical_feat_names = categorical_features.get(
+                    dataset_name, None
+                )
+                categorical_features_exist = bool(categorical_feat_names)
+
                 if isinstance(dataset_name, tuple):
                     dataset_name = (
                         f"{dataset_name[0].split(".")[0]}_{dataset_name[1]}"
@@ -449,19 +454,19 @@ class ResultStructure:
 
                     experiment_name = f"{group.name}_{algorithm}"
                     experiments[experiment_name] = ExperimentDirectory(
-                    "save_model" in workflow_methods,
-                    "evaluate_model" in workflow_methods,
-                    "evaluate_model_cv" in workflow_methods,
-                    "compare_models" in workflow_methods,
-                    "plot_pred_vs_obs" in workflow_methods,
-                    "plot_learning_curve" in workflow_methods,
-                    "plot_feature_importance" in workflow_methods,
-                    "plot_residuals" in workflow_methods,
-                    "plot_model_comparison" in workflow_methods,
-                    "confusion_matrix" in workflow_methods,
-                    "plot_confusion_heatmap" in workflow_methods,
-                    "plot_roc_curve" in workflow_methods,
-                    "plot_precision_recall_curve" in workflow_methods
+                        "save_model" in workflow_methods,
+                        "evaluate_model" in workflow_methods,
+                        "evaluate_model_cv" in workflow_methods,
+                        "compare_models" in workflow_methods,
+                        "plot_pred_vs_obs" in workflow_methods,
+                        "plot_learning_curve" in workflow_methods,
+                        "plot_feature_importance" in workflow_methods,
+                        "plot_residuals" in workflow_methods,
+                        "plot_model_comparison" in workflow_methods,
+                        "confusion_matrix" in workflow_methods,
+                        "plot_confusion_heatmap" in workflow_methods,
+                        "plot_roc_curve" in workflow_methods,
+                        "plot_precision_recall_curve" in workflow_methods
                     )
 
                 if group.data_config:
@@ -469,15 +474,8 @@ class ResultStructure:
                         "scale_method", base_scale_method
                     )
                     scaler_exists = True if scaler else False
-                    categorical_features = group.data_config.get(
-                        "categorical_features", base_categorical_features
-                    )
-                    categorical_features_exist = (
-                        True if categorical_features else False
-                    )
                 else:
                     scaler_exists = base_scale_method
-                    categorical_features_exist = base_categorical_features
 
                 datasets[pathlib.Path(dataset_name).stem] = DatasetDirectory(
                     experiments=experiments.copy(),

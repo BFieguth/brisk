@@ -4,6 +4,11 @@ from brisk.configuration.configuration import Configuration, ConfigurationManage
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
         default_algorithms = ["linear", "ridge"],
+        categorical_features={
+            "mixed_features_regression.csv": [
+                "categorical_0", "categorical_1", "categorical_2"
+            ],
+        }
     )
 
     config.add_experiment_group(

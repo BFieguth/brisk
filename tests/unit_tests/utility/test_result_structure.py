@@ -301,18 +301,12 @@ def experiment_groups():
                     name="group3",
                     datasets=["dataset1"],
                     algorithms=["dtr", "rf"],
-                    data_config={
-                        "categorical_features": "column1"
-                    },
                 ),
                 experiment_group.ExperimentGroup(
                     name="group4",
                     datasets=["dataset2"],
                     algorithms=["knn"],
-                    data_config={
-                        "scale_method": "minmax",
-                        "categorical_features": "column1"
-                    },
+                    data_config={"scale_method": "minmax"},
                 )
             ]
 
@@ -557,8 +551,9 @@ class TestResultStructure:
             ["save_model", "evaluate_model_cv", "plot_feature_importance",
             "plot_residuals"]
         )
+        categorical_features = {}
         experiment_group_directories = rs.ResultStructure.get_experiment_groups(
-            experiment_groups, workflow_methods, False, False
+            experiment_groups, workflow_methods, False, categorical_features
         )
 
         expected_structure = {
@@ -686,8 +681,8 @@ class TestResultStructure:
                         scaler_exists=False,
                         split_distribution_exists=True,
                         hist_box_plot_exists=True,
-                        pie_plot_exists=True,
-                        categorical_stats_json_exists=True,
+                        pie_plot_exists=False,
+                        categorical_stats_json_exists=False,
                         continuous_stats_json_exists=True,
                         correlation_matrix_exists=True
                     )
@@ -716,15 +711,14 @@ class TestResultStructure:
                         scaler_exists=True,
                         split_distribution_exists=True,
                         hist_box_plot_exists=True,
-                        pie_plot_exists=True,
-                        categorical_stats_json_exists=True,
+                        pie_plot_exists=False,
+                        categorical_stats_json_exists=False,
                         continuous_stats_json_exists=True,
                         correlation_matrix_exists=True
                     )
                 }
             ),
         }
-
         assert experiment_group_directories == expected_structure
 
     def test_get_workflow_methods_from_dir(self, temp_experiment_dir):
@@ -751,6 +745,7 @@ class TestResultStructure:
             config_manager, workflow_path
         )
 
+        print(result_structure)
         assert isinstance(result_structure, rs.ResultStructure)
         assert result_structure == expected_result_structure
 
