@@ -29,6 +29,7 @@ class Configuration:
     Attributes:
         experiment_groups: List of configured ExperimentGroup instances
         default_algorithms: List of algorithm names to use when none specified
+        categorical_features: Dict mappign categorical feature names to datasets
     
     Example:
         >>> config = Configuration(default_algorithms=["linear", "ridge"])
@@ -38,14 +39,21 @@ class Configuration:
         ... )
         >>> manager = config.build()
     """
-    def __init__(self, default_algorithms: List[str]):
+    def __init__(
+        self,
+        default_algorithms: List[str],
+        categorical_features: Optional[Dict[str, List[str]]] = None
+    ):
         """Initialize Configuration with default algorithms.
         
         Args:
             default_algorithms: List of algorithm names to use as defaults
+            categorical_features: Dict mapping categorical feature names to
+            datasets
         """
         self.experiment_groups: List[ExperimentGroup] = []
         self.default_algorithms = default_algorithms
+        self.categorical_features = categorical_features or {}
 
     def add_experiment_group(
         self,
@@ -97,7 +105,9 @@ class Configuration:
         Returns:
             ConfigurationManager containing processed experiment configurations
         """
-        return ConfigurationManager(self.experiment_groups)
+        return ConfigurationManager(
+            self.experiment_groups, self.categorical_features
+        )
 
     def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
