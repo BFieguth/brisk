@@ -96,8 +96,13 @@ class ExperimentFactory:
                         )
                         models[model_key] = wrapper
 
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
                 categorical_feature_names = self.categorical_features.get(
-                    dataset_path.name, None
+                    lookup_key, None
                 )
                 exp = experiment.Experiment(
                     group_name=group.name,

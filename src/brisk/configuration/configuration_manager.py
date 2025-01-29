@@ -204,8 +204,13 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             group_data_manager = self.data_managers[group.name]
             for dataset_path, table_name in group.dataset_paths:
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
                 categorical_features = self.categorical_features.get(
-                    dataset_path.name, None
+                    lookup_key, None
                 )
                 group_data_manager.split(
                     data_path=str(dataset_path),
@@ -259,8 +264,13 @@ class ConfigurationManager:
             # Add dataset information
             md_content.append("### Datasets")
             for dataset_path, table_name in group.dataset_paths:
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
                 categorical_features = self.categorical_features.get(
-                    dataset_path.name, None
+                    lookup_key, None
                 )
                 split_info = group_data_manager.split(
                     data_path=str(dataset_path),

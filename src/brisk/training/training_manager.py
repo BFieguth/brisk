@@ -9,6 +9,7 @@ import collections
 from datetime import datetime
 import logging
 import os
+import pathlib
 import time
 from typing import Dict, Tuple, Optional, Type
 import warnings
@@ -294,7 +295,7 @@ class TrainingManager:
                     categorical_features=None,
                     table_name=table_name,
                     group_name=group_name,
-                    filename=dataset_name
+                    filename=pathlib.Path(data_path).stem
                 )
 
                 dataset_dir = os.path.join(group_dir, dataset_name)
