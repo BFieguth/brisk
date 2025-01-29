@@ -7,7 +7,7 @@ name and algorithms to use.
 
 import dataclasses
 import pathlib
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from brisk.utility import algorithm_wrapper
 
@@ -40,6 +40,7 @@ class Experiment:
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
     table_name: Optional[str | None]
+    categorical_features: Optional[List[str] | None]
 
     @property
     def name(self) -> str:
