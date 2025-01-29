@@ -291,6 +291,7 @@ class TrainingManager:
             for dataset_name, (data_path, table_name) in datasets.items():
                 split_info = group_data_manager.split(
                     data_path=data_path,
+                    categorical_features=None,
                     table_name=table_name,
                     group_name=group_name,
                     filename=dataset_name
@@ -377,6 +378,7 @@ class TrainingManager:
         """
         data_split = self.data_managers[group_name].split(
             data_path=current_experiment.dataset_path,
+            categorical_features=current_experiment.categorical_features,
             table_name=current_experiment.table_name,
             group_name=group_name,
             filename=dataset_name
