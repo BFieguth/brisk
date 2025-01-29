@@ -222,7 +222,8 @@ class TestDataManager:
             )
 
         split = splitter.split(
-            "data.csv"
+            "data.csv",
+            categorical_features=None
             )
 
         assert len(split.X_train) == 8
@@ -251,7 +252,8 @@ class TestDataManager:
             n_splits=2, split_method="kfold", random_state=42
             )
         split = splitter.split(
-            "data.csv"
+            "data.csv",
+            categorical_features=None
             )
 
         assert len(split.X_train) == 5
@@ -283,7 +285,8 @@ class TestDataManager:
             )
 
         split = splitter.split(
-            "data.csv"
+            "data.csv",
+            categorical_features=None
             )
 
         assert len(split.X_train) == 8
@@ -310,12 +313,12 @@ class TestDataManager:
         mock_read_csv.return_value = mock_data
 
         splitter = DataManager(
-            test_size=0.2, split_method="shuffle", 
-            categorical_features=["feature1"], random_state=42
+            test_size=0.2, split_method="shuffle", random_state=42
             )
 
         split = splitter.split(
-            "data.csv"
+            "data.csv",
+            categorical_features=["feature1"]
             )
 
         assert len(split.X_train) == 8
@@ -347,7 +350,8 @@ class TestDataManager:
             )
 
         split = splitter.split(
-            "data.csv"
+            "data.csv",
+            categorical_features=None
             )
 
         assert len(split.X_train) == 8
@@ -433,7 +437,8 @@ class TestDataManager:
             split1 = manager.split(
                 data_path="data.csv",
                 group_name="test_group",
-                filename="data"
+                filename="data",
+                categorical_features=None
             )
             assert mock_read.call_count == 1
             assert len(manager._splits) == 1
@@ -442,7 +447,8 @@ class TestDataManager:
             split2 = manager.split(
                 data_path="data.csv",
                 group_name="test_group",
-                filename="data"
+                filename="data",
+                categorical_features=None
             )
             assert mock_read.call_count == 1  # No additional read
             assert split1 is split2  # Same object returned
@@ -451,7 +457,8 @@ class TestDataManager:
             split3 = manager.split(
                 data_path="data.csv",
                 group_name="other_group",
-                filename="data"
+                filename="data",
+                categorical_features=None
             )
             assert mock_read.call_count == 2
             assert len(manager._splits) == 2
@@ -463,13 +470,19 @@ class TestDataManager:
             manager = DataManager(test_size=0.2)
             
             # Split without group should use data_path as key
-            split1 = manager.split(data_path="data.csv")
+            split1 = manager.split(
+                data_path="data.csv",
+                categorical_features=None
+            )
             assert mock_read.call_count == 1
             assert len(manager._splits) == 1
             assert "data.csv" in manager._splits
             
             # Same path should return cached version
-            split2 = manager.split(data_path="data.csv")
+            split2 = manager.split(
+                data_path="data.csv",
+                categorical_features=None
+            )
             assert mock_read.call_count == 1
             assert split1 is split2
             
@@ -481,12 +494,14 @@ class TestDataManager:
         with pytest.raises(ValueError, match="Both group_name and filename must be provided together"):
             manager.split(
                 data_path="data.csv",
-                group_name="test_group"
+                group_name="test_group",
+                categorical_features=None
             )
             
         # Missing group_name when filename provided
         with pytest.raises(ValueError, match="Both group_name and filename must be provided together"):
             manager.split(
                 data_path="data.csv",
-                filename="data"
+                filename="data",
+                categorical_features=None
             )
