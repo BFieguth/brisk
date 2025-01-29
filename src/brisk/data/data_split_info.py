@@ -103,7 +103,7 @@ class DataSplitInfo:
         ]
 
         self.scaler = scaler
-        if self.continuous_features:
+        if self.continuous_features and scaler:
             self.scaler = scaler.fit(X_train[self.continuous_features])
 
         self.logger.info(
