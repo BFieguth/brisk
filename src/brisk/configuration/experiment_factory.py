@@ -33,17 +33,20 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper]
+        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
+        categorical_features: Dict[str, List[str]]
     ):
         """Initialize factory with algorithm configuration.
         
         Args:
             algorithm_config: List of AlgorithmWrapper instances defining 
             available algorithms
+            categorical_features: Dict mapping categorical features to dataset
         """
         self.algorithm_config = {
             wrapper.name: wrapper for wrapper in algorithm_config
         }
+        self.categorical_features = categorical_features
 
     def create_experiments(
         self,
@@ -93,11 +96,15 @@ class ExperimentFactory:
                         )
                         models[model_key] = wrapper
 
+                categorical_feature_names = self.categorical_features.get(
+                    dataset_path.name, None
+                )
                 exp = experiment.Experiment(
                     group_name=group.name,
                     algorithms=models,
                     dataset_path=dataset_path,
                     table_name=table_name,
+                    categorical_features=categorical_feature_names
                 )
                 experiments.append(exp)
 
