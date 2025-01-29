@@ -20,7 +20,7 @@ class TestConfigurationManager:
             algorithms=["linear"]
         )
         
-        manager = ConfigurationManager([group])
+        manager = ConfigurationManager([group], {})
         
         assert isinstance(manager.base_data_manager, DataManager)
         assert isinstance(manager.data_managers, dict)
@@ -39,7 +39,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(FileNotFoundError, match="Data file not found:"):
-            ConfigurationManager([group])
+            ConfigurationManager([group], {})
 
     def test_invalid_data_file(self, mock_regression_project):
         """Test error handling for data.py without BASE_DATA_MANAGER."""
@@ -59,7 +59,7 @@ data_manager = DataManager()
         )
         
         with pytest.raises(ImportError, match="BASE_DATA_MANAGER not found"):
-            ConfigurationManager([group])
+            ConfigurationManager([group], {})
 
     def test_unloadable_data_file(self, mock_regression_project, monkeypatch):
         """Test error handling for invalid data.py file."""
@@ -84,7 +84,7 @@ data_manager = DataManager()
         )
         
         with pytest.raises(ImportError, match="Failed to load data module"):
-            ConfigurationManager([group])          
+            ConfigurationManager([group], {})          
 
     def test_missing_algorithm_file(self, mock_regression_project):
         """Test error handling for missing algorithms.py."""
@@ -98,7 +98,7 @@ data_manager = DataManager()
         )
         
         with pytest.raises(FileNotFoundError, match="Algorithm config file not found"):
-            ConfigurationManager([group])
+            ConfigurationManager([group], {})
 
     def test_invalid_algorithm_file(self, mock_regression_project):
         """Test error handling for algorithms.py without ALGORITHM_CONFIG."""
@@ -116,7 +116,7 @@ data_manager = DataManager()
         )
         
         with pytest.raises(ImportError, match="ALGORITHM_CONFIG not found"):
-            ConfigurationManager([group])
+            ConfigurationManager([group], {})
       
     def test_unloadable_algorithm_file(self, mock_regression_project, monkeypatch):
         """Test error handling for invalid data.py file."""
@@ -141,7 +141,7 @@ data_manager = DataManager()
         )
         
         with pytest.raises(ImportError, match="Failed to load algorithms module"):
-            ConfigurationManager([group])
+            ConfigurationManager([group], {})
 
     def test_get_base_params(self, mock_regression_project):
         """Test the _get_base_params method of ConfigurationManager."""
@@ -151,7 +151,7 @@ data_manager = DataManager()
             algorithms=["linear"]
         )
 
-        manager = ConfigurationManager([group])
+        manager = ConfigurationManager([group], {})
         base_params = manager._get_base_params()
         
         expected_params = {
@@ -161,15 +161,13 @@ data_manager = DataManager()
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None,
-            'categorical_features': [] 
+            'scale_method': None
         }
         
         assert base_params == expected_params
 
     def test_data_manager_reuse(self, mock_regression_project):
         """Test that DataManagers are reused for matching configurations."""
-        # monkeypatch.chdir(mock_project_files)
         groups = [
             ExperimentGroup(
                 name="group1",
@@ -189,7 +187,7 @@ data_manager = DataManager()
             )
         ]
         
-        manager = ConfigurationManager(groups)
+        manager = ConfigurationManager(groups, {})
         
         # group1 and group3 should share the base DataManager
         assert manager.data_managers["group1"] is manager.data_managers["group3"]
@@ -214,7 +212,7 @@ data_manager = DataManager()
             )
         ]
         
-        manager = ConfigurationManager(groups)
+        manager = ConfigurationManager(groups, {})
         
         assert len(manager.experiment_queue) == 3
         
@@ -252,7 +250,7 @@ data_manager = DataManager()
             algorithm_config={"ridge": {"alpha": 0.5}}
         )
         
-        manager = ConfigurationManager([group1, group2])
+        manager = ConfigurationManager([group1, group2], {})
         manager._create_logfile()
 
         expected_logfile_content = """
@@ -365,7 +363,7 @@ Continuous: ['x', 'y']
             algorithms=["ridge"],
         )
         
-        manager = ConfigurationManager([group1, group2])
+        manager = ConfigurationManager([group1, group2], {})
         output_structure = manager._get_output_structure()
         
         expected_output_structure = {
@@ -398,7 +396,7 @@ Continuous: ['x', 'y']
             datasets=["data.csv"],
             algorithms=["elasticnet"]
         )
-        manager = ConfigurationManager([group1, group2, group3])
+        manager = ConfigurationManager([group1, group2, group3], {})
         expected_group2_description = textwrap.dedent("""
         This is another test description that needs to be wrapped
         and stored properly.
