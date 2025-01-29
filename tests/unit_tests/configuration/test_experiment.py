@@ -46,7 +46,8 @@ def single_model(linear_wrapper):
         group_name="test_group",
         dataset_path=Path("data/test.csv"),
         algorithms={"model": linear_wrapper},
-        table_name=None
+        table_name=None,
+        categorical_features=None
     )
 
 @pytest.fixture
@@ -59,7 +60,8 @@ def multiple_models(linear_wrapper, rf_wrapper):
             "model": linear_wrapper,
             "model2": rf_wrapper
         },
-        table_name=None
+        table_name=None,
+        categorical_features=None
     )
 
 @pytest.fixture
@@ -69,7 +71,8 @@ def long_name(linear_wrapper):
         group_name="a_very_long_group_name_indeed",
         dataset_path=Path("data/test.csv"),
         algorithms={"model": linear_wrapper},
-        table_name=None
+        table_name=None,
+        categorical_features=None
     )
 
 
@@ -97,7 +100,8 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms={"wrong_key": linear_wrapper},
-                table_name=None
+                table_name=None,
+                categorical_features=None
             )
 
         with pytest.raises(ValueError, match="Multiple models must use keys"):
@@ -108,7 +112,8 @@ class TestExperiment:
                     "model1": linear_wrapper,
                     "wrong_key": ridge_wrapper
                 },
-                table_name=None
+                table_name=None,
+                categorical_features=None
             )
 
     def test_name_format(self, long_name):
@@ -129,7 +134,8 @@ class TestExperiment:
                 group_name=123,
                 dataset_path="test.csv",
                 algorithms={"model": linear_wrapper},
-                table_name=None
+                table_name=None,
+                categorical_features=None
             )
 
     def test_invalid_algorithms(self, linear_wrapper):
@@ -139,7 +145,8 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms=[linear_wrapper],
-                table_name=None
+                table_name=None,
+                categorical_features=None
             )
         
     def test_missing_algorithms(self, linear_wrapper):
@@ -149,5 +156,6 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms={},
-                table_name=None
+                table_name=None,
+                categorical_features=None
             )
