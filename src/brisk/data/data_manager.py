@@ -10,7 +10,7 @@ Exports:
 """
 import os
 import sqlite3
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import pandas as pd
 from sklearn import model_selection
@@ -45,7 +45,6 @@ class DataManager:
         stratified: bool = False,
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
-        categorical_features: Optional[list] = None
     ):
         """Initializes the DataManager with custom splitting strategies.
 
@@ -82,9 +81,6 @@ class DataManager:
         self.n_splits = n_splits
         self.random_state = random_state
         self.scale_method = scale_method
-        self.categorical_features = self._set_categorical_features(
-            categorical_features
-            )
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
@@ -180,13 +176,6 @@ class DataManager:
             "the specified split method."
             )
 
-    def _set_categorical_features(
-        self,
-        categorical_features: Optional[list]
-        ) -> list:
-        if categorical_features is None:
-            return []
-        return categorical_features
 
     def _set_scaler(self):
         if self.scale_method == "standard":
@@ -255,6 +244,7 @@ class DataManager:
     def split(
         self,
         data_path: str,
+        categorical_features: List[str],
         table_name: Optional[str] = None,
         group_name: Optional[str] = None,
         filename: Optional[str] = None,
@@ -295,13 +285,6 @@ class DataManager:
         if self.group_column:
             X = X.drop(columns=self.group_column) # pylint: disable=C0103
 
-        if self.categorical_features:
-            continuous_features = [
-                col for col in X.columns if col not in self.categorical_features
-                ]
-        else:
-            continuous_features = X.columns
-
         feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
@@ -311,7 +294,6 @@ class DataManager:
         scaler = None
         if self.scale_method:
             scaler = self._set_scaler()
-            scaler.fit(X_train[continuous_features])
 
         split = data_split_info.DataSplitInfo(
             X_train=X_train,
@@ -321,7 +303,7 @@ class DataManager:
             filename=data_path,
             scaler=scaler,
             features=feature_names,
-            categorical_features=self.categorical_features
+            categorical_features=categorical_features
         )
         self._splits[split_key] = split
         return split
@@ -340,7 +322,6 @@ class DataManager:
             "stratified": self.stratified,
             "random_state": self.random_state,
             "scale_method": self.scale_method,
-            "categorical_features": self.categorical_features,
         }
 
         md = [
