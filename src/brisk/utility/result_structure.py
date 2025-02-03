@@ -12,6 +12,7 @@ from typing import Dict, Optional, Set, Tuple, List
 import PIL
 
 from brisk.configuration import configuration_manager, experiment_group
+from brisk.data import data_manager
 
 class MethodCallVisitor(ast.NodeVisitor):
     """Visitor that extracts method calls from an AST."""
@@ -249,13 +250,10 @@ class ResultStructure:
             False if config_manager.base_data_manager.scale_method is None
             else True
         )
-        # base_categorical_features = (
-        #     False if not config_manager.base_data_manager.categorical_features
-        #     else True
-        # )
         experiment_groups = cls.get_experiment_groups(
             config_manager.experiment_groups, workflow_methods,
-            base_scale_method, config_manager.categorical_features
+            base_scale_method, config_manager.categorical_features,
+            config_manager.data_managers
         )
         dataset_pages, experiment_pages = cls.get_html_pages_from_groups(
             experiment_groups
@@ -431,22 +429,41 @@ class ResultStructure:
         groups: List[experiment_group.ExperimentGroup],
         workflow_methods: Set[str],
         base_scale_method: bool,
-        categorical_features: Dict[str, List[str]]
+        categorical_features: Dict[str, List[str]],
+        data_managers: Dict[str, data_manager.DataManager]
     ):
         experiment_groups = {}
 
         for group in groups:
             datasets = {}
-            for dataset_name in group.datasets:
+            group_data_manager = data_managers[group.name]
+            for dataset_path, table_name in group.dataset_paths:
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
                 categorical_feat_names = categorical_features.get(
-                    dataset_name, None
+                    lookup_key, None
                 )
                 categorical_features_exist = bool(categorical_feat_names)
+                split = group_data_manager.split(
+                    data_path=str(dataset_path),
+                    categorical_features=categorical_feat_names,
+                    table_name=table_name,
+                    group_name=group.name,
+                    filename=dataset_path.stem
+                )
+                total_features = len(split.X_train.columns)
+                categorical_count = (
+                    len(categorical_feat_names) 
+                    if categorical_feat_names 
+                    else 0
+                )
+                continuous_exists = bool(
+                    total_features - categorical_count > 0
+                )
 
-                if isinstance(dataset_name, tuple):
-                    dataset_name = (
-                        f"{dataset_name[0].split(".")[0]}_{dataset_name[1]}"
-                    )
                 experiments = {}
                 for algorithm in group.algorithms:
                     if isinstance(algorithm, list):
@@ -477,15 +494,19 @@ class ResultStructure:
                 else:
                     scaler_exists = base_scale_method
 
-                datasets[pathlib.Path(dataset_name).stem] = DatasetDirectory(
+                dataset_name = dataset_path.stem
+                if table_name:
+                    dataset_name = f"{dataset_path.stem}_{table_name}"
+
+                datasets[dataset_name] = DatasetDirectory(
                     experiments=experiments.copy(),
                     scaler_exists=scaler_exists,
                     split_distribution_exists=True,
-                    continuous_stats_json_exists=True,
-                    hist_box_plot_exists=True,
+                    continuous_stats_json_exists=continuous_exists,
+                    hist_box_plot_exists=continuous_exists,
+                    correlation_matrix_exists=continuous_exists,
                     categorical_stats_json_exists=categorical_features_exist,
-                    pie_plot_exists=categorical_features_exist,
-                    correlation_matrix_exists=True
+                    pie_plot_exists=categorical_features_exist
                 )
 
             experiment_groups[group.name] = ExperimentGroupDirectory(
