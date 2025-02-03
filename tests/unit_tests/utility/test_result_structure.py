@@ -8,10 +8,11 @@ import tempfile
 from unittest import mock
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import pytest
 
 import brisk.utility.result_structure as rs
-from brisk.configuration import experiment_group
+from brisk.configuration import experiment_group, configuration
 
 @pytest.fixture
 def one_experiment_group():
@@ -286,12 +287,12 @@ def experiment_groups():
             return [
                 experiment_group.ExperimentGroup(
                     name="group1",
-                    datasets=["dataset1"],
+                    datasets=["dataset1.csv"],
                     algorithms=["linear"],
                 ),
                 experiment_group.ExperimentGroup(
                     name="group2",
-                    datasets=["dataset1", "dataset2"],
+                    datasets=["dataset1.csv", "dataset2.csv"],
                     algorithms=["linear"],
                     data_config={
                         "scale_method": "minmax"
@@ -299,12 +300,12 @@ def experiment_groups():
                 ),
                 experiment_group.ExperimentGroup(
                     name="group3",
-                    datasets=["dataset1"],
+                    datasets=["dataset1.csv"],
                     algorithms=["dtr", "rf"],
                 ),
                 experiment_group.ExperimentGroup(
                     name="group4",
-                    datasets=["dataset2"],
+                    datasets=["dataset2.csv"],
                     algorithms=["knn"],
                     data_config={"scale_method": "minmax"},
                 )
@@ -503,6 +504,109 @@ def expected_result_structure():
     )
 
 
+@pytest.fixture
+def mixed_data_config():
+    briskconfig_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'result_structure_test'
+    )    
+    os.chdir(briskconfig_dir)
+
+    config = configuration.Configuration(
+        default_algorithms=["linear"],
+        categorical_features={
+            "mixed_features_regression.csv": [
+                "categorical_0", "categorical_1", "categorical_2"
+            ]
+        }
+    )
+    config.add_experiment_group(
+        name="test_group_1",
+        datasets=["mixed_features_regression.csv"],
+        algorithms=["linear", "lasso", "mlp"]
+    )
+    return config.build()
+
+
+@pytest.fixture
+def continuous_data_config(request):
+    briskconfig_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'result_structure_test'
+    )    
+    os.chdir(briskconfig_dir)
+
+    csv_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "result_structure_test/datasets/mixed_features_regression.csv"
+    )
+    temp_csv_path = os.path.join(
+        briskconfig_dir, "datasets/continuous_features_regression.csv"
+    )
+
+    data = pd.read_csv(csv_path)
+    data = data.drop(
+        columns=["categorical_0", "categorical_1", "categorical_2"]
+    )
+    data.to_csv(temp_csv_path, index=False)
+
+    def cleanup():
+        if os.path.exists(temp_csv_path):
+            os.remove(temp_csv_path)
+    request.addfinalizer(cleanup)
+
+    config = configuration.Configuration(
+        default_algorithms=["linear"]
+    )
+    config.add_experiment_group(
+        name="test_group",
+        datasets=["continuous_features_regression.csv"],
+        algorithms=["ridge", "knn", "svr"]
+    )
+    return config.build()
+
+
+@pytest.fixture
+def categorical_data_config(request):
+    briskconfig_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'result_structure_test'
+    )    
+    os.chdir(briskconfig_dir)
+
+    csv_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "result_structure_test/datasets/mixed_features_regression.csv"
+    )
+    temp_csv_path = os.path.join(
+        briskconfig_dir, "datasets/categorical_features_regression.csv"
+    )
+
+    data = pd.read_csv(csv_path)
+    data = data[["categorical_0", "categorical_1", "categorical_2", "target"]]
+    data.to_csv(temp_csv_path, index=False)
+
+    def cleanup():
+        if os.path.exists(temp_csv_path):
+            os.remove(temp_csv_path)
+    request.addfinalizer(cleanup)
+
+    config = configuration.Configuration(
+        default_algorithms=["linear"],
+        categorical_features={
+            "categorical_features_regression.csv": [
+                "categorical_0", "categorical_1", "categorical_2"
+            ]
+        }
+    )
+    config.add_experiment_group(
+        name="categorical_group",
+        datasets=["categorical_features_regression.csv"],
+        algorithms=["knn", "xtree", "dtr"]
+    )
+    return config.build()
+
+
 class TestResultStructure:
     """Test the ResultStructure class matches the expected strucutre."""
     def test_get_html_pages_from_one_group(self, one_experiment_group):
@@ -546,181 +650,6 @@ class TestResultStructure:
         assert datasets == expected_datasets
         assert experiments == expected_experiments
 
-    def test_get_experiment_groups(self, experiment_groups):
-        workflow_methods = set(
-            ["save_model", "evaluate_model_cv", "plot_feature_importance",
-            "plot_residuals"]
-        )
-        categorical_features = {}
-        experiment_group_directories = rs.ResultStructure.get_experiment_groups(
-            experiment_groups, workflow_methods, False, categorical_features
-        )
-
-        expected_structure = {
-            "group1": rs.ExperimentGroupDirectory(
-                datasets={
-                    "dataset1": rs.DatasetDirectory(
-                        experiments={
-                            "group1_linear": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            )
-                        },
-                        scaler_exists=False,
-                        split_distribution_exists=True,
-                        hist_box_plot_exists=True,
-                        pie_plot_exists=False,
-                        categorical_stats_json_exists=False,
-                        continuous_stats_json_exists=True,
-                        correlation_matrix_exists=True
-                    )
-                }
-            ),
-            "group2": rs.ExperimentGroupDirectory(
-                datasets={
-                    "dataset1": rs.DatasetDirectory(
-                        experiments={
-                            "group2_linear": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            )
-                        },
-                        scaler_exists=True,
-                        split_distribution_exists=True,
-                        hist_box_plot_exists=True,
-                        pie_plot_exists=False,
-                        categorical_stats_json_exists=False,
-                        continuous_stats_json_exists=True,
-                        correlation_matrix_exists=True
-                    ),
-                    "dataset2": rs.DatasetDirectory(
-                        experiments={
-                            "group2_linear": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            )
-                        },
-                        scaler_exists=True,
-                        split_distribution_exists=True,
-                        hist_box_plot_exists=True,
-                        pie_plot_exists=False,
-                        categorical_stats_json_exists=False,
-                        continuous_stats_json_exists=True,
-                        correlation_matrix_exists=True
-                    )
-                }
-            ),
-            "group3": rs.ExperimentGroupDirectory(
-                datasets={
-                    "dataset1": rs.DatasetDirectory(
-                        experiments={
-                            "group3_dtr": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            ),
-                            "group3_rf": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            ),
-                        },
-                        scaler_exists=False,
-                        split_distribution_exists=True,
-                        hist_box_plot_exists=True,
-                        pie_plot_exists=False,
-                        categorical_stats_json_exists=False,
-                        continuous_stats_json_exists=True,
-                        correlation_matrix_exists=True
-                    )
-                }
-            ),
-            "group4": rs.ExperimentGroupDirectory(
-                datasets={
-                    "dataset2": rs.DatasetDirectory(
-                        experiments={
-                            "group4_knn": rs.ExperimentDirectory(
-                                save_model=True,
-                                evaluate_model=False,
-                                evaluate_model_cv=True,
-                                compare_models=False,
-                                plot_pred_vs_obs=False,
-                                plot_learning_curve=False,
-                                plot_feature_importance=True,
-                                plot_residuals=True,
-                                plot_model_comparison=False,
-                                confusion_matrix=False,
-                                plot_confusion_heatmap=False,
-                                plot_roc_curve=False,
-                                plot_precision_recall_curve=False,
-                            )
-                        },
-                        scaler_exists=True,
-                        split_distribution_exists=True,
-                        hist_box_plot_exists=True,
-                        pie_plot_exists=False,
-                        categorical_stats_json_exists=False,
-                        continuous_stats_json_exists=True,
-                        correlation_matrix_exists=True
-                    )
-                }
-            ),
-        }
-        assert experiment_group_directories == expected_structure
-
     def test_get_workflow_methods_from_dir(self, temp_experiment_dir):
         workflow_methods = rs.ResultStructure.get_workflow_methods_from_dir(
             temp_experiment_dir
@@ -745,7 +674,6 @@ class TestResultStructure:
             config_manager, workflow_path
         )
 
-        print(result_structure)
         assert isinstance(result_structure, rs.ResultStructure)
         assert result_structure == expected_result_structure
 
@@ -758,3 +686,227 @@ class TestResultStructure:
 
         assert isinstance(result_structure, rs.ResultStructure)
         assert result_structure == expected_result_structure
+
+    def test_get_experiment_groups_mixed(self, mixed_data_config):
+        expected_experiment_groups = {
+            'test_group_1': rs.ExperimentGroupDirectory(
+                datasets={
+                    'mixed_features_regression': rs.DatasetDirectory(
+                        experiments={
+                            'test_group_1_linear': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=True,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            ),
+                            'test_group_1_lasso': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=True,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            ),
+                            'test_group_1_mlp': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=True,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            )
+                        },
+                        scaler_exists=True,
+                        split_distribution_exists=True,
+                        hist_box_plot_exists=True,
+                        pie_plot_exists=True,
+                        categorical_stats_json_exists=True,
+                        continuous_stats_json_exists=True,
+                        correlation_matrix_exists=True
+                    )
+                }
+            )
+        }
+        workflow_methods = set(
+            ["save_model", "evaluate_model", "plot_feature_importance"]
+        )
+        base_scale_method = True
+        actual_experiment_groups = rs.ResultStructure.get_experiment_groups(
+            mixed_data_config.experiment_groups, workflow_methods,
+            base_scale_method, mixed_data_config.categorical_features,
+            mixed_data_config.data_managers
+        )
+        assert expected_experiment_groups == actual_experiment_groups
+
+    def test_get_experiment_groups_continuous(self, continuous_data_config):
+        expected_experiment_groups = {
+            'test_group': rs.ExperimentGroupDirectory(
+                datasets={
+                    'continuous_features_regression': rs.DatasetDirectory(
+                        experiments={
+                            'test_group_ridge': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=False,
+                                evaluate_model_cv=True,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=True,
+                                plot_feature_importance=True,
+                                plot_residuals=True,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            ),
+                            'test_group_knn': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=False,
+                                evaluate_model_cv=True,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=True,
+                                plot_feature_importance=True,
+                                plot_residuals=True,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            ),
+                            'test_group_svr': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=False,
+                                evaluate_model_cv=True,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=True,
+                                plot_feature_importance=True,
+                                plot_residuals=True,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=False,
+                                plot_roc_curve=False,
+                                plot_precision_recall_curve=False
+                            )
+                        },
+                        scaler_exists=False,
+                        split_distribution_exists=True,
+                        hist_box_plot_exists=True,
+                        pie_plot_exists=False,
+                        categorical_stats_json_exists=False,
+                        continuous_stats_json_exists=True,
+                        correlation_matrix_exists=True
+                    )
+                }
+            )
+        }
+        workflow_methods = set(
+            ["save_model", "evaluate_model_cv", "plot_feature_importance", 
+             "plot_residuals", "plot_learning_curve"]
+        )
+        base_scale_method = False
+        actual_experiment_groups = rs.ResultStructure.get_experiment_groups(
+            continuous_data_config.experiment_groups, workflow_methods,
+            base_scale_method, continuous_data_config.categorical_features,
+            continuous_data_config.data_managers
+        )
+        assert actual_experiment_groups == expected_experiment_groups
+
+    def test_get_experiment_groups_categorical(self, categorical_data_config):
+        expected_experiment_groups = {
+            'categorical_group': rs.ExperimentGroupDirectory(
+                datasets={
+                    'categorical_features_regression': rs.DatasetDirectory(
+                        experiments={
+                            'categorical_group_knn': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=False,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=True,
+                                plot_roc_curve=True,
+                                plot_precision_recall_curve=False
+                            ),
+                            'categorical_group_xtree': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=False,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=True,
+                                plot_roc_curve=True,
+                                plot_precision_recall_curve=False
+                            ),
+                            'categorical_group_dtr': rs.ExperimentDirectory(
+                                save_model=True,
+                                evaluate_model=True,
+                                evaluate_model_cv=False,
+                                compare_models=False,
+                                plot_pred_vs_obs=False,
+                                plot_learning_curve=False,
+                                plot_feature_importance=False,
+                                plot_residuals=False,
+                                plot_model_comparison=False,
+                                confusion_matrix=False,
+                                plot_confusion_heatmap=True,
+                                plot_roc_curve=True,
+                                plot_precision_recall_curve=False
+                            )
+                        },
+                        scaler_exists=True,
+                        split_distribution_exists=True,
+                        hist_box_plot_exists=False,
+                        pie_plot_exists=True,
+                        categorical_stats_json_exists=True,
+                        continuous_stats_json_exists=False,
+                        correlation_matrix_exists=False
+                    )
+                }
+            )
+        }
+        workflow_methods = set(
+            ["save_model", "evaluate_model", "plot_confusion_heatmap", 
+             "plot_roc_curve"]
+        )
+        base_scale_method = True
+        actual_experiment_groups = rs.ResultStructure.get_experiment_groups(
+            categorical_data_config.experiment_groups, workflow_methods,
+            base_scale_method, categorical_data_config.categorical_features,
+            categorical_data_config.data_managers
+        )
+        assert expected_experiment_groups == actual_experiment_groups
