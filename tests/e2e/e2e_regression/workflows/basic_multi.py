@@ -2,7 +2,7 @@ from brisk.training.workflow import Workflow
 
 class RegressionMulti(Workflow):
     def workflow(self):
-        metrics = ["MAPE", "MRSE", "huber_loss", "fake_metric"]
+        metrics = ["MAPE", "huber_loss", "fake_metric"]
         model = self.model.fit(self.X_train, self.y_train)
         model2 = self.model2.fit(self.X_train, self.y_train)
         self.save_model(model, "tuned_model")
