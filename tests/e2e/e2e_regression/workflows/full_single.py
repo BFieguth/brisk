@@ -23,5 +23,6 @@ class RegressionSingleFull(Workflow):
         )
         self.plot_feature_importance(
             tuned_model, self.X_train, self.y_train, threshold=0.75,
-            feature_names=self.feature_names, metric="MAE", num_rep=2
+            feature_names=self.feature_names, filename="feature_importance",
+            metric="MAE", num_rep=2
         )
