@@ -13,6 +13,7 @@ from sklearn import linear_model
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
 from brisk.utility import result_structure as rs
+from brisk.utility import utility
 
 def huber_loss(
     y_true: np.ndarray,
@@ -102,6 +103,7 @@ class BaseE2ETest:
 
     def setup(self):
         """Setup the test project with required datasets."""
+        utility.find_project_root.cache_clear()
         self._write_settings_file()
 
         datasets_dir = self.e2e_dir / "datasets"
