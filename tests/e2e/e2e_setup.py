@@ -8,7 +8,7 @@ import subprocess
 from typing import List, Callable
 
 import numpy as np
-from sklearn import linear_model
+from sklearn import linear_model, svm
 
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
@@ -66,7 +66,12 @@ def algorithm_config():
             name="linear2",
             display_name="Linear Regression (Second)",
             algorithm_class=linear_model.LinearRegression
-        )
+        ),
+        brisk.AlgorithmWrapper(
+            name="svc2",
+            display_name="SVC (Second)",
+            algorithm_class=svm.SVC
+        ),
     ]
     return algorithms
 

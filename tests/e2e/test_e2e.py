@@ -150,3 +150,149 @@ class TestEndToEnd:
         
         finally:
             test.cleanup()
+
+    def test_binary_single(self):
+        def create_configuration():
+            config = Configuration(
+                default_algorithms=["logistic", "svc", "svc2"],
+                categorical_features={
+                    ("mixed_features.db", "mixed_features_binary"): [
+                        "categorical_0", "categorical_1", "categorical_2",
+                        "categorical_3"
+                    ]
+                }
+            )
+            config.add_experiment_group(
+                name="test_binary",
+                description="Short workflow with mixed features and a single algorithm",
+                datasets=[("mixed_features.db", "mixed_features_binary")]
+            )
+            return config.build()
+
+        test = e2e_setup.BaseE2ETest(
+            test_name="test_binary_single_algo",
+            project_name="e2e_binary",
+            workflow_name="basic_single",
+            datasets=["mixed_features.db"],
+            create_configuration=create_configuration
+        )
+
+        try:
+            test.setup()
+            test.run()
+            test.assert_result_strucure()
+
+        finally:
+            test.cleanup()
+
+    def test_binary_full(self):
+        def create_configuration():
+            config = Configuration(
+                default_algorithms=["svc", "dtc"],
+                categorical_features={
+                    "categorical_features_binary.xlsx": [
+                        "categorical_0", "categorical_1", "categorical_2", 
+                        "categorical_3","categorical_4", "categorical_5", 
+                        "categorical_6", "categorical_7"
+                    ],
+                    ("mixed_features.db", "mixed_features_binary"): [
+                        "categorical_0", "categorical_1", "categorical_2",
+                        "categorical_3"
+                    ]
+                }
+            )
+            config.add_experiment_group(
+                name="group1",
+                datasets=["categorical_features_binary.xlsx"]
+            )
+            config.add_experiment_group(
+                name="group2",
+                algorithms=["ridge_classifier", "knn_classifier", "logistic"],
+                datasets=[("mixed_features.db", "mixed_features_binary")],
+                data_config={"scale_method": "minmax"}
+            )
+            config.add_experiment_group(
+                name="group3",
+                algorithms=["linear_svc", "dtc", "gaussian_nb"],
+                datasets=["continuous_features_binary.csv"]
+            )
+            return config.build()
+
+        test = e2e_setup.BaseE2ETest(
+            test_name="test_binary_full",
+            project_name="e2e_binary",
+            workflow_name="full_single",
+            datasets=[
+                "categorical_features_binary.xlsx",
+                "mixed_features.db",
+                "continuous_features_binary.csv"
+            ],
+            create_configuration=create_configuration
+        )
+
+        try:
+            test.setup()
+            test.run()
+            test.assert_result_strucure()
+
+        finally:
+            test.cleanup()
+
+    def test_binary_multi(self):
+        def create_configuration():
+            config = Configuration(
+                default_algorithms=[["svc", "dtc"]],
+                categorical_features={
+                    "categorical_features_binary.xlsx": [
+                        "categorical_0", "categorical_1", "categorical_2", 
+                        "categorical_3","categorical_4", "categorical_5", 
+                        "categorical_6", "categorical_7"
+                    ],
+                    ("mixed_features.db", "mixed_features_binary"): [
+                        "categorical_0", "categorical_1", "categorical_2",
+                        "categorical_3"
+                    ]
+                }
+            )
+            config.add_experiment_group(
+                name="group1",
+                algorithms=[["logistic", "linear_svc"]],
+                datasets=[("mixed_features.db", "mixed_features_binary")],
+                data_config={"scale_method": "robust"}
+            )
+            config.add_experiment_group(
+                name="group2",
+                algorithms=[
+                    ["svc", "linear_svc"],
+                    ["knn_classifier", "ridge_classifier"]
+                ],
+                datasets=["categorical_features_binary.xlsx"],
+                data_config={"scale_method": "robust"}
+            )
+            config.add_experiment_group(
+                name="group3",
+                algorithms=[["knn_classifier", "ridge_classifier"]],
+                datasets=["continuous_features_binary.csv"],
+                data_config={"scale_method": "maxabs"}
+            )
+            return config.build()
+
+        test = e2e_setup.BaseE2ETest(
+            test_name="test_binary_multi",
+            project_name="e2e_binary",
+            workflow_name="basic_multi",
+            datasets=[
+                "categorical_features_binary.xlsx",
+                "mixed_features.db",
+                "continuous_features_binary.csv"
+            ],
+            create_configuration=create_configuration
+        )
+
+        try:
+            test.setup()
+            test.run()
+            test.assert_result_strucure()
+        
+        finally:
+            test.cleanup()
