@@ -9,6 +9,7 @@ from typing import List, Callable
 
 import numpy as np
 from sklearn import linear_model, svm
+from sklearn import metrics as sk_metrics
 
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
@@ -53,6 +54,24 @@ def metric_config():
             name="fake_metric",
             func=fake_metric,
             display_name="Fake Metric"
+        ),
+        brisk.MetricWrapper(
+            name="f1_multiclass",
+            func=sk_metrics.f1_score,
+            display_name="F1 Score (Multiclass)",
+            average="weighted"
+        ),
+        brisk.MetricWrapper(
+            name="precision_multiclass",
+            func=sk_metrics.precision_score,
+            display_name="Precision (Multiclass)",
+            average="micro"
+        ),
+        brisk.MetricWrapper(
+            name="recall_multiclass",
+            func=sk_metrics.recall_score,
+            display_name="Recall (Multiclass)",
+            average="macro"
         ),
     )
     return metrics
