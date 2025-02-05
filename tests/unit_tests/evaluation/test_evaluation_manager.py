@@ -183,6 +183,7 @@ class TestEvaluationManager:
             mock_save_plot.assert_called_once()
             eval_manager.logger.info.assert_called()
 
+    @pytest.mark.filterwarnings("ignore:invalid value encountered in cast:RuntimeWarning")
     def test_hyperparameter_tuning(self, eval_manager, model, sample_data):
         X, y = sample_data
 
