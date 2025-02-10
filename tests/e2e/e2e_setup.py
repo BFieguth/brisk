@@ -148,6 +148,14 @@ class BaseE2ETest:
         if not self.project_dir:
             raise RuntimeError("Project not set up. Call setup() first.")
 
+        project_root = str(pathlib.Path(__file__).parent.parent.parent)
+        current_pythonpath = os.environ.get("PYTHONPATH", "")
+        env = os.environ.copy()
+        if current_pythonpath:
+            env["PYTHONPATH"] = f"{project_root}:{current_pythonpath}"
+        else:
+            env["PYTHONPATH"] = project_root
+
         result = subprocess.run(
             [
                 "brisk", "run",
@@ -157,7 +165,8 @@ class BaseE2ETest:
             cwd=str(self.project_dir),
             capture_output=True,
             text=True,
-            check=False
+            check=False,
+            env=env
         )
 
         if result.returncode != 0:
