@@ -119,9 +119,15 @@ class BaseE2ETest:
         self.workflow_name = workflow_name
         self.create_configuration = create_configuration
         self.e2e_dir = pathlib.Path(__file__).parent
-        self.project_dir = self.e2e_dir / self.project_name
-        self.results_dir = self.project_dir / "results"
-        self.settings_path = self.project_dir / "settings.py"
+        self.project_dir = pathlib.Path(
+            os.path.join(self.e2e_dir, self.project_name)
+        )
+        self.results_dir = pathlib.Path(
+            os.path.join(self.project_dir, "results")
+        )
+        self.settings_path = pathlib.Path(
+            os.path.join(self.project_dir, "settings.py")
+        )
         if self.settings_path.exists():
             self.original_settings = self.settings_path.read_text()
 
@@ -130,17 +136,16 @@ class BaseE2ETest:
         utility.find_project_root.cache_clear()
         self._write_settings_file()
 
-        datasets_dir = self.e2e_dir / "datasets"
-        project_datasets = self.project_dir / "datasets"
-        project_datasets.mkdir(exist_ok=True)
+        datasets_dir = os.path.join(self.e2e_dir, "datasets")
+        project_datasets = os.path.join(self.project_dir, "datasets")
+        os.makedirs(project_datasets, exist_ok=True)
 
         for dataset in self.datasets:
-            shutil.copy2(
-                datasets_dir / dataset,
-                project_datasets / dataset
-            )
+            src = os.path.join(datasets_dir, dataset)
+            dst = os.path.join(project_datasets, dataset)
+            shutil.copy2(src, dst)
 
-        if self.results_dir.exists():
+        if os.path.exists(self.results_dir):
             shutil.rmtree(self.results_dir)
 
     def run(self):
@@ -184,8 +189,8 @@ class BaseE2ETest:
         if self.results_dir and self.results_dir.exists():
             shutil.rmtree(self.results_dir)
 
-        project_datasets = self.project_dir / "datasets"
-        if project_datasets.exists():
+        project_datasets = os.path.join(self.project_dir, "datasets")
+        if os.path.exists(project_datasets):
             shutil.rmtree(project_datasets)
 
         if self.settings_path and self.original_settings:
