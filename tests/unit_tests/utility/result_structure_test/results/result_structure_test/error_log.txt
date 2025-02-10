@@ -1,0 +1,288 @@
+--------------------------------------------------------------------------------
+2025-01-10 12:44:41,977 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_lasso
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:41,977 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_lasso
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group1/mixed_features_regression/group1_lasso/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:42,102 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_lasso
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:42,102 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_lasso
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group1/mixed_features_regression/group1_lasso/pred_vs_obs.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,032 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_elasticnet
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,032 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_elasticnet
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group1/mixed_features_regression/group1_elasticnet/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,129 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_elasticnet
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,129 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group1_elasticnet
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group1/mixed_features_regression/group1_elasticnet/pred_vs_obs.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,604 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,605 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group2/mixed_features_regression/group2_linear/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,719 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:44,719 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group2/mixed_features_regression/group2_linear/pred_vs_obs.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,275 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,275 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group2/mixed_features_regression/group2_ridge/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,403 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,403 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group2_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group2/mixed_features_regression/group2_ridge/pred_vs_obs.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,860 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,860 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group3/mixed_features_regression/group3_linear/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,974 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:45,974 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_linear
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group3/mixed_features_regression/group3_linear/pred_vs_obs.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:46,641 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:46,642 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group3/mixed_features_regression/group3_ridge/feature_importance.png
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:46,753 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 615:
+Category: PlotnineWarning
+
+Message: Saving 8 x 6 in image.
+
+
+--------------------------------------------------------------------------------
+2025-01-10 12:44:46,753 - WARNING - 
+
+Dataset Name: mixed_features_regression 
+Experiment Name: group3_ridge
+
+Warning in /home/braeden/miniconda3/envs/brisk/lib/python3.12/site-packages/plotnine/ggplot.py at line 616:
+Category: PlotnineWarning
+
+Message: Filename: results/result_structure_test/group3/mixed_features_regression/group3_ridge/pred_vs_obs.png
+
+
