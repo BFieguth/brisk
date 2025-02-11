@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brisk Report</title>
+    <link rel="stylesheet" href="./index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        function sortTable(table, col) {
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const th = table.querySelector('th:nth-child(' + (col + 1) + ')');
+            const isAsc = !th.classList.contains('asc');
+            
+            // Remove sorting classes from all headers
+            table.querySelectorAll('th').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Add sorting class to current header
+            th.classList.add(isAsc ? 'asc' : 'desc');
+            
+            rows.sort((a, b) => {
+                const aCol = a.querySelector('td:nth-child(' + (col + 1) + ')').textContent;
+                const bCol = b.querySelector('td:nth-child(' + (col + 1) + ')').textContent;
+                
+                if (aCol === 'N/A') return 1;
+                if (bCol === 'N/A') return -1;
+                
+                // Extract numbers from strings like "0.111 (0.016)"
+                const aMatch = aCol.match(/^(-?\\d+\\.?\\d*)/);
+                const bMatch = bCol.match(/^(-?\\d+\\.?\\d*)/);
+                
+                if (aMatch && bMatch) {
+                    const aNum = parseFloat(aMatch[0]);
+                    const bNum = parseFloat(bMatch[0]);
+                    return isAsc ? aNum - bNum : bNum - aNum;
+                }
+                
+                return isAsc ? 
+                    aCol.localeCompare(bCol) : 
+                    bCol.localeCompare(aCol);
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+</head>
+<body>
+    <!-- Header bar -->
+    <header>
+        Brisk Report - 2025-01-10 12:44:47
+        <div style="font-size: 14px; color: grey;">
+            Version: 0.1.2
+        </div>
+    </header>
+
+    <!-- Summary Table -->
+    <div class="summary-container">
+        None
+     </div>
+
+    <!-- Experiment Containers -->
+    <div class="section-container">
+        
+            
+            <section class="experiment-section">
+                <div class="section-header">
+                    <h2>group1</h2>
+                    <h3>mixed_features_regression</h3>
+                    
+                </div>
+                <div class="experiment-list">
+                    <h4>Experiments:</h4>
+                    <ul>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group1_lasso.html">
+                                group1_lasso
+                            </a>
+                        </li>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group1_elasticnet.html">
+                                group1_elasticnet
+                            </a>
+                        </li>
+                        
+                    </ul>
+                    <div class="dataset-link">
+                        <a href="group1_mixed_features_regression.html">View Data Split Analysis</a>
+                    </div>
+                </div>
+            </section>
+            
+        
+            
+            <section class="experiment-section">
+                <div class="section-header">
+                    <h2>group2</h2>
+                    <h3>mixed_features_regression</h3>
+                    
+                </div>
+                <div class="experiment-list">
+                    <h4>Experiments:</h4>
+                    <ul>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group2_linear.html">
+                                group2_linear
+                            </a>
+                        </li>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group2_ridge.html">
+                                group2_ridge
+                            </a>
+                        </li>
+                        
+                    </ul>
+                    <div class="dataset-link">
+                        <a href="group2_mixed_features_regression.html">View Data Split Analysis</a>
+                    </div>
+                </div>
+            </section>
+            
+        
+            
+            <section class="experiment-section">
+                <div class="section-header">
+                    <h2>group3</h2>
+                    <h3>mixed_features_regression</h3>
+                    
+                </div>
+                <div class="experiment-list">
+                    <h4>Experiments:</h4>
+                    <ul>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group3_linear.html">
+                                group3_linear
+                            </a>
+                        </li>
+                        
+                        <li>
+                            <a href="mixed_features_regression_group3_ridge.html">
+                                group3_ridge
+                            </a>
+                        </li>
+                        
+                    </ul>
+                    <div class="dataset-link">
+                        <a href="group3_mixed_features_regression.html">View Data Split Analysis</a>
+                    </div>
+                </div>
+            </section>
+            
+        
+    </div>
+</body>
+</html>

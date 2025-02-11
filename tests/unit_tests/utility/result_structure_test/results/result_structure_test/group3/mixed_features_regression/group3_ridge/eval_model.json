@@ -1,0 +1,9 @@
+{
+    "Concordance Correlation Coefficient": 0.9988145566120136,
+    "Mean Absolute Error": 8.178911680259779,
+    "_metadata": {
+        "timestamp": "2025-01-10 12:44:46",
+        "method": "evaluate_model",
+        "models": "['Ridge']"
+    }
+}

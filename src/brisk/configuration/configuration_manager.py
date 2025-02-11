@@ -29,14 +29,17 @@ class ConfigurationManager:
     """
     def __init__(
         self,
-        experiment_groups: List[experiment_group.ExperimentGroup]
+        experiment_groups: List[experiment_group.ExperimentGroup],
+        categorical_features: Dict[str, List[str]]
     ):
         """Initialize ConfigurationManager.
         
         Args:
             experiment_groups: List of experiment group configurations
+            categorical_features: Dict mapping categorical features to dataset
         """
         self.experiment_groups = experiment_groups
+        self.categorical_features = categorical_features
         self.project_root = utility.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
@@ -183,7 +186,9 @@ class ConfigurationManager:
         Returns:
             Deque of Experiment instances ready to run
         """
-        factory = experiment_factory.ExperimentFactory(self.algorithm_config)
+        factory = experiment_factory.ExperimentFactory(
+            self.algorithm_config, self.categorical_features
+        )
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
@@ -198,9 +203,19 @@ class ConfigurationManager:
         """
         for group in self.experiment_groups:
             group_data_manager = self.data_managers[group.name]
-            for dataset_path in group.dataset_paths:
+            for dataset_path, table_name in group.dataset_paths:
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
+                categorical_features = self.categorical_features.get(
+                    lookup_key, None
+                )
                 group_data_manager.split(
                     data_path=str(dataset_path),
+                    categorical_features=categorical_features,
+                    table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
@@ -248,9 +263,19 @@ class ConfigurationManager:
 
             # Add dataset information
             md_content.append("### Datasets")
-            for dataset_path in group.dataset_paths:
+            for dataset_path, table_name in group.dataset_paths:
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
+                categorical_features = self.categorical_features.get(
+                    lookup_key, None
+                )
                 split_info = group_data_manager.split(
                     data_path=str(dataset_path),
+                    categorical_features=categorical_features,
+                    table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
@@ -282,9 +307,13 @@ class ConfigurationManager:
         for group in self.experiment_groups:
             dataset_info = {}
 
-            for dataset_path in group.dataset_paths:
-                dataset_info[dataset_path.stem] = (
-                    str(dataset_path), group.name
+            for dataset_path, table_name in group.dataset_paths:
+                dataset_name = (
+                    f"{dataset_path.stem}_{table_name}"
+                    if table_name else dataset_path.stem
+                )
+                dataset_info[dataset_name] = (
+                    str(dataset_path), table_name
                     )
 
             output_structure[group.name] = dataset_info

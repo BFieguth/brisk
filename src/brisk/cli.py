@@ -82,10 +82,6 @@ def create_configuration() -> ConfigurationManager:
     )
                 
     return config.build()
-                
-WORKFLOW_CONFIG = {
-
-}
 """)
 
     with open(
@@ -131,10 +127,7 @@ config = create_configuration()
 # Define the TrainingManager for experiments
 manager = TrainingManager(
     metric_config=METRIC_CONFIG,
-    data_managers=config.data_managers,
-    experiments=config.experiment_queue,
-    logfile=config.logfile,
-    output_structure=config.output_structure
+    config_manager=config
 )
 """)
 
@@ -166,8 +159,23 @@ class MyWorkflow(Workflow):
     required=True,
     help='Specify the workflow file (without .py) in workflows/'
 )
-@click.argument('extra_args', nargs=-1)
-def run(workflow: str, extra_args: tuple) -> None:
+@click.option(
+    '-n',
+    '--results_name',
+    default=None,
+    help='The name of the results directory.'
+)
+@click.option(
+    '--disable_report',
+    is_flag=True,
+    default=False,
+    help='Disable the creation of an HTML report.'
+)
+def run(
+    workflow: str,
+    results_name: Optional[str],
+    disable_report: bool
+) -> None:
     """Run experiments using the specified workflow.
 
     This command executes experiments based on the specified workflow file.
@@ -181,8 +189,7 @@ def run(workflow: str, extra_args: tuple) -> None:
     Example:
         python cli.py run -w my_workflow --arg1=value1 --arg2=value2
     """
-    extra_arg_dict = parse_extra_args(extra_args)
-
+    create_report = not disable_report
     try:
         project_root = find_project_root()
 
@@ -190,10 +197,6 @@ def run(workflow: str, extra_args: tuple) -> None:
             sys.path.insert(0, project_root)
 
         manager = load_module_object(project_root, 'training.py', 'manager')
-
-        workflow_config = load_module_object(
-            project_root, 'settings.py', 'WORKFLOW_CONFIG'
-            )
 
         workflow_module = importlib.import_module(f'workflows.{workflow}')
         workflow_classes = [
@@ -214,9 +217,10 @@ def run(workflow: str, extra_args: tuple) -> None:
         workflow_class = workflow_classes[0]
 
         manager.run_experiments(
-            workflow=workflow_class, workflow_config=workflow_config,
-            **extra_arg_dict
-            )
+            workflow=workflow_class,
+            results_name=results_name,
+            create_report=create_report
+        )
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
@@ -403,14 +407,6 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
         return datasets_map[name]()
     else:
         return None
-
-
-def parse_extra_args(extra_args: tuple) -> dict:
-    arg_dict = {}
-    for arg in extra_args:
-        key, value = arg.split('=')
-        arg_dict[key] = value
-    return arg_dict
 
 
 def find_project_root(start_path: str = os.getcwd()) -> str:
