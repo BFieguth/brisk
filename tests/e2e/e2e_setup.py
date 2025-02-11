@@ -5,6 +5,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 from typing import List, Callable
 
 import numpy as np
@@ -161,6 +162,9 @@ class BaseE2ETest:
         else:
             env["PYTHONPATH"] = project_root
 
+        use_shell = False
+        if sys.platform == "win32":
+            use_shell = True
         result = subprocess.run(
             [
                 "brisk", "run",
@@ -171,7 +175,8 @@ class BaseE2ETest:
             capture_output=True,
             text=True,
             check=False,
-            env=env
+            env=env,
+            shell=use_shell
         )
 
         if result.returncode != 0:
