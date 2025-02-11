@@ -21,7 +21,7 @@ import dataclasses
 import inspect
 import pathlib
 import textwrap
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 from brisk.data import data_manager
 from brisk.utility import utility
@@ -48,25 +48,30 @@ class ExperimentGroup:
         description: Optional description for the experiment group
     """
     name: str
-    datasets: List[str]
+    datasets: List[str | Tuple[str, str]]
     data_config: Optional[Dict[str, Any]] = None
     algorithms: Optional[List[str]] = None
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None
     description: Optional[str] = ""
 
     @property
-    def dataset_paths(self) -> List[pathlib.Path]:
+    def dataset_paths(self) -> List[Tuple[pathlib.Path, str | None]]:
         """Get full paths to datasets relative to project root.
         
         Returns:
-            List of Path objects pointing to dataset files
+            List of tuples with Path objects pointing to dataset files and table
+            name if path is to a database
         
         Raises:
             FileNotFoundError: If project root (.briskconfig) cannot be found
         """
         project_root = utility.find_project_root()
         datasets_dir = project_root / "datasets"
-        return [datasets_dir / dataset for dataset in self.datasets]
+        return [
+            (datasets_dir / dataset[0], dataset[1]) if isinstance(dataset, tuple) 
+            else (datasets_dir / dataset, None) 
+            for dataset in self.datasets
+        ]
 
     def __post_init__(self):
         """Validate experiment group configuration after initialization.
@@ -113,7 +118,7 @@ class ExperimentGroup:
             raise ValueError("At least one dataset must be specified")
 
         for dataset, path in zip(self.datasets, self.dataset_paths):
-            if not path.exists():
+            if not path[0].exists():
                 raise FileNotFoundError(
                     f"Dataset not found: {dataset}\n"
                     f"Expected location: {path}"

@@ -14,7 +14,7 @@ Usage Example:
     >>> manager = config.build()
 """
 
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
@@ -29,6 +29,7 @@ class Configuration:
     Attributes:
         experiment_groups: List of configured ExperimentGroup instances
         default_algorithms: List of algorithm names to use when none specified
+        categorical_features: Dict mappign categorical feature names to datasets
     
     Example:
         >>> config = Configuration(default_algorithms=["linear", "ridge"])
@@ -38,20 +39,27 @@ class Configuration:
         ... )
         >>> manager = config.build()
     """
-    def __init__(self, default_algorithms: List[str]):
+    def __init__(
+        self,
+        default_algorithms: List[str],
+        categorical_features: Optional[Dict[str, List[str]]] = None
+    ):
         """Initialize Configuration with default algorithms.
         
         Args:
             default_algorithms: List of algorithm names to use as defaults
+            categorical_features: Dict mapping categorical feature names to
+            datasets
         """
         self.experiment_groups: List[ExperimentGroup] = []
         self.default_algorithms = default_algorithms
+        self.categorical_features = categorical_features or {}
 
     def add_experiment_group(
         self,
         *,
         name: str,
-        datasets: List[str],
+        datasets: List[str | Tuple[str, str]],
         data_config: Optional[Dict[str, Any]] = None,
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
@@ -79,6 +87,7 @@ class Configuration:
             algorithms = self.default_algorithms
 
         self._check_name_exists(name)
+        self._check_datasets_type(datasets)
         self.experiment_groups.append(
             ExperimentGroup(
                 name,
@@ -96,7 +105,9 @@ class Configuration:
         Returns:
             ConfigurationManager containing processed experiment configurations
         """
-        return ConfigurationManager(self.experiment_groups)
+        return ConfigurationManager(
+            self.experiment_groups, self.categorical_features
+        )
 
     def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
@@ -111,3 +122,17 @@ class Configuration:
             raise ValueError(
                 f"Experiment group with name '{name}' already exists"
             )
+
+    def _check_datasets_type(self, datasets) -> None:
+        for dataset in datasets:
+            if isinstance(dataset, str):
+                continue
+            elif isinstance(dataset, tuple):
+                for val in dataset:
+                    if isinstance(val, str):
+                        continue
+            else:
+                raise TypeError(
+                    "datasets must be a list containing strings and/or tuples "
+                    f"of strings. Got {type(datasets)}."
+                    )

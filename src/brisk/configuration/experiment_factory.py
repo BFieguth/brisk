@@ -33,17 +33,20 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper]
+        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
+        categorical_features: Dict[str, List[str]]
     ):
         """Initialize factory with algorithm configuration.
         
         Args:
             algorithm_config: List of AlgorithmWrapper instances defining 
             available algorithms
+            categorical_features: Dict mapping categorical features to dataset
         """
         self.algorithm_config = {
             wrapper.name: wrapper for wrapper in algorithm_config
         }
+        self.categorical_features = categorical_features
 
     def create_experiments(
         self,
@@ -70,7 +73,7 @@ class ExperimentFactory:
 
         algorithm_groups = self._normalize_algorithms(group.algorithms)
 
-        for dataset_path in group.dataset_paths:
+        for dataset_path, table_name in group.dataset_paths:
             for algo_group in algorithm_groups:
                 models = {}
 
@@ -93,10 +96,20 @@ class ExperimentFactory:
                         )
                         models[model_key] = wrapper
 
+                lookup_key = (
+                    (dataset_path.name, table_name)
+                    if table_name
+                    else dataset_path.name
+                )
+                categorical_feature_names = self.categorical_features.get(
+                    lookup_key, None
+                )
                 exp = experiment.Experiment(
                     group_name=group.name,
-                    dataset=dataset_path,
                     algorithms=models,
+                    dataset_path=dataset_path,
+                    table_name=table_name,
+                    categorical_features=categorical_feature_names
                 )
                 experiments.append(exp)
 

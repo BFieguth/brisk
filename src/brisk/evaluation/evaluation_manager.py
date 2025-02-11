@@ -252,7 +252,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self._get_metadata(models=models)
+        metadata = self._get_metadata(models, "compare_models")
         self._save_to_json(comparison_results, output_path, metadata)
 
         comparison_log = "\n".join([
@@ -658,7 +658,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(models)
+        metadata = self._get_metadata(models, "plot_model_comparison")
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Model Comparison plot saved to '%s'.", output_path
