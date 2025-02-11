@@ -38,8 +38,8 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        poetry run pytest tests/ -v --cov=src/brisk --cov-report=xml
+        poetry run pytest tests/ -v --cov=src/brisk --cov-report=lcov
 
     - name: Upload to Coveralls
       run: |
-        coveralls
+        coveralls --service=github-actions
