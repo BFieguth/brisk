@@ -1,0 +1,66 @@
+@import "../basic.css";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+    /* Font Size */
+    --pst-font-size-base: 16px;
+    --pst-font-size-h1: 36px;
+    --pst-font-size-h2: 30px;
+    --pst-font-size-h3: 26px;
+    --pst-font-size-h4: 22px;
+    --pst-font-size-h5: 18px;
+    --pst-font-size-h6: 16px;
+
+    /* Font Family */
+    --pst-font-family-base: 'Montserrat', sans-serif;
+}
+
+/* Prevent link colouring when visited */
+a:visited {
+    color: inherit !important;
+}
+
+a:hover {
+    color: #B95F89 !important;
+}
+
+/* ----------------- */
+/* Primary Sidebar */
+/* ----------------- */
+.bd-sidebar-primary {
+    --pst-color-primary: #00A878;
+}
+
+/* ----------------- */
+/* Secondary Sidebar */
+/* ----------------- */
+.bd-sidebar-secondary {
+    --pst-color-primary: #00A878;
+}
+
+/* ----------------- */
+/* Light/Dark Theme */
+/* ----------------- */
+html[data-theme="light"] {
+    --pst-color-primary: #005fb3;
+
+    /* Navbar */
+    .bd-header {
+        background-color: #80c4ff !important;
+    }
+    .bd-header a p {
+        color: #000000 !important;
+    }
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: #80c4ff;
+
+    /* Navbar */
+    .bd-header {
+        background-color: #005fb3 !important;
+    }
+    .bd-header a p {
+        color: #EFEFEF !important;
+    }
+}
