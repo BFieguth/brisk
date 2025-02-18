@@ -7,7 +7,7 @@ name and algorithms to use.
 
 import dataclasses
 import pathlib
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 
 from brisk.utility import algorithm_wrapper
 
@@ -39,6 +39,7 @@ class Experiment:
     group_name: str
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
+    workflow_args: Dict[str, Any]
     table_name: Optional[str | None]
     categorical_features: Optional[List[str] | None]
 
@@ -77,6 +78,15 @@ class Experiment:
         """List of algorithm names"""
         algorithm_names = [algo.name for algo in self.algorithms.values()]
         return algorithm_names
+
+    @property
+    def workflow_attributes(self) -> Dict[str, Any]:
+        """
+        Combine the algorithm kwargs and the user defined workflow arguments
+        into one dictionary that is passed to the Workflow instance.
+        """
+        workflow_attributes = self.workflow_args | self.algorithm_kwargs
+        return workflow_attributes
 
     def __post_init__(self):
         """Validate experiment configuration after initialization.
