@@ -120,13 +120,6 @@ class TestExperiment:
         """Test name property format."""
         assert long_name.name == "a_very_long_group_name_indeed_linear"
 
-    def test_get_model_kwargs(self, multiple_models):
-        """Test get_model_kwargs returns correct format."""
-        kwargs = multiple_models.get_model_kwargs()
-        assert list(kwargs.keys()) == ["model", "model2"]
-        assert isinstance(kwargs["model"], AlgorithmWrapper)
-        assert isinstance(kwargs["model2"], AlgorithmWrapper)
-
     def test_invalid_group_name(self, linear_wrapper):
         """Test validation of group name."""
         with pytest.raises(ValueError, match="Group name must be a string"):

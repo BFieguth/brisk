@@ -107,13 +107,3 @@ class Experiment:
                 raise ValueError(
                     f"Multiple models must use keys {expected_keys}"
                 )
-
-    def get_model_kwargs(self) -> Dict[str, algorithm_wrapper.AlgorithmWrapper]:
-        """Get models in the format expected by workflow.
-        
-        Returns:
-            Dictionary of model instances with standardized keys.
-            For single model: {"model": instance}
-            For multiple models: {"model": inst1, "model2": inst2, ...}
-        """
-        return self.algorithms
