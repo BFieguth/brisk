@@ -730,8 +730,11 @@ class EvaluationManager:
         )
 
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
+        # The arguments for each sklearn searcher are different which is why the
+        # first two arguments have no keywords. If adding another searcher make
+        # sure the argument names do not conflict.
         search = searcher(
-            estimator=model, param_grid=param_grid, n_jobs=n_jobs, cv=cv,
+            model, param_grid, n_jobs=n_jobs, cv=cv,
             scoring=score
         )
         search_result = search.fit(X_train, y_train)
