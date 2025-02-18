@@ -64,6 +64,20 @@ class Experiment:
         )
         return dataset_name
 
+    @property
+    def algorithm_kwargs(self) -> dict:
+        """Dictionary with instantiated algorithms"""
+        algorithm_kwargs = {
+            key: algo.instantiate() for key, algo in self.algorithms.items()
+        }
+        return algorithm_kwargs
+
+    @property
+    def algorithm_names(self) -> list:
+        """List of algorithm names"""
+        algorithm_names = [algo.name for algo in self.algorithms.values()]
+        return algorithm_names
+
     def __post_init__(self):
         """Validate experiment configuration after initialization.
         
