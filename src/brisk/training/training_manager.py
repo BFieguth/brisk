@@ -387,16 +387,6 @@ class TrainingManager:
 
         X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
 
-        algo_kwargs = {
-            key: algo.instantiate()
-            for key, algo in current_experiment.algorithms.items()
-        }
-
-        algo_names = [
-            algo.name
-            for algo in current_experiment.algorithms.values()
-        ]
-
         experiment_dir = self._get_experiment_dir(
             results_dir, group_name, dataset_name, experiment_name
         )
@@ -421,9 +411,9 @@ class TrainingManager:
             y_train=y_train,
             y_test=y_test,
             output_dir=experiment_dir,
-            algorithm_names=algo_names,
+            algorithm_names=current_experiment.algorithm_names,
             feature_names=data_split.features,
-            algorithm_kwargs=algo_kwargs
+            workflow_attributes=current_experiment.workflow_attributes
         )
         return workflow_instance
 
