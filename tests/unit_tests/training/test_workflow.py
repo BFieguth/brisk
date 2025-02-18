@@ -27,7 +27,7 @@ class TestWorkflowClass:
         output_dir = "mock_output_dir"
         algorithm_names = ["mock_model1", "mock_model2"]
         feature_names = ["feature1", "feature2"]
-        algorithm_kwargs = {"model1": MagicMock(), "model2": MagicMock()}
+        workflow_attributes = {"model1": MagicMock(), "model2": MagicMock()}
 
         return MockWorkflow(
             evaluator=evaluator, 
@@ -38,7 +38,7 @@ class TestWorkflowClass:
             output_dir=output_dir, 
             algorithm_names=algorithm_names, 
             feature_names=feature_names, 
-            algorithm_kwargs=algorithm_kwargs
+            workflow_attributes=workflow_attributes
         )
 
     def test_unpack_attributes_model_kwargs(self, setup_workflow):
@@ -73,7 +73,7 @@ class TestWorkflowClass:
         output_dir = "output"
         algorithm_names = []
         feature_names = []
-        algorithm_kwargs = {}
+        workflow_attributes = {}
 
         with pytest.raises(TypeError):
             Workflow(
@@ -85,7 +85,7 @@ class TestWorkflowClass:
                 output_dir=output_dir, 
                 algorithm_names=algorithm_names, 
                 feature_names=feature_names, 
-                algorithm_kwargs=algorithm_kwargs
+                workflow_attributes=workflow_attributes
             )
 
     def test_not_implemented_error_direct(self):
@@ -103,11 +103,11 @@ class TestWorkflowClass:
         output_dir = "output"
         algorithm_names = []
         feature_names = []
-        algorithm_kwargs = {}
+        workflow_attributes = {}
 
         temp_workflow = TempWorkflow(
             evaluator, X_train, X_test, y_train, y_test, output_dir, 
-            algorithm_names, feature_names, algorithm_kwargs
+            algorithm_names, feature_names, workflow_attributes
         )
         
         with pytest.raises(
@@ -132,7 +132,7 @@ class TestWorkflowClass:
             output_dir="",
             algorithm_names=[],
             feature_names=[],
-            algorithm_kwargs={}
+            workflow_attributes={}
         )
         
         # Test that the method is properly delegated

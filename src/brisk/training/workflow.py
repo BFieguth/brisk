@@ -40,7 +40,7 @@ class Workflow(abc.ABC):
         output_dir: str,
         algorithm_names: List[str],
         feature_names: List[str],
-        algorithm_kwargs: Dict[str, Any]
+        workflow_attributes: Dict[str, Any]
     ):
         self.evaluator = evaluator
         self.X_train = X_train # pylint: disable=C0103
@@ -50,7 +50,7 @@ class Workflow(abc.ABC):
         self.output_dir = output_dir
         self.algorithm_names = algorithm_names
         self.feature_names = feature_names
-        self._unpack_attributes(algorithm_kwargs)
+        self._unpack_attributes(workflow_attributes)
 
     def __getattr__(self, name: str) -> None:
         if hasattr(self.evaluator, name):
