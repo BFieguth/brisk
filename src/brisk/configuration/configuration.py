@@ -42,7 +42,8 @@ class Configuration:
     def __init__(
         self,
         default_algorithms: List[str],
-        categorical_features: Optional[Dict[str, List[str]]] = None
+        categorical_features: Optional[Dict[str, List[str]]] = None,
+        default_workflow_args: Optional[Dict[str, Any]] = None
     ):
         """Initialize Configuration with default algorithms.
         
@@ -54,8 +55,9 @@ class Configuration:
         self.experiment_groups: List[ExperimentGroup] = []
         self.default_algorithms = default_algorithms
         self.categorical_features = categorical_features or {}
+        self.default_workflow_args = default_workflow_args or {}
 
-    def add_experiment_group(
+    def add_experiment_group( # pylint: disable=too-many-arguments
         self,
         *,
         name: str,
@@ -63,7 +65,8 @@ class Configuration:
         data_config: Optional[Dict[str, Any]] = None,
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
-        description: Optional[str] = ""
+        description: Optional[str] = "",
+        workflow_args: Optional[Dict[str, Any]] = None
     ) -> None:
         """Add a new experiment group configuration.
         
@@ -79,12 +82,25 @@ class Configuration:
             algorithm_config: Optional algorithm-specific configurations
             
             description: Optional description for the experiment group
+
+            workflow_args: Optional dict of values to assign as attributes in
+            the Workflow. This dict must have the same keys as 
+            default_workflow_args 
             
         Raises:
             ValueError: If group name already exists
         """
         if algorithms is None:
             algorithms = self.default_algorithms
+
+        if workflow_args is None:
+            workflow_args = self.default_workflow_args
+        else:
+            if self.default_workflow_args.keys() != workflow_args.keys():
+                raise ValueError(
+                    "workflow_args must have the same keys as defined in"
+                    " default_workflow_args"
+                )
 
         self._check_name_exists(name)
         self._check_datasets_type(datasets)
@@ -95,7 +111,8 @@ class Configuration:
                 data_config,
                 algorithms,
                 algorithm_config,
-                description
+                description,
+                workflow_args
             )
         )
 
@@ -127,7 +144,7 @@ class Configuration:
         for dataset in datasets:
             if isinstance(dataset, str):
                 continue
-            elif isinstance(dataset, tuple):
+            if isinstance(dataset, tuple):
                 for val in dataset:
                     if isinstance(val, str):
                         continue

@@ -140,6 +140,13 @@ class TestExperimentGroup:
                 description=1
             )
 
+    def test_invalid_workflow_args(self, mock_regression_project):
+        with pytest.raises(ValueError, match="workflow_args must be a dict"):
+            ExperimentGroup(
+                name="test_invalid_args",
+                datasets=["test.csv"],
+                workflow_args=["arg1"]
+            )
 
 def test_project_root_not_found(tmp_path, monkeypatch):
     """Test FileNotFoundError when .briskconfig is not found"""

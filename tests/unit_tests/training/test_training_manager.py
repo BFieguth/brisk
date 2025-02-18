@@ -276,6 +276,7 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow_args={},           
             table_name=None,
             categorical_features=None
         )

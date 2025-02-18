@@ -109,7 +109,8 @@ class ExperimentFactory:
                     algorithms=models,
                     dataset_path=dataset_path,
                     table_name=table_name,
-                    categorical_features=categorical_feature_names
+                    categorical_features=categorical_feature_names,
+                    workflow_args=group.workflow_args
                 )
                 experiments.append(exp)
 

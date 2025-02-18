@@ -46,6 +46,7 @@ def single_model(linear_wrapper):
         group_name="test_group",
         dataset_path=Path("data/test.csv"),
         algorithms={"model": linear_wrapper},
+        workflow_args={"metrics": ["MAE", "MSE"]},
         table_name=None,
         categorical_features=None
     )
@@ -60,6 +61,7 @@ def multiple_models(linear_wrapper, rf_wrapper):
             "model": linear_wrapper,
             "model2": rf_wrapper
         },
+        workflow_args={},
         table_name=None,
         categorical_features=None
     )
@@ -71,6 +73,7 @@ def long_name(linear_wrapper):
         group_name="a_very_long_group_name_indeed",
         dataset_path=Path("data/test.csv"),
         algorithms={"model": linear_wrapper},
+        workflow_args={},
         table_name=None,
         categorical_features=None
     )
@@ -84,6 +87,13 @@ class TestExperiment:
         assert len(single_model.algorithms) == 1
         assert isinstance(single_model.algorithms["model"], AlgorithmWrapper)
         assert single_model.algorithms["model"].algorithm_class == LinearRegression
+        assert single_model.workflow_args == {"metrics": ["MAE", "MSE"]}
+        assert isinstance(single_model.algorithm_kwargs["model"], LinearRegression)
+        assert single_model.algorithm_names == ["linear"]
+        workflow_attrs = single_model.workflow_attributes
+        assert set(workflow_attrs.keys()) == {"metrics", "model"}
+        assert workflow_attrs["metrics"] == ["MAE", "MSE"]
+        assert isinstance(workflow_attrs["model"], LinearRegression)
 
     def test_valid_multiple_models(self, multiple_models):
         """Test creation with multiple models."""
@@ -92,6 +102,14 @@ class TestExperiment:
         assert isinstance(multiple_models.algorithms["model2"], AlgorithmWrapper)
         assert multiple_models.algorithms["model"].algorithm_class == LinearRegression
         assert multiple_models.algorithms["model2"].algorithm_class == RandomForestRegressor
+        assert multiple_models.workflow_args == {}
+        assert isinstance(multiple_models.algorithm_kwargs["model"], LinearRegression)
+        assert isinstance(multiple_models.algorithm_kwargs["model2"], RandomForestRegressor)
+        assert multiple_models.algorithm_names == ["linear", "rf"]
+        workflow_attrs = multiple_models.workflow_attributes
+        assert set(workflow_attrs.keys()) == {"model", "model2"}
+        assert isinstance(workflow_attrs["model"], LinearRegression)
+        assert isinstance(workflow_attrs["model2"], RandomForestRegressor)
 
     def test_invalid_model_keys(self, linear_wrapper, ridge_wrapper):
         """Test validation of model naming convention."""
@@ -100,6 +118,7 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms={"wrong_key": linear_wrapper},
+                workflow_args={},
                 table_name=None,
                 categorical_features=None
             )
@@ -112,6 +131,7 @@ class TestExperiment:
                     "model1": linear_wrapper,
                     "wrong_key": ridge_wrapper
                 },
+                workflow_args={},
                 table_name=None,
                 categorical_features=None
             )
@@ -120,13 +140,6 @@ class TestExperiment:
         """Test name property format."""
         assert long_name.name == "a_very_long_group_name_indeed_linear"
 
-    def test_get_model_kwargs(self, multiple_models):
-        """Test get_model_kwargs returns correct format."""
-        kwargs = multiple_models.get_model_kwargs()
-        assert list(kwargs.keys()) == ["model", "model2"]
-        assert isinstance(kwargs["model"], AlgorithmWrapper)
-        assert isinstance(kwargs["model2"], AlgorithmWrapper)
-
     def test_invalid_group_name(self, linear_wrapper):
         """Test validation of group name."""
         with pytest.raises(ValueError, match="Group name must be a string"):
@@ -134,6 +147,7 @@ class TestExperiment:
                 group_name=123,
                 dataset_path="test.csv",
                 algorithms={"model": linear_wrapper},
+                workflow_args={},
                 table_name=None,
                 categorical_features=None
             )
@@ -145,6 +159,7 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms=[linear_wrapper],
+                workflow_args={},
                 table_name=None,
                 categorical_features=None
             )
@@ -156,6 +171,7 @@ class TestExperiment:
                 group_name="test",
                 dataset_path="test.csv",
                 algorithms={},
+                workflow_args={},
                 table_name=None,
                 categorical_features=None
             )

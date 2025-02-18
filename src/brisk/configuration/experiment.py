@@ -7,7 +7,7 @@ name and algorithms to use.
 
 import dataclasses
 import pathlib
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 
 from brisk.utility import algorithm_wrapper
 
@@ -39,6 +39,7 @@ class Experiment:
     group_name: str
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
+    workflow_args: Dict[str, Any]
     table_name: Optional[str | None]
     categorical_features: Optional[List[str] | None]
 
@@ -63,6 +64,29 @@ class Experiment:
             if self.table_name else self.dataset_path.stem
         )
         return dataset_name
+
+    @property
+    def algorithm_kwargs(self) -> dict:
+        """Dictionary with instantiated algorithms"""
+        algorithm_kwargs = {
+            key: algo.instantiate() for key, algo in self.algorithms.items()
+        }
+        return algorithm_kwargs
+
+    @property
+    def algorithm_names(self) -> list:
+        """List of algorithm names"""
+        algorithm_names = [algo.name for algo in self.algorithms.values()]
+        return algorithm_names
+
+    @property
+    def workflow_attributes(self) -> Dict[str, Any]:
+        """
+        Combine the algorithm kwargs and the user defined workflow arguments
+        into one dictionary that is passed to the Workflow instance.
+        """
+        workflow_attributes = self.workflow_args | self.algorithm_kwargs
+        return workflow_attributes
 
     def __post_init__(self):
         """Validate experiment configuration after initialization.
@@ -107,13 +131,3 @@ class Experiment:
                 raise ValueError(
                     f"Multiple models must use keys {expected_keys}"
                 )
-
-    def get_model_kwargs(self) -> Dict[str, algorithm_wrapper.AlgorithmWrapper]:
-        """Get models in the format expected by workflow.
-        
-        Returns:
-            Dictionary of model instances with standardized keys.
-            For single model: {"model": instance}
-            For multiple models: {"model": inst1, "model2": inst2, ...}
-        """
-        return self.algorithms

@@ -53,6 +53,7 @@ class ExperimentGroup:
     algorithms: Optional[List[str]] = None
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None
     description: Optional[str] = ""
+    workflow_args: Optional[Dict[str, Any]] = None
 
     @property
     def dataset_paths(self) -> List[Tuple[pathlib.Path, str | None]]:
@@ -68,8 +69,8 @@ class ExperimentGroup:
         project_root = utility.find_project_root()
         datasets_dir = project_root / "datasets"
         return [
-            (datasets_dir / dataset[0], dataset[1]) if isinstance(dataset, tuple) 
-            else (datasets_dir / dataset, None) 
+            (datasets_dir / dataset[0], dataset[1]) if isinstance(dataset, tuple)
+            else (datasets_dir / dataset, None)
             for dataset in self.datasets
         ]
 
@@ -91,6 +92,7 @@ class ExperimentGroup:
         self._validate_algorithm_config()
         self._validate_data_config()
         self._validate_description()
+        self._validate_workflow_args()
 
     def _validate_name(self):
         """Validate experiment group name.
@@ -188,3 +190,7 @@ class ExperimentGroup:
             width=60
         )
         self.description = wrapped_description
+
+    def _validate_workflow_args(self):
+        if self.workflow_args and not isinstance(self.workflow_args, dict):
+            raise ValueError("workflow_args must be a dict")
