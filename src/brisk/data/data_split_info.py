@@ -292,8 +292,8 @@ class DataSplitInfo:
             )
 
         # Boxplots
-        axs[1, 0].boxplot(train_series, vert=False)
-        axs[1, 1].boxplot(test_series, vert=False)
+        axs[1, 0].boxplot(train_series, orientation='vertical')
+        axs[1, 1].boxplot(test_series, orientation='vertical')
 
         # Set labels
         axs[1, 0].set_xlabel(f"{feature_name}", fontsize=12)
