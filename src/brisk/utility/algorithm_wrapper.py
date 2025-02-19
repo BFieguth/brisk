@@ -6,7 +6,7 @@ Exports:
         allowing for easy access to models and their hyperparameter grids.
 """
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from brisk.utility.utility import format_dict
 
@@ -121,3 +121,40 @@ class AlgorithmWrapper:
             "```"
         ]
         return "\n".join(md)
+
+
+class AlgorithmCollection(list):
+    """
+    A custom collection for AlgorithmWrapper objects that allows list and
+    dict-like access.
+    """
+    def __init__(self, *args):
+        super().__init__()
+        for item in args:
+            self.append(item)
+
+    def append(self, item: AlgorithmWrapper) -> None:
+        """Enforce type checks before appending an item."""
+        if not isinstance(item, AlgorithmWrapper):
+            raise TypeError(
+                "AlgorithmCollection only accepts AlgorithmWrapper instances"
+            )
+        if any(wrapper.name == item.name for wrapper in self):
+            raise ValueError(
+                f"Duplicate algorithm name: {item.name}"
+            )
+        super().append(item)
+
+    def __getitem__(self, key: Union[int, str]) -> AlgorithmWrapper:
+        if isinstance(key, int):
+            return super().__getitem__(key)
+
+        if isinstance(key, str):
+            for wrapper in self:
+                if wrapper.name == key:
+                    return wrapper
+            raise KeyError(f"No algorithm found with name: {key}")
+
+        raise TypeError(
+            f"Index must be an integer or string, got {type(key).__name__}"
+        )
