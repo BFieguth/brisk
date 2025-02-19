@@ -89,9 +89,9 @@ def create_configuration() -> ConfigurationManager:
         f.write("""# algorithms.py
 import brisk
                 
-ALGORITHM_CONFIG = [
-    brisk.AlgorithmWrapper()
-]        
+ALGORITHM_CONFIG = brisk.AlgorithmCollection(
+    brisk.AlgorithmWrapper(),
+)        
 """)
 
     with open(
