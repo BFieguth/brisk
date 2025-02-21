@@ -9,7 +9,7 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, make_scorer
 from pathlib import Path
 from brisk.evaluation.evaluation_manager import EvaluationManager
-from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+from brisk.utility.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def sample_data_cat():
 
 @pytest.fixture
 def eval_manager(tmpdir):
-    algorithm_config = [
+    algorithm_config = AlgorithmCollection(
         AlgorithmWrapper(
             name="random_forest",
             display_name="Random Forest",
@@ -38,7 +38,7 @@ def eval_manager(tmpdir):
                 'n_estimators': list(range(20, 160, 20))
             }
         ),
-    ]
+    )
     metric_config = MagicMock()
     metric_config.get_name.return_value = "Mean Absolute Error"
     metric_config.get_metric.return_value = mean_absolute_error
@@ -53,6 +53,7 @@ def eval_manager(tmpdir):
 def model(sample_data):
     X, y = sample_data
     model = RandomForestRegressor(n_estimators=10, n_jobs=1)
+    setattr(model, "wrapper_name", "random_forest")
     model.fit(X, y) 
     return model
 
@@ -190,7 +191,7 @@ class TestEvaluationManager:
         with patch("brisk.evaluation.evaluation_manager.EvaluationManager._plot_hyperparameter_performance") as mock_plot:
 
             tuned_model = eval_manager.hyperparameter_tuning(
-                model=model, method="grid", algorithm_name="random_forest", X_train=X, y_train=y,
+                model=model, method="grid", X_train=X, y_train=y,
                 scorer="neg_mean_squared_error", kf=3, num_rep=1, n_jobs=1, plot_results=True
             )
            

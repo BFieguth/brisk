@@ -89,9 +89,9 @@ def create_configuration() -> ConfigurationManager:
         f.write("""# algorithms.py
 import brisk
                 
-ALGORITHM_CONFIG = [
-    brisk.AlgorithmWrapper()
-]        
+ALGORITHM_CONFIG = brisk.AlgorithmCollection(
+    brisk.AlgorithmWrapper(),
+)        
 """)
 
     with open(
@@ -110,8 +110,7 @@ METRIC_CONFIG = brisk.MetricManager(
 from brisk.data.data_manager import DataManager                
 
 BASE_DATA_MANAGER = DataManager(
-    test_size = 0.2,
-    n_splits = 5
+    test_size = 0.2
 )              
 """)
 

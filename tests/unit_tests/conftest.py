@@ -28,7 +28,7 @@ import sklearn.linear_model as linear
     
 import brisk
     
-ALGORITHM_CONFIG = [
+ALGORITHM_CONFIG = brisk.AlgorithmCollection(
     brisk.AlgorithmWrapper(
         name="linear",
         display_name="Linear Regression",
@@ -51,7 +51,7 @@ ALGORITHM_CONFIG = [
             "l1_ratio": [0.1, 0.5, 1.0]
         }
     ),
-]
+)
 """
     algorithm_path.write_text(algorithm_py)
     return algorithm_path

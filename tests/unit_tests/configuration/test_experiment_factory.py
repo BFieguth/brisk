@@ -116,7 +116,7 @@ class TestExperimentFactory:
             algorithms=["invalid_algo"]
         )
         
-        with pytest.raises(KeyError, match="Algorithm 'invalid_algo' not found"):
+        with pytest.raises(KeyError, match="No algorithm found with name: "):
             factory.create_experiments(group)
 
     def test_mixed_algorithm_groups(self, factory, mock_regression_project):

@@ -48,7 +48,7 @@ class EvaluationManager:
     """
     def __init__(
         self,
-        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
+        algorithm_config: algorithm_wrapper.AlgorithmCollection,
         metric_config: Any,
         output_dir: str,
         split_metadata: Dict[str, Any],
@@ -669,7 +669,6 @@ class EvaluationManager:
         self,
         model: base.BaseEstimator,
         method: str,
-        algorithm_name: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         scorer: str,
@@ -684,9 +683,6 @@ class EvaluationManager:
             model (BaseEstimator): The model to be tuned.
 
             method (str): The search method to use ("grid" or "random").
-
-            algorithm_name (str): The name of the algorithm for which the 
-            hyperparameter grid is being used.
 
             X_train (pd.DataFrame): The training data.
 
@@ -720,25 +716,20 @@ class EvaluationManager:
             model.__class__.__name__
             )
         score = self.metric_config.get_scorer(scorer)
-        param_grid = next(
-            algo.get_hyperparam_grid() for algo in self.algorithm_config
-            if algo.name == algorithm_name
-            )
-        display_name = next(
-            algo.display_name for algo in self.algorithm_config
-            if algo.name == algorithm_name
-        )
-
+        algo_wrapper = self.algorithm_config[model.wrapper_name]
+        param_grid = algo_wrapper.get_hyperparam_grid()
         cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
+        # The arguments for each sklearn searcher are different which is why the
+        # first two arguments have no keywords. If adding another searcher make
+        # sure the argument names do not conflict.
         search = searcher(
-            estimator=model, param_grid=param_grid, n_jobs=n_jobs, cv=cv,
+            model, param_grid, n_jobs=n_jobs, cv=cv,
             scoring=score
         )
         search_result = search.fit(X_train, y_train)
-        tuned_model = next(
-            algo.instantiate_tuned(search_result.best_params_)
-            for algo in self.algorithm_config if algo.name == algorithm_name
-            )
+        tuned_model = algo_wrapper.instantiate_tuned(
+            search_result.best_params_
+        )
         tuned_model.fit(X_train, y_train)
         self.logger.info(
             "Hyperparameter optimization for %s complete.", 
@@ -748,8 +739,8 @@ class EvaluationManager:
         if plot_results:
             metadata = self._get_metadata(model)
             self._plot_hyperparameter_performance(
-                param_grid, search_result, algorithm_name, metadata,
-                display_name
+                param_grid, search_result, algo_wrapper.name, metadata,
+                algo_wrapper.display_name
             )
         return tuned_model
 

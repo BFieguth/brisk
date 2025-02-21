@@ -1,4 +1,5 @@
 import pytest
+
 from brisk.configuration.configuration import Configuration
 from brisk.configuration.configuration_manager import ConfigurationManager
 
@@ -13,6 +14,7 @@ class TestConfiguration:
         """Test configuration initialization"""
         assert configuration.default_algorithms == ["linear", "ridge"]
         assert configuration.experiment_groups == []
+        assert configuration.default_workflow_args == {}
 
     def test_add_experiment_group(self, mock_regression_project, configuration):
         """Test adding experiment group with defaults"""
@@ -29,7 +31,11 @@ class TestConfiguration:
         assert group.algorithm_config is None
         assert group.description == ""
 
-    def test_add_experiment_group_custom_algorithms(self, mock_regression_project, configuration):
+    def test_add_experiment_group_custom_algorithms(
+        self,
+        mock_regression_project,
+        configuration
+    ):
         """Test adding experiment group with custom algorithms"""
         algorithm_config = {"elasticnet": {"alpha": 0.5}}
         configuration.add_experiment_group(
@@ -46,6 +52,7 @@ class TestConfiguration:
         assert group.algorithms == ["elasticnet"]
         assert group.algorithm_config == algorithm_config
         assert group.description == "This is a test description"
+
     def test_duplicate_name(self, mock_regression_project, configuration):
         """Test adding experiment group with duplicate name"""
         # Add first group
@@ -61,7 +68,11 @@ class TestConfiguration:
                 datasets=["other.csv"]
             )
 
-    def test_build_returns_configuration_manager(self, mock_regression_project, configuration):
+    def test_build_returns_configuration_manager(
+        self,
+        mock_regression_project,
+        configuration
+    ):
         """Test build method returns ConfigurationManager"""
         configuration.add_experiment_group(
             name="test_group",
@@ -70,3 +81,22 @@ class TestConfiguration:
         
         manager = configuration.build()
         assert isinstance(manager, ConfigurationManager)
+
+    def test_check_datasets_type_error(self, configuration):
+        datasets_dict = [{"path_to_data": "table_name"}]
+        datasets_list = [["path", "to", "data"], ["more", "data"]]
+        datasets_correct = ["path_to_data", ("file_path", "table_name")]
+
+        with pytest.raises(
+            TypeError,
+            match="datasets must be a list containing strings and/or tuples "
+        ):
+            configuration._check_datasets_type(datasets_dict)
+            
+        with pytest.raises(
+            TypeError,
+            match="datasets must be a list containing strings and/or tuples "
+        ):
+            configuration._check_datasets_type(datasets_list)
+
+        configuration._check_datasets_type(datasets_correct)
