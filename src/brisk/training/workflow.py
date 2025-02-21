@@ -319,7 +319,6 @@ class Workflow(abc.ABC):
         self,
         model: base.BaseEstimator,
         method: str,
-        algorithm_name: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         scorer: str,
@@ -334,9 +333,6 @@ class Workflow(abc.ABC):
             model (BaseEstimator): The model to be tuned.
             
             method (str): The search method to use ('grid' or 'random').
-            
-            algorithm_name (str): The name of the algorithm for which the 
-            hyperparameter grid is being used.
             
             X_train (pd.DataFrame): The training data.
            
@@ -357,7 +353,7 @@ class Workflow(abc.ABC):
             BaseEstimator: The tuned model.
         """
         return self.evaluator.hyperparameter_tuning(
-            model, method, algorithm_name, X_train, y_train, scorer,
+            model, method, X_train, y_train, scorer,
             kf, num_rep, n_jobs, plot_results=plot_results
         )
 
