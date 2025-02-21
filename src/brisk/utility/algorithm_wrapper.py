@@ -68,12 +68,14 @@ class AlgorithmWrapper:
             )
 
     def instantiate(self) -> Any:
-        """Instantiates the model with the default parameters.
+        """Instantiates the model with the default parameters and wrapper name.
 
         Returns:
             Any: An instance of the model with the provided default parameters.
         """
-        return self.algorithm_class(**self.default_params)
+        model = self.algorithm_class(**self.default_params)
+        setattr(model, "wrapper_name", self.name)
+        return model
 
     def instantiate_tuned(self, best_params: Dict[str, Any]) -> Any:
         """Instantiates a new model with the tuned parameters.
@@ -89,7 +91,9 @@ class AlgorithmWrapper:
         """
         if "max_iter" in self.default_params:
             best_params["max_iter"] = self.default_params["max_iter"]
-        return self.algorithm_class(**best_params)
+        model = self.algorithm_class(**best_params)
+        setattr(model, "wrapper_name", self.name)
+        return model
 
     def get_hyperparam_grid(self) -> Dict[str, Any]:
         """Returns the hyperparameter grid for the model.
