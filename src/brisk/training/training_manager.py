@@ -19,7 +19,7 @@ import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
 from brisk.reporting import report_manager as report
-from brisk.utility import logging_util
+from brisk.utility import logging_util, algorithm_wrapper
 from brisk.configuration import configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
@@ -397,7 +397,9 @@ class TrainingManager:
          [experiment_name]) = experiment_dir
 
         eval_manager = evaluation_manager.EvaluationManager(
-            list(current_experiment.algorithms.values()),
+            algorithm_wrapper.AlgorithmCollection(
+                *current_experiment.algorithms.values()
+            ),
             self.metric_config,
             experiment_dir,
             data_split.get_split_metadata(),

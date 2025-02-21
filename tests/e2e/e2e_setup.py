@@ -79,7 +79,7 @@ def metric_config():
 
 
 def algorithm_config():
-    algorithms = [
+    algorithms = brisk.AlgorithmCollection(
         *brisk.REGRESSION_ALGORITHMS,
         *brisk.CLASSIFICATION_ALGORITHMS,
         brisk.AlgorithmWrapper(
@@ -92,7 +92,7 @@ def algorithm_config():
             display_name="SVC (Second)",
             algorithm_class=svm.SVC
         ),
-    ]
+    )
     return algorithms
 
 

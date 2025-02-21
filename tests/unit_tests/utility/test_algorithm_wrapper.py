@@ -23,6 +23,7 @@ class TestAlgorithmWrapper:
         algorithm_class_mock.assert_called_once_with()
 
         assert algorithm_instance == algorithm_class_mock()
+        assert algorithm_instance.wrapper_name == "mock"
 
     def test_instantiate_with_params(self, algorithm_class_mock):
         """
@@ -38,6 +39,7 @@ class TestAlgorithmWrapper:
         algorithm_class_mock.assert_called_once_with(param1=10, param2="value")
 
         assert algorithm_instance == algorithm_class_mock()
+        assert algorithm_instance.wrapper_name == "mock"
 
     def test_get_hyperparam_grid_empty(self, algorithm_class_mock):
         """
@@ -111,11 +113,12 @@ class TestAlgorithmWrapper:
             default_params={"param1": 5, "param2": "default"}
             )
         best_params = {"param2": "tuned", "param3": "new_value"}
-        wrapper.instantiate_tuned(best_params)
+        algorithm_instance = wrapper.instantiate_tuned(best_params)
 
         algorithm_class_mock.assert_called_once_with(
             param2="tuned", param3="new_value"
             )
+        assert algorithm_instance.wrapper_name == "mock"
 
     def test_instantiate_tuned_with_max_iter(self, algorithm_class_mock):
         """
@@ -128,8 +131,9 @@ class TestAlgorithmWrapper:
             default_params={"param1": 5, "max_iter": 100}
             )
         best_params = {"param2": "tuned"}
-        wrapper.instantiate_tuned(best_params)
+        algorithm_instance = wrapper.instantiate_tuned(best_params)
 
         algorithm_class_mock.assert_called_once_with(
             param2="tuned", max_iter=100
             )
+        assert algorithm_instance.wrapper_name == "mock"

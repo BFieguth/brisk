@@ -33,7 +33,7 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
+        algorithm_config: algorithm_wrapper.AlgorithmCollection,
         categorical_features: Dict[str, List[str]]
     ):
         """Initialize factory with algorithm configuration.
@@ -43,9 +43,7 @@ class ExperimentFactory:
             available algorithms
             categorical_features: Dict mapping categorical features to dataset
         """
-        self.algorithm_config = {
-            wrapper.name: wrapper for wrapper in algorithm_config
-        }
+        self.algorithm_config = algorithm_config
         self.categorical_features = categorical_features
 
     def create_experiments(
@@ -122,13 +120,7 @@ class ExperimentFactory:
         config: Dict[str, Any] | None = None
     ) -> algorithm_wrapper.AlgorithmWrapper:
         """Get algorithm wrapper with updated configuration."""
-        if algo_name not in self.algorithm_config:
-            raise KeyError(
-                f"Algorithm '{algo_name}' not found in configuration"
-            )
-
         original_wrapper = self.algorithm_config[algo_name]
-
         wrapper = algorithm_wrapper.AlgorithmWrapper(
             name=original_wrapper.name,
             display_name=original_wrapper.display_name,

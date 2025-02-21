@@ -91,7 +91,7 @@ class ConfigurationManager:
 
     def _load_algorithm_config(
         self
-    ) -> List[algorithm_wrapper.AlgorithmWrapper]:
+    ) -> algorithm_wrapper.AlgorithmCollection:
         """Load algorithm configuration from project's algorithms.py.
         
         Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.
