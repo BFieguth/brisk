@@ -5,7 +5,7 @@ class RegressionSingleFull(Workflow):
         metrics = ["MAE", "CCC", "MSE", "huber_loss", "fake_metric"]
         model = self.model.fit(self.X_train, self.y_train)
         tuned_model = self.hyperparameter_tuning(
-            model, "grid", self.algorithm_names[0], self.X_train, self.y_train, 
+            model, "grid", self.X_train, self.y_train, 
             scorer="MAE", kf=5, num_rep=2, n_jobs=-1
         )
         self.save_model(tuned_model, "tuned_model")
