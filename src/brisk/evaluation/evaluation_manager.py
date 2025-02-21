@@ -48,7 +48,7 @@ class EvaluationManager:
     """
     def __init__(
         self,
-        algorithm_config: List[algorithm_wrapper.AlgorithmWrapper],
+        algorithm_config: algorithm_wrapper.AlgorithmCollection,
         metric_config: Any,
         output_dir: str,
         split_metadata: Dict[str, Any],
