@@ -13,6 +13,31 @@
 
     /* Font Family */
     --pst-font-family-base: 'Montserrat', sans-serif;
+
+    /* Celtic Blue (Bright Blue) */
+    --primary-color: #0074D9;
+    --primary-color-dark: #005fb3;
+    --primary-color-light: #80c4ff;
+
+    /* Federal Blue (Dark Blue) */
+    --secondary-color: #07004D;
+    --secondary-color-dark: #060040;
+    --secondary-color-light: #0e0095;
+
+    /* Columbia Blue (Light Blue) */
+    --background-color: #C4E0F9;
+    --background-color-dark: #7DBCF2;
+    --background-color-light: #DAECFB;
+
+    /* Jade */
+    --accent-color: #00A878;
+    --accent-color-dark: #00523A;
+    --accent-color-light: #00E0A1;
+
+    /* Mulberry */
+    --important-color: #B95F89;
+    --important-color-dark: #803859;
+    --important-color-light: #D39CB6;
 }
 
 /* Prevent link colouring when visited */
@@ -21,32 +46,32 @@ a:visited {
 }
 
 a:hover {
-    color: #B95F89 !important;
+    color: var(--important-color) !important;
 }
 
 /* ----------------- */
 /* Primary Sidebar */
 /* ----------------- */
 .bd-sidebar-primary {
-    --pst-color-primary: #00A878;
+    --pst-color-primary: var(--accent-color);
 }
 
 /* ----------------- */
 /* Secondary Sidebar */
 /* ----------------- */
 .bd-sidebar-secondary {
-    --pst-color-primary: #00A878;
+    --pst-color-primary: var(--accent-color);
 }
 
 /* ----------------- */
 /* Light/Dark Theme */
 /* ----------------- */
 html[data-theme="light"] {
-    --pst-color-primary: #005fb3;
+    --pst-color-primary: var(--primary-color-dark);
 
     /* Navbar */
     .bd-header {
-        background-color: #80c4ff !important;
+        background-color: var(--primary-color-light) !important;
     }
     .bd-header a p {
         color: #000000 !important;
@@ -54,13 +79,50 @@ html[data-theme="light"] {
 }
 
 html[data-theme="dark"] {
-    --pst-color-primary: #80c4ff;
+    --pst-color-primary: var(--primary-color-light);
 
     /* Navbar */
     .bd-header {
-        background-color: #005fb3 !important;
+        background-color: var(--primary-color-dark) !important;
     }
     .bd-header a p {
         color: #EFEFEF !important;
     }
+}
+
+/* -------------------- */
+/* API Reference Tables */
+/* -------------------- */
+.pst-scrollable-table-container tr:hover {
+    background-color: inherit !important;
+}
+
+.pst-scrollable-table-container th {
+    padding: 0.75rem;
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
+}
+
+/* First column (Object column) styling */
+.pst-scrollable-table-container td:first-child {
+    width: 30%;
+    font-family: var(--pst-font-family-monospace);
+}
+
+/* Second column (Description column) styling */
+.pst-scrollable-table-container td:last-child {
+    width: 70%;
+}
+
+/* ----------------------- */
+/* API Function Signatures */
+/* ----------------------- */
+dt:target {
+    background-color: rgba(0, 224, 161, 0.1) !important;
+    border-left: 3px solid var(--accent-color);
+}
+
+dt.sig {
+    transition: background-color 1.0s ease;
 }
