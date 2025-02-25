@@ -1,16 +1,16 @@
 """Provides the DataManager class for creating train-test splits.
 
-This module contains the `DataManager` class, which handles creating train-test 
-splits for machine learning models. It supports several splitting strategies 
+This module contains the DataManager class, which handles creating train-test
+splits for machine learning models. It supports several splitting strategies
 such as shuffle, k-fold, and stratified splits, with optional grouping.
 
 Exports:
-    - DataManager: A class for configuring and generating train-test splits or 
-        cross-validation folds.
+    DataManager: A class for configuring and generating train-test splits or 
+    cross-validation folds.
 """
 import os
 import sqlite3
-from typing import Optional, Tuple, List
+from typing import Optional, List
 
 import pandas as pd
 from sklearn import model_selection
@@ -19,22 +19,53 @@ from sklearn import preprocessing
 from brisk.data import data_split_info
 
 class DataManager:
-    """Handles the data splitting logic for creating train-test splits.
+    """A class that handles data splitting logic for creating train-test splits.
 
     This class allows users to configure different splitting strategies 
     (e.g., shuffle, k-fold, stratified) and return train-test splits or 
-    cross-validation folds. Supports splitting based on groupings.
+    cross-validation folds. It supports splitting based on groupings and 
+    includes options for data scaling.
 
-    Attributes:
-        test_size (float): The proportion of the dataset to allocate to the test 
-        set.
-        n_splits (int): The number of splits for cross-validation.
-        split_method (str): The method used for splitting 
-        ("shuffle" or "kfold").
-        group_column (Optional[str]): The column used for grouping (if any).
-        stratified (bool): Whether to use stratified sampling or 
-        cross-validation.
-        random_state (Optional[int]): The random seed for reproducibility.
+    Parameters
+    ----------
+    test_size : float, optional
+        The proportion of the dataset to allocate to the test set, by default 
+        0.2
+    n_splits : int, optional
+        Number of splits for cross-validation, by default 5
+    split_method : str, optional
+        The method to use for splitting ("shuffle" or "kfold"), by default 
+        "shuffle"
+    group_column : str, optional
+        The column to use for grouping (if any), by default None
+    stratified : bool, optional
+        Whether to use stratified sampling or cross-validation, by default False
+    random_state : int, optional
+        The random seed for reproducibility, by default None
+    scale_method : str, optional
+        The method to use for scaling ("standard", "minmax", "robust", "maxabs", 
+        "normalizer"), by default None
+
+    Attributes
+    ----------
+    test_size : float
+        Proportion of dataset allocated to test set
+    n_splits : int
+        Number of splits for cross-validation
+    split_method : str
+        Method used for splitting
+    group_column : str or None
+        Column used for grouping
+    stratified : bool
+        Whether stratified sampling is used
+    random_state : int or None
+        Random seed for reproducibility
+    scale_method : str or None
+        Method used for scaling features
+    splitter : sklearn.model_selection._BaseKFold
+        The initialized scikit-learn splitter object
+    _splits : dict
+        Cache of previously computed splits
     """
     def __init__(
         self,
@@ -46,34 +77,6 @@ class DataManager:
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
     ):
-        """Initializes the DataManager with custom splitting strategies.
-
-        Args:
-            test_size (float): The proportion of the dataset to allocate to the 
-            test set. Defaults to 0.2.
-            
-            n_splits (int): Number of splits for cross-validation. 
-            Defaults to 5.
-            
-            split_method (str): The method to use for splitting 
-            ("shuffle" or "kfold"). Defaults to "shuffle".
-            
-            group_column (Optional[str]): The column to use for grouping 
-            (if any). Defaults to None.
-            
-            stratified (bool): Whether to use stratified sampling or 
-            cross-validation. Defaults to False.
-            
-            random_state (Optional[int]): The random seed for reproducibility. 
-            Defaults to None.
-            
-            scale_method (Optional[str]): The method to use for scaling 
-            ("standard", "minmax", "robust", "maxabs", "normalizer"). 
-            Defaults to None.
-            
-            categorical_features (Optional[list]): The features to use for 
-            categorical scaling. Defaults to None.
-        """
         self.test_size = test_size
         self.split_method = split_method
         self.group_column = group_column
@@ -88,9 +91,11 @@ class DataManager:
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
 
-        Raises:
-            ValueError: If an invalid split method or incompatible combination 
-            of group column and stratification is provided.
+        Raises
+        ------
+            ValueError
+                If invalid split method or incompatible combination of group 
+                column and stratification is provided.
         """
         valid_split_methods = ["shuffle", "kfold"]
         if self.split_method not in valid_split_methods:
@@ -120,14 +125,17 @@ class DataManager:
     def _set_splitter(self):
         """Selects the appropriate splitter based on the configuration.
 
-        Returns:
-            sklearn.model_selection._BaseKFold or 
-            sklearn.model_selection._Splitter: 
-                The initialized splitter object based on the configuration.
+        Returns
+        -------
+        sklearn.model_selection._BaseKFold or 
+            sklearn.model_selection._Splitter: The initialized splitter 
+            object based on the configuration.
 
-        Raises:
-            ValueError: If an invalid combination of stratified and group_column 
-                        settings is provided.
+        Raises
+        ------
+        ValueError
+            If invalid combination of stratified and group_column settings 
+            is provided.
         """
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
@@ -203,17 +211,22 @@ class DataManager:
     ) -> pd.DataFrame:
         """Loads data from a CSV, Excel file, or SQL database.
 
-        Args:
-            data_path (str): Path to the dataset.
-            table_name (Optional[str]): Name of the table in the SQL database 
-                (if applicable). Defaults to None.
+        Parameters
+        ----------
+        data_path : str
+            Path to the dataset file
+        table_name : str, optional
+            Name of the table in SQL database. Required for SQL databases.
 
-        Returns:
-            pd.DataFrame: The loaded dataset.
+        Returns
+        -------
+        pd.DataFrame: The loaded dataset.
 
-        Raises:
-            ValueError: If the file format is unsupported or if table_name is 
-                missing for an SQL database.
+        Raises
+        ------
+        ValueError
+            If file format is unsupported or table_name is missing for SQL 
+            database.
         """
         file_extension = os.path.splitext(data_path)[1].lower()
 
@@ -248,22 +261,31 @@ class DataManager:
         table_name: Optional[str] = None,
         group_name: Optional[str] = None,
         filename: Optional[str] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-        """
-        Splits the data based on the preconfigured splitter.
+    ) -> data_split_info.DataSplitInfo:
+        """Splits the data based on the preconfigured splitter.
 
-        Args:
-            data_path (str): Path to the dataset.
-            table_name (Optional[str]): Name of the table in the SQL database 
-                (if applicable). Defaults to None.
+        Parameters
+        ----------
+        data_path : str
+            Path to the dataset file
+        categorical_features : list of str
+            List of categorical feature names
+        table_name : str, optional
+            Name of the table in SQL database, by default None
+        group_name : str, optional
+            Name of the group for split caching, by default None
+        filename : str, optional
+            Filename for split caching, by default None
 
-        Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: 
-                A tuple containing:
-                - X_train (pd.DataFrame): The training features.
-                - X_test (pd.DataFrame): The testing features.
-                - y_train (pd.Series): The training target variable.
-                - y_test (pd.Series): The testing target variable.
+        Returns
+        -------
+        DataSplitInfo
+            Object containing train/test splits and related information
+
+        Raises
+        ------
+        ValueError
+            If group_name is provided without filename or vice versa
         """
         if bool(group_name) != bool(filename):
             raise ValueError(
@@ -313,9 +335,10 @@ class DataManager:
 
     def to_markdown(self) -> str:
         """Creates a markdown representation of the DataManager configuration.
-        
-        Returns:
-            str: Markdown formatted string describing the configuration
+
+        Returns
+        -------
+        str: Markdown formatted string describing the configuration.
         """
         config = {
             "test_size": self.test_size,
