@@ -6,6 +6,9 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import sys
+import pathlib
+
 import brisk
 
 project = 'Brisk'
@@ -20,11 +23,35 @@ release = version
 extensions = [
     "sphinx_design",
     "sphinx_copybutton",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "numpydoc", # must be loaded after autodoc
+    "sphinx.ext.viewcode",
+    "sphinx_design",
 ]
+
+# Add autosummary settings
+autosummary_generate = True
+add_module_names = False
 
 templates_path = ['_templates']
 exclude_patterns = []
 
+numpydoc_show_class_members = False
+
+
+# -- Setup descriptions -------------------------------------------------
+docs_path = pathlib.Path(__file__).parent
+sys.path.insert(0, str(docs_path))
+from _descriptions import generate_list_table
+
+def setup(app):
+    """Generate RST files for object tables."""
+    with open(docs_path / '_api_objects_table.rst', 'w') as f:
+        f.write(generate_list_table())
+    
+    with open(docs_path / '_data_objects_table.rst', 'w') as f:
+        f.write(generate_list_table(['DataManager', 'DataSplitInfo']))
 
 
 # -- Options for HTML output -------------------------------------------------
