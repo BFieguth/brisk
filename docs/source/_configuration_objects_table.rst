@@ -8,10 +8,6 @@
      - Provide an interface for creating experiment groups.
    * - :class:`~brisk.configuration.configuration_manager.ConfigurationManager`
      - Process the ExperimentGroups and prepare the required DataManagers.
-   * - :class:`~brisk.data.data_manager.DataManager`
-     - Handles the grouping, splitting, and scaling of data. Arguments are used to define the splitting strategy.
-   * - :class:`~brisk.data.data_split_info.DataSplitInfo`
-     - Stores and analyzes training and testing datasets, providing methods for calculating descriptive statistics and visualizing feature distributions.
    * - :class:`~brisk.configuration.experiment.Experiment`
      - Stores all the data needed for one experiment run.
    * - :class:`~brisk.configuration.experiment_factory.ExperimentFactory`

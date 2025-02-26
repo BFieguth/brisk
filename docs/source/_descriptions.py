@@ -13,7 +13,27 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.data.data_split_info.DataSplitInfo",
         "desc": "Stores and analyzes training and testing datasets, providing methods for calculating "
                 "descriptive statistics and visualizing feature distributions."
-    }
+    },
+    "Configuration": {
+        "path": "~brisk.configuration.configuration.Configuration",
+        "desc": "Provide an interface for creating experiment groups."
+    },
+    "ConfigurationManager": {
+        "path": "~brisk.configuration.configuration_manager.ConfigurationManager",
+        "desc": "Process the ExperimentGroups and prepare the required DataManagers."
+    },
+    "ExperimentFactory": {
+        "path": "~brisk.configuration.experiment_factory.ExperimentFactory",
+        "desc": "Create a que of Experiments from an ExperimentGroup."
+    },
+    "ExperimentGroup": {
+        "path": "~brisk.configuration.experiment_group.ExperimentGroup",
+        "desc": "Groups experiments that will be run with the same settings."
+    },
+    "Experiment": {
+        "path": "~brisk.configuration.experiment.Experiment",
+        "desc": "Stores all the data needed for one experiment run."
+    },
 })
 
 def generate_list_table(objects=None):

@@ -10,11 +10,16 @@ Package Sections
     Handles data splitting and preprocessing for machine learning models. Provides utilities 
     for creating train-test splits with various strategies and analyzing data distributions.
 
+:doc:`configuration`
+    Provides an interface for defining what models should be trained and how they should 
+    be trained.
+
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    data
+   configuration
 
 API Objects
 ------------

@@ -55,6 +55,11 @@ def setup(app):
     with open(docs_path / '_data_objects_table.rst', 'w') as f:
         f.write(generate_list_table(['DataManager', 'DataSplitInfo']))
 
+    with open(docs_path / "_configuration_objects_table.rst", "w") as f:
+        f.write(generate_list_table([
+            "Configuration", "ExperimentFactory", "ExperimentGroup", 
+            "Experiment", "ConfigurationManager"
+        ]))
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
