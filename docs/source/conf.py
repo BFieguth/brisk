@@ -6,6 +6,8 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import inspect
 import sys
 import pathlib
 
@@ -21,12 +23,12 @@ release = version
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx.ext.linkcode",
     "sphinx_design",
     "sphinx_copybutton",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "numpydoc", # must be loaded after autodoc
-    "sphinx.ext.viewcode",
     "sphinx_design",
 ]
 
@@ -69,3 +71,64 @@ html_theme_options = {
     "navbar_end": ["theme-switcher", "version-switcher", "brisk_icon_links"],
     "navbar_persistent": ["search-button"],
 }
+
+# -- Linkcode settings ------------------------------------------------------
+def linkcode_resolve(domain, info):
+    """Determine the URL corresponding to a Python object in Brisk.
+    
+    Adapted from matplotlib's implementation.
+    """
+    if domain != 'py':
+        return None
+
+    module_name = info['module']
+    fullname = info['fullname']
+
+    sub_module = sys.modules.get(module_name)
+    if sub_module is None:
+        return None
+
+    obj = sub_module
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except AttributeError:
+            return None
+
+    if inspect.isfunction(obj):
+        obj = inspect.unwrap(obj)
+
+    try:
+        source_file = inspect.getsourcefile(obj)
+    except TypeError:
+        source_file = None
+
+    if not source_file or source_file.endswith('__init__.py'):
+        try:
+            source_file = inspect.getsourcefile(sys.modules[obj.__module__])
+        except (TypeError, AttributeError, KeyError):
+            source_file = None
+    if not source_file:
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+        linespec = f"#L{lineno}"
+        if len(source) > 1:
+            linespec = f"#L{lineno:d}-L{lineno + len(source) - 1:d}"
+    except (OSError, TypeError) as e:
+        linespec = ""
+
+    startdir = pathlib.Path(brisk.__file__).parent.parent.parent
+    source_file = os.path.relpath(source_file, start=startdir).replace(os.path.sep, '/')
+
+    if not source_file.startswith('src/brisk/'):
+        return None
+
+    github_user = "BFieguth"
+    github_repo = "brisk"
+    github_branch = "main"
+
+    url = (f"https://github.com/{github_user}/{github_repo}/blob/"
+           f"{github_branch}/{source_file}{linespec}")
+    return url

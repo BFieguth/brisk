@@ -14,6 +14,24 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
+        },
+        {
+            "name": "Debug Sphinx Build",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "sphinx.cmd.build",
+            "args": [
+                "-M",
+                "html",
+                "${workspaceFolder}/docs/source",
+                "${workspaceFolder}/docs/build"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "python": "${command:python.interpreterPath}"
         }
     ],
     "inputs": [
