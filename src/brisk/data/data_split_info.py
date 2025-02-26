@@ -1,17 +1,17 @@
-"""data_split_info.py
+"""Store and analyze data splits created by DataManager.
 
-This module defines the DataSplitInfo class, which is responsible for 
-storing and analyzing data related to the training and testing splits of 
-datasets within the Brisk framework. The DataSplitInfo class provides 
-methods for calculating descriptive statistics for both continuous and 
-categorical features, as well as visualizing the distributions of these 
-features through various plots.
+This module defines the DataSplitInfo class, which is responsible for storing 
+and analyzing data related to the training and testing splits of datasets within
+the Brisk framework. The DataSplitInfo class provides methods for calculating 
+descriptive statistics for both continuous and categorical features, as well as 
+visualizing the distributions of these features through various plots.
 
-Usage Example:
-    >>> from brisk.data.data_split_info import DataSplitInfo
-    >>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test, 
-    ...                            filename="dataset.csv", scaler=my_scaler)
-    >>> data_info.save_distribution("output_directory")
+Examples
+--------
+>>> from brisk.data.data_split_info import DataSplitInfo
+>>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test, 
+...                          filename="dataset.csv", scaler=my_scaler)
+>>> data_info.save_distribution("output_directory")
 """
 
 import json
@@ -26,27 +26,61 @@ from scipy import stats as scipy_stats
 import seaborn as sns
 
 class DataSplitInfo:
-    """Class for managing and analyzing data splits for training and testing.
+    """Store and analyze features and labels of training and testing splits.
 
-    The DataSplitInfo class is designed to store and analyze the features and 
-    labels of training and testing datasets. It provides methods for calculating 
-    descriptive statistics for both continuous and categorical features, as well 
-    as visualizing the distributions of these features through various plots.
+    This class provides methods for calculating descriptive statistics for both 
+    continuous and categorical features, as well as visualizing the 
+    distributions of these features through various plots.
 
-    Attributes:
-        X_train (pd.DataFrame): The training features.
-        X_test (pd.DataFrame): The testing features.
-        y_train (pd.Series): The training labels.
-        y_test (pd.Series): The testing labels.
-        filename (str): The filename or table name of the dataset.
-        scaler (optional): The scaler used for this split, if any.
-        features (list, optional): The order of input features.
-        categorical_features (list): List of categorical features present in the 
-            training dataset.
-        continuous_features (list): List of continuous features derived from the 
-            training dataset.
-        continuous_stats (dict): Descriptive statistics for continuous features.
-        categorical_stats (dict): Statistics for categorical features.
+    Parameters
+    ----------
+    X_train : pd.DataFrame
+        The training features
+    X_test : pd.DataFrame
+        The testing features
+    y_train : pd.Series
+        The training labels
+    y_test : pd.Series
+        The testing labels
+    filename : str
+        The filename or table name of the dataset
+    scaler : object, optional
+        The scaler used for this split
+    features : list of str, optional
+        The order of input features
+    categorical_features : list of str, optional
+        List of categorical feature names
+
+    Attributes
+    ----------
+    X_train : pd.DataFrame
+        The training features
+    X_test : pd.DataFrame
+        The testing features
+    y_train : pd.Series
+        The training labels
+    y_test : pd.Series
+        The testing labels
+    filename : str
+        The filename or table name of the dataset
+    scaler : object or None
+        The scaler used for this split
+    features : list of str or None
+        The order of input features
+    categorical_features : list of str
+        List of categorical features present in the training dataset
+    continuous_features : list of str
+        List of continuous features derived from the training dataset
+    continuous_stats : dict
+        Descriptive statistics for continuous features
+    categorical_stats : dict
+        Statistics for categorical features
+
+    Notes
+    -----
+    The class automatically detects categorical features if not provided. 
+    Statistics are calculated for both continuous and categorical features 
+    during initialization.
     """
     def __init__(
         self,
@@ -59,18 +93,6 @@ class DataSplitInfo:
         features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None
     ):
-        """
-        Initialize the DataSplitInfo to store all the data related to a split.
-        
-        Args:
-            X_train (pd.DataFrame): The training features.
-            X_test (pd.DataFrame): The testing features.
-            y_train (pd.Series): The training labels.
-            y_test (pd.Series): The testing labels.
-            filename (str): The filename or table name of the dataset.
-            scaler (optional): The scaler used for this split.
-            features (list, optional): The order of input features.
-        """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         if not self.logger.handlers:
@@ -139,9 +161,22 @@ class DataSplitInfo:
             }
 
     def _detect_categorical_features(self) -> List[str]:
-        """Attempt to detect possible categorical features
+        """Detect possible categorical features in the dataset.
 
-        Checks datatype and if less than 5% of the columns have unique values. 
+        Checks datatype and if less than 5% of the columns have unique values.
+
+        Returns
+        -------
+        list of str
+            Names of detected categorical features
+
+        Notes
+        -----
+        Features are considered categorical if they are:
+        - Object dtype
+        - Category dtype
+        - Boolean dtype
+        - Have less than 5% unique values
         """
         combined_data = pd.concat([self.X_train, self.X_test], axis=0)
         categorical_features = []
@@ -292,8 +327,8 @@ class DataSplitInfo:
             )
 
         # Boxplots
-        axs[1, 0].boxplot(train_series, orientation='vertical')
-        axs[1, 1].boxplot(test_series, orientation='vertical')
+        axs[1, 0].boxplot(train_series, orientation="vertical")
+        axs[1, 1].boxplot(test_series, orientation="vertical")
 
         # Set labels
         axs[1, 0].set_xlabel(f"{feature_name}", fontsize=12)
