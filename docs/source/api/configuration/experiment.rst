@@ -5,4 +5,4 @@ Experiment
 
 .. autoclass:: Experiment
    :members:
-   :undoc-members:
+   :no-inherited-members:

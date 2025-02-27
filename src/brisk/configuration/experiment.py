@@ -1,10 +1,24 @@
-"""experiment.py
+"""Data for individual experiment runs.
 
 This module defines the Experiment class, which represents a single experiment 
-within the Brisk framework. The Experiment dataclass store the data path, group
-name and algorithms to use.
-"""
+within the Brisk framework. Each Experiment instance contains the information
+needed for one model training run.
 
+Examples
+--------
+>>> from pathlib import Path
+>>> from sklearn.linear_model import LinearRegression
+>>> from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+>>> 
+>>> experiment = Experiment(
+...     group_name="baseline",
+...     algorithms={"model": AlgorithmWrapper("linear", LinearRegression)},
+...     dataset_path=Path("data/example.csv"),
+...     workflow_args={}
+... )
+>>> print(experiment.name)
+'baseline_linear'
+"""
 import dataclasses
 import pathlib
 from typing import Dict, Optional, List, Any
@@ -14,27 +28,39 @@ from brisk.utility import algorithm_wrapper
 @dataclasses.dataclass
 class Experiment:
     """Configuration for a single experiment run.
-    
-    Encapsulates all information needed for one experiment run, including 
-    dataset path, model instances, and group organization. Provides validation 
-    and consistent naming for experiment organization.
-    
-    Attributes:
-        group_name: Name of the experiment group for organization
-        dataset: Path to the dataset file
-        algorithms: Dictionary of instantiated models with standardized keys:
-                   - Single model: {"model": instance}
-                   - Multiple models: {"model1": inst1, "model2": inst2, ...}
-    
-    Example:
-        >>> from sklearn.linear_model import LinearRegression
-        >>> experiment = Experiment(
-        ...     group_name="baseline",
-        ...     dataset=Path("data/example.csv"),
-        ...     algorithms={"model": LinearRegression()}
-        ... )
-        >>> print(experiment.experiment_name)
-        'baseline_a1b2c3d4'
+
+    Parameters
+    ----------
+    group_name : str
+        Name of the experiment group for organization
+    algorithms : dict
+        Dictionary of AlgorithmWrapper instances with standardized keys:
+        
+        * Single model : dict
+            {"model": wrapper}
+        * Multiple models : dict
+            {"model": wrapper1, "model2": wrapper2, ...}
+    dataset_path : Path or str
+        Path to the dataset file
+    workflow_args : dict
+        Arguments to pass to the workflow
+    table_name : str, optional
+        Name of table for database files
+    categorical_features : list of str, optional
+        Names of categorical features in the dataset
+
+    Attributes
+    ----------
+    name : str
+        Full descriptive name combining group and algorithms
+    dataset_name : str
+        Name of the dataset with optional table name
+    algorithm_kwargs : dict
+        Dictionary of instantiated algorithm objects
+    algorithm_names : list
+        List of algorithm names
+    workflow_attributes : dict
+        Combined workflow and algorithm arguments
     """
     group_name: str
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
@@ -46,10 +72,12 @@ class Experiment:
     @property
     def name(self) -> str:
         """Generate full descriptive name for logging and debugging.
-        
-        Returns:
-            String combining group name and full model class names.
-            Example: 'baseline_LinearRegression_RandomForestRegressor'
+
+        Returns
+        -------
+        str
+            Name combining group name and algorithm names
+            Example: 'baseline_linear_ridge'
         """
         algo_names = "_".join(
             algo.name for algo in self.algorithms.values()
@@ -58,7 +86,14 @@ class Experiment:
 
     @property
     def dataset_name(self) -> str:
-        """Name of the dataset."""
+        """Get the dataset name with optional table name.
+
+        Returns
+        -------
+        str
+            Dataset stem with optional table name
+            Example: 'data_table1' or 'data'
+        """
         dataset_name = (
             f"{self.dataset_path.stem}_{self.table_name}"
             if self.table_name else self.dataset_path.stem
@@ -67,7 +102,14 @@ class Experiment:
 
     @property
     def algorithm_kwargs(self) -> dict:
-        """Dictionary with instantiated algorithms"""
+        """Get dictionary of instantiated algorithms.
+
+        Returns
+        -------
+        dict
+            Mapping of keys to algorithm instances
+            Example: {'model': LinearRegression()}
+        """
         algorithm_kwargs = {
             key: algo.instantiate() for key, algo in self.algorithms.items()
         }
@@ -75,22 +117,32 @@ class Experiment:
 
     @property
     def algorithm_names(self) -> list:
-        """List of algorithm names"""
+        """Get list of algorithm names.
+
+        Returns
+        -------
+        list
+            Names of all algorithms in this experiment
+            Example: ['linear', 'ridge']
+        """
         algorithm_names = [algo.name for algo in self.algorithms.values()]
         return algorithm_names
 
     @property
     def workflow_attributes(self) -> Dict[str, Any]:
-        """
-        Combine the algorithm kwargs and the user defined workflow arguments
-        into one dictionary that is passed to the Workflow instance.
+        """Get combined workflow and algorithm arguments to pass to Workflow.
+
+        Returns
+        -------
+        dict
+            Union of workflow_args and algorithm_kwargs
         """
         workflow_attributes = self.workflow_args | self.algorithm_kwargs
         return workflow_attributes
 
     def __post_init__(self):
         """Validate experiment configuration after initialization.
-        
+
         Performs the following validations:
         1. Converts dataset to Path if it's a string
         2. Validates group_name is a string
@@ -98,13 +150,15 @@ class Experiment:
         4. Validates model naming convention:
            - Single model must use key "model"
            - Multiple models must use keys "model1", "model2", etc.
-        
-        Raises:
-            ValueError: If any validation fails:
-                - If group_name is not a string
-                - If algorithms is not a dictionary
-                - If algorithms is empty
-                - If model keys don't follow naming convention
+
+        Raises
+        ------
+        ValueError
+            If any validation fails:
+            - If group_name is not a string
+            - If algorithms is not a dictionary
+            - If algorithms is empty
+            - If model keys don't follow naming convention
         """
         if not isinstance(self.dataset_path, pathlib.Path):
             self.dataset_path = pathlib.Path(self.dataset_path)
