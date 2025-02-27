@@ -1,20 +1,20 @@
-"""experiment_group.py
+"""Configuration container for experiment groups.
 
-This module defines the ExperimentGroup class, which serves as a container 
-for configurations related to a group of experiments within the Brisk framework. 
-The ExperimentGroup class manages datasets, algorithms, and their respective 
-configurations, ensuring that all necessary parameters are validated before 
-execution.
+This module defines the ExperimentGroup class, which serves as a container for 
+configurations related to a group of experiments within the Brisk framework.
+Default values for AlgorithmWrappers and DataManagers can be overidden within an
+ExperimentGroup.
 
-Usage Example:
-    >>> from brisk.configuration.experiment_group import ExperimentGroup
-    >>> group = ExperimentGroup(
-    ...     name="baseline",
-    ...     datasets=["data.csv"],
-    ...     algorithms=["linear"],
-    ...     data_config={"test_size": 0.2}
-    ... )
-    >>> dataset_paths = group.dataset_paths
+Examples
+--------
+>>> from brisk.configuration.experiment_group import ExperimentGroup
+>>> group = ExperimentGroup(
+...     name="baseline",
+...     datasets=["data.csv"],
+...     algorithms=["linear"],
+...     data_config={"test_size": 0.25}
+... )
+>>>
 """
 
 import dataclasses
@@ -28,24 +28,24 @@ from brisk.utility import utility
 
 @dataclasses.dataclass
 class ExperimentGroup:
-    """Container for experiment group configuration
+    """Container for experiment group configuration.
 
-    Stores and validates configuration for a group of related experiments,
-    including datasets, algorithms, and their respective configurations.
-    
-    Attributes:
-        name: Unique identifier for the experiment group
-        
-        datasets: List of dataset filenames relative to project's datasets 
-        directory
-        
-        data_config: Optional configuration for DataManager
-        
-        algorithms: Optional list of algorithms to use
-        
-        algorithm_config: Optional configuration for algorithms
-
-        description: Optional description for the experiment group
+    Parameters
+    ----------
+    name : str
+        Unique identifier for the experiment group
+    datasets : list
+        List of dataset filenames relative to project's datasets directory
+    data_config : dict, optional
+        Arguments for DataManager
+    algorithms : list, optional
+        List of algorithms to use
+    algorithm_config : dict, optional
+        Arguments to apply to AlgorithmWrappers
+    description : str, optional
+        Description for the experiment group
+    workflow_args : dict, optional
+        Arguments to pass to workflow as attributes
     """
     name: str
     datasets: List[str | Tuple[str, str]]
@@ -59,12 +59,20 @@ class ExperimentGroup:
     def dataset_paths(self) -> List[Tuple[pathlib.Path, str | None]]:
         """Get full paths to datasets relative to project root.
         
-        Returns:
-            List of tuples with Path objects pointing to dataset files and table
-            name if path is to a database
+        Returns
+        -------
+        list of (pathlib.Path, str or None)
+            Each tuple contains:
+            
+            * path : pathlib.Path
+                Full path to the dataset file
+            * table_name : str or None
+                Name of table for database files, None for regular files
         
-        Raises:
-            FileNotFoundError: If project root (.briskconfig) cannot be found
+        Raises
+        ------
+        FileNotFoundError
+            If project root (.briskconfig) cannot be found
         """
         project_root = utility.find_project_root()
         datasets_dir = project_root / "datasets"
@@ -79,13 +87,16 @@ class ExperimentGroup:
         
         Performs validation checks on:
         - Name format
-        - Dataset existence
+        - Dataset existence 
         - Algorithm configuration consistency
         - DataManager configuration parameters
-        
-        Raises:
-            ValueError: If any validation check fails
-            FileNotFoundError: If datasets cannot be found
+
+        Raises
+        ------
+        ValueError
+            If any validation check fails
+        FileNotFoundError
+            If datasets cannot be found
         """
         self._validate_name()
         self._validate_datasets()
@@ -99,8 +110,10 @@ class ExperimentGroup:
         
         Ensures name is a non-empty string.
         
-        Raises:
-            ValueError: If name is empty or not a string
+        Raises
+        ------
+        ValueError
+            If name is empty or not a string
         """
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError("Experiment group name must be a non-empty string")
@@ -112,9 +125,12 @@ class ExperimentGroup:
         - At least one dataset is specified
         - All specified datasets exist in project's datasets directory
         
-        Raises:
-            ValueError: If no datasets are specified
-            FileNotFoundError: If any dataset file cannot be found
+        Raises
+        ------
+        ValueError
+            If no datasets are specified
+        FileNotFoundError
+            If any dataset file cannot be found
         """
         if not self.datasets:
             raise ValueError("At least one dataset must be specified")
@@ -132,8 +148,10 @@ class ExperimentGroup:
         Ensures all algorithms in algorithm_config are present in the algorithms 
         list.
         
-        Raises:
-            ValueError: If algorithm_config contains undefined algorithms
+        Raises
+        ------
+        ValueError
+            If algorithm_config contains undefined algorithms
         """
         if self.algorithm_config:
 
@@ -160,8 +178,10 @@ class ExperimentGroup:
         Ensures all parameters in data_config are valid DataManager parameters.
         Uses DataManager's __init__ signature to determine valid parameters.
         
-        Raises:
-            ValueError: If data_config contains invalid parameters
+        Raises
+        ------
+        ValueError
+            If data_config contains invalid parameters
         """
         if self.data_config:
             valid_data_params = set(
@@ -179,8 +199,14 @@ class ExperimentGroup:
                 )
 
     def _validate_description(self):
-        """Validate experiment group description is a string and wrap at 60 
-        characters.
+        """Validate and format experiment group description.
+        
+        Ensures description is a string and wraps text at 60 characters.
+        
+        Raises
+        ------
+        ValueError
+            If description is not a string
         """
         if not isinstance(self.description, str):
             raise ValueError("Description must be a string")
@@ -192,5 +218,14 @@ class ExperimentGroup:
         self.description = wrapped_description
 
     def _validate_workflow_args(self):
+        """Validate workflow arguments.
+        
+        Ensures workflow_args is a dictionary if provided.
+        
+        Raises
+        ------
+        ValueError
+            If workflow_args is not a dictionary
+        """
         if self.workflow_args and not isinstance(self.workflow_args, dict):
             raise ValueError("workflow_args must be a dict")

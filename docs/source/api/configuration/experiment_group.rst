@@ -5,4 +5,4 @@ Experiment Group
 
 .. autoclass:: ExperimentGroup
    :members:
-   :undoc-members:
+   :no-inherited-members:
