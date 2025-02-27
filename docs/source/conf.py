@@ -75,6 +75,7 @@ html_theme_options = {
     "navbar_center": ["brisk_navbar.html"],
     "navbar_end": ["theme-switcher", "version-switcher", "brisk_icon_links"],
     "navbar_persistent": ["search-button"],
+    "show_nav_level": 2,
 }
 
 # -- Linkcode settings ------------------------------------------------------
