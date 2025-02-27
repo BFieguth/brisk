@@ -42,6 +42,10 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.evaluation.metric_manager.MetricManager",
         "desc": "Stores MetricWrapper instances that define evaluation metrics."
     },
+    "ReportManager": {
+        "path": "~brisk.reporting.report_manager.ReportManager",
+        "desc": "Generates HTML report from training results."
+    }
 })
 
 def generate_list_table(objects=None):

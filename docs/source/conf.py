@@ -64,6 +64,9 @@ def setup(app):
     with open(docs_path / '_evaluation_objects_table.rst', 'w') as f:
         f.write(generate_list_table(['EvaluationManager', 'MetricManager']))
 
+    with open(docs_path / '_reporting_objects_table.rst', 'w') as f:
+        f.write(generate_list_table(['ReportManager']))
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 

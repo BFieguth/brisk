@@ -18,6 +18,9 @@ Package Sections
     Classes involved in model evaluation, either providing methods to evaluate a model and plot results
     or to define metrics used for evaluation.
 
+:doc:`reporting`
+    Generates an HTML report from training results.
+
 .. toctree::
    :maxdepth: 1
    :hidden:
@@ -25,6 +28,7 @@ Package Sections
    data
    configuration
    evaluation
+   reporting
 
 API Objects
 ------------
