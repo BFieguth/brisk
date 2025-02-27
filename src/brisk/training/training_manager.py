@@ -1,8 +1,8 @@
 """Provides the TrainingManager class to manage the training of models.
 
-Exports:
-    - TrainingManager: A class to handle model training across multiple 
-        datasets and algorithms.
+This module defines the TrainingManager class, which coordinates model training
+across multiple datasets and algorithms. Ensures all models are attempted even
+if some fail.
 """
 
 import collections
@@ -26,36 +26,41 @@ from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
 
 class TrainingManager:
-    """A class to manage the training and evaluation of machine learning models.
+    """Manage the training and evaluation of machine learning models.
 
-    The TrainingManager coordinates the training of models using various 
-    algorithms, evaluates them on different datasets, and generates reports. 
-    It integrates with EvaluationManager for model evaluation and ReportManager
-    for generating HTML reports.
+    Coordinates model training using various algorithms, evaluates them on 
+    different datasets, and generates reports. Integrates with EvaluationManager
+    for model evaluation and ReportManager for generating HTML reports.
 
-    Attributes:
-        metric_config (MetricManager): Configuration for evaluation metrics.
+    Parameters
+    ----------
+    metric_config : MetricManager
+        Configuration for evaluation metrics
+    config_manager : ConfigurationManager
+        Instance containing data needed to run experiments
+    verbose : bool, optional
+        Controls logging verbosity level, by default False
 
-        verbose (bool): Controls logging verbosity level.
-
-        data_managers (Dict[str, DataManager]): Maps group names to their data 
-        managers.
-
-        experiments (collections.deque[Experiment]): Queue of experiments to 
-        run.
-
-        logfile (str): Path to the configuration log file.
-
-        output_structure (Dict[str, Dict]): Structure of output data 
-        organization.
-
-        description_map (Dict[str, str]): Mapping of names to descriptions.
-
-        experiment_paths (DefaultDict[str, DefaultDict[str, Dict[str, str]]]): 
-        Nested structure tracking experiment output paths.
-
-        experiment_results (DefaultDict[str, DefaultDict[str, List[Dict]]]): 
-        Stores results of all experiments.
+    Attributes
+    ----------
+    metric_config : MetricManager
+        Configuration for evaluation metrics
+    verbose : bool
+        Controls logging verbosity level
+    data_managers : dict
+        Maps group names to their data managers
+    experiments : collections.deque
+        Queue of experiments to run
+    logfile : str
+        Path to the configuration log file
+    output_structure : dict
+        Structure of output data organization
+    description_map : dict
+        Mapping of names to descriptions
+    experiment_paths : defaultdict
+        Nested structure tracking experiment output paths
+    experiment_results : defaultdict
+        Stores results of all experiments
     """
     def __init__(
         self,
@@ -63,16 +68,6 @@ class TrainingManager:
         config_manager: configuration.ConfigurationManager,
         verbose=False
     ):
-        """Initializes the TrainingManager.
-
-        Args:
-            metric_config (MetricManager): Configuration of evaluation metrics.
-
-            config_manager (ConfigurationManager): Instance of 
-            ConfigurationManager with data needed to run experiments
-
-            verbose (bool): Controls logging verbosity level.
-        """
         self.metric_config = metric_config
         self.verbose = verbose
         self.data_managers = config_manager.data_managers
@@ -92,20 +87,19 @@ class TrainingManager:
         results_name: Optional[str] = None,
         create_report: bool = True
     ) -> None:
-        """Runs the user-defined workflow for each experiment and optionally 
-        generates reports.
+        """Runs the Workflow for each experiment and generates report.
 
-        Args:
-            workflow (Workflow): A subclass of the Workflow class that defines 
-            the training steps.
+        Parameters
+        ----------
+        workflow : Workflow
+            A subclass of the Workflow class that defines the training steps.
 
-            results_name (str): The name of the results directory.
+        results_name : str
+            The name of the results directory.
 
-            create_report (bool): Whether to generate an HTML report after all 
-            experiments. Defaults to True.
-
-        Returns:
-            None
+        create_report : bool
+            Whether to generate an HTML report after all experiments. 
+            Defaults to True.
         """
         self._initialize_experiment_results()
         progress_bar = tqdm.tqdm(
@@ -139,23 +133,26 @@ class TrainingManager:
         workflow: workflow_module.Workflow,
         results_dir: str
     ) -> None:
-        """Runs a single experiment and handles its outcome.
+        """Runs a single Experiment and handles its outcome.
 
         Sets up the experiment environment, runs the workflow, and handles 
         success or failure cases.
 
-        Args:
-            current_experiment: The experiment to run.
+        Parameters
+        ----------
+        current_experiment : Experiment
+            The experiment to run.
 
-            workflow: Workflow class to use.
+        workflow : Workflow
+            The workflow to use.
 
-            results_dir: Directory to store results.
+        results_dir : str
+            Directory to store results.
         """
         success = False
         start_time = time.time()
 
         group_name = current_experiment.group_name
-        # dataset_name = current_experiment.dataset_path.stem
         dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
 
@@ -217,13 +214,22 @@ class TrainingManager:
         )
 
     def _create_results_dir(self, results_name: str) -> str:
-        """Sets up the results directory.
+        """Set up the results directory.
 
-        Args:
-            results_name: The name of the results directory.
+        Parameters
+        ----------
+        results_name : str
+            Name of the results directory
 
-        Returns:
-            str: The results directory.
+        Returns
+        -------
+        str
+            Path to created results directory
+
+        Raises
+        ------
+        FileExistsError
+            If results directory already exists
         """
         if not results_name:
             timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -239,6 +245,13 @@ class TrainingManager:
         return results_dir
 
     def _create_report(self, results_dir: str) -> None:
+        """Create an HTML report from the experiment results.
+
+        Parameters
+        ----------
+        results_dir : str
+            Directory where results are stored.
+        """
         report_manager = report.ReportManager(
             results_dir, self.experiment_paths, self.output_structure,
             self.description_map
@@ -252,13 +265,20 @@ class TrainingManager:
         logfile: str
     ) -> None:
         """Saves the workflow configuration and class name to a config log file.
+
+        Parameters
+        ----------
+        results_dir : str
+            Directory where results are stored.
+
+        workflow : Workflow
+            The workflow to save.
+
+        logfile : str
+            The logfile to save.
         """
         config_log_path = os.path.join(results_dir, "config_log.md")
-
-        # Split the logfile back into a list
         config_content = logfile.split("\n")
-
-        # Create the header content
         workflow_md = [
             "# Experiment Configuration Log",
             "",
@@ -279,10 +299,13 @@ class TrainingManager:
         output_structure: Dict[str, Dict[str, Tuple[str, str]]]
     ) -> None:
         """Save data distribution information for each dataset.
-        
-        Args:
-            result_dir: Base directory for results
-            output_structure: Mapping of groups to their datasets and split info
+
+        Parameters
+        ----------
+        result_dir : str
+            Base directory for results
+        output_structure : dict
+            Mapping of groups to their datasets and split info
         """
         for group_name, datasets in output_structure.items():
             group_dir = os.path.join(result_dir, group_name)
@@ -316,7 +339,17 @@ class TrainingManager:
     def _setup_logger(self, results_dir: str) -> logging.Logger:
         """Set up logging for the TrainingManager.
 
-        Logs to both file and console, using different levels for each        
+        Configures file and console handlers with different logging levels.
+
+        Parameters
+        ----------
+        results_dir : str
+            Directory to store log files
+
+        Returns
+        -------
+        logging.Logger
+            Configured logger instance
         """
         logging.captureWarnings(True)
 
@@ -361,20 +394,29 @@ class TrainingManager:
 
         Sets up data, algorithms, and evaluation manager for the workflow.
 
-        Args:
-            current_experiment: Experiment to set up.
+        Parameters
+        ----------
+        current_experiment : Experiment
+            The experiment to set up.
 
-            workflow: Workflow class to instantiate.
+        workflow : Workflow
+            The workflow to instantiate.
 
-            results_dir: Directory for results.
+        results_dir : str
+            Directory for results.
 
-            group_name: Name of the experiment group.
+        group_name : str
+            Name of the experiment group.
 
-            dataset_name: Name of the dataset.
+        dataset_name : str
+            Name of the dataset.
 
-            experiment_name: Name of the experiment.
+        experiment_name : str
+            Name of the experiment.
 
-        Returns:
+        Returns
+        -------
+        Workflow
             Configured workflow instance.
         """
         data_split = self.data_managers[group_name].split(
@@ -426,7 +468,19 @@ class TrainingManager:
         dataset_name: str,
         experiment_name: str
     ) -> None:
-        """Handles results for a successful experiment."""
+        """Handle results for a successful experiment.
+
+        Parameters
+        ----------
+        start_time : float
+            Time when experiment started
+        group_name : str
+            Name of experiment group
+        dataset_name : str
+            Name of dataset
+        experiment_name : str
+            Name of experiment
+        """
         elapsed_time = time.time() - start_time
         self.experiment_results[group_name][dataset_name].append({
             "experiment": experiment_name,
@@ -447,7 +501,21 @@ class TrainingManager:
         start_time: float,
         error: Exception
     ) -> None:
-        """Handles results and logging for a failed experiment."""
+        """Handle results and logging for a failed experiment.
+
+        Parameters
+        ----------
+        group_name : str
+            Name of experiment group
+        dataset_name : str
+            Name of dataset
+        experiment_name : str
+            Name of experiment
+        start_time : float
+            Time when experiment started
+        error : Exception
+            Exception that caused the failure
+        """
         elapsed_time = time.time() - start_time
         error_message = (
             f"\n\nDataset Name: {dataset_name}\n"
@@ -477,7 +545,22 @@ class TrainingManager:
         dataset_name: Optional[str] = None,
         experiment_name: Optional[str] = None
     ) -> None:
-        """Custom warning handler that logs warnings with specific formatting.
+        """Log warnings with specific formatting.
+
+        Parameters
+        ----------
+        message : str
+            Warning message
+        category : Type[Warning]
+            Warning category
+        filename : str
+            File where warning occurred
+        lineno : int
+            Line number where warning occurred
+        dataset_name : str, optional
+            Name of dataset, by default None
+        experiment_name : str, optional
+            Name of experiment, by default None
         """
         log_message = (
             f"\n\nDataset Name: {dataset_name} \n"
@@ -489,8 +572,11 @@ class TrainingManager:
         logger = logging.getLogger("TrainingManager")
         logger.warning(log_message)
 
-    def _print_experiment_summary(self):
-        """Print the experiment summary organized by group and dataset.
+    def _print_experiment_summary(self) -> None:
+        """Print experiment summary organized by group and dataset.
+
+        Displays a formatted table showing the status and execution time
+        for each experiment, grouped by dataset and experiment group.
         """
         print("\n" + "="*70)
         print("EXPERIMENT SUMMARY")
@@ -522,16 +608,23 @@ class TrainingManager:
     ) -> str:
         """Creates and returns the directory path for experiment results.
 
-        Args:
-            results_dir: Base results directory.
+        Parameters
+        ----------
+        results_dir : str
+            Base results directory.
 
-            group_name: Name of the experiment group.
+        group_name : str
+            Name of the experiment group.
 
-            dataset_name: Name of the dataset.
+        dataset_name : str
+            Name of the dataset.
 
-            experiment_name: Name of the experiment.
+        experiment_name : str
+            Name of the experiment.
 
-        Returns:
+        Returns
+        -------
+        str
             Path to the experiment directory.
         """
         full_path = os.path.normpath(
@@ -542,12 +635,31 @@ class TrainingManager:
         return full_path
 
     def _format_time(self, seconds: float) -> str:
-        """Formats time taken in minutes and seconds."""
+        """Formats time taken in minutes and seconds.
+
+        Parameters
+        ----------
+        seconds : float
+            Time taken in seconds.
+
+        Returns
+        -------
+        str
+            Formatted time string.
+        """
         mins, secs = divmod(seconds, 60)
         return f"{int(mins)}m {int(secs)}s"
 
     def _cleanup(self, results_dir: str, progress_bar: tqdm.tqdm) -> None:
         """Shuts down logging and deletes error_log.txt if it is empty.
+
+        Parameters
+        ----------
+        results_dir : str
+            Directory where results are stored.
+
+        progress_bar : tqdm.tqdm
+            Progress bar to close.
         """
         progress_bar.close()
         logging.shutdown()
