@@ -1,4 +1,4 @@
-"""configuration_manager.py
+"""Manage experiment configurations and DataManager instances.
 
 This module defines the ConfigurationManager class, which is responsible for 
 managing experiment configurations and creating DataManager instances. The 
@@ -18,14 +18,38 @@ from brisk.utility import utility
 from brisk.utility import algorithm_wrapper
 
 class ConfigurationManager:
-    """Manages experiment configurations and DataManager instances.
+    """Manage experiment configurations and DataManager instances.
     
     This class processes ExperimentGroup configurations and creates the minimum
     necessary DataManager instances, reusing them when configurations match.
     
-    Attributes:
-        experiment_groups: List of experiment group configurations
-        data_managers: Mapping of unique configurations to DataManager instances
+    Parameters
+    ----------
+    experiment_groups : list of ExperimentGroup
+        List of experiment group configurations
+    categorical_features : dict
+        Dict mapping categorical features to dataset
+
+    Attributes
+    ----------
+    experiment_groups : list
+        List of experiment group configurations
+    data_managers : dict
+        Mapping of unique configurations to DataManager instances
+    categorical_features : dict
+        Mapping of features to their datasets
+    project_root : Path
+        Root directory of the project
+    algorithm_config : AlgorithmCollection
+        Collection of algorithm configurations
+    base_data_manager : DataManager
+        Base configuration for data management
+    experiment_queue : collections.deque
+        Queue of experiments to run
+    output_structure : dict
+        Directory structure for experiment outputs
+    description_map : dict
+        Mapping of group names to descriptions
     """
     def __init__(
         self,
@@ -53,18 +77,25 @@ class ConfigurationManager:
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
         
-        Looks for data.py in project root and loads BASE_DATA_MANAGER.
-        
-        Returns:
-            DataManager: Configured instance from data.py
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        DataManager
+            Configured instance from data.py
             
-        Raises:
-            FileNotFoundError: If data.py is not found in project root
-            ImportError: If data.py cannot be loaded or BASE_DATA_MANAGER is 
-            not defined
+        Raises
+        ------
+        FileNotFoundError
+            If data.py is not found in project root
+        ImportError
+            If data.py cannot be loaded or BASE_DATA_MANAGER is not defined
             
-        Note:
-            data.py must define BASE_DATA_MANAGER = DataManager(...)
+        Notes
+        -----
+        data.py must define BASE_DATA_MANAGER = DataManager(...)
         """
         data_file = self.project_root / "data.py"
 
@@ -94,18 +125,25 @@ class ConfigurationManager:
     ) -> algorithm_wrapper.AlgorithmCollection:
         """Load algorithm configuration from project's algorithms.py.
         
-        Looks for algorithms.py in project root and loads ALGORITHM_CONFIG.
-        
-        Returns:
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
             List of AlgorithmWrapper instances from algorithms.py
             
-        Raises:
-            FileNotFoundError: If algorithms.py is not found in project root
-            ImportError: If algorithms.py cannot be loaded or ALGORITHM_CONFIG 
-            is not defined
+        Raises
+        ------
+        FileNotFoundError
+            If algorithms.py is not found in project root
+        ImportError
+            If algorithms.py cannot be loaded or ALGORITHM_CONFIG is not defined
             
-        Note:
-            algorithms.py must define ALGORITHM_CONFIG = [...]
+        Notes
+        -----
+        algorithms.py must define ALGORITHM_CONFIG = AlgorithmCollection()
         """
         algo_file = self.project_root / "algorithms.py"
 
@@ -135,8 +173,10 @@ class ConfigurationManager:
     def _get_base_params(self) -> Dict:
         """Get parameters from base DataManager instance.
         
-        Returns:
-            Dictionary of current parameter values
+        Returns
+        -------
+        dict
+            Dictionary of current parameter values from base DataManager
         """
         return {
             name: getattr(self.base_data_manager, name)
@@ -150,8 +190,15 @@ class ConfigurationManager:
         Groups ExperimentGroups by their data_config and creates one
         DataManager instance per unique configuration.
         
-        Returns:
+        Returns
+        -------
+        dict
             Dictionary mapping group names to DataManager instances
+        
+        Notes
+        -----
+        Reuses DataManager instances when configurations match to minimize
+        memory usage
         """
         config_groups = collections.defaultdict(list)
         for group in self.experiment_groups:
@@ -181,10 +228,11 @@ class ConfigurationManager:
         
         Creates an ExperimentFactory with loaded algorithm configuration,
         then processes each ExperimentGroup to create Experiment instances.
-        All experiments are combined into a single queue.
         
-        Returns:
-            Deque of Experiment instances ready to run
+        Returns
+        -------
+        collections.deque
+            Queue of Experiment instances ready to run
         """
         factory = experiment_factory.ExperimentFactory(
             self.algorithm_config, self.categorical_features
@@ -197,9 +245,11 @@ class ConfigurationManager:
 
         return all_experiments
 
-    def _create_data_splits(self):
-        """
-        Create DataSplitInfo instances for all datasets in experiment groups.
+    def _create_data_splits(self) -> None:
+        """Create DataSplitInfo instances for all datasets.
+        
+        Creates splits for each dataset in each experiment group using the
+        appropriate DataManager instance.
         """
         for group in self.experiment_groups:
             group_data_manager = self.data_managers[group.name]
@@ -220,11 +270,14 @@ class ConfigurationManager:
                     filename=dataset_path.stem
                 )
 
-    def _create_logfile(self):
+    def _create_logfile(self) -> None:
         """Create a markdown string describing the configuration.
         
-        Returns:
-            str: Markdown formatted configuration description
+        Creates a detailed markdown document containing:
+        - Default algorithm configurations
+        - Experiment group configurations
+        - DataManager settings
+        - Dataset information
         """
         md_content = [
             "## Default Algorithm Configuration"
@@ -295,12 +348,12 @@ class ConfigurationManager:
     def _get_output_structure(self) -> Dict[str, Dict[str, Tuple[str, str]]]:
         """Get the directory structure for experiment outputs.
         
-        Returns:
-            Dict[str, Dict[str, Tuple[str, str]]]: A dictionary where each key 
-            is the name of an experiment group, and each value is another 
-            dictionary. The inner dictionary maps dataset names to a tuple 
-            containing the path to the dataset output and the name of the 
-            experiment group.
+        Returns
+        -------
+        dict
+            Nested dictionary structure where:
+            - Top level keys are experiment group names
+            - Second level maps dataset names to (path, table_name) tuples
         """
         output_structure = {}
 
@@ -322,11 +375,12 @@ class ConfigurationManager:
 
     def _create_description_map(self) -> Dict[str, str]:
         """Create a mapping of group names to descriptions.
-
-        Only includes groups with non-empty descriptions.
-
-        Returns:
-            Dict[str, str]: Mapping of group names to descriptions
+        
+        Returns
+        -------
+        dict
+            Mapping of group names to their descriptions, excluding empty
+            descriptions
         """
         return {
             group.name: group.description
