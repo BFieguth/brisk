@@ -45,7 +45,15 @@ DESCRIPTIONS = OrderedDict({
     "ReportManager": {
         "path": "~brisk.reporting.report_manager.ReportManager",
         "desc": "Generates HTML report from training results."
-    }
+    },
+    "TrainingManager": {
+        "path": "~brisk.training.training_manager.TrainingManager",
+        "desc": "Coordinates the training process, loading the data and running the experiments."
+    },
+    "Workflow": {
+        "path": "~brisk.training.workflow.Workflow",
+        "desc": "Defines the steps to take when training a model."
+    },
 })
 
 def generate_list_table(objects=None):

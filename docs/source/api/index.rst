@@ -18,6 +18,9 @@ Package Sections
     Classes involved in model evaluation, either providing methods to evaluate a model and plot results
     or to define metrics used for evaluation.
 
+:doc:`training`
+    Handles the training process, loading the data and running the experiments.
+
 :doc:`reporting`
     Generates an HTML report from training results.
 
@@ -28,6 +31,7 @@ Package Sections
    data
    configuration
    evaluation
+   training
    reporting
 
 API Objects

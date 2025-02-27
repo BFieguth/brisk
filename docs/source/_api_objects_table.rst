@@ -24,3 +24,7 @@
      - Stores MetricWrapper instances that define evaluation metrics.
    * - :class:`~brisk.reporting.report_manager.ReportManager`
      - Generates HTML report from training results.
+   * - :class:`~brisk.training.training_manager.TrainingManager`
+     - Coordinates the training process, loading the data and running the experiments.
+   * - :class:`~brisk.training.workflow.Workflow`
+     - Defines the steps to take when training a model.
