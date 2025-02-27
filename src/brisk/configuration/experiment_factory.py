@@ -1,19 +1,33 @@
-"""experiment_factory.py
+"""Create Experiment instances from ExperimentGroup instances.
 
 This module defines the ExperimentFactory class, which is responsible for 
 creating Experiment instances from ExperimentGroup configurations within the 
 Brisk framework. The ExperimentFactory applies experiment-specific settings to
 algorithms, and resolves dataset paths for experiments.
 
-Usage Example:
-    >>> from brisk.configuration.experiment_factory import ExperimentFactory
-    >>> factory = ExperimentFactory(ALGORITHM_CONFIG)
-    >>> group = ExperimentGroup(
-    ...     name="baseline", 
-    ...     datasets=["data.csv"], 
-    ...     algorithms=["linear"]
-    ... )
-    >>> experiments = factory.create_experiments(group)
+Examples
+--------
+>>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
+>>> from brisk.configuration.experiment_group import ExperimentGroup
+>>> from brisk.configuration.experiment_factory import ExperimentFactory
+>>> 
+>>> algorithms = AlgorithmCollection([
+...     AlgorithmWrapper(
+...         name="linear",
+...         display_name="Linear Regression",
+...         algorithm_class=LinearRegression
+...     )
+... ])
+>>> 
+>>> categorical_features = {
+...     "data.csv": ["category1", "category2"]
+... }
+>>> 
+>>> factory = ExperimentFactory(
+...     algorithm_config=algorithms,
+...     categorical_features=categorical_features
+... )
+>>> 
 """
 import collections
 from typing import List, Dict, Any, Deque, Union
@@ -25,10 +39,23 @@ from brisk.utility import algorithm_wrapper
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.
     
-    Handles:
-    - Model instantiation from AlgorithmWrapper configs
-    - Application of algorithm-specific configurations
-    - Dataset path resolution
+    Takes a list of ExperimentGroup and creates a queue of Experiment instances.
+    Applies specific configuration for each ExperimentGroup when creating the
+    Experiment instances.
+
+    Parameters
+    ----------
+    algorithm_config : AlgorithmCollection
+        List of AlgorithmWrapper instances defining available algorithms
+    categorical_features : dict
+        Dict mapping categorical features to dataset names
+
+    Attributes
+    ----------
+    algorithm_config : AlgorithmCollection
+        Available algorithms
+    categorical_features : dict
+        Mapping of categorical features to datasets
     """
 
     def __init__(
@@ -36,13 +63,6 @@ class ExperimentFactory:
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
         categorical_features: Dict[str, List[str]]
     ):
-        """Initialize factory with algorithm configuration.
-        
-        Args:
-            algorithm_config: List of AlgorithmWrapper instances defining 
-            available algorithms
-            categorical_features: Dict mapping categorical features to dataset
-        """
         self.algorithm_config = algorithm_config
         self.categorical_features = categorical_features
 
@@ -52,19 +72,46 @@ class ExperimentFactory:
     ) -> Deque[experiment.Experiment]:
         """Create queue of experiments from an experiment group.
         
-        Args:
-            group: ExperimentGroup configuration
+        Parameters
+        ----------
+        group : ExperimentGroup
+            Configuration for the experiment group
             
-        Returns:
-            Deque of Experiment instances ready to run
+        Returns
+        -------
+        collections.deque
+            Queue of Experiment instances ready to run
             
-        Example:
-            >>> factory = ExperimentFactory(ALGORITHM_CONFIG)
-            >>> group = ExperimentGroup(
-                            name="baseline", 
-                            datasets=["data.csv"], algorithms=["linear"]
-                        )
-            >>> experiments = factory.create_experiments(group)
+        Examples
+        --------
+        >>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
+        >>> from brisk.configuration.experiment_group import ExperimentGroup
+        >>> from brisk.configuration.experiment_factory import ExperimentFactory
+        >>> 
+        >>> algorithms = AlgorithmCollection([
+        ...     AlgorithmWrapper(
+        ...         name="linear",
+        ...         display_name="Linear Regression",
+        ...         algorithm_class=LinearRegression
+        ...     )
+        ... ])
+        >>> 
+        >>> categorical_features = {
+        ...     "data.csv": ["category1", "category2"]
+        ... }
+        >>> 
+        >>> factory = ExperimentFactory(
+        ...     algorithm_config=algorithms,
+        ...     categorical_features=categorical_features
+        ... )
+        >>> 
+        >>> group = ExperimentGroup(
+        ...     name="baseline", 
+        ...     datasets=["data.csv"], 
+        ...     algorithms=["linear"]
+        ... )
+        >>> 
+        >>> experiments = factory.create_experiments(group)
         """
         experiments = collections.deque()
         group_algo_config = group.algorithm_config or {}
@@ -119,7 +166,20 @@ class ExperimentFactory:
         algo_name: str,
         config: Dict[str, Any] | None = None
     ) -> algorithm_wrapper.AlgorithmWrapper:
-        """Get algorithm wrapper with updated configuration."""
+        """Get algorithm wrapper with updated configuration.
+        
+        Parameters
+        ----------
+        algo_name : str
+            Name of the algorithm to retrieve
+        config : dict, optional
+            Configuration updates to apply to the algorithm
+
+        Returns
+        -------
+        AlgorithmWrapper
+            New wrapper instance with updated configuration
+        """
         original_wrapper = self.algorithm_config[algo_name]
         wrapper = algorithm_wrapper.AlgorithmWrapper(
             name=original_wrapper.name,
@@ -139,10 +199,24 @@ class ExperimentFactory:
     ) -> List[List[str]]:
         """Normalize algorithm specification to list of lists.
         
-        Examples:
-            ["algo1", "algo2"] -> [["algo1"], ["algo2"]]
-            [["algo1", "algo2"]] -> [["algo1", "algo2"]]
-            ["algo1", ["algo2", "algo3"]] -> [["algo1"], ["algo2", "algo3"]]
+        Parameters
+        ----------
+        algorithms : list
+            List of algorithm names or nested lists of names
+
+        Returns
+        -------
+        list of list
+            Normalized list where each inner list represents one experiment
+
+        Examples
+        --------
+        >>> factory._normalize_algorithms(["algo1", "algo2"])
+        [["algo1"], ["algo2"]]
+        >>> factory._normalize_algorithms([["algo1", "algo2"]])
+        [["algo1", "algo2"]]
+        >>> factory._normalize_algorithms(["algo1", ["algo2", "algo3"]])
+        [["algo1"], ["algo2", "algo3"]]
         """
         normalized = []
         for item in algorithms:
