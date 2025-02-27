@@ -14,12 +14,17 @@ Package Sections
     Provides an interface for defining what models should be trained and how they should 
     be trained.
 
+:doc:`evaluation`
+    Classes involved in model evaluation, either providing methods to evaluate a model and plot results
+    or to define metrics used for evaluation.
+
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    data
    configuration
+   evaluation
 
 API Objects
 ------------

@@ -34,6 +34,14 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.configuration.experiment.Experiment",
         "desc": "Stores all the data needed for one experiment run."
     },
+    "EvaluationManager": {
+        "path": "~brisk.evaluation.evaluation_manager.EvaluationManager",
+        "desc": "Provides methods for evaluating models and generating plots."
+    },
+    "MetricManager": {
+        "path": "~brisk.evaluation.metric_manager.MetricManager",
+        "desc": "Stores MetricWrapper instances that define evaluation metrics."
+    },
 })
 
 def generate_list_table(objects=None):
