@@ -23,7 +23,7 @@ import dataclasses
 import pathlib
 from typing import Dict, Optional, List, Any
 
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 
 @dataclasses.dataclass
 class Experiment:

@@ -17,7 +17,7 @@ from sklearn import neural_network
 from sklearn import svm
 from sklearn import tree
 
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 
 REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
     algorithm_wrapper.AlgorithmWrapper(

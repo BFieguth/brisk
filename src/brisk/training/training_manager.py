@@ -19,8 +19,8 @@ import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
 from brisk.reporting import report_manager as report
-from brisk.utility import logging_util, algorithm_wrapper
-from brisk.configuration import configuration
+from brisk.utility import logging_util
+from brisk.configuration import algorithm_wrapper, configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment

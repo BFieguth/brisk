@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor
 
 from brisk.configuration.experiment import Experiment
-from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
 
 @pytest.fixture
 def linear_wrapper():

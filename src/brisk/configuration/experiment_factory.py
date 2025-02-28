@@ -34,7 +34,7 @@ from typing import List, Dict, Any, Deque, Union
 
 from brisk.configuration import experiment
 from brisk.configuration import experiment_group
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.

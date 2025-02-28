@@ -15,7 +15,7 @@ from brisk.data import data_manager
 from brisk.configuration import experiment_group
 from brisk.configuration import experiment_factory
 from brisk.utility import utility
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.

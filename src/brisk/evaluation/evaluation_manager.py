@@ -28,7 +28,7 @@ import sklearn.model_selection as model_select
 import sklearn.metrics as sk_metrics
 from sklearn import tree
 
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 from brisk.theme import theme
 from brisk.evaluation import metric_manager
 matplotlib.use("Agg")
