@@ -14,7 +14,7 @@ from sklearn import metrics as sk_metrics
 
 import brisk
 from brisk.configuration import configuration_manager as conf_manager
-from brisk.utility import result_structure as rs
+from tests import result_structure as rs
 from brisk.configuration import project
 
 def huber_loss(

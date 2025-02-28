@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-import brisk.utility.result_structure as rs
+import tests.result_structure as rs
 from brisk.configuration import experiment_group, configuration
 
 @pytest.fixture
