@@ -71,7 +71,8 @@ def setup(app):
 
     with open(docs_path / '_training_objects_table.rst', 'w') as f:
         f.write(generate_list_table([
-            'TrainingManager', 'Workflow', 'AlertMailer'
+            'TrainingManager', 'Workflow', 'AlertMailer', "TqdmLoggingHandler",
+            "FileFormatter"
         ]))
 
 # -- Options for HTML output -------------------------------------------------

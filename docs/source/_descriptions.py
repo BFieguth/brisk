@@ -66,6 +66,14 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.configuration.algorithm_wrapper.AlgorithmWrapper",
         "desc": "Wraps a machine learning algorithm and provides an interface using the algorithm."
     },
+    "TqdmLoggingHandler": {
+        "path": "~brisk.training.logging_util.TqdmLoggingHandler",
+        "desc": "Logs messages to stdout or stderr using tqdm."
+    },
+    "FileFormatter": {
+        "path": "~brisk.training.logging_util.FileFormatter",
+        "desc": "Formats log messages with a visual separator between log entries."
+    },
 })
 
 def generate_list_table(objects=None):

@@ -24,12 +24,16 @@
      - Create a que of Experiments from an ExperimentGroup.
    * - :class:`~brisk.configuration.experiment_group.ExperimentGroup`
      - Groups experiments that will be run with the same settings.
+   * - :class:`~brisk.training.logging_util.FileFormatter`
+     - Formats log messages with a visual separator between log entries.
    * - :class:`~brisk.evaluation.metric_manager.MetricManager`
      - Stores MetricWrapper instances that define evaluation metrics.
    * - :class:`~brisk.evaluation.metric_wrapper.MetricWrapper`
      - Wraps a metric function and provides a convenient interface using the metric.
    * - :class:`~brisk.reporting.report_manager.ReportManager`
      - Generates HTML report from training results.
+   * - :class:`~brisk.training.logging_util.TqdmLoggingHandler`
+     - Logs messages to stdout or stderr using tqdm.
    * - :class:`~brisk.training.training_manager.TrainingManager`
      - Coordinates the training process, loading the data and running the experiments.
    * - :class:`~brisk.training.workflow.Workflow`
