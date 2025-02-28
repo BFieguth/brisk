@@ -24,7 +24,7 @@ import textwrap
 from typing import Dict, Any, List, Optional, Tuple
 
 from brisk.data import data_manager
-from brisk.utility import utility
+from brisk.configuration import project
 
 @dataclasses.dataclass
 class ExperimentGroup:
@@ -74,7 +74,7 @@ class ExperimentGroup:
         FileNotFoundError
             If project root (.briskconfig) cannot be found
         """
-        project_root = utility.find_project_root()
+        project_root = project.find_project_root()
         datasets_dir = project_root / "datasets"
         return [
             (datasets_dir / dataset[0], dataset[1]) if isinstance(dataset, tuple)

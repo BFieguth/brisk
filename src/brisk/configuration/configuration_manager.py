@@ -12,10 +12,9 @@ from importlib import util
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
-from brisk.configuration import experiment_group
-from brisk.configuration import experiment_factory
-from brisk.utility import utility
+from brisk.configuration import experiment_group, experiment_factory, project
 from brisk.configuration import algorithm_wrapper
+from brisk.reporting import formatting
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.
@@ -64,7 +63,7 @@ class ConfigurationManager:
         """
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
-        self.project_root = utility.find_project_root()
+        self.project_root = project.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
         self.data_managers = self._create_data_managers()
@@ -301,7 +300,7 @@ class ConfigurationManager:
                 md_content.extend([
                     "### Algorithm Configurations",
                     "```python",
-                    utility.format_dict(group.algorithm_config),
+                    formatting.format_dict(group.algorithm_config),
                     "```",
                     ""
                 ])

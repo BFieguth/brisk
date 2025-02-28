@@ -7,7 +7,7 @@ instantiation and parameter tuning.
 
 from typing import Any, Dict, Optional, Type, Union
 
-from brisk.utility.utility import format_dict
+from brisk.reporting import formatting
 
 class AlgorithmWrapper:
     """A wrapper class for machine learning algorithms.
@@ -156,12 +156,12 @@ class AlgorithmWrapper:
             "",
             "**Default Parameters:**",
             "```python",
-            format_dict(self.default_params),
+            formatting.format_dict(self.default_params),
             "```",
             "",
             "**Hyperparameter Grid:**",
             "```python",
-            format_dict(self.hyperparam_grid),
+            formatting.format_dict(self.hyperparam_grid),
             "```"
         ]
         return "\n".join(md)
