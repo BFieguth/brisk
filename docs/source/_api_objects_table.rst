@@ -4,6 +4,8 @@
 
    * - Object
      - Description
+   * - :class:`~brisk.training.alert_mailer.AlertMailer`
+     - Sends notification emails using Gmail's SMTP service.
    * - :class:`~brisk.configuration.configuration.Configuration`
      - Provide an interface for creating experiment groups.
    * - :class:`~brisk.configuration.configuration_manager.ConfigurationManager`

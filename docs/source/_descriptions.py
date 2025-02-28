@@ -58,6 +58,10 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.evaluation.metric_wrapper.MetricWrapper",
         "desc": "Wraps a metric function and provides a convenient interface using the metric."
     },
+    "AlertMailer": {
+        "path": "~brisk.training.alert_mailer.AlertMailer",
+        "desc": "Sends notification emails using Gmail's SMTP service."
+    },
 })
 
 def generate_list_table(objects=None):

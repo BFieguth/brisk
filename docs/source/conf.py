@@ -70,7 +70,9 @@ def setup(app):
         f.write(generate_list_table(['ReportManager']))
 
     with open(docs_path / '_training_objects_table.rst', 'w') as f:
-        f.write(generate_list_table(['TrainingManager', 'Workflow']))
+        f.write(generate_list_table([
+            'TrainingManager', 'Workflow', 'AlertMailer'
+        ]))
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -4,6 +4,8 @@
 
    * - Object
      - Description
+   * - :class:`~brisk.training.alert_mailer.AlertMailer`
+     - Sends notification emails using Gmail's SMTP service.
    * - :class:`~brisk.training.training_manager.TrainingManager`
      - Coordinates the training process, loading the data and running the experiments.
    * - :class:`~brisk.training.workflow.Workflow`
