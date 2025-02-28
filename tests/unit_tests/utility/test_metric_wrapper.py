@@ -3,7 +3,7 @@ import sklearn.metrics as metrics
 import numpy as np
 import inspect
 
-from brisk.utility.metric_wrapper import MetricWrapper
+from brisk.evaluation.metric_wrapper import MetricWrapper
 
 @pytest.fixture
 def metric_wrapper():

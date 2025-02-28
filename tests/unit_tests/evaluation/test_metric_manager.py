@@ -4,7 +4,7 @@ import inspect
 import pytest
 
 from brisk.evaluation.metric_manager import MetricManager
-from brisk.utility.metric_wrapper import MetricWrapper
+from brisk.evaluation.metric_wrapper import MetricWrapper
 from brisk.defaults.regression_metrics import REGRESSION_METRICS
 
 class TestMetricManager:

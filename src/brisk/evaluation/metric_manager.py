@@ -6,7 +6,7 @@ corresponding scoring callables.
 """
 from typing import Callable, List, Dict, Any
 
-from brisk.utility import metric_wrapper
+from brisk.evaluation import metric_wrapper
 
 class MetricManager:
     """A class to manage scoring metrics.

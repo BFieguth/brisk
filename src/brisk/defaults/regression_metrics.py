@@ -12,7 +12,7 @@ import numpy as np
 import scipy
 from sklearn.metrics import _regression
 
-from brisk.utility import metric_wrapper
+from brisk.evaluation import metric_wrapper
 
 def concordance_correlation_coefficient(
     y_true: np.ndarray,
