@@ -62,6 +62,10 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.training.alert_mailer.AlertMailer",
         "desc": "Sends notification emails using Gmail's SMTP service."
     },
+    "AlgorithmWrapper": {
+        "path": "~brisk.configuration.algorithm_wrapper.AlgorithmWrapper",
+        "desc": "Wraps a machine learning algorithm and provides an interface using the algorithm."
+    },
 })
 
 def generate_list_table(objects=None):

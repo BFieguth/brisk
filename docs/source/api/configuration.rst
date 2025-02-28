@@ -18,3 +18,4 @@ Module Contents
     configuration/experiment_factory
     configuration/experiment_group
     configuration/experiment
+    configuration/algorithm_wrapper

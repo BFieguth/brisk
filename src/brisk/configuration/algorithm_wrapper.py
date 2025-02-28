@@ -1,9 +1,8 @@
-"""Provides the AlgorithmWrapper class for managing and instantiating machine 
-learning algorithms.
+"""Provides the AlgorithmWrapper class for managing machine learning algorithms.
 
-Exports:
-    - AlgorithmWrapper: A class to handle model instantiation and tuning, 
-        allowing for easy access to models and their hyperparameter grids.
+This module provides classes for managing machine learning algorithms, their
+parameters, and hyperparameter grids. It includes functionality for model
+instantiation and parameter tuning.
 """
 
 from typing import Any, Dict, Optional, Type, Union
@@ -13,19 +12,34 @@ from brisk.utility.utility import format_dict
 class AlgorithmWrapper:
     """A wrapper class for machine learning algorithms.
 
-    This class provides methods to easily instantiate models with default 
-    parameters or tuned hyperparameters. It also manages hyperparameter grids 
-    for tuning.
+    Provides methods to instantiate models with default or tuned parameters
+    and manages hyperparameter grids for model tuning.
 
-    Attributes:
-        name (str): The name of the algorithm.
-        
-        algorithm_class (Type): The class of the algorithm.
-        
-        default_params (dict): The default parameters for the algorithm.
-        
-        hyperparam_grid (dict): The hyperparameter grid for tuning the 
-        algorithm.
+    Parameters
+    ----------
+    name : str
+        Identifier for the algorithm
+    display_name : str
+        Human-readable name for display purposes
+    algorithm_class : Type
+        The class of the algorithm to be instantiated
+    default_params : dict, optional
+        Default parameters for model instantiation, by default None
+    hyperparam_grid : dict, optional
+        Grid of parameters for hyperparameter tuning, by default None
+
+    Attributes
+    ----------
+    name : str
+        Algorithm identifier
+    display_name : str
+        Human-readable name
+    algorithm_class : Type
+        The algorithm class
+    default_params : dict
+        Current default parameters
+    hyperparam_grid : dict
+        Current hyperparameter grid
     """
     def __init__(
         self,
@@ -55,8 +69,21 @@ class AlgorithmWrapper:
         self.default_params = default_params if default_params else {}
         self.hyperparam_grid = hyperparam_grid if hyperparam_grid else {}
 
-    def __setitem__(self, key, value):
-        """Override item setting to update default_params or hyperparam_grid."""
+    def __setitem__(self, key: str, value: dict) -> None:
+        """Update parameter dictionaries.
+
+        Parameters
+        ----------
+        key : str
+            Either 'default_params' or 'hyperparam_grid'
+        value : dict
+            Parameters to update
+
+        Raises
+        ------
+        KeyError
+            If key is not 'default_params' or 'hyperparam_grid'
+        """
         if key == "default_params":
             self.default_params.update(value)
         elif key == "hyperparam_grid":
@@ -68,26 +95,34 @@ class AlgorithmWrapper:
             )
 
     def instantiate(self) -> Any:
-        """Instantiates the model with the default parameters and wrapper name.
+        """Instantiate model with default parameters.
 
-        Returns:
-            Any: An instance of the model with the provided default parameters.
+        Returns
+        -------
+        Any
+            Model instance with default parameters and wrapper name attribute
         """
         model = self.algorithm_class(**self.default_params)
         setattr(model, "wrapper_name", self.name)
         return model
 
     def instantiate_tuned(self, best_params: Dict[str, Any]) -> Any:
-        """Instantiates a new model with the tuned parameters.
-        
-        If max_iter is specified in the default_params, it will be included in 
-        the tuned parameters.
+        """Instantiate model with tuned parameters.
 
-        Args:
-            best_params (Dict[str, Any]): The tuned hyperparameters.
+        Parameters
+        ----------
+        best_params : dict
+            Tuned hyperparameters
 
-        Returns:
-            Any: A new instance of the model with the tuned hyperparameters.
+        Returns
+        -------
+        Any
+            Model instance with tuned parameters and wrapper name attribute
+
+        Notes
+        -----
+        If max_iter is specified in default_params, it will be preserved
+        in the tuned parameters.
         """
         if "max_iter" in self.default_params:
             best_params["max_iter"] = self.default_params["max_iter"]
@@ -96,18 +131,23 @@ class AlgorithmWrapper:
         return model
 
     def get_hyperparam_grid(self) -> Dict[str, Any]:
-        """Returns the hyperparameter grid for the model.
+        """Get the hyperparameter grid.
 
-        Returns:
-            Dict[str, Any]: A dictionary representing the hyperparameter grid.
+        Returns
+        -------
+        dict
+            Current hyperparameter grid
         """
         return self.hyperparam_grid
 
     def to_markdown(self) -> str:
-        """Creates a markdown representation of the algorithm configuration.
-        
-        Returns:
-            str: Markdown formatted string describing the algorithm
+        """Create markdown representation of algorithm configuration.
+
+        Returns
+        -------
+        str
+            Markdown formatted string containing algorithm name and class,
+            default parameters, and hyperparameter grid.
         """
         md = [
             f"### {self.display_name} (`{self.name}`)",
@@ -128,9 +168,22 @@ class AlgorithmWrapper:
 
 
 class AlgorithmCollection(list):
-    """
-    A custom collection for AlgorithmWrapper objects that allows list and
-    dict-like access.
+    """A collection for managing AlgorithmWrapper instances.
+
+    Provides both list-like and dict-like access to AlgorithmWrapper objects,
+    with name-based lookup functionality.
+
+    Parameters
+    ----------
+    *args : AlgorithmWrapper
+        Initial AlgorithmWrapper instances
+
+    Raises
+    ------
+    TypeError
+        If non-AlgorithmWrapper instance is added
+    ValueError
+        If duplicate algorithm names are found
     """
     def __init__(self, *args):
         super().__init__()
@@ -138,7 +191,20 @@ class AlgorithmCollection(list):
             self.append(item)
 
     def append(self, item: AlgorithmWrapper) -> None:
-        """Enforce type checks before appending an item."""
+        """Add an AlgorithmWrapper to the collection.
+
+        Parameters
+        ----------
+        item : AlgorithmWrapper
+            Algorithm wrapper to add
+
+        Raises
+        ------
+        TypeError
+            If item is not an AlgorithmWrapper
+        ValueError
+            If algorithm name already exists in collection
+        """
         if not isinstance(item, AlgorithmWrapper):
             raise TypeError(
                 "AlgorithmCollection only accepts AlgorithmWrapper instances"
@@ -150,6 +216,25 @@ class AlgorithmCollection(list):
         super().append(item)
 
     def __getitem__(self, key: Union[int, str]) -> AlgorithmWrapper:
+        """Get algorithm by index or name.
+
+        Parameters
+        ----------
+        key : int or str
+            Index or name of algorithm to retrieve
+
+        Returns
+        -------
+        AlgorithmWrapper
+            The requested algorithm wrapper
+
+        Raises
+        ------
+        KeyError
+            If string key doesn't match any algorithm name
+        TypeError
+            If key is neither int nor str
+        """
         if isinstance(key, int):
             return super().__getitem__(key)
 
