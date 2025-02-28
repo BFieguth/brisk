@@ -16,3 +16,5 @@
      - Create a que of Experiments from an ExperimentGroup.
    * - :class:`~brisk.configuration.experiment_group.ExperimentGroup`
      - Groups experiments that will be run with the same settings.
+   * - :class:`~brisk.configuration.project.find_project_root`
+     - Finds the project root directory containing .briskconfig.

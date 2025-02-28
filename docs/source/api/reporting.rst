@@ -13,3 +13,4 @@ Module Contents
    :hidden:
 
    reporting/report_manager
+   reporting/formatting

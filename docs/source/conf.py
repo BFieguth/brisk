@@ -58,7 +58,8 @@ def setup(app):
     with open(docs_path / "_configuration_objects_table.rst", "w") as f:
         f.write(generate_list_table([
             "Configuration", "ExperimentFactory", "ExperimentGroup", 
-            "Experiment", "ConfigurationManager", "AlgorithmWrapper"
+            "Experiment", "ConfigurationManager", "AlgorithmWrapper",
+            "find_project_root"
         ]))
 
     with open(docs_path / '_evaluation_objects_table.rst', 'w') as f:

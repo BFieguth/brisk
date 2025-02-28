@@ -19,3 +19,4 @@ Module Contents
     configuration/experiment_group
     configuration/experiment
     configuration/algorithm_wrapper
+    configuration/project

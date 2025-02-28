@@ -38,3 +38,5 @@
      - Coordinates the training process, loading the data and running the experiments.
    * - :class:`~brisk.training.workflow.Workflow`
      - Defines the steps to take when training a model.
+   * - :class:`~brisk.configuration.project.find_project_root`
+     - Finds the project root directory containing .briskconfig.

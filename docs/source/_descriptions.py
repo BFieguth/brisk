@@ -74,6 +74,10 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.training.logging_util.FileFormatter",
         "desc": "Formats log messages with a visual separator between log entries."
     },
+    "find_project_root": {
+        "path": "~brisk.configuration.project.find_project_root",
+        "desc": "Finds the project root directory containing .briskconfig."
+    },
 })
 
 def generate_list_table(objects=None):
