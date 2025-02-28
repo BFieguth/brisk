@@ -32,6 +32,7 @@ import pandas as pd
 from sklearn import datasets
 
 from brisk.training.workflow import Workflow
+from brisk.configuration import project
 
 @click.group()
 def cli():
@@ -190,10 +191,10 @@ def run(
     """
     create_report = not disable_report
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
 
         if project_root not in sys.path:
-            sys.path.insert(0, project_root)
+            sys.path.insert(0, str(project_root))
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -263,7 +264,7 @@ def load_data(dataset: str, dataset_name: Optional[str] = None) -> None:
         python cli.py load_data --dataset iris --dataset_name my_iris_data
     """
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
         os.makedirs(datasets_dir, exist_ok=True)
 
@@ -358,7 +359,7 @@ def create_data(
         --n_features 10 --n_classes 3 --dataset_name my_synthetic_data
     """
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
         os.makedirs(datasets_dir, exist_ok=True)
 
@@ -406,33 +407,6 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
         return datasets_map[name]()
     else:
         return None
-
-
-def find_project_root(start_path: str = os.getcwd()) -> str:
-    """Search for the .briskconfig file starting from the given directory.
-    
-    Args:
-        start_path (str): Directory to start searching from 
-        (defaults to current working directory).
-    
-    Returns:
-        str: The project root directory containing the .briskconfig file.
-    
-    Raises:
-        FileNotFoundError: If .briskconfig is not found in the directory tree.
-    """
-    current_dir = start_path
-
-    # Stop when reaching the root
-    while current_dir != os.path.dirname(current_dir):
-        if os.path.isfile(os.path.join(current_dir, '.briskconfig')):
-            return current_dir
-        current_dir = os.path.dirname(current_dir)
-
-    raise FileNotFoundError(
-        '.briskconfig not found. Please run the command from a project '
-        'directory or specify the project path.'
-        )
 
 
 def load_module_object(
