@@ -29,8 +29,8 @@ from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.reporting.report_manager import ReportManager
 from brisk.training.training_manager import TrainingManager
 from brisk.training.workflow import Workflow
+from brisk.training.alert_mailer import AlertMailer
 from brisk.utility.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
-from brisk.utility.alert_mailer import AlertMailer
 from brisk.utility.utility import create_metric
 from brisk.utility.logging_util import TqdmLoggingHandler, FileFormatter
 from brisk.version import __version__
