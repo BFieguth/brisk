@@ -16,3 +16,4 @@ Module Contents
 
    evaluation/evaluation_manager
    evaluation/metric_manager
+   evaluation/metric_wrapper

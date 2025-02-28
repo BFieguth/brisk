@@ -54,6 +54,10 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.training.workflow.Workflow",
         "desc": "Defines the steps to take when training a model."
     },
+    "MetricWrapper": {
+        "path": "~brisk.evaluation.metric_wrapper.MetricWrapper",
+        "desc": "Wraps a metric function and provides a convenient interface using the metric."
+    },
 })
 
 def generate_list_table(objects=None):

@@ -22,6 +22,8 @@
      - Groups experiments that will be run with the same settings.
    * - :class:`~brisk.evaluation.metric_manager.MetricManager`
      - Stores MetricWrapper instances that define evaluation metrics.
+   * - :class:`~brisk.evaluation.metric_wrapper.MetricWrapper`
+     - Wraps a metric function and provides a convenient interface using the metric.
    * - :class:`~brisk.reporting.report_manager.ReportManager`
      - Generates HTML report from training results.
    * - :class:`~brisk.training.training_manager.TrainingManager`
