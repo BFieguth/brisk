@@ -1,6 +1,8 @@
-"""
-This module contains the ResultStructure class, which is used to represent the
-structure of the results directory of a Brisk experiment as booleans.
+"""Test utilities for verifying Brisk experiment output structure.
+
+This module provides classes to represent and verify the structure of files and
+directories created during Brisk experiments. It's used for testing the correct
+generation of models, plots, reports and other artifacts.
 """
 
 import ast
@@ -15,13 +17,34 @@ from brisk.configuration import configuration_manager, experiment_group
 from brisk.data import data_manager
 
 class MethodCallVisitor(ast.NodeVisitor):
-    """Visitor that extracts method calls from an AST."""
+    """AST visitor that extracts self method calls from Python code.
+
+    A visitor class that walks through an Abstract Syntax Tree (AST) and
+    collects all method calls made on 'self', typically used to analyze
+    workflow method implementations.
+
+    Attributes
+    ----------
+    method_calls : set
+        Set of method names called on 'self'
+    """
 
     def __init__(self):
         self.method_calls = set()
 
     def visit_Call(self, node): # pylint: disable=C0103
-        """Visit a call node in the AST."""
+        """Visit a call node in the AST and collect self method calls.
+
+        Parameters
+        ----------
+        node : ast.Call
+            The AST node representing a function or method call
+
+        Notes
+        -----
+        Only collects method calls made on 'self'. Other function calls
+        are ignored. Continues traversing the AST after processing the node.
+        """
         if isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Name):
                 if node.func.value.id == "self":
@@ -30,7 +53,26 @@ class MethodCallVisitor(ast.NodeVisitor):
 
     @classmethod
     def extract_workflow_methods(cls, workflow_path: str) -> Set[str]:
-        """Extract all method calls from a workflow file."""
+        """Extract all method calls from a workflow file's workflow method.
+
+        Parses a Python file and extracts all method calls made on 'self'
+        within methods named 'workflow'.
+
+        Parameters
+        ----------
+        workflow_path : str
+            Path to the Python file containing workflow implementation
+
+        Returns
+        -------
+        set of str
+            Set of method names called within the workflow method
+
+        Notes
+        -----
+        Only analyzes methods named 'workflow' within class definitions.
+        Other methods are ignored.
+        """
         with open(workflow_path, "r", encoding="utf-8") as file:
             tree = ast.parse(file.read())
 
@@ -50,8 +92,10 @@ class MethodCallVisitor(ast.NodeVisitor):
 
 @dataclasses.dataclass
 class ConfigLog:
+    """
+    Flag to indicate if the config log file exists.
+    """
     file_exists: bool
-
 
 @dataclasses.dataclass
 class ErrorLog:
@@ -119,15 +163,37 @@ class ExperimentGroupDirectory:
 
 @dataclasses.dataclass
 class ResultStructure:
-    """
-    Represents the structure of the results directory.
+    """Represents and verifies the structure of a Brisk experiment output.
+
+    A class that maps the expected directory structure and files created during
+    a Brisk experiment run. Used to verify that all expected outputs were
+    generated correctly.
+
+    Parameters
+    ----------
+    config_log : ConfigLog
+        Status of configuration log file
+    error_log : ErrorLog, optional
+        Status of error log file
+    html_report : HTMLReport, optional
+        Status of HTML report files and structure
+    experiment_groups : dict
+        Mapping of group names to their directory structures
     """
     config_log: ConfigLog
     error_log: Optional[ErrorLog]
     html_report: Optional[HTMLReport]
     experiment_groups: Dict[str, ExperimentGroupDirectory]
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Generate a human-readable report of the result structure.
+
+        Returns
+        -------
+        str
+            Formatted string showing existence of all expected files and 
+            directories
+        """
         report = []
         report.append("Result Structure:")
         report.append(f"Config Log Exists: {self.config_log.file_exists}")
@@ -241,6 +307,20 @@ class ResultStructure:
         config_manager: configuration_manager.ConfigurationManager,
         workflow_path: str
     ):
+        """Create ResultStructure from a ConfigurationManager and workflow path.
+
+        Parameters
+        ----------
+        config_manager : ConfigurationManager
+            Configuration manager instance
+        workflow_path : str
+            Path to the workflow file
+
+        Returns
+        -------
+        ResultStructure
+            Instance representing expected structure
+        """
         config_log = ConfigLog(file_exists=True)
         error_log = ErrorLog(file_exists=True)
         workflow_methods = MethodCallVisitor.extract_workflow_methods(
@@ -274,7 +354,19 @@ class ResultStructure:
         )
 
     @classmethod
-    def from_directory(cls, path: pathlib.Path):
+    def from_directory(cls, path: pathlib.Path) -> 'ResultStructure':
+        """Create ResultStructure by scanning a directory.
+
+        Parameters
+        ----------
+        path : Path
+            Root directory of experiment results
+
+        Returns
+        -------
+        ResultStructure
+            Instance representing found structure
+        """
         root_path = pathlib.Path(path)
         experiment_groups = {}
         dataset_pages = {}
@@ -394,14 +486,36 @@ class ResultStructure:
 
     @staticmethod
     def get_png_metadata(file_path: pathlib.Path) -> str:
-        """Extract method name from PNG metadata."""
+        """Extract method name from PNG metadata.
+
+        Parameters
+        ----------
+        file_path : Path
+            Path to PNG file
+
+        Returns
+        -------
+        str
+            Method name from metadata or empty string if not found
+        """
         with PIL.Image.open(file_path) as img:
             metadata = img.info
             return metadata.get("method", "")
 
     @staticmethod
     def get_json_metadata(file_path: pathlib.Path) -> str:
-        """Extract method name from JSON metadata."""
+        """Extract method name from JSON metadata.
+
+        Parameters
+        ----------
+        file_path : Path
+            Path to JSON file
+
+        Returns
+        -------
+        str
+            Method name from metadata or empty string if not found
+        """
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data.get("_metadata", {}).get("method", "")
@@ -409,7 +523,20 @@ class ResultStructure:
     @staticmethod
     def get_html_pages_from_groups(
         experiment_groups: Dict[str, ExperimentGroupDirectory]
-    ) -> Tuple[Dict, Dict]:
+    ) -> Tuple[Dict[str, bool], Dict[str, bool]]:
+        """Generate mappings of expected HTML pages.
+
+        Parameters
+        ----------
+        experiment_groups : dict
+            Mapping of group names to their directory structures
+
+        Returns
+        -------
+        tuple
+            (dataset_pages, experiment_pages) dictionaries mapping page names
+            to existence flags
+        """
         dataset_pages = {}
         experiment_pages = {}
 
@@ -431,7 +558,27 @@ class ResultStructure:
         base_scale_method: bool,
         categorical_features: Dict[str, List[str]],
         data_managers: Dict[str, data_manager.DataManager]
-    ):
+    ) -> Dict[str, 'ExperimentGroupDirectory']:
+        """Create expected experiment group structure from configuration.
+
+        Parameters
+        ----------
+        groups : list
+            List of experiment group configurations
+        workflow_methods : set
+            Set of method names used in workflow
+        base_scale_method : bool
+            Whether to use base scaling method
+        categorical_features : dict
+            Mapping of dataset names to their categorical feature lists
+        data_managers : dict
+            Mapping of group names to their data managers
+
+        Returns
+        -------
+        dict
+            Mapping of group names to their expected directory structures
+        """
         experiment_groups = {}
 
         for group in groups:
@@ -517,6 +664,18 @@ class ResultStructure:
 
     @staticmethod
     def get_workflow_methods_from_dir(experiment_dir):
+        """Extract workflow methods from an experiment directory.
+
+        Parameters
+        ----------
+        experiment_dir : Path
+            Path to the experiment directory
+
+        Returns
+        -------
+        set
+            Set of method names called within the workflow method
+        """
         workflow_methods = set()
 
         if experiment_dir.glob("*.pkl"):
