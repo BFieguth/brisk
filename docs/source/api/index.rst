@@ -33,6 +33,7 @@ Package Sections
    evaluation
    training
    reporting
+   cli
 
 API Objects
 ------------
