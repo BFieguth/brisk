@@ -8,7 +8,7 @@ root directory.
 """
 import pytest
 
-from brisk.utility.utility import find_project_root
+from brisk.configuration import project
 
 @pytest.fixture
 def mock_briskconfig_file(tmp_path):
@@ -210,4 +210,4 @@ def mock_regression_project(
 def reset_project_root_cache():
     """Clear the project root cache after each test"""
     yield
-    find_project_root.cache_clear()
+    project.find_project_root.cache_clear()

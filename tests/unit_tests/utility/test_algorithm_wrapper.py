@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
 
 class TestAlgorithmWrapper:
     """Test class for AlgorithmWrapper."""

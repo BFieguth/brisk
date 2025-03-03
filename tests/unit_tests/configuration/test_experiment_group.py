@@ -3,7 +3,7 @@ import textwrap
 import pytest
 
 from brisk.configuration.experiment_group import ExperimentGroup
-from brisk.utility.utility import find_project_root
+from brisk.configuration import project
 
 @pytest.fixture 
 def valid_group(mock_regression_project):
@@ -151,11 +151,10 @@ class TestExperimentGroup:
 def test_project_root_not_found(tmp_path, monkeypatch):
     """Test FileNotFoundError when .briskconfig is not found"""
     monkeypatch.chdir(tmp_path)
-    find_project_root.cache_clear()  # Clear before this specific test
+    project.find_project_root.cache_clear()  # Clear before this specific test
     
     with pytest.raises(FileNotFoundError, match="Could not find .briskconfig"):
-        find_project_root()
-
+        project.find_project_root()
 
 def test_nested_project_root(tmp_path, monkeypatch):
     """Test finding .briskconfig in parent directory"""
@@ -174,7 +173,7 @@ def test_nested_project_root(tmp_path, monkeypatch):
     
     # Change working directory to nested directory
     monkeypatch.chdir(nested_dir)
-    find_project_root.cache_clear()  # Clear before this specific test
+    project.find_project_root.cache_clear()  # Clear before this specific test
     
     group = ExperimentGroup(
         name="test_group",

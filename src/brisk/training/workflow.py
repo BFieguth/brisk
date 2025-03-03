@@ -1,11 +1,10 @@
 """The Workflow base class for defining training and evaluation steps.
 
-Specific workflows (e.g., regression, classification) should 
-inherit from this class and implement the abstract `workflow` method to define 
-the steps for model training, evaluation, and reporting.
-
-Exports:
-    - Workflow: A base class for building machine learning workflows.
+This module provides the base Workflow class that defines the interface for
+machine learning workflows. Specific workflows (e.g., regression, classification)
+should inherit from this class and implement the abstract `workflow` method.
+This class delegates the EvaluationManager for model evaluation and 
+visualization.
 """
 
 import abc
@@ -18,17 +17,49 @@ from sklearn import base
 from brisk.evaluation.evaluation_manager import EvaluationManager
 
 class Workflow(abc.ABC):
-    """Base class for machine learning workflows.
+    """Base class for machine learning workflows. Delegates EvaluationManager.
 
-    Attributes:
-        evaluator (Evaluator): An object for evaluating models.
-        X_train (pd.DataFrame): The training feature data.
-        X_test (pd.DataFrame): The test feature data.
-        y_train (pd.Series): The training target data.
-        y_test (pd.Series): The test target data.
-        output_dir (str): The directory where results are saved.
-        algorithm_name (List[str]): Names of the algorithms used.
-        model1, model2, ...: The models passed to the workflow.
+    Parameters
+    ----------
+    evaluator : EvaluationManager
+        Manager for model evaluation and visualization
+    X_train : DataFrame
+        Training feature data
+    X_test : DataFrame
+        Test feature data
+    y_train : Series
+        Training target data
+    y_test : Series
+        Test target data
+    output_dir : str
+        Directory where results will be saved
+    algorithm_names : list of str
+        Names of the algorithms used
+    feature_names : list of str
+        Names of the features
+    workflow_attributes : dict
+        Additional attributes to be unpacked into the workflow
+
+    Attributes
+    ----------
+    evaluator : EvaluationManager
+        Manager for model evaluation
+    X_train : DataFrame
+        Training feature data
+    X_test : DataFrame
+        Test feature data
+    y_train : Series
+        Training target data
+    y_test : Series
+        Test target data
+    output_dir : str
+        Output directory path
+    algorithm_names : list of str
+        Algorithm names
+    feature_names : list of str
+        Feature names
+    model1, model2, ... : BaseEstimator
+        Models unpacked from workflow_attributes
     """
     def __init__(
         self,
@@ -62,12 +93,12 @@ class Workflow(abc.ABC):
             )
 
     def _unpack_attributes(self, config: Dict[str, Any]) -> None:
-        """
-        Unpacks the key-value pairs from the config dictionary and sets them as 
-        attributes of the instance.
+        """Unpack configuration dictionary into instance attributes.
 
-        Args:
-            config (Dict[str, Any]): The configuration dictionary to unpack.
+        Parameters
+        ----------
+        config : dict
+            Configuration dictionary to unpack
         """
         for key, model in config.items():
             setattr(self, key, model)
@@ -87,22 +118,20 @@ class Workflow(abc.ABC):
         metrics: List[str],
         filename: str
     ) -> None:
-        """Evaluate the model on the specified metrics and save the results.
+        """Evaluate model on specified metrics and save results.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model to
-            evaluate.
-            
-            X (pd.DataFrame): The feature data to use for evaluation.
-            
-            y (pd.Series): The target data to use for evaluation.
-            
-            metrics (List[str]): A list of metric names to calculate.
-            
-            filename (str): The name of the output file without extension.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model : BaseEstimator
+            Trained model to evaluate
+        X : DataFrame
+            Feature data
+        y : Series
+            Target data
+        metrics : list of str
+            Names of metrics to calculate
+        filename : str
+            Output filename (without extension)
         """
         return self.evaluator.evaluate_model(model, X, y, metrics, filename)
 
@@ -115,18 +144,22 @@ class Workflow(abc.ABC):
         filename: str,
         cv: int = 5
     ) -> None:
-        """Evaluate the model using cross-validation and save the scores.
+        """Evaluate model using cross-validation.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
-            X (pd.DataFrame): The feature data to use for evaluation.
-            y (pd.Series): The target data to use for evaluation.
-            metrics (List[str]): A list of metric names to calculate.
-            filename (str): The name of the output file without extension.
-            cv (int): The number of cross-validation folds. Defaults to 5.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model : BaseEstimator
+            Model to evaluate
+        X : DataFrame
+            Feature data
+        y : Series
+            Target data
+        metrics : list of str
+            Names of metrics to calculate
+        filename : str
+            Output filename (without extension)
+        cv : int, optional
+            Number of cross-validation folds, by default 5
         """
         return self.evaluator.evaluate_model_cv(
             model, X, y, metrics, filename, cv=cv
@@ -139,27 +172,29 @@ class Workflow(abc.ABC):
         y: pd.Series,
         metrics: List[str],
         filename: str,
-        calculate_diff: bool = False,
+        calculate_diff: bool = False
     ) -> Dict[str, Dict[str, float]]:
-        """Compare multiple models based on the provided metrics.
+        """Compare multiple models using specified metrics.
 
-        Args:
-            models: A variable number of model instances to evaluate.
-            
-            X (pd.DataFrame): The feature data.
-            
-            y (pd.Series): The target data.
-            
-            metrics (List[str]): A list of metric names to calculate.
-            
-            filename (str): The name of the output file without extension.
-            
-            calculate_diff (bool): Whether to compute the difference between 
-            models for each metric. Defaults to False.
+        Parameters
+        ----------
+        *models : BaseEstimator
+            Models to compare
+        X : DataFrame
+            Feature data
+        y : Series
+            Target data
+        metrics : list of str
+            Names of metrics to calculate
+        filename : str
+            Output filename (without extension)
+        calculate_diff : bool, optional
+            Whether to compute differences between models, by default False
 
-        Returns:
-            Dict[str, Dict[str, float]]: A dictionary containing the metric 
-            results for each model.
+        Returns
+        -------
+        dict
+            Nested dictionary containing metric results for each model
         """
         return self.evaluator.compare_models(
             *models, X=X, y=y, metrics=metrics, filename=filename,
@@ -175,14 +210,16 @@ class Workflow(abc.ABC):
     ) -> None:
         """Plot predicted vs. observed values and save the plot.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model.
-            X (pd.DataFrame): The feature data.
-            y_true (pd.Series): The true target values.
-            filename (str): The name of the output PNG file (without extension).
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
+        X (pd.DataFrame): 
+            The input features.
+        y_true (pd.Series): 
+            The true target values.
+        filename (str): 
+            The name of the output file (without extension).
         """
         return self.evaluator.plot_pred_vs_obs(model, X, y_true, filename)
 
@@ -197,28 +234,26 @@ class Workflow(abc.ABC):
         metric: str = "neg_mean_absolute_error",
         filename: str = "learning_curve"
     ) -> None:
-        """
-        Plot a learning curve for the given model and save the plot.
+        """Plot learning curves showing model performance vs training size.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
-            
-            X_train (pd.DataFrame): The input features of the training set.
-            
-            y_train (pd.Series): The target values of the training set.
-            
-            cv (int): Number of cross-validation folds. Defaults to 5.
-            
-            num_repeats (int): Number of times to repeat the cross-validation.
-            Defaults to 1.
-            
-            metric (str): The scoring metric to use. Defaults to 
-            'neg_mean_absolute_error'.
-            
-            filename (str): The name of the output PNG file (without extension).
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model : BaseEstimator
+            Model to evaluate
+        X_train : DataFrame
+            Training features
+        y_train : Series
+            Training target values
+        cv : int, optional
+            Number of cross-validation folds, by default 5
+        num_repeats : int, optional
+            Number of times to repeat CV, by default 1
+        n_jobs : int, optional
+            Number of parallel jobs, by default -1
+        metric : str, optional
+            Scoring metric to use, by default "neg_mean_absolute_error"
+        filename : str, optional
+            Name for output file, by default "learning_curve"
         """
         return self.evaluator.plot_learning_curve(
             model, X_train, y_train, cv=cv, num_repeats=num_repeats,
@@ -238,26 +273,32 @@ class Workflow(abc.ABC):
     ) -> None:
         """Plot the feature importance for the model and save the plot.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
-            X (pd.DataFrame): The feature data.
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to evaluate.
 
-            y (pd.Series): The target data.
+        X (pd.DataFrame): 
+            The input features.
 
-            threshold (Union[int, float]): The number of features or the 
-            threshold to filter features by importance.
+        y (pd.Series): 
+            The target data.
 
-            feature_names (List[str]): A list of feature names corresponding to 
-            the columns in X.
+        threshold (Union[int, float]): 
+            The number of features or the threshold to filter features by 
+            importance.
 
-            filename (str): The name of the output PNG file (without extension).
+        feature_names (List[str]): 
+            A list of feature names corresponding to the columns in X.
 
-            metric (str): The metric to use for evaluation.
+        filename (str): 
+            The name of the output file (without extension).
 
-            num_rep (int): The number of repetitions for calculating importance.
+        metric (str): 
+            The metric to use for evaluation.
 
-        Returns:
-            None
+        num_rep (int): 
+            The number of repetitions for calculating importance.
         """
         return self.evaluator.plot_feature_importance(
             model, X, y, threshold, feature_names, filename, metric, num_rep
@@ -273,19 +314,22 @@ class Workflow(abc.ABC):
     ) -> None:
         """Plot the residuals of the model and save the plot.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model.
-          
-            X (pd.DataFrame): The feature data.
-            
-            y (pd.Series): The true target values.
-            
-            filename (str): The name of the output PNG file (without extension).
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
 
-            add_fit_line (bool): Whether to add a line of best fit to the plot.
+        X (pd.DataFrame): 
+            The input features.
 
-        Returns:
-            None
+        y (pd.Series): 
+            The true target values.
+
+        filename (str): 
+            The name of the output file (without extension).
+
+        add_fit_line (bool): 
+            Whether to add a line of best fit to the plot.
         """
         return self.evaluator.plot_residuals(
             model, X, y, filename, add_fit_line=add_fit_line
@@ -301,15 +345,22 @@ class Workflow(abc.ABC):
     ) -> None:
         """Plot a comparison of multiple models based on the specified metric.
 
-        Args:
-            models: A variable number of model instances to evaluate.
-            X (pd.DataFrame): The feature data.
-            y (pd.Series): The target data.
-            metric (str): The metric to evaluate and plot.
-            filename (str): The name of the output PNG file (without extension).
+        Parameters
+        ----------
+        models: 
+            A variable number of model instances to evaluate.
 
-        Returns:
-            None
+        X (pd.DataFrame): 
+            The input features.
+
+        y (pd.Series): 
+            The target data.
+
+        metric (str): 
+            The metric to evaluate and plot.
+
+        filename (str): 
+            The name of the output file (without extension).
         """
         return self.evaluator.plot_model_comparison(
             *models, X=X, y=y, metric=metric, filename=filename
@@ -329,28 +380,31 @@ class Workflow(abc.ABC):
     ) -> base.BaseEstimator:
         """Perform hyperparameter tuning using grid or random search.
 
-        Args:
-            model (BaseEstimator): The model to be tuned.
-            
-            method (str): The search method to use ('grid' or 'random').
-            
-            X_train (pd.DataFrame): The training data.
-           
-            y_train (pd.Series): The target values for training.
-           
-            scorer (str): The scoring metric to use.
-            
-            kf (int): Number of splits for cross-validation.
-            
-            num_rep (int): Number of repetitions for cross-validation.
-            
-            n_jobs (int): Number of parallel jobs to run.
-            
-            plot_results (bool): Whether to plot the performance of 
-                hyperparameters. Defaults to False.
+        Parameters
+        ----------
+        model : BaseEstimator
+            Model to tune
+        method : {'grid', 'random'}
+            Search method to use
+        X_train : DataFrame
+            Training data
+        y_train : Series
+            Training targets
+        scorer : str
+            Scoring metric
+        kf : int
+            Number of cross-validation splits
+        num_rep : int
+            Number of CV repetitions
+        n_jobs : int
+            Number of parallel jobs
+        plot_results : bool, optional
+            Whether to plot hyperparameter performance, by default False
 
-        Returns:
-            BaseEstimator: The tuned model.
+        Returns
+        -------
+        BaseEstimator
+            Tuned model
         """
         return self.evaluator.hyperparameter_tuning(
             model, method, X_train, y_train, scorer,
@@ -364,18 +418,21 @@ class Workflow(abc.ABC):
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate a confusion matrix for a given model and dataset, 
-        and save the results to a JSON file.
+        """Generate and save a confusion matrix.
 
-        Args:
-            model (Any): Trained classification model with a `predict` method.
-            X (np.ndarray): Input feature.
-            y (np.ndarray): Target feature.
-            filename (str): Path to save the confusion matrix as a JSON file.
+        Parameters
+        ----------
+        model : Any
+            Trained classification model with predict method
 
-        Returns:
-            None
+        X : ndarray
+            The input features.
+
+        y : ndarray
+            The true target values.
+
+        filename : str
+            The name of the output file (without extension).
         """
         return self.evaluator.confusion_matrix(
             model, X, y, filename
@@ -388,24 +445,21 @@ class Workflow(abc.ABC):
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate and save a heatmap of the confusion matrix for a given model 
-        and dataset.
+        """Plot a heatmap of the confusion matrix for a model.
 
-        Args:
-            model (Any): Trained classification model with a `predict` method.
-            
-            X (np.ndarray): Input features.
-            
-            y (np.ndarray): Target labels.
-            
-            filename (str): Path to save the confusion matrix heatmap image.
-            
-            labels (Optional[list]): List of class labels for display on the 
-            heatmap axes.
+        Parameters
+        ----------
+        model (Any): 
+            The trained classification model with a `predict` method.
 
-        Returns:
-            None
+        X (np.ndarray): 
+            The input features.
+
+        y (np.ndarray): 
+            The target labels.
+
+        filename (str): 
+            The path to save the confusion matrix heatmap image.
         """
         return self.evaluator.plot_confusion_heatmap(
             model, X, y, filename
@@ -418,22 +472,21 @@ class Workflow(abc.ABC):
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate and save a ROC curve with AUC for a given binary classification
-        model and dataset.
+        """Plot a reciever operator curve with area under the curve.
 
-        Args:
-            model (Any): Trained binary classification model with a 
-            `predict_proba` method.
-            
-            X (np.ndarray): Input features.
-            
-            y (np.ndarray): True binary labels.
-            
-            filename (str): Path to save the ROC curve image.
+        Parameters
+        ----------
+        model (Any): 
+            The trained binary classification model.
 
-        Returns:
-            None
+        X (np.ndarray): 
+            The input features.
+
+        y (np.ndarray): 
+            The true binary labels.
+
+        filename (str): 
+            The path to save the ROC curve image.
         """
         return self.evaluator.plot_roc_curve(
             model, X, y, filename
@@ -446,18 +499,21 @@ class Workflow(abc.ABC):
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate and save a Precision-Recall (PR) curve with Average Precision 
-        (AP) for a given binary classification model and dataset.
+        """Plot a precision-recall curve with average precision.
 
-        Args:
-            model (Any): Trained binary classification model.
-            X (np.ndarray): Input features.
-            y (np.ndarray): True binary labels.
-            filename (str): Path to save the PR curve image.
+        Parameters
+        ----------
+        model (Any): 
+            The trained binary classification model.
 
-        Returns:
-            None
+        X (np.ndarray): 
+            The input features.
+
+        y (np.ndarray): 
+            The true binary labels.
+
+        filename (str): 
+            The path to save the plot.
         """
         return self.evaluator.plot_precision_recall_curve(
             model, X, y, filename

@@ -3,7 +3,7 @@ import logging
 import sys
 from unittest import mock, TestCase
 
-from brisk.utility.logging_util import TqdmLoggingHandler, FileFormatter
+from brisk.training.logging_util import TqdmLoggingHandler, FileFormatter
 
 class TestTqdmLoggingHandler(TestCase):
     def setUp(self):

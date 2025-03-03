@@ -9,7 +9,7 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, make_scorer
 from pathlib import Path
 from brisk.evaluation.evaluation_manager import EvaluationManager
-from brisk.utility.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
 
 
 @pytest.fixture

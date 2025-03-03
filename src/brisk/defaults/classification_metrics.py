@@ -8,7 +8,7 @@ evaluate the performance of classification models.
 
 from sklearn import metrics
 
-from brisk.utility import metric_wrapper
+from brisk.evaluation import metric_wrapper
 
 CLASSIFICATION_METRICS = [
     metric_wrapper.MetricWrapper(

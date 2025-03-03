@@ -1,25 +1,30 @@
-"""cli.py
+"""Command-line interface for the Brisk framework.
 
-This module provides the command-line interface (CLI) for the Brisk framework, 
-which is designed to facilitate the training of machine learning models using 
-scikit-learn. The CLI allows users to create new projects, run experiments, 
-load datasets, and generate synthetic data.
+This module provides a CLI for managing machine learning experiments with Brisk.
+It includes commands for creating new projects, running experiments, and loading
+data.
 
-Commands:
-- `create`: Initializes a new project directory with configuration files.
-- `run`: Executes experiments based on the specified workflow.
-- `load_data`: Loads a dataset from scikit-learn into the project.
-- `create_data`: Generates synthetic datasets for classification or regression 
-                 tasks.
+Commands
+--------
+create
+    Initialize a new project directory with configuration files
+run
+    Execute experiments based on a specified workflow
+load_data
+    Load datasets from scikit-learn into the project
+create_data
+    Generate synthetic datasets for testing
 
-Usage:
-To use the CLI, run the script directly or through a command line interface, 
-specifying the desired command and its options.
+Examples
+--------
+Create a new project:
+    $ brisk create -n my_project
 
-Example:
-    python cli.py create -n my_project
-    python cli.py run -w my_workflow
-    python cli.py load_data --dataset iris --dataset_name my_iris_data
+Run an experiment:
+    $ brisk run -w my_workflow
+
+Load a dataset:
+    $ brisk load_data --dataset iris --dataset_name my_iris
 """
 import importlib
 import inspect
@@ -32,10 +37,11 @@ import pandas as pd
 from sklearn import datasets
 
 from brisk.training.workflow import Workflow
+from brisk.configuration import project
 
 @click.group()
 def cli():
-    """Brisk Command Line Interface"""
+    """Main entry point for Brisk's command line interface."""
     pass
 
 
@@ -47,18 +53,24 @@ def cli():
     help='Name of the project directory.'
 )
 def create(project_name: str) -> None:
-    """Create a new project directory.
+    """Create a new project directory with template files.
 
-    This command initializes a new project directory with the specified name.
-    It creates the necessary configuration files, including .briskconfig,
-    settings.py, algorithms.py, metrics.py, data.py, training.py, and a
-    workflow file.
+    Parameters
+    ----------
+    project_name : str
+        Name of the project directory to create
 
-    Args:
-        project_name (str): The name of the project directory to create.
-
-    Example:
-        python cli.py create -n my_project
+    Notes
+    -----
+    Creates the following structure:
+    - .briskconfig : Project configuration file
+    - settings.py : Configuration settings
+    - algorithms.py : Algorithm definitions
+    - metrics.py : Metric definitions
+    - data.py : Data management setup
+    - training.py : Training manager setup
+    - workflows/ : Directory for workflow definitions
+    - datasets/ : Directory for data storage
     """
     project_dir = os.path.join(os.getcwd(), project_name)
     os.makedirs(project_dir, exist_ok=True)
@@ -177,23 +189,28 @@ def run(
 ) -> None:
     """Run experiments using the specified workflow.
 
-    This command executes experiments based on the specified workflow file.
-    It loads the workflow class and runs the experiments defined within it,
-    passing any additional arguments provided by the user.
+    Parameters
+    ----------
+    workflow : str
+        Name of the workflow file (without .py extension)
+    results_name : str, optional
+        Custom name for results directory
+    disable_report : bool, default=False
+        Whether to disable HTML report generation
 
-    Args:
-        workflow (str): The name of the workflow file (without .py) to run.
-        extra_args (tuple): Additional arguments to pass to the workflow.
-
-    Example:
-        python cli.py run -w my_workflow --arg1=value1 --arg2=value2
+    Raises
+    ------
+    FileNotFoundError
+        If project root or workflow file not found
+    AttributeError
+        If workflow class not found or multiple workflows defined
     """
     create_report = not disable_report
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
 
         if project_root not in sys.path:
-            sys.path.insert(0, project_root)
+            sys.path.insert(0, str(project_root))
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -248,22 +265,21 @@ def run(
     help='Name to save the dataset as.'
 )
 def load_data(dataset: str, dataset_name: Optional[str] = None) -> None:
-    """Load a dataset from sklearn into the project.
+    """Load a scikit-learn dataset into the project.
 
-    This command loads a specified dataset from scikit-learn and saves it
-    as a CSV file in the project's datasets directory. If a dataset name
-    is provided, it will be used as the filename; otherwise, the default
-    dataset name will be used.
+    Parameters
+    ----------
+    dataset : {'iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud'}
+        Name of the dataset to load
+    dataset_name : str, optional
+        Custom name for the saved dataset file
 
-    Args:
-        dataset (str): The name of the dataset to load.
-        dataset_name (str, optional): The name to save the dataset as.
-
-    Example:
-        python cli.py load_data --dataset iris --dataset_name my_iris_data
+    Notes
+    -----
+    Saves the dataset as a CSV file in the project's datasets directory.
     """
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
         os.makedirs(datasets_dir, exist_ok=True)
 
@@ -340,25 +356,34 @@ def create_data(
     ):
     """Create synthetic data and add it to the project.
 
-    This command generates synthetic datasets for either classification or
-    regression tasks based on the specified parameters. The generated dataset
-    is saved as a CSV file in the project's datasets directory.
+    Parameters
+    ----------
+    data_type : {'classification', 'regression'}
+        Type of dataset to generate
+    n_samples : int, default=100
+        Number of samples to generate
+    n_features : int, default=20
+        Number of features to generate
+    n_classes : int, default=2
+        Number of classes (classification only)
+    random_state : int, default=42
+        Random seed for reproducibility
+    dataset_name : str, default='synthetic_dataset'
+        Name for the output file
 
-    Args:
-        data_type (str): The type of synthetic dataset to create 
-        ('classification' or 'regression').
-        n_samples (int): The number of samples to generate.
-        n_features (int): The number of features for the dataset.
-        n_classes (int): The number of classes for classification data.
-        random_state (int): The random state for reproducibility.
-        dataset_name (str): The name of the dataset file to be saved.
+    Notes
+    -----
+    For classification:
+        - 80% informative features
+        - 20% redundant features
+        - No repeated features
 
-    Example:
-        python cli.py create_data --data_type classification --n_samples 200 
-        --n_features 10 --n_classes 3 --dataset_name my_synthetic_data
+    For regression:
+        - 80% informative features
+        - 0.1 noise level
     """
     try:
-        project_root = find_project_root()
+        project_root = project.find_project_root()
         datasets_dir = os.path.join(project_root, 'datasets')
         os.makedirs(datasets_dir, exist_ok=True)
 
@@ -394,45 +419,29 @@ def create_data(
 
 
 def load_sklearn_dataset(name: str) -> Union[dict, None]:
-    """Load a dataset from sklearn by name."""
+    """Load a dataset from scikit-learn.
+
+    Parameters
+    ----------
+    name : {'iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud'}
+        Name of the dataset to load
+
+    Returns
+    -------
+    dict or None
+        Loaded dataset object or None if not found
+    """
     datasets_map = {
         'iris': datasets.load_iris,
         'wine': datasets.load_wine,
         'breast_cancer': datasets.load_breast_cancer,
         'diabetes': datasets.load_diabetes,
-        'linnerud': datasets.oad_linnerud
+        'linnerud': datasets.load_linnerud
     }
     if name in datasets_map:
         return datasets_map[name]()
     else:
         return None
-
-
-def find_project_root(start_path: str = os.getcwd()) -> str:
-    """Search for the .briskconfig file starting from the given directory.
-    
-    Args:
-        start_path (str): Directory to start searching from 
-        (defaults to current working directory).
-    
-    Returns:
-        str: The project root directory containing the .briskconfig file.
-    
-    Raises:
-        FileNotFoundError: If .briskconfig is not found in the directory tree.
-    """
-    current_dir = start_path
-
-    # Stop when reaching the root
-    while current_dir != os.path.dirname(current_dir):
-        if os.path.isfile(os.path.join(current_dir, '.briskconfig')):
-            return current_dir
-        current_dir = os.path.dirname(current_dir)
-
-    raise FileNotFoundError(
-        '.briskconfig not found. Please run the command from a project '
-        'directory or specify the project path.'
-        )
 
 
 def load_module_object(
@@ -444,21 +453,28 @@ def load_module_object(
     """
     Dynamically loads an object from a specified module file.
 
-    Args:
-        project_root (str): Path to the project's root directory.
-        module_filename (str): The name of the module file (e.g. 'training.py').
-        object_name (str): The name of the object to retrieve 
-        (e.g. 'WORKFLOW_CONFIG').
-        required (bool): Whether to raise an error if the object is not found.
-        Defaults to True.
+    Parameters
+    ----------
+    project_root : str
+        Path to project root directory
+    module_filename : str
+        Name of the module file
+    object_name : str
+        Name of object to load
+    required : bool, default=True
+        Whether to raise error if object not found
 
-    Returns:
-        object: The requested object from the module.
+    Returns
+    -------
+    object or None
+        Loaded object or None if not found and not required
 
-    Raises:
-        AttributeError: If the object is not found in the module and required 
-        is True.
-        FileNotFoundError: If the module file is not found.
+    Raises
+    ------
+    FileNotFoundError
+        If module file not found
+    AttributeError
+        If required object not found in module
     """
     module_path = os.path.join(project_root, module_filename)
 

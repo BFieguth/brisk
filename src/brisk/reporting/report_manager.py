@@ -1,8 +1,8 @@
-"""Create HTML reports from evaluation results.
+"""Generate HTML reports from evaluation results.
 
-Exports:
-    - ReportManager: A class that takes the outputs from the EvaluationManager 
-        and creates an HTML report with all results.
+This module provides the ReportManager class for creating HTML reports from 
+modelevaluation results. It generates structured reports with interactive 
+navigation and visualization of model performance metrics.
 """
 
 import ast
@@ -13,7 +13,7 @@ import json
 import os
 from PIL import Image
 import shutil
-from typing import Type
+from typing import Type, Union, Any
 
 import jinja2
 import joblib
@@ -22,29 +22,47 @@ import pandas as pd
 from brisk.version import __version__
 
 class ReportManager():
-    """A class for creating HTML reports from evaluation results.
+    """Create HTML reports from evaluation results.
 
-    The ReportManager processes the results from various model evaluations and 
-    generates a structured HTML report containing all relevant metrics, 
-    comparisons, and visualizations.
+    Parameters
+    ----------
+    result_dir : str
+        Directory containing evaluation results
+    experiment_paths : dict
+        Mapping of experiment groups to their file paths
+    output_structure : dict
+        Structure definition for output report
+    description_map : dict
+        Mapping of objects to their descriptions
 
-    Attributes:
-        report_dir (str): Directory where the HTML report will be saved.
-
-        experiment_paths (dict): Dictionary mapping datasets to their 
-        corresponding experiment directories.
-
-        env (jinja2.Environment): Jinja2 environment for rendering HTML 
-        templates.
-
-        method_map (OrderedDict): Mapping of evaluation methods to reporting 
-        methods.
-
-        current_dataset (str, optional): The name of the dataset currently being
-        processed.
-        
-        summary_metrics (dict): Dictionary holding summary metrics for the 
-        report.
+    Attributes
+    ----------
+    result_dir : str
+        Directory containing evaluation results
+    templates_dir : str
+        Directory containing HTML templates
+    styles_dir : str
+        Directory containing CSS styles
+    report_dir : str
+        Directory for generated HTML report
+    experiment_paths : dict
+        Mapping of experiment groups to their file paths
+    env : jinja2.Environment
+        Jinja2 environment for rendering templates
+    method_map : OrderedDict
+        Maps EvaluationManager methods to their reporting functions
+    continuous_data_map : OrderedDict
+        Maps continuous data files to reporting functions
+    categorical_data_map : OrderedDict
+        Maps categorical data files to reporting functions
+    current_dataset : str or None
+        Name of dataset currently being processed
+    summary_metrics : defaultdict
+        Nested dictionary of summary metrics
+    output_structure : dict
+        Maps experiment groups to their datasets
+    description_map : dict
+        Mapping of experiment groups to their descriptions
     """
     def __init__(
         self,
@@ -53,22 +71,6 @@ class ReportManager():
         output_structure: dict,
         description_map: dict
     ):
-        """Initializes the ReportManager with directories for results and 
-        experiment paths.
-
-        Args:
-            result_dir (str): Path to the directory where the report will be 
-            saved.
-            
-            experiment_paths (dict): Dictionary mapping datasets to their 
-            experiment directories.
-
-            output_structure (dict): Dictionary describing the structure of 
-            the output directories.
-
-            description_map (dict): Dictionary mapping group names to 
-            descriptions.
-        """
         package_dir = os.path.dirname(os.path.abspath(__file__))
         self.result_dir = result_dir
         self.templates_dir = os.path.join(package_dir, "templates")
@@ -136,14 +138,10 @@ class ReportManager():
         self.description_map = description_map
 
     def create_report(self) -> None:
-        """Generates the HTML report.
-        
-        This method creates an index page listing all datasets and their 
-        respective experiment pages, as well as a summary table if evaluation 
-        metrics are available.
-        
-        Returns:
-            None
+        """Generate the complete HTML report.
+
+        Creates index page and all experiment pages, copies required CSS files,
+        and generates navigation structure.
         """
         os.makedirs(self.report_dir, exist_ok=True)
 
@@ -231,16 +229,16 @@ class ReportManager():
         dataset: str,
         navigation: dict
     ) -> None:
-        """Creates an HTML page for each experiment.
+        """Create HTML page for a single experiment.
 
-        Args:
-            experiment_dir (str): Path to the experiment directory.
-            dataset (str): The name of the dataset being evaluated.
-            navigation (dict): Navigation information containing links to next
-            and previous experiment pages.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        experiment_dir : str
+            Directory containing experiment results
+        dataset : str
+            Name of the dataset used
+        navigation : dict
+            Navigation links for previous/next experiments
         """
         self.current_dataset = dataset
         experiment_template = self.env.get_template("experiment.html")
@@ -289,11 +287,14 @@ class ReportManager():
             f.write(experiment_output)
 
     def create_dataset_page(self, group_name: str, dataset_name: str) -> None:
-        """Creates an HTML page showing dataset distribution information.
+        """Creates an HTML page showing data split distribution information.
         
-        Args:
-            group_name: Name of the experiment group
-            dataset_name: Name of the dataset
+        Parameters
+        ----------
+        group_name : str
+            Name of the experiment group
+        dataset_name : str
+            Name of the dataset
         """
         dataset_template = self.env.get_template("dataset.html")
         dataset_dir = os.path.join(
@@ -344,11 +345,15 @@ class ReportManager():
     def _get_json_metadata(self, json_path: str) -> dict:
         """Extracts metadata from a JSON file.
 
-        Args:
-            json_path (str): Path to the JSON file.
+        Parameters
+        ----------
+        json_path : str
+            Path to the JSON file
 
-        Returns:
-            dict: The extracted metadata.
+        Returns
+        -------
+        dict
+            The extracted metadata
         """
         try:
             with open(json_path, "r", encoding="utf-8") as f:
@@ -368,11 +373,15 @@ class ReportManager():
     def _get_image_metadata(self, image_path: str) -> dict:
         """Extracts metadata from a PNG file.
 
-        Args:
-            image_path (str): Path to the image file.
+        Parameters
+        ----------
+        image_path : str
+            Path to the image file
 
-        Returns:
-            dict: The extracted metadata.
+        Returns
+        -------
+        dict
+            The extracted metadata
         """
         try:
             with Image.open(image_path) as img:
@@ -392,18 +401,32 @@ class ReportManager():
             print(f"Value error while processing metadata in {image_path}: {e}")
             return {}
 
-    def _load_file(self, file_path: str):
+    def _load_file(self, file_path: str) -> Union[dict, str, Any]:
         """Loads the content of a file based on its extension.
 
-        Args:
-            file_path (str): Path to the file.
+        Parameters
+        ----------
+        file_path : str
+            Path to the file to load
 
-        Returns:
-            dict: The loaded content for JSON files, or the file path for 
-            images.
+        Returns
+        -------
+        Union[dict, str, Any]
+            The loaded content, depending on file type:
+            
+            * .json : dict
+                Parsed JSON content
+            * .png : str
+                Path to the image file
+            * .pkl : Any
+                Unpickled Python object
 
-        Raises:
-            ValueError: If the file type is unsupported.
+        Raises
+        ------
+        ValueError
+            If the file extension is not .json, .png, or .pkl
+        IOError
+            If there is an error reading the file
         """
         if file_path.endswith(".json"):
             with open(file_path, "r", encoding="utf-8") as f:
@@ -419,12 +442,17 @@ class ReportManager():
     def report_evaluate_model(self, data: dict, metadata: dict) -> str:
         """Generates an HTML block for displaying evaluate_model results.
 
-        Args:
-            data (dict): The evaluation data.
-            metadata (dict): The metadata associated with the evaluation.
+        Parameters
+        ----------
+        data : dict
+            The evaluation data
+        metadata : dict
+            The metadata associated with the evaluation
 
-        Returns:
-            str: HTML block representing the evaluation results.
+        Returns
+        -------
+        str
+            HTML block representing the evaluation results
         """
         # Extract relevant information
         metrics = {k: v for k, v in data.items() if k != "_metadata"}
@@ -452,12 +480,17 @@ class ReportManager():
         """Generates an HTML block for displaying cross-validated evaluation 
         results.
 
-        Args:
-            data (dict): The evaluation data containing metric information.
-            metadata (dict): The metadata associated with the evaluation.
+        Parameters
+        ----------
+        data : dict
+            The evaluation data containing metric information
+        metadata : dict
+            The metadata associated with the evaluation
 
-        Returns:
-            str: HTML block representing the cross-validation results.
+        Returns
+        -------
+        str
+            HTML block representing the cross-validation results
         """
         def get_unique_key(summary_metrics, current_database, models):
             model_key = f"{models} (2)"
@@ -509,12 +542,17 @@ class ReportManager():
     def report_compare_models(self, data: dict, metadata: dict) -> str:
         """Generates an HTML block for displaying model comparison results.
 
-        Args:
-            data (dict): The comparison results.
-            metadata (dict): The metadata containing model information.
+        Parameters
+        ----------
+        data : dict
+            The comparison results
+        metadata : dict
+            The metadata containing model information
 
-        Returns:
-            str: HTML block representing the comparison results.
+        Returns
+        -------
+        str
+            HTML block representing the comparison results
         """
         model_names = metadata.get("models", [])
 
@@ -560,14 +598,21 @@ class ReportManager():
     ) -> str:
         """Generates an HTML block for displaying an image plot.
 
-        Args:
-            data (str): The path to the image file.
-            metadata (dict): The metadata associated with the plot.
-            title (str): The title to display above the image.
-            max_width (str): The maximum width of the image. Defaults to "100%".
+        Parameters
+        ----------
+        data : str
+            The path to the image file
+        metadata : dict
+            The metadata associated with the plot
+        title : str
+            The title to display above the image
+        max_width : str, optional
+            The maximum width of the image. Defaults to "100%".
 
-        Returns:
-            str: HTML block containing the image and its metadata.
+        Returns
+        -------
+        str
+            HTML block containing the image and its metadata
         """
         model_name = ", ".join(metadata.get("models", ["Unknown model"]))
         rel_img_path = os.path.relpath(data, self.report_dir)
@@ -587,17 +632,19 @@ class ReportManager():
         return result_html
 
     def report_confusion_matrix(self, data: dict, metadata: dict) -> str:
-        """
-        Generates an HTML block for displaying the confusion matrix results.
+        """Generates an HTML block for displaying the confusion matrix results.
 
-        Args:
-            data (dict): The confusion matrix data, including the matrix itself 
-            and labels.
+        Parameters
+        ----------
+        data : dict
+            The confusion matrix data, including the matrix itself and labels
+        metadata : dict
+            The metadata associated with the matrix
 
-            metadata (dict): The metadata associated with the matrix.
-
-        Returns:
-            str: HTML block representing the confusion matrix results.
+        Returns
+        -------
+        str
+            HTML block representing the confusion matrix results
         """
         confusion_matrix = data.get("confusion_matrix", [])
         labels = data.get("labels", [])
@@ -643,14 +690,18 @@ class ReportManager():
         metadata: dict # pylint: disable=W0613
     ) -> str:
         """Generate an HTML section describing a serialized model.
-        
-        Args:
-            data (dict): The loaded joblib object containing the model
 
-            metadata (dict): The metadata containing model information.
+        Parameters
+        ----------
+        data : dict
+            The loaded joblib object containing the model
+        metadata : dict
+            The metadata containing model information
 
-        Returns:
-            str: HTML formatted string describing the model
+        Returns
+        -------
+        str
+            HTML formatted string describing the model
         """
         model_name = data.__class__.__name__
         params = data.get_params()
@@ -691,8 +742,10 @@ class ReportManager():
         """Generates sortable HTML summary tables for each dataset, displaying 
         model metrics.
 
-        Returns:
-            str: HTML block containing sortable summary tables for all datasets.
+        Returns
+        -------
+        str
+            HTML block containing sortable summary tables for all datasets
         """
         summary_html = ""
         for dataset, models in self.summary_metrics.items():
@@ -736,7 +789,19 @@ class ReportManager():
         return summary_html
 
     # Report Dataset Distribution
-    def report_continuous_stats(self, file_path):
+    def report_continuous_stats(self, file_path: str) -> str:
+        """Generate HTML for continuous feature statistics.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to JSON file containing continuous statistics
+
+        Returns
+        -------
+        str
+            HTML content showing statistics and distribution plots
+        """
         with open(file_path, "r", encoding="utf-8") as file:
             stats_data = json.load(file)
 
@@ -818,7 +883,19 @@ class ReportManager():
             content += feature_html
         return content
 
-    def report_correlation_matrix(self, file_path):
+    def report_correlation_matrix(self, file_path: str) -> str:
+        """Generate HTML for feature correlation matrix.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to correlation matrix image
+
+        Returns
+        -------
+        str
+            HTML content showing correlation heatmap
+        """
         relative_img_path = os.path.relpath(file_path, self.report_dir)
         result_html = f"""
         <h3>Correlation Matrix</h3>
@@ -828,7 +905,19 @@ class ReportManager():
         """
         return result_html
 
-    def report_categorical_stats(self, file_path):
+    def report_categorical_stats(self, file_path: str) -> str:
+        """Generate HTML for categorical feature statistics.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to JSON file containing categorical statistics
+
+        Returns
+        -------
+        str
+            HTML content showing statistics and pie charts
+        """
         with open(file_path, "r", encoding="utf-8") as file:
             stats_data = json.load(file)
 
@@ -949,11 +1038,16 @@ class ReportManager():
     def get_default_params(self, model_class: Type) -> dict:
         """Extracts default parameters from the model class.
 
-        Args:
-            model_class (Type): The class of the model.
+        Parameters
+        ----------
+        model_class : Type
+            The class of the model
 
-        Returns:
-            dict: A dictionary of default parameters.
+
+        Returns
+        -------
+        dict
+            A dictionary of default parameters
         """
         init_signature = inspect.signature(model_class.__init__)
         default_params = {}

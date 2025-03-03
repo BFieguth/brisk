@@ -19,7 +19,7 @@ from sklearn import linear_model, preprocessing
 
 from brisk.data.data_manager import DataManager
 from brisk.data.data_split_info import DataSplitInfo
-from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
 from brisk.evaluation.metric_manager import MetricManager
 from brisk.training.training_manager import TrainingManager
 from brisk.configuration.experiment import Experiment

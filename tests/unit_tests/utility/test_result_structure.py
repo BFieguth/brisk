@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-import brisk.utility.result_structure as rs
+import tests.result_structure as rs
 from brisk.configuration import experiment_group, configuration
 
 @pytest.fixture
@@ -276,7 +276,7 @@ def two_experiment_groups():
 @pytest.fixture
 def experiment_groups():
     with mock.patch(
-        "brisk.utility.utility.find_project_root"
+        "brisk.configuration.project.find_project_root"
     ) as mock_find_project_root:
         mock_find_project_root.return_value = pathlib.Path("/fake/project/root")
 

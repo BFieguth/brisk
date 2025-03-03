@@ -1,9 +1,8 @@
-"""Provides the EvaluationManager class for model evaluation and visualization.
+"""Provides methods for model evaluation and visualization.
 
-Exports:
-    - EvaluationManager: A class that provides methods for evaluating models, 
-        generating plots, and comparing models. These methods are used when 
-        building a training workflow.
+This module defines the EvaluationManager class, which provides methods for 
+evaluating models, generating plots, and comparing models. These methods are 
+used when building a training workflow.
 """
 
 import copy
@@ -29,9 +28,9 @@ import sklearn.model_selection as model_select
 import sklearn.metrics as sk_metrics
 from sklearn import tree
 
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 from brisk.theme import theme
-
+from brisk.evaluation import metric_manager
 matplotlib.use("Agg")
 
 
@@ -40,32 +39,52 @@ class EvaluationManager:
 
     This class provides methods for model evaluation, including calculating 
     metrics, generating plots, comparing models, and hyperparameter tuning. It 
-    is designed to be used within a training workflow.
+    is designed to be used within a Workflow instance.
 
-    Attributes:
-        algorithm_config (dict): Configuration for algorithms.
-        metric_config (object): Configuration for evaluation metrics.
+    Parameters
+    ----------
+    algorithm_config : AlgorithmCollection
+        Configuration for algorithms.
+    metric_config : MetricManager
+        Configuration for evaluation metrics.
+    output_dir : str
+        Directory to save results.
+    split_metadata : Dict[str, Any]
+        Metadata to include in metric calculations.
+    logger : Optional[logging.Logger]
+        Logger instance to use.
+        
+    Attributes
+    ----------
+    algorithm_config : AlgorithmCollection
+        Configuration for algorithms.
+    metric_config : Any
+        Configuration for evaluation metrics.
+    output_dir : str
+        Directory to save results.
+    split_metadata : Dict[str, Any]
+        Metadata to include in metric calculations.
+    logger : Optional[logging.Logger]
+        Logger instance to use.
+    primary_color : str
+        Color for primary elements.
+    secondary_color : str
+        Color for secondary elements.
+    background_color : str
+        Color for background elements.
+    accent_color : str
+        Color for accent elements.
+    important_color : str
+        Color for important elements.
     """
     def __init__(
         self,
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
-        metric_config: Any,
+        metric_config: metric_manager.MetricManager,
         output_dir: str,
         split_metadata: Dict[str, Any],
         logger: Optional[logging.Logger]=None,
     ):
-        """
-        Initialize the EvaluationManager with algorithm and scoring
-        configurations.
-
-        Args:
-            algorithm_config (Dict[str, Any]): Configuration for algorithms.
-            metric_config (Any): Configuration for evaluation metrics.
-            output_dir (str): Directory to save results.
-            split_metadata (Dict[str, Any]): Metadata to include in metric 
-            calculations.
-            logger (Optional[logging.Logger]): Logger instance to use.
-        """
         self.algorithm_config = algorithm_config
         self.metric_config = copy.deepcopy(metric_config)
         self.metric_config.set_split_metadata(split_metadata)
@@ -87,19 +106,20 @@ class EvaluationManager:
         metrics: List[str],
         filename: str
     ) -> None:
-        """
-        Evaluate the given model on the provided metrics and save the results.
+        """Evaluate a model on the provided metrics and save the results.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model to 
-            evaluate.
-            X (pd.DataFrame): The feature data to use for evaluation.
-            y (pd.Series): The target data to use for evaluation.
-            metrics (List[str]): A list of metric names to calculate.
-            filename (str): The name of the output file without extension.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model to evaluate.
+        X (pd.DataFrame): 
+            The input features.
+        y (pd.Series): 
+            The target data.
+        metrics (List[str]): 
+            A list of metrics to calculate.
+        filename (str): 
+            The name of the output file without extension.
         """
         predictions = model.predict(X)
         results = {}
@@ -140,18 +160,22 @@ class EvaluationManager:
         filename: str,
         cv: int = 5
     ) -> None:
-        """Evaluate the model using cross-validation and save the scores.
+        """Evaluate a model using cross-validation and save the scores.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
-            X (pd.DataFrame): The feature data to use for evaluation.
-            y (pd.Series): The target data to use for evaluation.
-            metrics (List[str]): A list of metric names to calculate.
-            filename (str): The name of the output file without extension.
-            cv (int): The number of cross-validation folds. Defaults to 5.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to evaluate.
+        X (pd.DataFrame): 
+            The input features.
+        y (pd.Series): 
+            The target data.
+        metrics (List[str]): 
+            A list of metrics to calculate.
+        filename (str): 
+            The name of the output file without extension.
+        cv (int): 
+            The number of cross-validation folds. Defaults to 5.
         """
         results = {}
 
@@ -195,20 +219,27 @@ class EvaluationManager:
         filename: str,
         calculate_diff: bool = False,
     ) -> Dict[str, Dict[str, float]]:
-        """Compare multiple models based on the provided metrics.
+        """Compare multiple models using specified metrics.
 
-        Args:
-            models: A variable number of model instances to evaluate.
-            X (pd.DataFrame): The feature data.
-            y (pd.Series): The target data.
-            metrics (List[str]): A list of metric names to calculate.
-            filename (str): The name of the output file without extension.
-            calculate_diff (bool): Whether to compute the difference between 
-                models for each metric. Defaults to False.
+        Parameters
+        ----------
+        *models : BaseEstimator
+            Models to compare
+        X : DataFrame
+            Input features
+        y : Series
+            Target values
+        metrics : list of str
+            Names of metrics to calculate
+        filename : str
+            Name for output file (without extension)
+        calculate_diff : bool, optional
+            Whether to calculate differences between models, by default False
 
-        Returns:
-            Dict[str, Dict[str, float]]: A dictionary containing the metric 
-            results for each model.
+        Returns
+        -------
+        dict
+            Nested dictionary containing metric scores for each model
         """
         comparison_results = {}
 
@@ -281,14 +312,16 @@ class EvaluationManager:
     ) -> None:
         """Plot predicted vs. observed values and save the plot.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model.
-            X (pd.DataFrame): The feature data.
-            y_true (pd.Series): The true target values.
-            filename (str): The name of the output PNG file (without extension).
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
+        X (pd.DataFrame): 
+            The input features.
+        y_true (pd.Series): 
+            The true target values.
+        filename (str): 
+            The name of the output file (without extension).
         """
         prediction = model.predict(X)
 
@@ -337,28 +370,26 @@ class EvaluationManager:
         metric: str = "neg_mean_absolute_error",
         filename: str = "learning_curve"
     ) -> None:
-        """
-        Plot a learning curve for the given model and save the plot.
+        """Plot learning curves showing model performance vs training size.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
-
-            X_train (pd.DataFrame): The input features of the training set.
-            
-            y_train (pd.Series): The target values of the training set.
-            
-            cv (int): Number of cross-validation folds. Defaults to 5.
-            
-            num_repeats (int): Number of times to repeat the cross-validation. 
-            Defaults to 1.
-            
-            metric (str): The scoring metric to use. Defaults to 
-            "neg_mean_absolute_error".
-            
-            filename (str): The name of the output PNG file (without extension).
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model : BaseEstimator
+            Model to evaluate
+        X_train : DataFrame
+            Training features
+        y_train : Series
+            Training target values
+        cv : int, optional
+            Number of cross-validation folds, by default 5
+        num_repeats : int, optional
+            Number of times to repeat CV, by default 1
+        n_jobs : int, optional
+            Number of parallel jobs, by default -1
+        metric : str, optional
+            Scoring metric to use, by default "neg_mean_absolute_error"
+        filename : str, optional
+            Name for output file, by default "learning_curve"
         """
         method_name = model.__class__.__name__
 
@@ -454,27 +485,32 @@ class EvaluationManager:
     ) -> None:
         """Plot the feature importance for the model and save the plot.
 
-        Args:
-            model (BaseEstimator): The machine learning model to evaluate.
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to evaluate.
 
-            X (pd.DataFrame): The feature data.
+        X (pd.DataFrame): 
+            The input features.
 
-            y (pd.Series): The target data.
+        y (pd.Series): 
+            The target data.
 
-            threshold (Union[int, float]): The number of features or the 
-            threshold to filter features by importance.
+        threshold (Union[int, float]): 
+            The number of features or the threshold to filter features by 
+            importance.
 
-            feature_names (List[str]): A list of feature names corresponding to 
-                the columns in X.
+        feature_names (List[str]): 
+            A list of feature names corresponding to the columns in X.
 
-            filename (str): The name of the output PNG file (without extension).
+        filename (str): 
+            The name of the output file (without extension).
 
-            metric (str): The metric to use for evaluation.
+        metric (str): 
+            The metric to use for evaluation.
 
-            num_rep (int): The number of repetitions for calculating importance.
-
-        Returns:
-            None
+        num_rep (int): 
+            The number of repetitions for calculating importance.
         """
         scorer = self.metric_config.get_scorer(metric)
         display_name = self.metric_config.get_name(metric)
@@ -552,19 +588,22 @@ class EvaluationManager:
     ) -> None:
         """Plot the residuals of the model and save the plot.
 
-        Args:
-            model (BaseEstimator): The trained machine learning model.
-            
-            X (pd.DataFrame): The feature data.
-            
-            y (pd.Series): The true target values.
-            
-            filename (str): The name of the output PNG file (without extension).
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
 
-            add_fit_line (bool): Whether to add a line of best fit to the plot.
+        X (pd.DataFrame): 
+            The input features.
 
-        Returns:
-            None
+        y (pd.Series): 
+            The true target values.
+
+        filename (str): 
+            The name of the output file (without extension).
+
+        add_fit_line (bool): 
+            Whether to add a line of best fit to the plot.
         """
         predictions = model.predict(X)
         residuals = y - predictions
@@ -614,15 +653,22 @@ class EvaluationManager:
     ) -> None:
         """Plot a comparison of multiple models based on the specified metric.
 
-        Args:
-            models: A variable number of model instances to evaluate.
-            X (pd.DataFrame): The feature data.
-            y (pd.Series): The target data.
-            metric (str): The metric to evaluate and plot.
-            filename (str): The name of the output PNG file (without extension).
+        Parameters
+        ----------
+        models: 
+            A variable number of model instances to evaluate.
 
-        Returns:
-            None
+        X (pd.DataFrame): 
+            The input features.
+
+        y (pd.Series): 
+            The target data.
+
+        metric (str): 
+            The metric to evaluate and plot.
+
+        filename (str): 
+            The name of the output file (without extension).
         """
         model_names = [model.__class__.__name__ for model in models]
         metric_values = []
@@ -679,28 +725,40 @@ class EvaluationManager:
     ) -> base.BaseEstimator:
         """Perform hyperparameter tuning using grid or random search.
 
-        Args:
-            model (BaseEstimator): The model to be tuned.
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to be tuned.
 
-            method (str): The search method to use ("grid" or "random").
+        method (str): 
+            The search method to use ("grid" or "random").
 
-            X_train (pd.DataFrame): The training data.
+        X_train (pd.DataFrame): 
+            The training data.
 
-            y_train (pd.Series): The target values for training.
+        y_train (pd.Series): 
+            The target values for training.
 
-            scorer (str): The scoring metric to use.
+        scorer (str): 
+            The scoring metric to use.
 
-            kf (int): Number of splits for cross-validation.
+        kf (int): 
+            Number of splits for cross-validation.
 
-            num_rep (int): Number of repetitions for cross-validation.
+        num_rep (int): 
+            Number of repetitions for cross-validation.
 
-            n_jobs (int): Number of parallel jobs to run.
-            
-            plot_results (bool): Whether to plot the performance of 
-            hyperparameters. Defaults to False.
+        n_jobs (int): 
+            Number of parallel jobs to run.
 
-        Returns:
-            BaseEstimator: The tuned model.
+        plot_results (bool): 
+            Whether to plot the performance of hyperparameters. Defaults to 
+            False.
+
+        Returns
+        -------
+        BaseEstimator: 
+            The tuned model.
         """
         if method == "grid":
             searcher = model_select.GridSearchCV
@@ -754,20 +812,22 @@ class EvaluationManager:
     ) -> None:
         """Plot the performance of hyperparameter tuning.
 
-        Args:
-            param_grid (Dict[str, Any]): The hyperparameter grid used for 
-            tuning.
+        Parameters
+        ----------
+        param_grid (Dict[str, Any]): 
+            The hyperparameter grid used for tuning.
 
-            search_result (Any): The result from cross-validation during tuning.
-            
-            algorithm_name (str): The name of the algorithm.
-            
-            metadata (Dict[str, Any]): Metadata to be included with the plot.
+        search_result (Any): 
+            The result from cross-validation during tuning.
 
-            display_name (str): The name of the algorithm to use in the labels.
+        algorithm_name (str): 
+            The name of the algorithm.
 
-        Returns:
-            None
+        metadata (Dict[str, Any]): 
+            Metadata to be included with the plot.
+
+        display_name (str): 
+            The name of the algorithm to use in the plot labels.
         """
         param_keys = list(param_grid.keys())
 
@@ -806,19 +866,27 @@ class EvaluationManager:
         metadata: Dict[str, Any],
         display_name: str
     ) -> None:
-        """Plot the performance of a single hyperparameter.
+        """Plot the performance of a single hyperparameter vs mean test score.
 
-        Args:
-            param_values (List[Any]): The values of the hyperparameter.
-            mean_test_score (List[float]): The mean test scores for each 
-                hyperparameter value.
-            param_name (str): The name of the hyperparameter.
-            algorithm_name (str): The name of the algorithm.
-            metadata (Dict[str, Any]): Metadata to be included with the plot.
-            display_name (str): The name of the algorithm to use in the labels.
+        Parameters
+        ----------
+        param_values (List[Any]): 
+            The values of the hyperparameter.
 
-        Returns:
-            None
+        mean_test_score (List[float]): 
+            The mean test scores for each hyperparameter value.
+
+        param_name (str): 
+            The name of the hyperparameter.
+
+        algorithm_name (str): 
+            The name of the algorithm.
+
+        metadata (Dict[str, Any]): 
+            Metadata to be included with the plot.
+
+        display_name (str): 
+            The name of the algorithm to use in the plot labels.
         """
         param_name = param_name.capitalize()
         title = f"Hyperparameter Performance: {display_name}"
@@ -857,24 +925,27 @@ class EvaluationManager:
         metadata: Dict[str, Any],
         display_name: str
     ) -> None:
-        """Plot the performance of two hyperparameters in 3D.
+        """Plot the performance of two hyperparameters vs mean test score.
 
-        Args:
-            param_grid (Dict[str, List[Any]]): The hyperparameter grid used for 
-            tuning.
-            
-            search_result (Any): The result from cross-validation during tuning.
-            
-            param_names (List[str]): The names of the two hyperparameters.
-            
-            algorithm_name (str): The name of the algorithm.
-            
-            metadata (Dict[str, Any]): Metadata to be included with the plot.
+        Parameters
+        ----------
+        param_grid (Dict[str, List[Any]]): 
+            The hyperparameter grid used for tuning.
 
-            display_name (str): The name of the algorithm to use in the labels.
+        search_result (Any): 
+            The result from cross-validation during tuning.
 
-        Returns:
-            None
+        param_names (List[str]): 
+            The names of the two hyperparameters.
+
+        algorithm_name (str): 
+            The name of the algorithm.
+
+        metadata (Dict[str, Any]): 
+            Metadata to be included with the plot.
+
+        display_name (str): 
+            The name of the algorithm to use in the plot labels.
         """
         mean_test_score = search_result.cv_results_["mean_test_score"].reshape(
             len(param_grid[param_names[0]]),
@@ -910,18 +981,21 @@ class EvaluationManager:
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate a confusion matrix for a given model and dataset, 
-        and save the results to a JSON file.
+        """Generate and save a confusion matrix.
 
-        Args:
-            model (Any): Trained classification model with a `predict` method.
-            X (np.ndarray): Input feature.
-            y (np.ndarray): Target feature.
-            filename (str): Path to save the confusion matrix as a JSON file.
+        Parameters
+        ----------
+        model : Any
+            Trained classification model with predict method
 
-        Returns:
-            None
+        X : ndarray
+            The input features.
+
+        y : ndarray
+            The true target values.
+
+        filename : str
+            The name of the output file (without extension).
         """
         y_pred = model.predict(X)
         labels = np.unique(y).tolist()
@@ -950,23 +1024,21 @@ class EvaluationManager:
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate a heatmap of the confusion matrix for a model and dataset.
+        """Plot a heatmap of the confusion matrix for a model.
 
-        Args:
-            model (Any): Trained classification model with a `predict` method.
-            
-            X (np.ndarray): Input features.
-            
-            y (np.ndarray): Target labels.
-            
-            filename (str): Path to save the confusion matrix heatmap image.
-            
-            labels (Optional[list]): List of class labels for display on the 
-            heatmap axes.
+        Parameters
+        ----------
+        model (Any): 
+            The trained classification model with a `predict` method.
 
-        Returns:
-            None
+        X (np.ndarray): 
+            The input features.
+
+        y (np.ndarray): 
+            The target labels.
+
+        filename (str): 
+            The path to save the confusion matrix heatmap image.
         """
         y_pred = model.predict(X)
         labels = np.unique(y).tolist()
@@ -1017,22 +1089,21 @@ class EvaluationManager:
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate a ROC curve with AUC for a binary classification model and 
-        dataset.
+        """Plot a reciever operator curve with area under the curve.
 
-        Args:
-            model (Any): Trained binary classification model with a 
-            `predict_proba` method.
+        Parameters
+        ----------
+        model (Any): 
+            The trained binary classification model.
 
-            X (np.ndarray): Input features.
-            
-            y (np.ndarray): True binary labels.
-            
-            filename (str): Path to save the ROC curve image.
+        X (np.ndarray): 
+            The input features.
 
-        Returns:
-            None
+        y (np.ndarray): 
+            The true binary labels.
+
+        filename (str): 
+            The path to save the ROC curve image.
         """
         if hasattr(model, "predict_proba"):
             # Use probability of the positive class
@@ -1116,18 +1187,21 @@ class EvaluationManager:
         y: np.ndarray,
         filename: str
     ) -> None:
-        """
-        Generate and save a Precision-Recall (PR) curve with Average Precision 
-        (AP) for a given binary classification model and dataset.
+        """Plot a precision-recall curve with average precision.
 
-        Args:
-            model (Any): Trained binary classification model.
-            X (np.ndarray): Input features.
-            y (np.ndarray): True binary labels.
-            filename (str): Path to save the PR curve image.
+        Parameters
+        ----------
+        model (Any): 
+            The trained binary classification model.
 
-        Returns:
-            None
+        X (np.ndarray): 
+            The input features.
+
+        y (np.ndarray): 
+            The true binary labels.
+
+        filename (str): 
+            The path to save the plot.
         """
         if hasattr(model, "predict_proba"):
             # Use probability of the positive class
@@ -1197,16 +1271,18 @@ class EvaluationManager:
         output_path: str,
         metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Save a dictionary to a JSON file, including metadata.
+        """Save dictionary to JSON file with metadata.
 
-        Args:
-            data (Dict[str, Any]): The data to save.
-            output_path (str): The path to the output file.
-            metadata (Optional[Dict[str, Any]]): Metadata to be included with 
-                the data. Defaults to None.
+        Parameters
+        ----------
+        data : dict
+            Data to save
 
-        Returns:
-            None
+        output_path : str
+            The path to the output file.
+
+        metadata : dict, optional
+            Metadata to include, by default None
         """
         try:
             if metadata:
@@ -1223,19 +1299,27 @@ class EvaluationManager:
         output_path: str,
         metadata: Optional[Dict[str, Any]] = None,
         plot: Optional[pn.ggplot] = None,
-        height = 6,
-        width = 8
+        height: int = 6,
+        width: int = 8
     ) -> None:
-        """Save the current matplotlib plot to a PNG file, including metadata.
+        """Save current plot to file with metadata.
 
-        Args:
-            output_path (str): The full path (including filename) where the plot 
-                will be saved.
-            metadata (Optional[Dict[str, Any]]): Metadata to be included with 
-                the plot. Defaults to None.
+        Parameters
+        ----------
+        output_path (str): 
+            The path to the output file.
 
-        Returns:
-            None
+        metadata (dict, optional): 
+            Metadata to include, by default None
+
+        plot (ggplot, optional): 
+            Plotnine plot object, by default None
+
+        height (int, optional): 
+            The plot height in inches, by default 6
+
+        width (int, optional): 
+            The plot width in inches, by default 8
         """
         try:
             if plot:
@@ -1251,14 +1335,15 @@ class EvaluationManager:
             self.logger.info(f"Failed to save plot to {output_path}: {e}")
 
     def save_model(self, model: base.BaseEstimator, filename: str) -> None:
-        """Save the model to a file in pickle format.
+        """Save model to pickle file.
 
-        Args:
-            model (BaseEstimator): The model to save.
-            filename (str): The name of the output file (without extension).
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to save.
 
-        Returns:
-            None
+        filename (str): 
+            The name for the output file (without extension).
         """
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
@@ -1268,16 +1353,22 @@ class EvaluationManager:
             )
 
     def load_model(self, filepath: str) -> base.BaseEstimator:
-        """Load a model from a pickle file.
+        """Load model from pickle file.
 
-        Args:
-            filepath (str): The path to the file containing the saved model.
+        Parameters
+        ----------
+        filepath : str
+            Path to saved model file
 
-        Returns:
-            BaseEstimator: The loaded model.
+        Returns
+        -------
+        BaseEstimator
+            Loaded model
 
-        Raises:
-            FileNotFoundError: If the file does not exist.
+        Raises
+        ------
+        FileNotFoundError
+            If model file does not exist
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
@@ -1288,17 +1379,20 @@ class EvaluationManager:
         models: Union[base.BaseEstimator, List[base.BaseEstimator]],
         method_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Generate metadata for saving output files (JSON, PNG, etc.).
+        """Generate metadata for output files.
 
-        Args:
-            models (Union[base.BaseEstimator, List[base.BaseEstimator]]): 
-                A single model or a list of models to include in metadata.
+        Parameters
+        ----------
+        models : BaseEstimator or list of BaseEstimator
+            The models to include in metadata.
 
-            method_name (Optional[str]): The name of the calling method.
+        method_name (str, optional): 
+            The name of the calling method, by default None
 
-        Returns:
-            Dict[str, Any]: A dictionary containing metadata such as method 
-            name, timestamp, and model names.
+        Returns
+        -------
+        dict
+            Metadata including timestamp, method name, and model names
         """
         metadata = {
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

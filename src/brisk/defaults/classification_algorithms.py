@@ -16,7 +16,7 @@ from sklearn import naive_bayes
 from sklearn import neighbors
 from sklearn import neural_network
 
-from brisk.utility import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper
 
 CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
     algorithm_wrapper.AlgorithmWrapper(
