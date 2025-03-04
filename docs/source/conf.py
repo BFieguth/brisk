@@ -96,7 +96,7 @@ html_theme_options = {
     "navbar_center": ["brisk_navbar.html"],
     "navbar_end": ["theme-switcher", "version-switcher", "brisk_icon_links"],
     "navbar_persistent": ["search-button"],
-    "show_nav_level": 2,
+    "show_nav_level": 3,
     "switcher": {
         "json_url": "https://brisk.readthedocs.io/en/latest/_static/versions.json",
         "version_match": version

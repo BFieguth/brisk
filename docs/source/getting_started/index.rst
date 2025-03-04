@@ -1,31 +1,27 @@
 Getting Started with Brisk
 ==========================
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   quickstart/index
+   project_structure
+   brisk_cli
+
 .. grid:: 1 1 2 2
 
-    .. grid-item-card::
+    .. grid-item-card:: Quick Start Guide
         :padding: 2
+        :link: quickstart/index
+        :link-type: doc
 
-        .. toctree::
-            :maxdepth: 2
-            :includehidden:
-
-            quickstart/index
-
-    .. grid-item-card::
+    .. grid-item-card:: Project Structure
         :padding: 2
+        :link: project_structure
+        :link-type: doc
 
-        .. toctree::
-            :maxdepth: 2
-            :includehidden:
-
-            project_structure
-
-    .. grid-item-card::
+    .. grid-item-card:: Brisk CLI
         :padding: 2
-
-        .. toctree::
-            :maxdepth: 2
-            :includehidden:
-
-            brisk_cli
+        :link: brisk_cli
+        :link-type: doc
