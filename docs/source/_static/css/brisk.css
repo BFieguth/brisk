@@ -49,11 +49,25 @@ a:hover {
     color: var(--important-color) !important;
 }
 
+.nav-link:hover {
+    color: var(--important-color) !important;
+}
+
+/* ----------------- */
+/* Grid Card         */
+/* ----------------- */
+.sd-card:hover {
+    border-color: var(--important-color) !important;
+}
+
 /* ----------------- */
 /* Primary Sidebar */
 /* ----------------- */
 .bd-sidebar-primary {
     --pst-color-primary: var(--accent-color);
+}
+.bd-links-nav a:hover {
+    color: var(--important-color) !important;
 }
 
 /* ----------------- */
