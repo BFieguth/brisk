@@ -53,11 +53,45 @@ a:hover {
     color: var(--important-color) !important;
 }
 
+strong {
+    color: var(--primary-color);
+}
+
+em {
+    color: var(--primary-color);
+}
+
+.reference.external {
+    color: var(--primary-color);
+}
+
+.std.std-ref {
+    color: var(--primary-color);
+}
+.std.std-ref:hover {
+    color: var(--important-color);
+}
+
 /* ----------------- */
 /* Grid Card         */
 /* ----------------- */
 .sd-card:hover {
     border-color: var(--important-color) !important;
+}
+.sd-card-header {
+    font-size: var(--pst-font-size-h4);
+    font-weight: 600;
+}
+.sd-card-body {
+    font-size: var(--pst-font-size-base);
+}
+
+/* ----------------- */
+/* Code Block         */
+/* ----------------- */
+.code-block-caption span{
+    font-size: var(--pst-font-size-h5);
+    font-weight: 600;
 }
 
 /* ----------------- */
@@ -75,6 +109,16 @@ a:hover {
 /* ----------------- */
 .bd-sidebar-secondary {
     --pst-color-primary: var(--accent-color);
+}
+
+/* ----------------- */
+/* Prev/Next Buttons */
+/* ----------------- */
+.prev-next-title {
+    color: var(--accent-color) !important;
+}
+.prev-next-title:hover {
+    color: var(--important-color) !important;
 }
 
 /* ----------------- */

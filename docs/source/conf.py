@@ -92,7 +92,7 @@ html_css_files = [
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 html_theme_options = {
-    "show_prev_next": False,
+    "show_prev_next": True,
     "navbar_center": ["brisk_navbar.html"],
     "navbar_end": ["theme-switcher", "version-switcher", "brisk_icon_links"],
     "navbar_persistent": ["search-button"],

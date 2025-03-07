@@ -1,3 +1,5 @@
+.. _brisk_cli:
+
 Brisk CLI
 =========
 
