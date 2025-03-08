@@ -34,17 +34,10 @@ Getting Started
       Learn the basics of Brisk, including installation, basic concepts, and creating your first
       machine learning project. Perfect for newcomers to get up and running quickly.
 
-   .. grid-item-card::
+   .. grid-item-card:: Getting Started
       :padding: 2
-
-      .. toctree::
-         :maxdepth: 1
-
-         getting_started/quickstart/install
-         getting_started/quickstart/index
-         getting_started/project_structure
-         getting_started/brisk_cli
-
+      :link: getting_started/index
+      :link-type: doc
 
 User Guide
 ==========

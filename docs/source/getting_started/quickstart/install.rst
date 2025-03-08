@@ -7,7 +7,7 @@ Installation
 Python Version
 ==============
 
-We recommend using the latest stable version of Python. Brisk supports **Python 3.10** and later.
+We recommend using the **latest stable** version of Python. Brisk supports **Python 3.10** and later.
 
 Dependencies
 ============
@@ -20,14 +20,16 @@ a virtual environment, such as `venv <https://docs.python.org/3/library/venv.htm
 - `numpy <https://numpy.org/doc/stable/>`_: provides support for arrays, matrices, and a wide range of mathematical functions.
 - `matplotlib <https://matplotlib.org/stable/contents.html>`_: provides plotting functionality for creating visualizations.
 - `seaborn <https://seaborn.pydata.org/>`_: provides a high-level interface for visualizations.
+- `plotnine <https://plotnine.readthedocs.io/en/stable/>`_: provides a grammar of graphics for creating plots.
 - `jinja2 <https://jinja.palletsprojects.com/en/latest/>`_: provides templating functionality for rendering HTML templates.
 - `tqdm <https://tqdm.github.io/>`_: provides progress bars for visualizing the progress of loops and long-running tasks.
 - `joblib <https://joblib.readthedocs.io/en/latest/>`_: provides tools for serializing and de-serializing objects.
+- `openpyxl <https://openpyxl.readthedocs.io/en/stable/>`_: provides tools for working with Excel files.
 
 Install Brisk
 =============
 
-Brisk is available on PyPI, so installation is as simple as:
+Activate your virtual environment and then install Brisk using pip:
 
 .. code-block:: bash
 
@@ -41,10 +43,8 @@ You can verify the installation by running the following command:
 
 .. code-block:: bash
 
-   pip show brisk
+   pip show brisk-ml
 
 This will print information about the installed package, including the version number. The version number should be |version|.
 
-Next
-====
-With Brisk installed your ready to create your first project. See the `Create a Project <create_project.html>`_ page.
+With Brisk installed you are ready to create your first project!

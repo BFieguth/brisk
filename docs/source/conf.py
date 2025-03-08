@@ -16,7 +16,13 @@ import brisk
 project = 'Brisk'
 copyright = '2024, Braeden Fieguth'
 author = 'Braeden Fieguth'
-version = brisk.__version__
+
+on_rtd = os.environ.get("READTHEDOCS") == "True"
+if on_rtd:
+    version = brisk.__version__
+else:
+    version = "dev"
+
 release = version
 
 # -- General configuration ---------------------------------------------------
@@ -86,11 +92,15 @@ html_css_files = [
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 html_theme_options = {
-    "show_prev_next": False,
+    "show_prev_next": True,
     "navbar_center": ["brisk_navbar.html"],
     "navbar_end": ["theme-switcher", "version-switcher", "brisk_icon_links"],
     "navbar_persistent": ["search-button"],
-    "show_nav_level": 2,
+    "show_nav_level": 3,
+    "switcher": {
+        "json_url": "https://brisk.readthedocs.io/en/latest/_static/versions.json",
+        "version_match": version
+    }
 }
 
 # -- Linkcode settings ------------------------------------------------------
