@@ -8,6 +8,7 @@ User Guide
    :hidden:
 
    defaults/index
+   custom_metrics
    using_data_manager
    using_experiment_groups
 
