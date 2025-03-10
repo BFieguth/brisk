@@ -85,26 +85,6 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         }
     ),
     algorithm_wrapper.AlgorithmWrapper(
-        name="gbr",
-        display_name="Gradient Boosting Regression",
-        algorithm_class=ensemble.GradientBoostingRegressor,
-        hyperparam_grid={
-            "loss": ["squared_error", "absolute_error", "huber"],
-            "learning_rate": list(np.arange(0.01, 1, 0.1)),
-            "n_estimators": list(range(50, 200, 10)),
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="adaboost",
-        display_name="AdaBoost Regression",
-        algorithm_class=ensemble.AdaBoostRegressor,
-        hyperparam_grid={
-            "n_estimators": list(range(50, 200, 10)),  
-            "learning_rate": list(np.arange(0.01, 3, 0.1)), 
-            "loss": ["linear", "square", "exponential"] 
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
         name="svr",
         display_name="Support Vector Regression",
         algorithm_class=svm.SVR,
@@ -138,79 +118,6 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "weights": ["uniform", "distance"],
             "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
             "leaf_size": list(range(5, 50, 5))
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="lars",
-        display_name="Least Angle Regression",
-        algorithm_class=linear_model.Lars
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="omp",
-        display_name="Orthogonal Matching Pursuit",
-        algorithm_class=linear_model.OrthogonalMatchingPursuit
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="ard",
-        display_name="Bayesian ARD Regression",
-        algorithm_class=linear_model.ARDRegression,
-        default_params={"max_iter": 10000},
-        hyperparam_grid={
-            "alpha_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-            "alpha_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],   
-            "lambda_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-            "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="passagg",
-        display_name="Passive Aggressive Regressor",
-        algorithm_class=linear_model.PassiveAggressiveRegressor,
-        default_params={"max_iter": 10000},
-        hyperparam_grid={
-            "C": list(np.arange(1, 100, 1))
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="kridge",
-        display_name="Kernel Ridge",
-        algorithm_class=kernel_ridge.KernelRidge,
-        hyperparam_grid={
-            "alpha": np.logspace(-3, 0, 100)
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="nusvr",
-        display_name="Nu Support Vector Regression",
-        algorithm_class=svm.NuSVR,
-        default_params={"max_iter": 20000},
-        hyperparam_grid={
-            "kernel": ["linear", "rbf", "sigmoid"],
-            "C": list(np.arange(1, 30, 0.5)),
-            "gamma": ["scale", "auto", 0.001, 0.01, 0.1]
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="rnn",
-        display_name="Radius Nearest Neighbour",
-        algorithm_class=neighbors.RadiusNeighborsRegressor,
-        hyperparam_grid={
-            "radius": [i * 0.5 for i in range(1, 7)],
-            "weights": ["uniform", "distance"],
-            "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
-            "leaf_size": list(range(10, 60, 10))
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="xtree",
-        display_name="Extra Tree Regressor",
-        algorithm_class=ensemble.ExtraTreesRegressor,
-        default_params={"min_samples_split": 10},
-        hyperparam_grid={
-            "n_estimators": list(range(20, 160, 20)),
-            "criterion": ["friedman_mse", "absolute_error", 
-                          "poisson", "squared_error"],
-            "max_depth": list(range(5, 25, 5)) + [None]
         }
     )
 ]
