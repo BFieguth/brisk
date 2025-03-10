@@ -14,7 +14,7 @@ Brisk |release| documentation
    getting_started/index
    users/index
    api/index
-   dev/releases
+   dev/releases/index
    dev/contribute
 
 Brisk is a framework for training machine learning models using scikit-learn. It
