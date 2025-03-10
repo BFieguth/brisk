@@ -3,14 +3,22 @@
 User Guide
 ==========
 
-This is the user guide for Brisk, a Python package for training machine learning models.
-
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   defaults/default_regression_metrics
-   defaults/default_regression_algorithms
-   defaults/default_classification_metrics
+   defaults/index
    using_data_manager
    using_experiment_groups
+
+.. grid:: 2
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: defaults/index
+        :link-type: doc
+
+        Default Wrappers
+        ^^^^^^^^^^^^^^^^
+        Browse the provided metric and algorithm wrappers

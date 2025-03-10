@@ -51,13 +51,10 @@ User Guide
       evaluation, analysis tools, and best practices for organizing your machine learning projects.
 
 
-   .. grid-item-card::
+   .. grid-item-card:: User Guide
       :padding: 2
-
-      .. toctree::
-         :maxdepth: 1
-
-         users/index
+      :link: users/index
+      :link-type: doc
 
 
 API Reference
