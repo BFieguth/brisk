@@ -9,7 +9,6 @@ User Guide
 
    defaults/index
    custom_metrics
-   using_data_manager
    using_experiment_groups
 
 .. grid:: 2

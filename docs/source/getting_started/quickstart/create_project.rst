@@ -180,9 +180,8 @@ For this tutorial we can leave the test_size of 0.2. This will use 20% of
 the dataset for testing and 80% for training. 
 
 We won't be processing the data in this tutorial, so we don't need to change 
-anything else. See the :ref:`using_data_manager` for more details on how the 
+anything else. See the :ref:`api_data_manager` for more details on how the 
 DataManager can be used to preprocess and split your data.
-
 
 Training Settings
 -----------------

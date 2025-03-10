@@ -1,3 +1,5 @@
+.. _api_data_manager:
+
 DataManager
 ===========
 
