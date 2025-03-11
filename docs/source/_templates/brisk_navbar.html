@@ -1,17 +1,17 @@
 <ul id="navbar-main-elements" class="navbar-nav">
     <li class="nav-item">
-      <a class="reference internal nav-link" href="{{ pathto('getting_started/index') }}">Getting Started</a>
+      <a class="reference internal nav-link {% if pagename.startswith('getting_started/') %}active-nav-link{% endif %}" href="{{ pathto('getting_started/index') }}">Getting Started</a>
     </li>
     <li class="nav-item">
-      <a class="reference internal nav-link" href="{{ pathto('users/index') }}">User Guide</a>
+      <a class="reference internal nav-link {% if pagename.startswith('users/') %}active-nav-link{% endif %}" href="{{ pathto('users/index') }}">User Guide</a>
     </li>
     <li class="nav-item">
-        <a class="reference internal nav-link" href="{{ pathto('api/index') }}">API</a>
+        <a class="reference internal nav-link {% if pagename.startswith('api/') %}active-nav-link{% endif %}" href="{{ pathto('api/index') }}">API</a>
     </li>
     <li class="nav-item">
-      <a class="reference internal nav-link" href="{{ pathto('dev/contribute') }}">Contribute</a>
+      <a class="reference internal nav-link {% if pagename == 'dev/contribute' %}active-nav-link{% endif %}" href="{{ pathto('dev/contribute') }}">Contribute</a>
     </li>
     <li class="nav-item">
-      <a class="reference internal nav-link" href="{{ pathto('dev/releases/index') }}">Releases</a>
+      <a class="reference internal nav-link {% if pagename.startswith('dev/releases/') %}active-nav-link{% endif %}" href="{{ pathto('dev/releases/index') }}">Releases</a>
     </li>
 </ul>
