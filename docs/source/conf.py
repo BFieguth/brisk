@@ -24,7 +24,7 @@ else:
     version = "dev"
 
 release = version
-
+html_title = f"Brisk {version} Documentation"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 

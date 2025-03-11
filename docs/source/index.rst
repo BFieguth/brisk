@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 =============================
-Brisk |release| documentation
+Brisk |release| Documentation
 =============================
 
 .. toctree::
