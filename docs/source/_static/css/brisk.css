@@ -40,6 +40,10 @@
     --important-color-light: #D39CB6;
 }
 
+a {
+    text-decoration: none;
+}
+
 a:hover {
     color: var(--important-color) !important;
 }
