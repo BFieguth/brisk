@@ -44,6 +44,9 @@
 a:visited {
     color: var(--primary-color) !important;
 }
+a:visited:not(.bd-links a:visited):not(.bd-sidebar a:visited) {
+    color: var(--primary-color) !important;
+}
 
 a:hover {
     color: var(--important-color) !important;
