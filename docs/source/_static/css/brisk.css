@@ -42,7 +42,7 @@
 
 /* Prevent link colouring when visited */
 a:visited {
-    color: inherit !important;
+    color: var(--primary-color) !important;
 }
 
 a:hover {
