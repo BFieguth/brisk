@@ -2,5 +2,6 @@
 import brisk
                 
 ALGORITHM_CONFIG = brisk.AlgorithmCollection(
-    *brisk.REGRESSION_ALGORITHMS
+    *brisk.REGRESSION_ALGORITHMS,
+    *brisk.CLASSIFICATION_ALGORITHMS    
 )

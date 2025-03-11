@@ -602,7 +602,7 @@ def categorical_data_config(request):
     config.add_experiment_group(
         name="categorical_group",
         datasets=["categorical_features_regression.csv"],
-        algorithms=["knn", "xtree", "dtr"]
+        algorithms=["knn", "svc", "dtr"]
     )
     return config.build()
 
@@ -857,7 +857,7 @@ class TestResultStructure:
                                 plot_roc_curve=True,
                                 plot_precision_recall_curve=False
                             ),
-                            'categorical_group_xtree': rs.ExperimentDirectory(
+                            'categorical_group_svc': rs.ExperimentDirectory(
                                 save_model=True,
                                 evaluate_model=True,
                                 evaluate_model_cv=False,
