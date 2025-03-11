@@ -1,29 +1,6 @@
 API Reference
 =============
 
-This is the API reference for Brisk, a Python package for training machine learning models.
-
-Package Sections
-----------------
-
-:doc:`data`
-    Handles data splitting and preprocessing for machine learning models. Provides utilities 
-    for creating train-test splits with various strategies and analyzing data distributions.
-
-:doc:`configuration`
-    Provides an interface for defining what models should be trained and how they should 
-    be trained.
-
-:doc:`evaluation`
-    Classes involved in model evaluation, either providing methods to evaluate a model and plot results
-    or to define metrics used for evaluation.
-
-:doc:`training`
-    Handles the training process, loading the data and running the experiments.
-
-:doc:`reporting`
-    Generates an HTML report from training results.
-
 .. toctree::
    :maxdepth: 1
    :hidden:
@@ -34,6 +11,62 @@ Package Sections
    training
    reporting
    cli
+
+Package Sections
+----------------
+
+.. grid:: 1 1 2 2
+
+    .. grid-item-card::
+      :link: data
+      :link-type: doc
+      :columns: 12 6 6 6
+      :padding: 2
+
+      Data
+      ^^^^^
+      Handles data splitting and preprocessing for machine learning models.
+
+    .. grid-item-card::
+      :link: configuration
+      :link-type: doc
+      :columns: 12 6 6 6
+      :padding: 2
+
+      Configuration
+      ^^^^^^^^^^^^^
+      Interface for defining what models should be trained and how they should 
+      be trained.
+
+    .. grid-item-card::
+      :link: evaluation
+      :link-type: doc
+      :columns: 12 6 6 6
+      :padding: 2
+
+      Evaluation
+      ^^^^^^^^^^
+      Classes providing methods to evaluate models and plot results.
+
+    .. grid-item-card::
+      :link: training
+      :link-type: doc
+      :columns: 12 6 6 6
+      :padding: 2
+
+      Training
+      ^^^^^^^^  
+      Brings together the data and configuration to train models.
+
+    .. grid-item-card::
+      :link: reporting
+      :link-type: doc
+      :columns: 12 6 6 6
+      :padding: 2
+
+      Reporting
+      ^^^^^^^^
+      Generates an HTML report from training results.
 
 API Objects
 ------------

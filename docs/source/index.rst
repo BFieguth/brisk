@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 =============================
-Brisk |release| documentation
+Brisk |release| Documentation
 =============================
 
 .. toctree::
@@ -14,9 +14,8 @@ Brisk |release| documentation
    getting_started/index
    users/index
    api/index
-   dev/releases
+   dev/releases/index
    dev/contribute
-   users/glossary
 
 Brisk is a framework for training machine learning models using scikit-learn. It
 is designed to streamline the process of training models, with built-in methods
@@ -25,64 +24,79 @@ for analysis and a structured approach to code organization.
 
 Getting Started
 ===============
+Learn the basics of Brisk, including installation. Create your first machine 
+learning project with Brisk. Perfect for newcomers to get up and running quickly.
 
-.. grid:: 1 1 2 2
-
-   .. grid-item::
-      :padding: 2
-
-      Learn the basics of Brisk, including installation, basic concepts, and creating your first
-      machine learning project. Perfect for newcomers to get up and running quickly.
+.. grid:: 2
 
    .. grid-item-card::
+      :columns: 12 6 6 6
       :padding: 2
+      :link: getting_started/index
+      :link-type: doc
 
-      .. toctree::
-         :maxdepth: 1
+      Getting Started
+      ^^^^^^^^^^^^^^^
+      Information for first time users
 
-         getting_started/quickstart/install
-         getting_started/quickstart/index
-         getting_started/project_structure
-         getting_started/brisk_cli
+   .. grid-item-card::
+      :columns: 12 6 6 6
+      :padding: 2
+      :link: getting_started/quickstart/index
+      :link-type: doc
+
+      Quick Start Guide
+      ^^^^^^^^^^^^^^^^^
+      Create a Brisk project and train a model
 
 
-User Guide
+Learn More
 ==========
 
 .. grid:: 1 1 2 2
 
-   .. grid-item::
+   .. grid-item-card::
+      :columns: 12 6 6 6
       :padding: 2
+      :link: users/index
+      :link-type: doc
 
-      Comprehensive guide covering all major features of Brisk. Learn about model training,
-      evaluation, analysis tools, and best practices for organizing your machine learning projects.
+      User Guide
+      ^^^^^^^^^^
+      Provides in-depth information on the tools that Brisk provides.
+      Browse through the guides
 
+   .. grid-item-card:: 
+      :columns: 12 6 6 6
+      :padding: 2
+      :link: api/index
+      :link-type: doc
+
+      API Reference
+      ^^^^^^^^^^^^^^
+      Detailed documentation of all Brisk classes, methods, and functions.
+
+For Contributors
+================
+
+.. grid:: 1 1 2 2
 
    .. grid-item-card::
+      :columns: 12 6 6 6
       :padding: 2
+      :link: dev/releases/index
+      :link-type: doc
 
-      .. toctree::
-         :maxdepth: 1
+      Release Notes
+      ^^^^^^^^^^^^^^
+      Changes made with each release
 
-         users/index
+   .. grid-item-card::
+      :columns: 12 6 6 6
+      :padding: 2
+      :link: dev/contribute
+      :link-type: doc
 
-
-API Reference
-=============
-Detailed documentation of all Brisk classes, methods, and functions. Find complete
-information about the framework's capabilities and how to use them effectively.
-
-Release Notes
-=============
-Stay up to date with the latest changes, improvements, and bug fixes in each version
-of Brisk. Find information about deprecations and migration guides.
-
-Contributing
-============
-Want to help improve Brisk? Learn how to contribute to the project, including
-coding standards, pull request guidelines, and development setup.
-
-Glossary
-========
-A comprehensive list of terms and concepts used throughout Brisk, helping you
-understand the terminology used in the framework.
+      Contributing
+      ^^^^^^^^^^^^^^
+      Coding standards, pull request guidelines, and development setup.

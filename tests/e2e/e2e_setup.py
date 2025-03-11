@@ -9,7 +9,7 @@ import sys
 from typing import List, Callable
 
 import numpy as np
-from sklearn import linear_model, svm
+from sklearn import linear_model, svm, ensemble
 from sklearn import metrics as sk_metrics
 
 import brisk
@@ -92,6 +92,28 @@ def algorithm_config():
             display_name="SVC (Second)",
             algorithm_class=svm.SVC
         ),
+        brisk.AlgorithmWrapper(
+            name="xtree",
+            display_name="Extra Tree Regressor",
+            algorithm_class=ensemble.ExtraTreesRegressor,
+            default_params={"min_samples_split": 10},
+            hyperparam_grid={
+                "n_estimators": list(range(20, 160, 20)),
+                "criterion": ["friedman_mse", "absolute_error", 
+                              "poisson", "squared_error"],
+                "max_depth": list(range(5, 25, 5)) + [None]
+            }
+        ),
+        brisk.AlgorithmWrapper(
+            name="linear_svc",
+            display_name="Linear Support Vector Classification",
+            algorithm_class=svm.LinearSVC,
+            default_params={"max_iter": 10000},
+            hyperparam_grid={
+                "C": list(np.arange(1, 30, 0.5)), 
+                "penalty": ["l1", "l2"],
+            }
+        )
     )
     return algorithms
 
