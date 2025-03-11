@@ -10,7 +10,6 @@ from typing import List
 
 import numpy as np
 from sklearn import ensemble
-from sklearn import kernel_ridge
 from sklearn import linear_model
 from sklearn import neighbors
 from sklearn import neural_network

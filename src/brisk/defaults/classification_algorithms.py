@@ -14,7 +14,6 @@ from sklearn import ensemble
 from sklearn import svm
 from sklearn import naive_bayes
 from sklearn import neighbors
-from sklearn import neural_network
 
 from brisk.configuration import algorithm_wrapper
 
