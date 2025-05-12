@@ -110,13 +110,17 @@ class TestAlgorithmWrapper:
         wrapper = AlgorithmWrapper(
             name="mock", display_name="MockModel",
             algorithm_class=algorithm_class_mock,
-            default_params={"param1": 5, "param2": "default"}
+            default_params={"param1": 5, "param2": "default"},
+            hyperparam_grid={
+                "param2": ["tuned", "new_value"],
+                "param3": ["tuned", "new_value"]
+            }
             )
         best_params = {"param2": "tuned", "param3": "new_value"}
         algorithm_instance = wrapper.instantiate_tuned(best_params)
 
         algorithm_class_mock.assert_called_once_with(
-            param2="tuned", param3="new_value"
+            param1=5, param2="tuned", param3="new_value"
             )
         assert algorithm_instance.wrapper_name == "mock"
 
@@ -128,12 +132,13 @@ class TestAlgorithmWrapper:
         wrapper = AlgorithmWrapper(
             name="mock", display_name="MockModel",
             algorithm_class=algorithm_class_mock,
-            default_params={"param1": 5, "max_iter": 100}
+            default_params={"param1": 5, "max_iter": 100},
+            hyperparam_grid={"param2": ["tuned", "new_value"]}
             )
         best_params = {"param2": "tuned"}
         algorithm_instance = wrapper.instantiate_tuned(best_params)
 
         algorithm_class_mock.assert_called_once_with(
-            param2="tuned", max_iter=100
+            param1=5, param2="tuned", max_iter=100
             )
         assert algorithm_instance.wrapper_name == "mock"

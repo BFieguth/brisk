@@ -121,11 +121,15 @@ class AlgorithmWrapper:
 
         Notes
         -----
-        If max_iter is specified in default_params, it will be preserved
-        in the tuned parameters.
+        If a parameter is set in default_params but not in hyperparam_grid,
+        the default value will be preserved in the tuned parameters.
         """
-        if "max_iter" in self.default_params:
-            best_params["max_iter"] = self.default_params["max_iter"]
+        missing_defaults = [
+            param for param in self.default_params 
+            if param not in best_params.keys()
+        ]
+        for param in missing_defaults:
+            best_params[param] = self.default_params[param]
         model = self.algorithm_class(**best_params)
         setattr(model, "wrapper_name", self.name)
         return model
