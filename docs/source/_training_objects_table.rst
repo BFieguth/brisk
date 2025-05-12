@@ -4,8 +4,6 @@
 
    * - Object
      - Description
-   * - :class:`~brisk.training.alert_mailer.AlertMailer`
-     - Sends notification emails using Gmail's SMTP service.
    * - :class:`~brisk.training.logging_util.FileFormatter`
      - Formats log messages with a visual separator between log entries.
    * - :class:`~brisk.training.logging_util.TqdmLoggingHandler`
