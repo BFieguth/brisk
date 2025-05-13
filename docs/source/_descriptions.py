@@ -58,10 +58,6 @@ DESCRIPTIONS = OrderedDict({
         "path": "~brisk.evaluation.metric_wrapper.MetricWrapper",
         "desc": "Wraps a metric function and provides a convenient interface using the metric."
     },
-    "AlertMailer": {
-        "path": "~brisk.training.alert_mailer.AlertMailer",
-        "desc": "Sends notification emails using Gmail's SMTP service."
-    },
     "AlgorithmWrapper": {
         "path": "~brisk.configuration.algorithm_wrapper.AlgorithmWrapper",
         "desc": "Wraps a machine learning algorithm and provides an interface using the algorithm."
