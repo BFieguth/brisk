@@ -246,7 +246,10 @@ class EvaluationManager:
         if not models:
             raise ValueError("At least one model must be provided")
 
-        model_names = [model.__class__.__name__ for model in models]
+        model_names = []
+        for model in models:
+            wrapper = self._get_algo_wrapper(model.wrapper_name)
+            model_names.append(wrapper.display_name)
 
         # Evaluate the model and collect results
         for model_name, model in zip(model_names, models):
@@ -284,7 +287,7 @@ class EvaluationManager:
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(
-            models, "compare_models", is_test=X.attrs["is_test"]
+            list(models), "compare_models", is_test=X.attrs["is_test"]
         )
         self._save_to_json(comparison_results, output_path, metadata)
 
@@ -672,7 +675,11 @@ class EvaluationManager:
         filename (str): 
             The name of the output file (without extension).
         """
-        model_names = [model.__class__.__name__ for model in models]
+        model_names = []
+        for model in models:
+            wrapper = self._get_algo_wrapper(model.wrapper_name)
+            model_names.append(wrapper.display_name)
+
         metric_values = []
 
         scorer = self.metric_config.get_metric(metric)
@@ -707,7 +714,7 @@ class EvaluationManager:
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         metadata = self._get_metadata(
-            models, "plot_model_comparison", is_test=X.attrs["is_test"]
+            list(models), "plot_model_comparison", is_test=X.attrs["is_test"]
         )
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
