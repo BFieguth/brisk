@@ -102,7 +102,7 @@ REGRESSION_METRICS = [
     ),
     metric_wrapper.MetricWrapper(
         name="root_mean_squared_error",
-        func=_regression.mean_squared_error,
+        func=_regression.root_mean_squared_error,
         display_name="Root Mean Squared Error",
         abbr="RMSE"
     ),
