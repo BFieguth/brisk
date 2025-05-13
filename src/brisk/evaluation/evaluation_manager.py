@@ -1335,6 +1335,10 @@ class EvaluationManager:
             The plot width in inches, by default 8
         """
         try:
+            if metadata:
+                for key, value in metadata.items():
+                    if isinstance(value, dict):
+                        metadata[key] = json.dumps(value)
             if plot:
                 plot.save(
                     filename=output_path, format="png", metadata=metadata,
@@ -1409,13 +1413,14 @@ class EvaluationManager:
         Returns
         -------
         dict
-            Metadata including timestamp, method name, and model names
+            Metadata including timestamp, method name, algorith wrapper name,
+            and algorithm display name
         """
         metadata = {
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "method": method_name if method_name else inspect.stack()[1][3],
             "models": {},
-            "is_test": is_test
+            "is_test": str(is_test)
         }
         if not isinstance(models, list):
             models = [models]
