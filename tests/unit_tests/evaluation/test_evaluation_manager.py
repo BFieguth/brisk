@@ -15,16 +15,18 @@ from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCol
 @pytest.fixture
 def sample_data():
     X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
+    X.attrs["is_test"] = False
     y = pd.Series(np.random.rand(100))
+    y.attrs["is_test"] = False
     return X, y
-
 
 @pytest.fixture
 def sample_data_cat():
     X = pd.DataFrame(np.random.rand(100, 5), columns=[f'feature{i}' for i in range(5)])
+    X.attrs["is_test"] = False
     y = pd.Series(np.random.choice([0, 1], size=100))
+    y.attrs["is_test"] = False
     return X, y
-
 
 @pytest.fixture
 def eval_manager(tmpdir):
@@ -38,6 +40,14 @@ def eval_manager(tmpdir):
                 'n_estimators': list(range(20, 160, 20))
             }
         ),
+        AlgorithmWrapper(
+            name="ridge",
+            display_name="Ridge Regression",
+            algorithm_class=Ridge,
+            hyperparam_grid={
+                'alpha': [0.01, 0.1, 1.0]
+            }
+        )
     )
     metric_config = MagicMock()
     metric_config.get_name.return_value = "Mean Absolute Error"
@@ -62,6 +72,7 @@ def model(sample_data):
 def model_classifier(sample_data_cat):
     X, y = sample_data_cat
     model = RandomForestClassifier(n_estimators=10, n_jobs=1)
+    setattr(model, "wrapper_name", "random_forest")
     model.fit(X, y) 
     return model
 
@@ -70,6 +81,7 @@ def model_classifier(sample_data_cat):
 def model2(sample_data):
     X, y = sample_data
     model2 = Ridge(alpha=0.1)
+    setattr(model2, "wrapper_name", "ridge")
     model2.fit(X, y)
     return model2
 
@@ -80,8 +92,9 @@ def model_with_proba():
     class MockModel:
         def predict_proba(self, X):
             return np.random.rand(X.shape[0], 2)
-    return MockModel()
-
+    model_with_proba = MockModel()
+    setattr(model_with_proba, "wrapper_name", "random_forest")
+    return model_with_proba
 
 class TestEvaluationManager:
     def test_evaluate_model(self, eval_manager, model, sample_data, tmpdir):
@@ -125,7 +138,7 @@ class TestEvaluationManager:
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
             mock_save_json.assert_called_once()
             eval_manager.logger.info.assert_called()
-            assert "RandomForestRegressor" in result
+            assert "Random Forest" in result
 
     def test_plot_pred_vs_obs(self, eval_manager, model, sample_data, tmpdir):
         X, y = sample_data
@@ -212,7 +225,7 @@ class TestEvaluationManager:
         loaded_model = eval_manager.load_model(f"{filename}.pkl")
         assert isinstance(loaded_model, RandomForestRegressor)
 
-    def test_plot_model_comparison(self, eval_manager, model, model2,sample_data):
+    def test_plot_model_comparison(self, eval_manager, model, model2, sample_data):
         X, y = sample_data
         models = [model, model2]
         metric = "mean_absolute_error"
