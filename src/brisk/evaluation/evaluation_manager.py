@@ -135,7 +135,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_to_json(results, output_path, metadata)
 
         scores_log = "\n".join([
@@ -196,7 +196,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_to_json(results, output_path, metadata)
 
         scores_log = "\n".join([
@@ -246,7 +246,10 @@ class EvaluationManager:
         if not models:
             raise ValueError("At least one model must be provided")
 
-        model_names = [model.__class__.__name__ for model in models]
+        model_names = []
+        for model in models:
+            wrapper = self._get_algo_wrapper(model.wrapper_name)
+            model_names.append(wrapper.display_name)
 
         # Evaluate the model and collect results
         for model_name, model in zip(model_names, models):
@@ -283,7 +286,9 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self._get_metadata(models, "compare_models")
+        metadata = self._get_metadata(
+            list(models), "compare_models", is_test=X.attrs["is_test"]
+        )
         self._save_to_json(comparison_results, output_path, metadata)
 
         comparison_log = "\n".join([
@@ -353,7 +358,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot=plot)
         self.logger.info(
             "Predicted vs. Observed plot saved to '%s'.", output_path
@@ -468,7 +473,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X_train.attrs["is_test"])
         self._save_plot(output_path, metadata)
         self.logger.info(f"Learning Curve plot saved to '{output_path}''.")
 
@@ -572,7 +577,7 @@ class EvaluationManager:
         )
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot, plot_height, plot_width)
         self.logger.info(
             "Feature Importance plot saved to '%s'.", output_path
@@ -637,7 +642,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Residuals plot saved to '%s'.", output_path
@@ -670,7 +675,11 @@ class EvaluationManager:
         filename (str): 
             The name of the output file (without extension).
         """
-        model_names = [model.__class__.__name__ for model in models]
+        model_names = []
+        for model in models:
+            wrapper = self._get_algo_wrapper(model.wrapper_name)
+            model_names.append(wrapper.display_name)
+
         metric_values = []
 
         scorer = self.metric_config.get_metric(metric)
@@ -704,7 +713,9 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(models, "plot_model_comparison")
+        metadata = self._get_metadata(
+            list(models), "plot_model_comparison", is_test=X.attrs["is_test"]
+        )
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Model Comparison plot saved to '%s'.", output_path
@@ -795,7 +806,9 @@ class EvaluationManager:
             )
 
         if plot_results:
-            metadata = self._get_metadata(model)
+            metadata = self._get_metadata(
+                model, is_test=X_train.attrs["is_test"]
+            )
             self._plot_hyperparameter_performance(
                 param_grid, search_result, algo_wrapper.name, metadata,
                 algo_wrapper.display_name
@@ -1007,7 +1020,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_to_json(data, output_path, metadata)
 
         header = " " * 10 + " ".join(f"{label:>10}" for label in labels) + "\n"
@@ -1078,7 +1091,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot)
         self.logger.info(f"Confusion matrix heatmap saved to {output_path}")
 
@@ -1174,7 +1187,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "ROC curve with AUC = %.2f saved to %s", auc, output_path
@@ -1257,7 +1270,7 @@ class EvaluationManager:
 
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.png")
-        metadata = self._get_metadata(model)
+        metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
         self._save_plot(output_path, metadata, plot)
         self.logger.info(
             "Precision-Recall curve with AP = %.2f saved to %s",
@@ -1322,6 +1335,10 @@ class EvaluationManager:
             The plot width in inches, by default 8
         """
         try:
+            if metadata:
+                for key, value in metadata.items():
+                    if isinstance(value, dict):
+                        metadata[key] = json.dumps(value)
             if plot:
                 plot.save(
                     filename=output_path, format="png", metadata=metadata,
@@ -1377,7 +1394,8 @@ class EvaluationManager:
     def _get_metadata(
         self,
         models: Union[base.BaseEstimator, List[base.BaseEstimator]],
-        method_name: Optional[str] = None
+        method_name: Optional[str] = None,
+        is_test: bool = False
     ) -> Dict[str, Any]:
         """Generate metadata for output files.
 
@@ -1389,23 +1407,44 @@ class EvaluationManager:
         method_name (str, optional): 
             The name of the calling method, by default None
 
+        is_test (bool, optional): 
+            Whether the data is test data, by default False
+
         Returns
         -------
         dict
-            Metadata including timestamp, method name, and model names
+            Metadata including timestamp, method name, algorith wrapper name,
+            and algorithm display name
         """
         metadata = {
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "method": method_name if method_name else inspect.stack()[1][3]
+            "method": method_name if method_name else inspect.stack()[1][3],
+            "models": {},
+            "is_test": str(is_test)
         }
+        if not isinstance(models, list):
+            models = [models]
 
-        if isinstance(models, tuple):
-            metadata["models"] = [model.__class__.__name__ for model in models]
-        else:
-            metadata["models"] = [models.__class__.__name__]
+        for model in models:
+            wrapper = self._get_algo_wrapper(model.wrapper_name)
+            metadata["models"][wrapper.name] = wrapper.display_name
 
-        metadata = {
-            k: str(v) if not isinstance(v, str)
-            else v for k, v in metadata.items()
-            }
         return metadata
+
+    def _get_algo_wrapper(
+        self,
+        wrapper_name: str
+    ) -> algorithm_wrapper.AlgorithmWrapper:
+        """Get the AlgorithmWrapper instance.
+
+        Parameters
+        ----------
+        wrapper_name : str
+            The name of the AlgorithmWrapper to retrieve
+
+        Returns
+        -------
+        AlgorithmWrapper
+            The AlgorithmWrapper instance
+        """
+        return self.algorithm_config[wrapper_name]

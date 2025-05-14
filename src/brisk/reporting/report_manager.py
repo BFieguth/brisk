@@ -454,10 +454,18 @@ class ReportManager():
         str
             HTML block representing the evaluation results
         """
+        def get_unique_key(summary_metrics, current_database, models):
+            model_key = f"{models} (2)"
+            counter = 2
+            while model_key in summary_metrics[current_database]:
+                counter += 1
+                model_key = f"{models} ({counter})"
+            return model_key
+
         # Extract relevant information
         metrics = {k: v for k, v in data.items() if k != "_metadata"}
         model_info = metadata.get("models", ["Unknown model"])
-        model_names = ", ".join(model_info)
+        model_names = ", ".join(model_info.values())
 
         # Create an HTML block for this result
         result_html = f"""
@@ -469,11 +477,21 @@ class ReportManager():
             </thead>
             <tbody>
         """
+
+        if model_names in self.summary_metrics[self.current_dataset]:
+            model_names = get_unique_key(
+                self.summary_metrics, self.current_dataset, model_names
+            )
+
         for metric, score in metrics.items():
             rounded_score = round(score, 5)
             result_html += f"<tr><td>{metric}</td><td>{rounded_score}</td></tr>"
-        result_html += "</tbody></table>"
 
+            if metadata["is_test"]:
+                self.summary_metrics[self.current_dataset][model_names][metric] = {
+                    "test_score": rounded_score
+                }
+        result_html += "</tbody></table>"
         return result_html
 
     def report_evaluate_model_cv(self, data: dict, metadata: dict) -> str:
@@ -492,32 +510,18 @@ class ReportManager():
         str
             HTML block representing the cross-validation results
         """
-        def get_unique_key(summary_metrics, current_database, models):
-            model_key = f"{models} (2)"
-            counter = 2
-            while model_key in summary_metrics[current_database]:
-                counter += 1
-                model_key = f"{models} ({counter})"
-            return model_key
-
-
         model_info = metadata.get("models", ["Unknown model"])
-        models = ", ".join(model_info)
+        model_names = ", ".join(model_info.values())
 
         result_html_new = f"""
         <h2>Model Evaluation (Cross-Validation)</h2>
-        <p><strong>Model:</strong> {models}</p>
+        <p><strong>Model:</strong> {model_names}</p>
         <table>
             <thead>
                 <tr><th>Metric</th><th>All Scores</th><th>Mean Score</th><th>Std Dev</th></tr>
             </thead>
             <tbody>
         """
-
-        if models in self.summary_metrics[self.current_dataset]:
-            models = get_unique_key(
-                self.summary_metrics, self.current_dataset, models
-            )
 
         for metric, values in data.items():
             if metric != "_metadata":
@@ -530,11 +534,6 @@ class ReportManager():
                     f"<tr><td>{metric}</td><td>{all_scores}</td>"
                     f"<td>{mean_score}</td><td>{std_dev}</td></tr>"
                 )
-
-                self.summary_metrics[self.current_dataset][models][metric] = {
-                    "mean": mean_score,
-                    "std_dev": std_dev
-                }
 
         result_html_new += "</tbody></table>"
         return result_html_new
@@ -554,7 +553,7 @@ class ReportManager():
         str
             HTML block representing the comparison results
         """
-        model_names = metadata.get("models", [])
+        model_names = metadata.get("models", {})
 
         if not model_names:
             raise ValueError("No model names found in metadata.")
@@ -562,8 +561,9 @@ class ReportManager():
         metrics = list(next(iter(data.values())).keys())
         metric_data = {
             model_name: {metric: data[model_name][metric] for metric in metrics}
-            for model_name in model_names if "differences" not in model_name
-            }
+            for model_name in model_names.values()
+            if "differences" not in model_name
+        }
 
         df = pd.DataFrame(metric_data)
 
@@ -749,7 +749,7 @@ class ReportManager():
         """
         summary_html = ""
         for dataset, models in self.summary_metrics.items():
-            summary_html += f"<h2>Summary for {dataset}</h2>"
+            summary_html += f"<h2>Summary of {dataset} Test Scores</h2>"
             all_metrics = set()
             for model_metrics in models.values():
                 all_metrics.update(model_metrics.keys())
@@ -777,9 +777,8 @@ class ReportManager():
                 summary_html += f"<tr><td>{model}</td>"
                 for metric in all_metrics:
                     if metric in metrics:
-                        mean_score = round(metrics[metric]["mean"], 3)
-                        std_dev = round(metrics[metric]["std_dev"], 3)
-                        summary_html += f"<td>{mean_score} ({std_dev})</td>"
+                        test_score = round(metrics[metric]["test_score"], 3)
+                        summary_html += f"<td>{test_score}</td>"
                     else:
                         summary_html += "<td>N/A</td>"
                 summary_html += "</tr>"

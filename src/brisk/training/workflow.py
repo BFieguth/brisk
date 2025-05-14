@@ -1,10 +1,9 @@
 """The Workflow base class for defining training and evaluation steps.
 
 This module provides the base Workflow class that defines the interface for
-machine learning workflows. Specific workflows (e.g., regression, classification)
-should inherit from this class and implement the abstract `workflow` method.
-This class delegates the EvaluationManager for model evaluation and 
-visualization.
+machine learning workflows. Specific workflows should inherit from this class
+and implement the abstract `workflow` method. This class delegates the 
+EvaluationManager for model evaluation and visualization.
 """
 
 import abc
@@ -75,9 +74,13 @@ class Workflow(abc.ABC):
     ):
         self.evaluator = evaluator
         self.X_train = X_train # pylint: disable=C0103
+        self.X_train.attrs["is_test"] = False
         self.X_test = X_test # pylint: disable=C0103
+        self.X_test.attrs["is_test"] = True
         self.y_train = y_train
+        self.y_train.attrs["is_test"] = False
         self.y_test = y_test
+        self.y_test.attrs["is_test"] = True
         self.output_dir = output_dir
         self.algorithm_names = algorithm_names
         self.feature_names = feature_names
