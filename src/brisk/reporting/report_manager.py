@@ -553,7 +553,7 @@ class ReportManager():
         str
             HTML block representing the comparison results
         """
-        model_names = metadata.get("models", [])
+        model_names = metadata.get("models", {})
 
         if not model_names:
             raise ValueError("No model names found in metadata.")
@@ -561,8 +561,9 @@ class ReportManager():
         metrics = list(next(iter(data.values())).keys())
         metric_data = {
             model_name: {metric: data[model_name][metric] for metric in metrics}
-            for model_name in model_names if "differences" not in model_name
-            }
+            for model_name in model_names.values()
+            if "differences" not in model_name
+        }
 
         df = pd.DataFrame(metric_data)
 
