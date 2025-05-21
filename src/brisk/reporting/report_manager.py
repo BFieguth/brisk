@@ -468,6 +468,25 @@ class ReportManager():
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
+    def _get_data_type(self, is_test: str) -> str:
+        """Translates a string to a data type.
+
+        Parameters
+        ----------
+        is_test : str
+            "true" if test data, "false" if train data
+
+        Returns
+        -------
+        str
+            "Test" if test data, "Train" if train data
+        """
+        if is_test.lower() == "true":
+            return "Test Set"
+        if is_test.lower() == "false":
+            return "Train Set"
+        raise ValueError(f"Invalid boolean string: {is_test}")
+
     def report_evaluate_model(self, data: dict, metadata: dict) -> str:
         """Generates an HTML block for displaying evaluate_model results.
 
@@ -495,11 +514,13 @@ class ReportManager():
         metrics = {k: v for k, v in data.items() if k != "_metadata"}
         model_info = metadata.get("models", ["Unknown model"])
         model_names = ", ".join(model_info.values())
+        is_test = metadata.get("is_test", "none")
 
         # Create an HTML block for this result
         result_html = f"""
         <h2>Model Evaluation</h2>
         <p><strong>Model:</strong> {model_names}</p>
+        <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
         <table>
             <thead>
                 <tr><th>Metric</th><th>Score</th></tr>
@@ -541,10 +562,12 @@ class ReportManager():
         """
         model_info = metadata.get("models", ["Unknown model"])
         model_names = ", ".join(model_info.values())
+        is_test = metadata.get("is_test", "none")
 
         result_html_new = f"""
         <h2>Model Evaluation (Cross-Validation)</h2>
         <p><strong>Model:</strong> {model_names}</p>
+        <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
         <table>
             <thead>
                 <tr><th>Metric</th><th>All Scores</th><th>Mean Score</th><th>Std Dev</th></tr>
@@ -610,9 +633,11 @@ class ReportManager():
         # Generate the HTML table
         model_name = ", ".join(metadata.get("models", ["Unknown model"]))
         html_table = df.to_html(classes="table table-bordered", border=0)
+        is_test = metadata.get("is_test", "none")
         result_html = f"""
         <h2>Model Comparison</h2>
         <p><strong>Model:</strong> {model_name}</p>
+        <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
         """
         result_html += html_table
 
@@ -643,12 +668,15 @@ class ReportManager():
         str
             HTML block containing the image and its metadata
         """
-        model_name = ", ".join(metadata.get("models", ["Unknown model"]))
+        model_info = metadata.get("models", ["Unknown model"])
+        model_names = ", ".join(model_info.values())
         rel_img_path = os.path.relpath(data, self.report_dir)
+        is_test = metadata.get("is_test", "none")
 
         result_html = f"""
         <h2>{title}</h2>
-        <p><strong>Model:</strong> {model_name}</p>
+        <p><strong>Model:</strong> {model_names}</p>
+        <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
         <img 
             src="{rel_img_path}"
             alt="{title}"
@@ -691,9 +719,11 @@ class ReportManager():
         else:
             cell_annotations = {}
 
+        is_test = metadata.get("is_test", "none")
         result_html = f"""
         <h2>Confusion Matrix</h2>
         <p><strong>Model:</strong> {model_names}</p>
+        <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
         <table>
             <thead>
                 <tr>
@@ -732,10 +762,10 @@ class ReportManager():
         str
             HTML formatted string describing the model
         """
-        model_name = data.__class__.__name__
-        params = data.get_params()
-
-        default_params = self.get_default_params(data.__class__)
+        wrapper_name = data["model"].wrapper_name
+        display_name = metadata.get("models", "missing")[wrapper_name]
+        params = data["model"].get_params()
+        default_params = self.get_default_params(data["model"].__class__)
 
         non_default_params = {
             param: value for param, value in params.items()
@@ -743,7 +773,7 @@ class ReportManager():
         }
 
         html = [
-            f"<h2>Summary: {model_name}</h2>",
+            f"<h2>Summary: {display_name}</h2>",
             "<div class='model-details'>"
         ]
 
