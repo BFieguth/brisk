@@ -335,6 +335,7 @@ class EvaluationManager:
             "Predicted": prediction
         })
         max_range = plot_data[["Observed", "Predicted"]].max().max()
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
             pn.geom_point(
@@ -347,7 +348,7 @@ class EvaluationManager:
             pn.labs(
                 x="Observed Values",
                 y="Predicted Values",
-                title="Predicted vs. Observed Values"
+                title=f"Predicted vs. Observed Values ({wrapper.display_name})"
             ) +
             pn.coord_fixed(
                 xlim=[0, max_range],
@@ -396,8 +397,6 @@ class EvaluationManager:
         filename : str, optional
             Name for output file, by default "learning_curve"
         """
-        method_name = model.__class__.__name__
-
         cv = model_select.RepeatedKFold(n_splits=cv, n_repeats=num_repeats)
 
         scorer = self.metric_config.get_scorer(metric)
@@ -425,7 +424,10 @@ class EvaluationManager:
 
         # Plot Learning Curve
         display_name = self.metric_config.get_name(metric)
-        axes[0].set_title(f"Learning Curve ({method_name})", fontsize=20)
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
+        axes[0].set_title(
+            f"Learning Curve ({wrapper.display_name})", fontsize=20
+        )
         axes[0].set_xlabel("Training Examples", fontsize=12)
         axes[0].set_ylabel(display_name, fontsize=12)
         axes[0].grid()
@@ -565,13 +567,14 @@ class EvaluationManager:
             categories=importance_data.sort_values("Importance")["Feature"],
             ordered=True
         )
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(importance_data, pn.aes(x="Feature", y="Importance")) +
             pn.geom_bar(stat="identity", fill=self.primary_color) +
             pn.coord_flip() +
             pn.labs(
                 x="Feature", y=f"Importance ({display_name})",
-                title="Feature Importance"
+                title=f"Feature Importance ({wrapper.display_name})"
             ) +
             theme.brisk_theme()
         )
@@ -615,10 +618,14 @@ class EvaluationManager:
 
         plot_data = pd.DataFrame({
             "Observed": y,
-            "Residual": residuals
+            "Residual (Observed - Predicted)": residuals
         })
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
-            pn.ggplot(plot_data, pn.aes(x="Observed", y="Residual")) +
+            pn.ggplot(plot_data, pn.aes(
+                x="Observed",
+                y="Residual (Observed - Predicted)"
+            )) +
             pn.geom_point(
                 color="black", size=3, stroke=0.25, fill=self.primary_color
             ) +
@@ -626,12 +633,16 @@ class EvaluationManager:
                 slope=0, intercept=0, color=self.important_color,
                 linetype="dashed", size=1.5
             ) +
-            pn.ggtitle("Residuals (Observed - Predicted)") +
+            pn.ggtitle(f"Residuals ({wrapper.display_name})") +
             theme.brisk_theme()
         )
 
         if add_fit_line:
-            fit = np.polyfit(plot_data["Observed"], plot_data["Residual"], 1)
+            fit = np.polyfit(
+                plot_data["Observed"],
+                plot_data["Residual (Observed - Predicted)"],
+                1
+            )
             fit_line = np.polyval(fit, plot_data["Observed"])
             plot += (
                 pn.geom_line(
@@ -1070,7 +1081,7 @@ class EvaluationManager:
                     "Label": f"{int(count)}\n({percentage:.1f}%)"
                 })
         plot_data = pd.DataFrame(plot_data)
-
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="Predicted Label",
@@ -1085,7 +1096,7 @@ class EvaluationManager:
                 name="Percentage (%)",
                 limits=(0, 100)
             ) +
-            pn.ggtitle("Confusion Matrix Heatmap") +
+            pn.ggtitle(f"Confusion Matrix Heatmap ({wrapper.display_name})") +
             theme.brisk_theme()
         )
 
@@ -1149,7 +1160,7 @@ class EvaluationManager:
             "Type": "ROC Curve"
         })
         plot_data = pd.concat([roc_data, ref_line])
-
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="False Positive Rate",
@@ -1177,7 +1188,7 @@ class EvaluationManager:
                 na_value="black"
             ) +
             pn.labs(
-                title=f"ROC Curve for {model.__class__.__name__}",
+                title=f"ROC Curve ({wrapper.display_name})",
                 color="",
                 linetype=""
             ) +
@@ -1241,9 +1252,7 @@ class EvaluationManager:
         })
 
         plot_data = pd.concat([pr_data, ap_line])
-
-        print(pr_data)
-
+        wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="Recall",
@@ -1260,7 +1269,7 @@ class EvaluationManager:
                 values=["dashed", "solid"]
             ) +
             pn.labs(
-                title=f"Precision-Recall Curve for {model.__class__.__name__}",
+                title=f"Precision-Recall Curve ({wrapper.display_name})",
                 color="",
                 linetype=""
             ) +
@@ -1364,10 +1373,15 @@ class EvaluationManager:
         """
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
-        joblib.dump(model, output_path)
+        metadata = self._get_metadata(model, method_name="save_model")
+        model_package = {
+            "model": model,
+            "metadata": metadata
+        }
+        joblib.dump(model_package, output_path)
         self.logger.info(
             "Saving model '%s' to '%s'.", filename, output_path
-            )
+        )
 
     def load_model(self, filepath: str) -> base.BaseEstimator:
         """Load model from pickle file.
