@@ -223,7 +223,7 @@ class TestEvaluationManager:
         assert Path(f"{filename}.pkl").exists()
 
         loaded_model = eval_manager.load_model(f"{filename}.pkl")
-        assert isinstance(loaded_model, RandomForestRegressor)
+        assert isinstance(loaded_model["model"], RandomForestRegressor)
 
     def test_plot_model_comparison(self, eval_manager, model, model2, sample_data):
         X, y = sample_data
