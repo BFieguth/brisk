@@ -83,7 +83,7 @@ class ReportManager():
             autoescape=jinja2.select_autoescape(["html", "xml"])
         )
         self.method_map = collections.OrderedDict([
-            ("serialized_model", self.report_serialized_model),
+            ("save_model", self.report_serialized_model),
             ("evaluate_model", self.report_evaluate_model),
             ("evaluate_model_cv", self.report_evaluate_model_cv),
             ("compare_models", self.report_compare_models),
@@ -256,7 +256,7 @@ class ReportManager():
             if file.endswith(".png"):
                 file_metadata[file] = self._get_image_metadata(file_path)
             if file.endswith(".pkl"):
-                file_metadata[file] = {"method": "serialized_model"}
+                file_metadata[file] = self._get_serialized_metadata(file_path)
 
         # Step 2: Prepare content based on extracted metadata
         content = []
@@ -399,6 +399,35 @@ class ReportManager():
 
         except ValueError as e:
             print(f"Value error while processing metadata in {image_path}: {e}")
+            return {}
+
+    def _get_serialized_metadata(self, file_path: str) -> dict:
+        """Extracts metadata from a serialized model file.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the serialized model file
+
+        Returns
+        -------
+        dict
+            The extracted metadata
+        """
+        try:
+            with open(file_path, "rb") as f:
+                model_package = joblib.load(f)
+                return model_package["metadata"]
+        except FileNotFoundError:
+            print(f"File not found: {file_path}")
+            return {}
+
+        except OSError as e:
+            print(f"OS error while opening {file_path}: {e}")
+            return {}
+
+        except ValueError as e:
+            print(f"Value error while processing metadata in {file_path}: {e}")
             return {}
 
     def _load_file(self, file_path: str) -> Union[dict, str, Any]:

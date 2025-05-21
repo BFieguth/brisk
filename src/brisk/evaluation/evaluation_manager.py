@@ -1373,10 +1373,15 @@ class EvaluationManager:
         """
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
-        joblib.dump(model, output_path)
+        metadata = self._get_metadata(model, method_name="save_model")
+        model_package = {
+            "model": model,
+            "metadata": metadata
+        }
+        joblib.dump(model_package, output_path)
         self.logger.info(
             "Saving model '%s' to '%s'.", filename, output_path
-            )
+        )
 
     def load_model(self, filepath: str) -> base.BaseEstimator:
         """Load model from pickle file.
