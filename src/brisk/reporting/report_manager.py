@@ -773,13 +773,13 @@ class ReportManager():
         }
 
         html = [
-            f"<h2>Summary: {display_name}</h2>",
+            f"<h2>Non-Default Parameters</h2>",
+            f"<p><strong>Model:</strong> {display_name}</p>",
             "<div class='model-details'>"
         ]
 
         if non_default_params:
             html.extend([
-                "<p>Non-Default Parameters:</p>",
                 "<table class='params-table'>",
                 "<tr><th>Parameter</th><th>Value</th></tr>"
             ])
