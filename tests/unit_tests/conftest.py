@@ -7,6 +7,7 @@ mock_regression_project to the test function and using the path relative to this
 root directory.
 """
 import pytest
+import sqlite3
 
 from brisk.configuration import project
 
@@ -81,7 +82,8 @@ def mock_reg_metric_py(tmp_path):
 import brisk
 
 METRIC_CONFIG = brisk.MetricManager(
-    *brisk.REGRESSION_METRICS
+    *brisk.REGRESSION_METRICS,
+    *brisk.CLASSIFICATION_METRICS
 )
 """
     metric_path.write_text(metric_py)
@@ -131,39 +133,115 @@ def create_configuration() -> ConfigurationManager:
 
 
 @pytest.fixture
-def mock_reg_datasets(tmp_path):
+def mock_datasets(tmp_path):
     """Create a datasets directory with sample files."""
     datasets_dir = tmp_path / 'datasets'
     datasets_dir.mkdir()
 
     sample_data = {
-        'data.csv': """x,y,target
+        'regression.csv': """x,y,target
 1.0,2.0,0
 2.0,3.0,1
 3.0,4.0,0
 4.0,5.0,1
 5.0,6.0,0""",
-
-        'data2.csv': """feature1,feature2,label
+        'classification.csv': """feature1,feature2,label
 0.1,0.2,A
 0.3,0.4,B
 0.5,0.6,A
-0.7,0.8,B""",
+0.7,0.8,B
+0.9,1.0,A""",
 
-        'test.csv': """col1,col2,col3
-1,2,3
-4,5,6
-7,8,9""",
-
-        'another_dataset.csv': """value,category,result
+        'categorical.csv': """value,category,result
 10.0,A,positive
 20.0,B,negative
 30.0,A,positive
-40.0,B,negative"""
+40.0,B,negative
+60.0,B,negative""",
+
+        'group.csv': """group,x,y,target
+A,1.0,2.0,0
+A,2.0,3.0,1
+B,3.0,4.0,0
+B,4.0,5.0,1
+C,5.0,6.0,0"""
     }
 
     for filename, content in sample_data.items():
         (datasets_dir / filename).write_text(content)
+
+    # Create SQLite database with sample tables
+    db_path = datasets_dir / 'test_data.db'
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create regression table
+    cursor.execute('''
+        CREATE TABLE regression (
+            x REAL,
+            y REAL,
+            target INTEGER
+        )
+    ''')
+    cursor.executemany('INSERT INTO regression VALUES (?, ?, ?)', [
+        (1.0, 2.0, 0),
+        (2.0, 3.0, 1),
+        (3.0, 4.0, 0),
+        (4.0, 5.0, 1),
+        (5.0, 6.0, 0)
+    ])
+    
+    # Create classification table
+    cursor.execute('''
+        CREATE TABLE classification (
+            feature1 REAL,
+            feature2 REAL,
+            label TEXT
+        )
+    ''')
+    cursor.executemany('INSERT INTO classification VALUES (?, ?, ?)', [
+        (0.1, 0.2, 'A'),
+        (0.3, 0.4, 'B'),
+        (0.5, 0.6, 'A'),
+        (0.7, 0.8, 'B'),
+        (0.9, 1.0, 'A')
+    ])
+    
+    # Create categorical table
+    cursor.execute('''
+        CREATE TABLE categorical (
+            value REAL,
+            category TEXT,
+            result TEXT
+        )
+    ''')
+    cursor.executemany('INSERT INTO categorical VALUES (?, ?, ?)', [
+        (10.0, 'A', 'positive'),
+        (20.0, 'B', 'negative'),
+        (30.0, 'A', 'positive'),
+        (40.0, 'B', 'negative'),
+        (60.0, 'B', 'negative')
+    ])
+    
+    # Create group table
+    cursor.execute('''
+        CREATE TABLE group_data (
+            group_name TEXT,
+            x REAL,
+            y REAL,
+            target INTEGER
+        )
+    ''')
+    cursor.executemany('INSERT INTO group_data VALUES (?, ?, ?, ?)', [
+        ('A', 1.0, 2.0, 0),
+        ('A', 2.0, 3.0, 1),
+        ('B', 3.0, 4.0, 0),
+        ('B', 4.0, 5.0, 1),
+        ('C', 5.0, 6.0, 0)
+    ])
+    
+    conn.commit()
+    conn.close()
 
     return datasets_dir
 
@@ -196,7 +274,7 @@ def mock_regression_project(
     mock_reg_metric_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_reg_training_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_reg_settings_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_datasets, # pylint: disable=unused-argument, redefined-outer-name
+    mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
     mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
     tmp_path,
     monkeypatch
