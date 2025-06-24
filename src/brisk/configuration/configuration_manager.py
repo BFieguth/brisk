@@ -7,8 +7,10 @@ that DataManager instances are created efficiently and reused when
 configurations match.
 """
 
+import ast
 import collections
 from importlib import util
+from pathlib import Path
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
@@ -116,8 +118,60 @@ class ConfigurationManager:
                 f"BASE_DATA_MANAGER not found in {data_file}\n"
                 f"Please define BASE_DATA_MANAGER = DataManager(...)"
             )
-
+        self._validate_single_variable(data_file, "BASE_DATA_MANAGER")
+        if not isinstance(
+            data_module.BASE_DATA_MANAGER, data_manager.DataManager
+        ):
+            raise ValueError(
+                f"BASE_DATA_MANAGER in {data_file} is not a valid DataManager instance"
+            )
         return data_module.BASE_DATA_MANAGER
+
+    def _validate_single_variable(
+        self,
+        file_path: Path,
+        variable_name: str
+    ) -> None:
+        """Validate that only a variable name is defined only once in a file.
+
+        Parameters
+        ----------
+        file_path : Path
+            Path to the Python file to check
+        variable_name : str
+            Name of the variable to check
+        
+        Raises
+        ------
+        ValueError
+            If the variable is defined multiple times
+        SyntaxError
+            If the file contains invalid Python syntax
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                source_code = f.read()
+            
+            tree = ast.parse(source_code, filename=str(file_path))
+            
+            assignments = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Assign):
+                    for target in node.targets:
+                        if (
+                            isinstance(target, ast.Name)
+                            and target.id == variable_name
+                        ):
+                            assignments.append(node.lineno)
+            
+            if len(assignments) > 1:
+                lines_str = ", ".join(map(str, assignments))
+                raise ValueError(
+                    f"{variable_name} is defined multiple times in {file_path} "
+                    f"on lines: {lines_str}. Please define it exactly once to avoid ambiguity."
+                )
+        except SyntaxError as e:
+            raise SyntaxError(f"Invalid Python syntax in {file_path}: {e}")
 
     def _load_algorithm_config(
         self
@@ -148,8 +202,8 @@ class ConfigurationManager:
 
         if not algo_file.exists():
             raise FileNotFoundError(
-                f"Algorithm config file not found: {algo_file}\n"
-                f"Please create algorithms.py with ALGORITHM_CONFIG list"
+                f"algorithms.py file not found: {algo_file}\n"
+                f"Please create algorithms.py and define an AlgorithmCollection"
             )
 
         spec = util.spec_from_file_location("algorithms", algo_file)
@@ -164,9 +218,15 @@ class ConfigurationManager:
         if not hasattr(algo_module, "ALGORITHM_CONFIG"):
             raise ImportError(
                 f"ALGORITHM_CONFIG not found in {algo_file}\n"
-                f"Please define ALGORITHM_CONFIG = [...]"
+                f"Please define ALGORITHM_CONFIG = AlgorithmCollection()"
             )
-
+        self._validate_single_variable(algo_file, "ALGORITHM_CONFIG")
+        if not isinstance(
+            algo_module.ALGORITHM_CONFIG, algorithm_wrapper.AlgorithmCollection
+        ):
+            raise ValueError(
+                f"ALGORITHM_CONFIG in {algo_file} is not a valid AlgorithmCollection instance"
+            )
         return algo_module.ALGORITHM_CONFIG
 
     def _get_base_params(self) -> Dict:
