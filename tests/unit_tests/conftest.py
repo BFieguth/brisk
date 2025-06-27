@@ -8,6 +8,9 @@ root directory.
 """
 import pytest
 import sqlite3
+from io import StringIO
+
+import pandas as pd
 
 from brisk.configuration import project
 
@@ -169,6 +172,9 @@ C,5.0,6.0,0"""
 
     for filename, content in sample_data.items():
         (datasets_dir / filename).write_text(content)
+        filename_xlsx = filename.replace('.csv', '.xlsx')
+        df = pd.read_csv(StringIO(content))
+        df.to_excel(datasets_dir / filename_xlsx, index=False)
 
     # Create SQLite database with sample tables
     db_path = datasets_dir / 'test_data.db'
