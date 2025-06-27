@@ -5,42 +5,45 @@ from sklearn import linear_model, neural_network
 
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
 
+@pytest.fixture
+def linear_wrapper():
+    """Fixture to create a linear regression wrapper."""
+    return AlgorithmWrapper(
+        name="linear",
+        display_name="Linear Regression",
+        algorithm_class=linear_model.LinearRegression
+        )
+
+
+@pytest.fixture
+def ridge_wrapper():
+    """Fixture to create a ridge regression wrapper."""
+    return AlgorithmWrapper(
+        name="ridge",
+        display_name="Ridge Regression",
+        algorithm_class=linear_model.Ridge,
+        default_params={"alpha": 0.1},
+        hyperparam_grid={"alpha": [0.01, 0.1, 1.0]}
+        )
+
+
+@pytest.fixture
+def mlp_wrapper():
+    """Fixture to create a random forest wrapper."""
+    return AlgorithmWrapper(
+        name="mlp",
+        display_name="MLP",
+        algorithm_class=neural_network.MLPClassifier,
+        default_params={"hidden_layer_sizes": (100, 50), "max_iter": 1000},
+        hyperparam_grid={
+            "hidden_layer_sizes": [(100, 50), (200, 100), (300, 150)],
+            "activation": ["relu", "tanh", "logistic"]
+            }
+        )
+
+
 class TestAlgorithmWrapper:
     """Test class for AlgorithmWrapper."""
-    @pytest.fixture
-    def linear_wrapper(self):
-        """Fixture to create a linear regression wrapper."""
-        return AlgorithmWrapper(
-            name="linear",
-            display_name="Linear Regression",
-            algorithm_class=linear_model.LinearRegression
-            )
-
-    @pytest.fixture
-    def ridge_wrapper(self):
-        """Fixture to create a ridge regression wrapper."""
-        return AlgorithmWrapper(
-            name="ridge",
-            display_name="Ridge Regression",
-            algorithm_class=linear_model.Ridge,
-            default_params={"alpha": 0.1},
-            hyperparam_grid={"alpha": [0.01, 0.1, 1.0]}
-            )
-
-    @pytest.fixture
-    def mlp_wrapper(self):
-        """Fixture to create a random forest wrapper."""
-        return AlgorithmWrapper(
-            name="mlp",
-            display_name="MLP",
-            algorithm_class=neural_network.MLPClassifier,
-            default_params={"hidden_layer_sizes": (100, 50), "max_iter": 1000},
-            hyperparam_grid={
-                "hidden_layer_sizes": [(100, 50), (200, 100), (300, 150)],
-                "activation": ["relu", "tanh", "logistic"]
-                }
-            )
-
     def test_init(self, linear_wrapper, ridge_wrapper):
         """Test the initialization of AlgorithmWrapper."""
         # No hyperparameter grid or default parameters

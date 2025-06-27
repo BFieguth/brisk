@@ -6,54 +6,55 @@ from sklearn import linear_model
 
 from brisk import AlgorithmCollection, AlgorithmWrapper
 
+@pytest.fixture
+def algorithm_config():
+    return AlgorithmCollection(
+        AlgorithmWrapper(
+            name="linear",
+            display_name="Linear Regression",
+            algorithm_class=linear_model.LinearRegression
+        ),
+        AlgorithmWrapper(
+            name="ridge",
+            display_name="Ridge Regression",
+            algorithm_class=linear_model.Ridge,
+            default_params={"max_iter": 10000},
+            hyperparam_grid={"alpha": [0.1, 0.001]}
+        ),
+        AlgorithmWrapper(
+            name="lasso",
+            display_name="LASSO Regression",
+            algorithm_class=linear_model.Lasso,
+            default_params={"alpha": 0.1, "max_iter": 10000},
+            hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
+        ),
+        AlgorithmWrapper(
+            name="bridge",
+            display_name="Bayesian Ridge Regression",
+            algorithm_class=linear_model.BayesianRidge,
+            default_params={"max_iter": 10000},
+            hyperparam_grid={
+                "alpha_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                "alpha_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                "lambda_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
+                "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+            }
+        ),
+        AlgorithmWrapper(
+            name="elasticnet",
+            display_name="Elastic Net Regression",
+            algorithm_class=linear_model.ElasticNet,
+            default_params={"alpha": 0.1, "max_iter": 10000},
+            hyperparam_grid={
+                "alpha": [0.9, 0.5, 0.3, 0.1, 0.01, 0.001],
+                "l1_ratio": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+            }
+        )
+    )
+
+
 class TestAlgorithmCollection:
     """Unit tests for the AlgorithmCollection class."""
-    @pytest.fixture
-    def algorithm_config(self):
-        return AlgorithmCollection(
-            AlgorithmWrapper(
-                name="linear",
-                display_name="Linear Regression",
-                algorithm_class=linear_model.LinearRegression
-            ),
-            AlgorithmWrapper(
-                name="ridge",
-                display_name="Ridge Regression",
-                algorithm_class=linear_model.Ridge,
-                default_params={"max_iter": 10000},
-                hyperparam_grid={"alpha": [0.1, 0.001]}
-            ),
-            AlgorithmWrapper(
-                name="lasso",
-                display_name="LASSO Regression",
-                algorithm_class=linear_model.Lasso,
-                default_params={"alpha": 0.1, "max_iter": 10000},
-                hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
-            ),
-            AlgorithmWrapper(
-                name="bridge",
-                display_name="Bayesian Ridge Regression",
-                algorithm_class=linear_model.BayesianRidge,
-                default_params={"max_iter": 10000},
-                hyperparam_grid={
-                    "alpha_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-                    "alpha_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-                    "lambda_1": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-                    "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-                }
-            ),
-            AlgorithmWrapper(
-                name="elasticnet",
-                display_name="Elastic Net Regression",
-                algorithm_class=linear_model.ElasticNet,
-                default_params={"alpha": 0.1, "max_iter": 10000},
-                hyperparam_grid={
-                    "alpha": [0.9, 0.5, 0.3, 0.1, 0.01, 0.001],
-                    "l1_ratio": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-                }
-            )
-        )
-
     def test_length(self, algorithm_config):
         assert len(algorithm_config) == 5
 

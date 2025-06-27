@@ -11,23 +11,31 @@ from sklearn import preprocessing
 from brisk.data.data_manager import DataManager
 
 
+# @pytest.fixture
+# def mock_data(self):
+#     """Mock data as a pandas DataFrame."""
+#     return pd.DataFrame({
+#         'feature1': range(10),
+#         'feature2': range(10, 20),
+#         'target': [0, 1] * 5
+#     })
+
+
+# @pytest.fixture
+# def data_splitter(self):
+#     """Fixture to initialize DataManager."""
+#     return DataManager(test_size=0.2, split_method="shuffle")
+
+@pytest.fixture
+def data_manager(mock_regression_project):
+    
+
+
+
+
 class TestDataManager:
     """Test class for DataManager."""
-
-    @pytest.fixture
-    def mock_data(self):
-        """Mock data as a pandas DataFrame."""
-        return pd.DataFrame({
-            'feature1': range(10),
-            'feature2': range(10, 20),
-            'target': [0, 1] * 5
-        })
-
-    @pytest.fixture
-    def data_splitter(self):
-        """Fixture to initialize DataManager."""
-        return DataManager(test_size=0.2, split_method="shuffle")
-
+# NOTE test __init__     
     def test_initialization(self, data_splitter):
         """
         Test that the DataManager is initialized correctly.
@@ -36,6 +44,11 @@ class TestDataManager:
         assert data_splitter.split_method == "shuffle"
         assert data_splitter.n_splits == 5
 
+
+
+
+
+# NOTE _validate_config
     def test_validate_config_invalid_split_method(self):
         """
         Test that an invalid split method raises a ValueError.
@@ -65,6 +78,11 @@ class TestDataManager:
                 split_method="shuffle", scale_method="fake_scaler"
                 )
 
+
+
+
+
+# NOTE _load_data
     @mock.patch("pandas.read_csv")
     def test_load_data_csv(self, mock_read_csv, mock_data):
         """
@@ -127,6 +145,12 @@ class TestDataManager:
         with pytest.raises(ValueError, match="Unsupported file format: "):
             df = splitter._load_data("data.parquet")
 
+
+
+
+
+
+# NOTE _set_splitter
     def test_shuffle_without_stratified_or_group(self):
         splitter = DataManager(
             test_size=0.2, split_method="shuffle", group_column=None, 
@@ -210,6 +234,22 @@ class TestDataManager:
         assert isinstance(splitter_obj, StratifiedGroupKFold)
         assert splitter_obj.n_splits == 5
 
+    def test_invalid_combination(self, data_splitter):
+        """Test ValueError is raised for invalid split method configuration."""
+        data_splitter.split_method = "invalid_method"
+        data_splitter.group_column = None
+        data_splitter.stratified = False
+        with pytest.raises(
+            ValueError, 
+            match="Invalid combination of stratified and group_column for the specified split method."
+            ):
+            data_splitter._set_splitter()
+
+
+
+
+
+# NOTE split
     @mock.patch("pandas.read_csv")
     def test_shuffle_split(self, mock_read_csv, mock_data):
         """
@@ -370,65 +410,6 @@ class TestDataManager:
         assert isinstance(split.scaler, preprocessing.StandardScaler)
         assert split.features == ['feature1' ,'feature2']
 
-    def test_set_scaler_standard(self, data_splitter):
-        """
-        Test that the standard scaler is selected when scale_method is 'standard'.
-        """
-        data_splitter.scale_method = "standard"
-        scaler = data_splitter._set_scaler()
-        assert isinstance(scaler, preprocessing.StandardScaler)
-
-    def test_set_scaler_minmax(self, data_splitter):
-        """
-        Test that the MinMax scaler is selected when scale_method is 'minmax'.
-        """
-        data_splitter.scale_method = "minmax"
-        scaler = data_splitter._set_scaler()
-        assert isinstance(scaler, preprocessing.MinMaxScaler)
-
-    def test_set_scaler_robust(self, data_splitter):
-        """
-        Test that the Robust scaler is selected when scale_method is 'robust'.
-        """
-        data_splitter.scale_method = "robust"
-        scaler = data_splitter._set_scaler()
-        assert isinstance(scaler, preprocessing.RobustScaler)
-
-    def test_set_scaler_maxabs(self, data_splitter):
-        """
-        Test that the MaxAbs scaler is selected when scale_method is 'maxabs'.
-        """
-        data_splitter.scale_method = "maxabs"
-        scaler = data_splitter._set_scaler()
-        assert isinstance(scaler, preprocessing.MaxAbsScaler)
-
-    def test_set_scaler_normalizer(self, data_splitter):
-        """
-        Test that the Normalizer scaler is selected when scale_method is 'normalizer'.
-        """
-        data_splitter.scale_method = "normalizer"
-        scaler = data_splitter._set_scaler()
-        assert isinstance(scaler, preprocessing.Normalizer)
-
-    def test_set_scaler_invalid(self, data_splitter):
-        """
-        Test that None is returned when an invalid scale_method is provided.
-        """
-        data_splitter.scale_method = "invalid_scaler"
-        scaler = data_splitter._set_scaler()
-        assert scaler is None
-
-    def test_invalid_combination(self, data_splitter):
-        """Test ValueError is raised for invalid split method configuration."""
-        data_splitter.split_method = "invalid_method"
-        data_splitter.group_column = None
-        data_splitter.stratified = False
-        with pytest.raises(
-            ValueError, 
-            match="Invalid combination of stratified and group_column for the specified split method."
-            ):
-            data_splitter._set_splitter()
-
     def test_split_caching(self, mock_data):
         """Test that splits are cached and reused correctly."""
         with mock.patch("pandas.read_csv", return_value=mock_data) as mock_read:
@@ -505,3 +486,63 @@ class TestDataManager:
                 filename="data",
                 categorical_features=None
             )
+
+
+
+
+# NOTE _set_scaler
+    def test_set_scaler_standard(self, data_splitter):
+        """
+        Test that the standard scaler is selected when scale_method is 'standard'.
+        """
+        data_splitter.scale_method = "standard"
+        scaler = data_splitter._set_scaler()
+        assert isinstance(scaler, preprocessing.StandardScaler)
+
+    def test_set_scaler_minmax(self, data_splitter):
+        """
+        Test that the MinMax scaler is selected when scale_method is 'minmax'.
+        """
+        data_splitter.scale_method = "minmax"
+        scaler = data_splitter._set_scaler()
+        assert isinstance(scaler, preprocessing.MinMaxScaler)
+
+    def test_set_scaler_robust(self, data_splitter):
+        """
+        Test that the Robust scaler is selected when scale_method is 'robust'.
+        """
+        data_splitter.scale_method = "robust"
+        scaler = data_splitter._set_scaler()
+        assert isinstance(scaler, preprocessing.RobustScaler)
+
+    def test_set_scaler_maxabs(self, data_splitter):
+        """
+        Test that the MaxAbs scaler is selected when scale_method is 'maxabs'.
+        """
+        data_splitter.scale_method = "maxabs"
+        scaler = data_splitter._set_scaler()
+        assert isinstance(scaler, preprocessing.MaxAbsScaler)
+
+    def test_set_scaler_normalizer(self, data_splitter):
+        """
+        Test that the Normalizer scaler is selected when scale_method is 'normalizer'.
+        """
+        data_splitter.scale_method = "normalizer"
+        scaler = data_splitter._set_scaler()
+        assert isinstance(scaler, preprocessing.Normalizer)
+
+    def test_set_scaler_invalid(self, data_splitter):
+        """
+        Test that None is returned when an invalid scale_method is provided.
+        """
+        data_splitter.scale_method = "invalid_scaler"
+        scaler = data_splitter._set_scaler()
+        assert scaler is None
+
+
+
+
+
+
+# NOTE to_markdown
+# No tests yet

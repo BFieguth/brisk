@@ -60,7 +60,7 @@ class TestConfiguration:
         assert configuration_algorithm_groups.experiment_groups == []
         assert configuration_algorithm_groups.default_workflow_args == {}
 
-    def test_add_experiment_group(self, mock_regression_project, configuration):
+    def test_add_experiment_group(self, mock_brisk_project, configuration):
         """Test adding experiment group with defaults"""
         configuration.add_experiment_group(
             name="test_group",
@@ -78,7 +78,7 @@ class TestConfiguration:
 
     def test_add_experiment_group_custom_algorithms(
         self,
-        mock_regression_project,
+        mock_brisk_project,
         configuration
     ):
         """Test adding experiment group with custom algorithms"""
@@ -99,7 +99,7 @@ class TestConfiguration:
         assert group.description == "This is a test description"
         assert group.workflow_args == {}
 
-    def test_duplicate_name(self, mock_regression_project, configuration):
+    def test_duplicate_name(self, mock_brisk_project, configuration):
         """Test adding experiment group with duplicate name"""
         # Add first group
         configuration.add_experiment_group(
@@ -116,7 +116,7 @@ class TestConfiguration:
 
     def test_add_experiment_workflow_args_missing_key(
         self,
-        mock_regression_project,
+        mock_brisk_project,
         configuration_with_workflow_args
     ):
         """Test adding experiment group with workflow args"""
@@ -129,7 +129,7 @@ class TestConfiguration:
 
     def test_add_experiment_workflow_args(
         self,
-        mock_regression_project,
+        mock_brisk_project,
         configuration_with_workflow_args
     ):
         """Test adding experiment group with workflow args"""
@@ -150,7 +150,7 @@ class TestConfiguration:
 
     def test_build_returns_configuration_manager(
         self,
-        mock_regression_project,
+        mock_brisk_project,
         configuration
     ):
         """Test build method returns ConfigurationManager"""
@@ -164,7 +164,7 @@ class TestConfiguration:
         assert manager.experiment_groups == configuration.experiment_groups
         assert manager.categorical_features == configuration.categorical_features
 
-    def test_check_name_exists(self, mock_regression_project, configuration):
+    def test_check_name_exists(self, mock_brisk_project, configuration):
         """Test check_name_exists method"""
         configuration.experiment_groups = [
             ExperimentGroup(name="group", datasets=["regression.csv"]),

@@ -7,15 +7,15 @@ import collections
 import importlib
 import pathlib
 import textwrap
-from unittest.mock import Mock
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.data.data_manager import DataManager
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+
 class TestConfigurationManager:
     """Unit tests for the ConfigurationManager class."""
-    def test_initialization(self, mock_regression_project):
+    def test_initialization(self, mock_brisk_project):
         """Test basic initialization of ConfigurationManager."""
         group = ExperimentGroup(
             name="test_group",
@@ -32,7 +32,7 @@ class TestConfigurationManager:
         
         assert manager.experiment_groups == experiment_groups
         assert manager.categorical_features == {}
-        assert manager.project_root == mock_regression_project
+        assert manager.project_root == mock_brisk_project
         assert isinstance(manager.algorithm_config, AlgorithmCollection)
         assert isinstance(manager.base_data_manager, DataManager)
         assert isinstance(manager.data_managers, dict)
@@ -40,9 +40,9 @@ class TestConfigurationManager:
         assert isinstance(manager.experiment_queue, collections.deque)
         assert len(manager.experiment_queue) == 2
 
-    def test_missing_data_file(self, mock_regression_project):
+    def test_missing_data_file(self, mock_brisk_project):
         """Test error handling for missing data file."""
-        data_path = mock_regression_project / 'data.py'
+        data_path = mock_brisk_project / 'data.py'
         data_path.unlink()
 
         group = ExperimentGroup(
@@ -54,9 +54,9 @@ class TestConfigurationManager:
         with pytest.raises(FileNotFoundError, match="Data file not found:"):
             ConfigurationManager([group], {})
 
-    def test_invalid_data_file(self, mock_regression_project):
+    def test_invalid_data_file(self, mock_brisk_project):
         """Test error handling for data.py without BASE_DATA_MANAGER."""
-        data_file = mock_regression_project / 'data.py'
+        data_file = mock_brisk_project / 'data.py'
         data_file.unlink()
         # Incorrect data.py file
         data_content = textwrap.dedent("""
@@ -74,7 +74,7 @@ class TestConfigurationManager:
         with pytest.raises(ImportError, match="BASE_DATA_MANAGER not found"):
             ConfigurationManager([group], {})
 
-    def test_unloadable_data_file(self, mock_regression_project, monkeypatch):
+    def test_unloadable_data_file(self, mock_brisk_project, monkeypatch):
         """Test error handling for invalid data.py file."""
         original_spec_from_file_location = importlib.util.spec_from_file_location
         
@@ -99,9 +99,9 @@ class TestConfigurationManager:
         with pytest.raises(ImportError, match="Failed to load data module"):
             ConfigurationManager([group], {})      
 
-    def test_two_data_managers(self, mock_regression_project):
+    def test_two_data_managers(self, mock_brisk_project):
         """Test correct data manager is loaded if multiple are defined"""
-        data_file = mock_regression_project / "data.py"
+        data_file = mock_brisk_project / "data.py"
         data_file.unlink()
         data_content = textwrap.dedent("""
             from brisk.data.data_manager import DataManager
@@ -128,9 +128,9 @@ class TestConfigurationManager:
             ):
             manager = ConfigurationManager([group], {})
 
-    def test_base_data_manager_wrong_class(self, mock_regression_project):
+    def test_base_data_manager_wrong_class(self, mock_brisk_project):
         """Test error handling for invalid base data manager class"""
-        data_file = mock_regression_project / "data.py"
+        data_file = mock_brisk_project / "data.py"
         data_file.unlink()
         data_content = textwrap.dedent("""
             from brisk.data.data_manager import DataManager
@@ -143,7 +143,7 @@ class TestConfigurationManager:
             ):
             manager = ConfigurationManager([], {})
     
-    def test_validate_single_data_manager(self,mock_regression_project):
+    def test_validate_single_data_manager(self,mock_brisk_project):
         """Test the _validate_single_data_manager method correct behavior."""
         group = ExperimentGroup(
             name="test_group",
@@ -151,14 +151,14 @@ class TestConfigurationManager:
             algorithms=["linear"]
         )
         manager = ConfigurationManager([group], {})
-        assert manager._validate_single_variable(mock_regression_project / "data.py", "BASE_DATA_MANAGER") is None
+        assert manager._validate_single_variable(mock_brisk_project / "data.py", "BASE_DATA_MANAGER") is None
 
     def test_validate_single_data_manager_two_definitions(
             self,
-            mock_regression_project
+            mock_brisk_project
         ):
         """Test the _validate_single_data_manager method error handling."""
-        data_file = mock_regression_project / "data.py"
+        data_file = mock_brisk_project / "data.py"
         data_file.unlink()
         data_content = textwrap.dedent("""
             from brisk.data.data_manager import DataManager
@@ -183,10 +183,10 @@ class TestConfigurationManager:
 
     def test_validate_single_data_manager_invalid_syntax(
             self,
-            mock_regression_project
+            mock_brisk_project
         ):
         """Test the _validate_single_data_manager method error handling."""
-        data_file = mock_regression_project / "data.py"
+        data_file = mock_brisk_project / "data.py"
         data_file.unlink()
         data_content = textwrap.dedent("""
             from brisk.data.data_manager import DataManager
@@ -201,9 +201,9 @@ class TestConfigurationManager:
         with pytest.raises(SyntaxError, match="invalid syntax"):
             manager = ConfigurationManager([], {})
 
-    def test_missing_algorithm_file(self, mock_regression_project):
+    def test_missing_algorithm_file(self, mock_brisk_project):
         """Test error handling for missing algorithms.py."""
-        algorithm_file = mock_regression_project / 'algorithms.py'
+        algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         group = ExperimentGroup(
             name="test",
@@ -217,9 +217,9 @@ class TestConfigurationManager:
             ):
             ConfigurationManager([group], {})
 
-    def test_missing_algorithm_config(self, mock_regression_project):
+    def test_missing_algorithm_config(self, mock_brisk_project):
         """Test error handling for algorithms.py without ALGORITHM_CONFIG."""
-        algorithm_file = mock_regression_project / 'algorithms.py'
+        algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
             # Missing ALGORITHM_CONFIG
@@ -234,9 +234,9 @@ class TestConfigurationManager:
         with pytest.raises(ImportError, match="ALGORITHM_CONFIG not found in"):
             ConfigurationManager([group], {})
       
-    def test_invalid_algorithm_file(self, mock_regression_project):
+    def test_invalid_algorithm_file(self, mock_brisk_project):
         """Test error handling for invalid algorithms.py file."""
-        algorithm_file = mock_regression_project / 'algorithms.py'
+        algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
             from brisk.configuration.algorithm_wrapper import AlgorithmCollection
@@ -250,7 +250,7 @@ class TestConfigurationManager:
             ):
             manager = ConfigurationManager([], {})
 
-    def test_unloadable_algorithm_file(self, mock_regression_project, monkeypatch):
+    def test_unloadable_algorithm_file(self, mock_brisk_project, monkeypatch):
         """Test error handling for invalid data.py file."""
         original_spec_from_file_location = importlib.util.spec_from_file_location
 
@@ -274,7 +274,7 @@ class TestConfigurationManager:
         with pytest.raises(ImportError, match="Failed to load algorithms module"):
             ConfigurationManager([group], {})
 
-    def test_validate_single_algorithm_config(self, mock_regression_project):
+    def test_validate_single_algorithm_config(self, mock_brisk_project):
         """Test the ALGORITHM_CONFIG is an AlgorithmCollection."""
         group = ExperimentGroup(
             name="test_group",
@@ -283,13 +283,13 @@ class TestConfigurationManager:
         )
         manager = ConfigurationManager([group], {})
         assert manager._validate_single_variable(
-            mock_regression_project / "algorithms.py", 
+            mock_brisk_project / "algorithms.py", 
             "ALGORITHM_CONFIG"
             ) is None
 
-    def test_validate_two_algorithm_configs(self, mock_regression_project):
+    def test_validate_two_algorithm_configs(self, mock_brisk_project):
         """Test two ALGORITHM_CONFIGs are not allowed."""
-        algorithm_file = mock_regression_project / 'algorithms.py'
+        algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
             from brisk.configuration.algorithm_wrapper import AlgorithmCollection
@@ -305,10 +305,10 @@ class TestConfigurationManager:
 
     def test_single_algorithm_config_invalid_syntax(
             self,
-            mock_regression_project
+            mock_brisk_project
         ):
         """Test error handling for invalid ALGORITHM_CONFIG syntax."""
-        algorithm_file = mock_regression_project / 'algorithms.py'
+        algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
             from brisk.configuration.algorithm_wrapper import AlgorithmCollection, AlgorithmWrapper
@@ -326,7 +326,7 @@ class TestConfigurationManager:
         with pytest.raises(SyntaxError, match="invalid syntax"):
             manager = ConfigurationManager([], {})
 
-    def test_get_base_params(self, mock_regression_project):
+    def test_get_base_params(self, mock_brisk_project):
         """Test the _get_base_params method of ConfigurationManager."""
         group = ExperimentGroup(
             name="test_group",
@@ -346,7 +346,7 @@ class TestConfigurationManager:
         }
         assert base_params == expected_params
 
-    def test_data_config_does_not_change_base(self, mock_regression_project):
+    def test_data_config_does_not_change_base(self, mock_brisk_project):
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
             name="test_group",
@@ -370,7 +370,7 @@ class TestConfigurationManager:
         }
         assert base_params == expected_params
 
-    def test_data_manager_reuse(self, mock_regression_project):
+    def test_data_manager_reuse(self, mock_brisk_project):
         """Test that DataManagers are reused for matching configurations."""
         groups = [
             ExperimentGroup(
@@ -399,7 +399,7 @@ class TestConfigurationManager:
         # group2 should have its own DataManager
         assert manager.data_managers["group2"] is not manager.data_managers["group1"]
 
-    def test_experiment_creation(self, mock_regression_project):
+    def test_experiment_creation(self, mock_brisk_project):
         """Test creation of experiments from groups."""      
         groups = [
             ExperimentGroup(
@@ -440,7 +440,7 @@ class TestConfigurationManager:
             assert exp.algorithms["model"].algorithm_class == Ridge
             assert exp.algorithms["model2"].algorithm_class == ElasticNet
 
-    def test_correct_experiment_queue_length(self, mock_regression_project):
+    def test_correct_experiment_queue_length(self, mock_brisk_project):
         """Test the correct length of the experiment queue."""
         groups = [
             ExperimentGroup(
@@ -462,7 +462,7 @@ class TestConfigurationManager:
         manager = ConfigurationManager(groups, {})
         assert len(manager.experiment_queue) == 10
 
-    def test_create_logfile(self, mock_regression_project):
+    def test_create_logfile(self, mock_brisk_project):
         """Test the _create_logfile method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
@@ -576,7 +576,7 @@ Continuous: ['x', 'y']
         # Strip whitespace from both files
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
-    def test_create_logfile_with_all_args(self, mock_regression_project):
+    def test_create_logfile_with_all_args(self, mock_brisk_project):
         """Test the _create_logfile method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
@@ -732,7 +732,7 @@ Continuous: ['x', 'y']
         # Strip whitespace from both files
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
-    def test_get_output_structure(self, mock_regression_project, tmp_path):
+    def test_get_output_structure(self, mock_brisk_project, tmp_path):
         """Test the _get_output_structure method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
@@ -760,7 +760,7 @@ Continuous: ['x', 'y']
         
         assert output_structure == expected_output_structure
 
-    def test_get_output_structure_with_sql(self, mock_regression_project, tmp_path):
+    def test_get_output_structure_with_sql(self, mock_brisk_project, tmp_path):
         """Test the _get_output_structure method of ConfigurationManager what SQL table name is used."""        
         group1 = ExperimentGroup(
             name="group1",
@@ -778,7 +778,7 @@ Continuous: ['x', 'y']
         }
         assert output_structure == expected_output_structure
 
-    def test_get_output_structure_with_multiple_datasets(self, mock_regression_project, tmp_path):
+    def test_get_output_structure_with_multiple_datasets(self, mock_brisk_project, tmp_path):
         """Test the _get_output_structure method of ConfigurationManager with multiple datasets."""
         group1 = ExperimentGroup(
             name="group1",
@@ -809,7 +809,7 @@ Continuous: ['x', 'y']
         }
         assert output_structure == expected_output_structure
 
-    def test_create_description_map(self, mock_regression_project):
+    def test_create_description_map(self, mock_brisk_project):
         """Test the _create_description_map method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",

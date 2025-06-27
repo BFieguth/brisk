@@ -5,7 +5,7 @@ import pytest
 from brisk.configuration.experiment_group import ExperimentGroup
 
 @pytest.fixture 
-def valid_group(mock_regression_project):
+def valid_group(mock_brisk_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
@@ -16,7 +16,7 @@ def valid_group(mock_regression_project):
 
 
 @pytest.fixture
-def valid_group_two_datasets(mock_regression_project):
+def valid_group_two_datasets(mock_brisk_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
@@ -36,7 +36,7 @@ class TestExperimentGroup:
         assert valid_group.description == "This is a test description"
         assert valid_group.workflow_args == None
 
-    def test_invalid_name(self, mock_regression_project):
+    def test_invalid_name(self, mock_brisk_project):
         """Test creation with invalid name"""
         with pytest.raises(ValueError, match="must be a non-empty string"):
             ExperimentGroup(name="", datasets=["regression.csv"])
@@ -55,7 +55,7 @@ class TestExperimentGroup:
         ExperimentGroup(name="test group", datasets=["regression.csv"])
         ExperimentGroup(name="   test   ", datasets=["regression.csv"])
 
-    def test_missing_dataset(self, mock_regression_project):
+    def test_missing_dataset(self, mock_brisk_project):
         """Test creation with non-existent dataset"""
         with pytest.raises(FileNotFoundError, match="Dataset not found"):
             ExperimentGroup(
@@ -63,7 +63,7 @@ class TestExperimentGroup:
                 datasets=["nonexistent.csv"]
             )
 
-    def test_missing_datasets(self, mock_regression_project):
+    def test_missing_datasets(self, mock_brisk_project):
         """Test creation with missing dataset"""
         with pytest.raises(ValueError, match="At least one dataset must be specified"):
             ExperimentGroup(
@@ -72,11 +72,11 @@ class TestExperimentGroup:
                 algorithms=["linear", "ridge"]
             )
 
-    def test_dataset_paths(self, valid_group_two_datasets, mock_regression_project):
+    def test_dataset_paths(self, valid_group_two_datasets, mock_brisk_project):
         """Test dataset_paths property"""
         expected_paths = [
-            mock_regression_project / 'datasets' / 'regression.csv',
-            mock_regression_project / 'datasets' / 'categorical.csv'
+            mock_brisk_project / 'datasets' / 'regression.csv',
+            mock_brisk_project / 'datasets' / 'categorical.csv'
         ]
         actual_paths  = [
             path for path, _ in valid_group_two_datasets.dataset_paths
@@ -88,7 +88,7 @@ class TestExperimentGroup:
         for path, _ in valid_group_two_datasets.dataset_paths:
             assert path.exists()
 
-    def test_invalid_algorithm_config(self, mock_regression_project):
+    def test_invalid_algorithm_config(self, mock_brisk_project):
         """Test creation with invalid algorithm configuration"""
         with pytest.raises(
             ValueError, 
@@ -101,7 +101,7 @@ class TestExperimentGroup:
                 algorithm_config={"ridge": {"alpha": 1.0}}
             )
 
-    def test_invalid_algorithm_config_nested(self, mock_regression_project):
+    def test_invalid_algorithm_config_nested(self, mock_brisk_project):
         """Test creation with invalid algorithm configuration"""
         with pytest.raises(
             ValueError, 
@@ -122,7 +122,7 @@ class TestExperimentGroup:
             algorithm_config={"ridge": {"alpha": 1.0}}
         )
 
-    def test_invalid_data_config(self, mock_regression_project):
+    def test_invalid_data_config(self, mock_brisk_project):
         """Test creation with invalid data configuration"""
         with pytest.raises(ValueError, match="Invalid DataManager parameters"):
             ExperimentGroup(
@@ -137,7 +137,7 @@ class TestExperimentGroup:
         {"scale_method": "standard"},
         None
     ])
-    def test_valid_data_configs(self, mock_regression_project, data_config):
+    def test_valid_data_configs(self, mock_brisk_project, data_config):
         """Test various valid data configurations"""
         group = ExperimentGroup(
             name="test",
@@ -155,7 +155,7 @@ class TestExperimentGroup:
         """).strip()
         assert valid_group_two_datasets.description == expected_string
 
-    def test_invalid_description(self, mock_regression_project):
+    def test_invalid_description(self, mock_brisk_project):
         """Test invalid description raises ValueError"""
         with pytest.raises(ValueError, match="Description must be a string"):
             ExperimentGroup(
@@ -171,7 +171,7 @@ class TestExperimentGroup:
                 description=["A description", "that is not a string"]
             )
 
-    def test_invalid_workflow_args(self, mock_regression_project):
+    def test_invalid_workflow_args(self, mock_brisk_project):
         with pytest.raises(ValueError, match="workflow_args must be a dict"):
             ExperimentGroup(
                 name="test_invalid_args",

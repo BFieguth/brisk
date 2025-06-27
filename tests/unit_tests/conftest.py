@@ -21,7 +21,7 @@ def mock_briskconfig_file(tmp_path):
 
 
 @pytest.fixture
-def mock_reg_algorithms_py(tmp_path):
+def mock_algorithms_py(tmp_path):
     algorithm_path = tmp_path / 'algorithms.py'
     algorithm_py = """
 import numpy as np
@@ -59,7 +59,7 @@ ALGORITHM_CONFIG = brisk.AlgorithmCollection(
 
 
 @pytest.fixture
-def mock_reg_data_py(tmp_path):
+def mock_data_py(tmp_path):
     data_path = tmp_path / 'data.py'
     data_py = """
 from brisk.data.data_manager import DataManager
@@ -76,7 +76,7 @@ BASE_DATA_MANAGER = DataManager(
 
 
 @pytest.fixture
-def mock_reg_metric_py(tmp_path):
+def mock_metric_py(tmp_path):
     metric_path = tmp_path / 'metric.py'
     metric_py = """
 import brisk
@@ -91,7 +91,7 @@ METRIC_CONFIG = brisk.MetricManager(
 
 
 @pytest.fixture
-def mock_reg_training_py(tmp_path):
+def mock_training_py(tmp_path):
     training_path = tmp_path / 'training.py'
     training_py = """
 from brisk.training.training_manager import TrainingManager
@@ -111,7 +111,7 @@ manager = TrainingManager(
 
 
 @pytest.fixture
-def mock_reg_settings_py(tmp_path):
+def mock_settings_py(tmp_path):
     settings_path = tmp_path / 'settings.py'
     settings_py = """
 from brisk.configuration.configuration import Configuration, ConfigurationManager
@@ -267,13 +267,13 @@ class Regression(Workflow):
 
 
 @pytest.fixture
-def mock_regression_project(
+def mock_brisk_project(
     mock_briskconfig_file, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_algorithms_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_data_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_metric_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_training_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_reg_settings_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_algorithms_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_data_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_metric_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_training_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_settings_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
     mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
     tmp_path,

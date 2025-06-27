@@ -17,6 +17,7 @@ def linear_wrapper():
         hyperparam_grid={'fit_intercept': [True, False]}
     )
 
+
 @pytest.fixture
 def rf_wrapper():
     """Create a RandomForest AlgorithmWrapper."""
@@ -27,6 +28,7 @@ def rf_wrapper():
         default_params={'n_estimators': 100},
         hyperparam_grid={'n_estimators': [50, 100, 200]}
     )
+
 
 @pytest.fixture
 def ridge_wrapper():
@@ -39,6 +41,7 @@ def ridge_wrapper():
         hyperparam_grid={'alpha': [0.1, 1.0, 10.0]}
     )
 
+
 @pytest.fixture
 def single_model(linear_wrapper):
     """Create a simple experiment with one model."""
@@ -50,6 +53,7 @@ def single_model(linear_wrapper):
         table_name=None,
         categorical_features=None
     )
+
 
 @pytest.fixture
 def multiple_models(linear_wrapper, rf_wrapper):
@@ -65,6 +69,7 @@ def multiple_models(linear_wrapper, rf_wrapper):
         table_name=None,
         categorical_features=None
     )
+
 
 @pytest.fixture
 def sql_table(ridge_wrapper):

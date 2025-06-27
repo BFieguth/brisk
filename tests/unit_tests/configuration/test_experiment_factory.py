@@ -7,7 +7,7 @@ from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
 
 @pytest.fixture
-def factory(mock_reg_algorithms_py, tmp_path):
+def factory(mock_algorithms_py, tmp_path):
     """Create ExperimentFactory instance."""
     algorithms_path = tmp_path / 'algorithms.py'
     spec = importlib.util.spec_from_file_location(
@@ -20,7 +20,7 @@ def factory(mock_reg_algorithms_py, tmp_path):
 
 
 @pytest.fixture
-def factory_categorical(mock_reg_algorithms_py, tmp_path):
+def factory_categorical(mock_algorithms_py, tmp_path):
     """Create ExperimentFactory instance."""
     algorithms_path = tmp_path / 'algorithms.py'
     spec = importlib.util.spec_from_file_location(
@@ -35,7 +35,7 @@ def factory_categorical(mock_reg_algorithms_py, tmp_path):
 
 
 class TestExperimentFactory:
-    def test_initalization(self, mock_reg_algorithms_py, tmp_path):
+    def test_initalization(self, mock_algorithms_py, tmp_path):
         algorithms_path = tmp_path / 'algorithms.py'
         spec = importlib.util.spec_from_file_location(
             "algorithms", str(algorithms_path)
@@ -65,7 +65,7 @@ class TestExperimentFactory:
             ]
             ExperimentFactory(algorithm_list, {})
         
-    def test_single_algorithm(self, factory, mock_regression_project, tmp_path):
+    def test_single_algorithm(self, factory, mock_brisk_project, tmp_path):
         """Test creation of experiment with single algorithm."""
         group = ExperimentGroup(
             name="test",
@@ -86,7 +86,7 @@ class TestExperimentFactory:
         assert exp.table_name == None
         assert exp.categorical_features == None
 
-    def test_multiple_separate_algorithms(self, factory, mock_regression_project, tmp_path):
+    def test_multiple_separate_algorithms(self, factory, mock_brisk_project, tmp_path):
         """Test creation of separate experiments for multiple algorithms."""
         group = ExperimentGroup(
             name="test",
@@ -121,7 +121,7 @@ class TestExperimentFactory:
         assert ridge_exp.table_name == None
         assert ridge_exp.categorical_features == None
 
-    def test_combined_algorithms(self, factory, mock_regression_project, tmp_path):
+    def test_combined_algorithms(self, factory, mock_brisk_project, tmp_path):
         """Test creation of single experiment with multiple algorithms."""
         group = ExperimentGroup(
             name="test",
@@ -144,7 +144,7 @@ class TestExperimentFactory:
         assert exp.table_name == None
         assert exp.categorical_features == None
 
-    def test_multiple_datasets(self, factory, mock_regression_project, tmp_path):
+    def test_multiple_datasets(self, factory, mock_brisk_project, tmp_path):
         """Test creation of experiments for multiple datasets."""      
         group = ExperimentGroup(
             name="test",
@@ -166,7 +166,7 @@ class TestExperimentFactory:
         assert exp.table_name == None
         assert exp.categorical_features == None
 
-    def test_algorithm_config(self, factory, mock_regression_project):
+    def test_algorithm_config(self, factory, mock_brisk_project):
         """Test application of algorithm configuration."""
         group = ExperimentGroup(
             name="test",
@@ -190,7 +190,7 @@ class TestExperimentFactory:
         assert exp.algorithms["model"].default_params["alpha"] == 0.1
         assert exp.algorithms["model"].default_params["max_iter"] == 10000
 
-    def test_invalid_algorithm(self, factory, mock_regression_project):
+    def test_invalid_algorithm(self, factory, mock_brisk_project):
         """Test handling of invalid algorithm name."""
         group = ExperimentGroup(
             name="test",
@@ -201,7 +201,7 @@ class TestExperimentFactory:
         with pytest.raises(KeyError, match="No algorithm found with name: "):
             factory.create_experiments(group)
 
-    def test_mixed_algorithm_groups(self, factory, mock_regression_project, tmp_path):
+    def test_mixed_algorithm_groups(self, factory, mock_brisk_project, tmp_path):
         """Test handling of mixed single and grouped algorithms."""
         group = ExperimentGroup(
             name="test",
@@ -235,7 +235,7 @@ class TestExperimentFactory:
         assert grouped.table_name == None
         assert grouped.categorical_features == None
 
-    def test_create_experiment_categorical_features(self, factory_categorical, mock_regression_project, tmp_path):
+    def test_create_experiment_categorical_features(self, factory_categorical, mock_brisk_project, tmp_path):
         group = ExperimentGroup(
             name="test",
             datasets=["categorical.csv"],
@@ -254,7 +254,7 @@ class TestExperimentFactory:
         assert exp.table_name == None
         assert exp.categorical_features == ["category"]
 
-    def test_create_experiment_sql(self, factory, mock_regression_project, tmp_path):
+    def test_create_experiment_sql(self, factory, mock_brisk_project, tmp_path):
         group = ExperimentGroup(
             name="test",
             datasets=[("test_data.db", "regression")],
@@ -348,7 +348,7 @@ class TestExperimentFactory:
         with pytest.raises(TypeError, match="algorithms must contain strings or lists of strings, got"):
             factory._normalize_algorithms(["linear", 1, "elasticnet"])
 
-        with pytest.raises(TypeError, match="algorithms must contain strings or lists of strings, got"):
+        with pytest.raises(TypeError, match="nested algorithm lists must contain strings, got"):
             factory._normalize_algorithms(["linear", ["ridge", 1], "elasticnet"])
 
         with pytest.raises(TypeError, match="algorithms must contain strings or lists of strings, got"):

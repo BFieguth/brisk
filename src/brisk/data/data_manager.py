@@ -184,7 +184,6 @@ class DataManager:
             "the specified split method."
             )
 
-
     def _set_scaler(self):
         if self.scale_method == "standard":
             return preprocessing.StandardScaler()
