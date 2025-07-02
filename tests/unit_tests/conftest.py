@@ -143,11 +143,11 @@ def mock_datasets(tmp_path):
 
     sample_data = {
         'regression.csv': """x,y,target
-1.0,2.0,0
-2.0,3.0,1
-3.0,4.0,0
-4.0,5.0,1
-5.0,6.0,0""",
+1.0,2.0,0.5
+2.0,3.0,1.3
+3.0,4.0,0.1
+4.0,5.0,1.0
+5.0,6.0,0.8""",
         'classification.csv': """feature1,feature2,label
 0.1,0.2,A
 0.3,0.4,B
@@ -163,11 +163,11 @@ def mock_datasets(tmp_path):
 60.0,B,negative""",
 
         'group.csv': """group,x,y,target
-A,1.0,2.0,0
-A,2.0,3.0,1
-B,3.0,4.0,0
-B,4.0,5.0,1
-C,5.0,6.0,0"""
+A,1.0,2.0,0.2
+A,2.0,3.0,1.9
+B,3.0,4.0,0.3
+B,4.0,5.0,1.2
+C,5.0,6.0,0.7"""
     }
 
     for filename, content in sample_data.items():

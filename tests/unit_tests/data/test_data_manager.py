@@ -238,13 +238,13 @@ class TestDataManager:
         assert isinstance(df_regression, pd.DataFrame)
         assert df_regression.shape == (5, 3)
         assert df_regression.columns.tolist() == ['x', 'y', 'target']
-        assert df_regression.dtypes.tolist() == [float, float, int]
+        assert df_regression.dtypes.tolist() == [float, float, float]
         # Check values are correct
-        assert df_regression.iloc[0].tolist() == [1.0, 2.0, 0]
-        assert df_regression.iloc[1].tolist() == [2.0, 3.0, 1]
-        assert df_regression.iloc[2].tolist() == [3.0, 4.0, 0]
-        assert df_regression.iloc[3].tolist() == [4.0, 5.0, 1]
-        assert df_regression.iloc[4].tolist() == [5.0, 6.0, 0]
+        assert df_regression.iloc[0].tolist() == [1.0, 2.0, 0.5]
+        assert df_regression.iloc[1].tolist() == [2.0, 3.0, 1.3]
+        assert df_regression.iloc[2].tolist() == [3.0, 4.0, 0.1]
+        assert df_regression.iloc[3].tolist() == [4.0, 5.0, 1.0]
+        assert df_regression.iloc[4].tolist() == [5.0, 6.0, 0.8]
 
         df_classification = data_manager._load_data(tmp_path / "datasets" / "classification.csv")
         # Check dataframe is correct
@@ -269,13 +269,13 @@ class TestDataManager:
         # Check dataframe is correct
         assert df_regression.shape == (5, 3)
         assert df_regression.columns.tolist() == ['x', 'y', 'target']
-        assert df_regression.dtypes.tolist() == [int64, int64, int64]
+        assert df_regression.dtypes.tolist() == [int64, int64, float64]
         # Check values are correct
-        assert df_regression.iloc[0].tolist() == [1, 2, 0]
-        assert df_regression.iloc[1].tolist() == [2, 3, 1]
-        assert df_regression.iloc[2].tolist() == [3, 4, 0]
-        assert df_regression.iloc[3].tolist() == [4, 5, 1]
-        assert df_regression.iloc[4].tolist() == [5, 6, 0]
+        assert df_regression.iloc[0].tolist() == [1, 2, 0.5]
+        assert df_regression.iloc[1].tolist() == [2, 3, 1.3]
+        assert df_regression.iloc[2].tolist() == [3, 4, 0.1]
+        assert df_regression.iloc[3].tolist() == [4, 5, 1.0]
+        assert df_regression.iloc[4].tolist() == [5, 6, 0.8]
 
         df_classification = data_manager._load_data(tmp_path / "datasets" / "classification.xlsx")
         # Check dataframe is correct
