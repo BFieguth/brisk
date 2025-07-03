@@ -121,7 +121,8 @@ class EvaluationManager:
         filename (str): 
             The name of the output file without extension.
         """
-        results = self._calc_evaluate_model(model, X, y, metrics)
+        predictions = model.predict(X)
+        results = self._calc_evaluate_model(predictions, y, metrics)
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
@@ -142,21 +143,18 @@ class EvaluationManager:
 
     def _calc_evaluate_model(
         self,
-        model: base.BaseEstimator,
-        X: pd.DataFrame, # pylint: disable=C0103
-        y: pd.Series,
+        predictions: Dict[str, Any],
+        y_true: pd.Series,
         metrics: List[str]
     ) -> Dict[str, float]:
         """Calculate the evaluation results for a model.
 
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model to evaluate.
-        X (pd.DataFrame): 
-            The input features.
-        y (pd.Series): 
-            The target data.
+        predictions (Dict[str, Any]): 
+            The predictions of the model.
+        y_true (pd.Series): 
+            The true target values.
         metrics (List[str]): 
             A list of metrics to calculate.
 
@@ -165,14 +163,12 @@ class EvaluationManager:
         Dict[str, float]: 
             A dictionary containing the evaluation results for each metric.
         """
-        predictions = model.predict(X)
         results = {}
-
         for metric_name in metrics:
             display_name = self.metric_config.get_name(metric_name)
             scorer = self.metric_config.get_metric(metric_name)
             if scorer is not None:
-                score = scorer(y, predictions)
+                score = scorer(y_true, predictions)
                 results[display_name] = score
             else:
                 self.logger.info(f"Scorer for {metric_name} not found.")
@@ -405,7 +401,8 @@ class EvaluationManager:
         filename (str): 
             The name of the output file (without extension).
         """
-        plot_data, max_range = self._calc_plot_pred_vs_obs(model, X, y_true)
+        prediction = model.predict(X)
+        plot_data, max_range = self._calc_plot_pred_vs_obs(prediction, y_true)
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
@@ -438,18 +435,15 @@ class EvaluationManager:
 
     def _calc_plot_pred_vs_obs(
         self,
-        model: base.BaseEstimator,
-        X: pd.DataFrame, # pylint: disable=C0103
+        prediction: pd.Series,
         y_true: pd.Series,
     ) -> None:
         """Calculate the plot data for the predicted vs. observed values.
 
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model.
-        X (pd.DataFrame): 
-            The input features.
+        prediction (pd.Series): 
+            The predicted values.
         y_true (pd.Series): 
             The true target values.
 
@@ -458,7 +452,6 @@ class EvaluationManager:
         Tuple[pd.DataFrame, float]: 
             A tuple containing the plot data and the maximum range of the plot.
         """
-        prediction = model.predict(X)
         plot_data = pd.DataFrame({
             "Observed": y_true,
             "Predicted": prediction
@@ -743,14 +736,16 @@ class EvaluationManager:
             importance = importance[sorted_indices[:threshold]]
             feature_names = [
                 feature_names[i] for i in sorted_indices[:threshold]
-                ]
+            ]
         elif isinstance(threshold, float):
-            above_threshold = importance >= threshold
-            importance = importance[above_threshold]
+            num_features = int(len(feature_names) * threshold)
+            if num_features == 0:
+                num_features = 1
+            sorted_indices = np.argsort(importance)[::-1]
+            importance = importance[sorted_indices[:num_features]]
             feature_names = [
-                feature_names[i] for i in range(len(feature_names))
-                if above_threshold[i]
-                ]
+                feature_names[i] for i in sorted_indices[:num_features]
+            ]
 
         num_features = len(feature_names)
         size_per_feature = 0.1
@@ -798,7 +793,8 @@ class EvaluationManager:
         add_fit_line (bool): 
             Whether to add a line of best fit to the plot.
         """
-        plot_data = self._calc_plot_residuals(model, X, y)
+        predictions = model.predict(X)
+        plot_data = self._calc_plot_residuals(predictions, y)
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
@@ -840,20 +836,15 @@ class EvaluationManager:
 
     def _calc_plot_residuals(
         self,
-        model: base.BaseEstimator,
-        X: pd.DataFrame, # pylint: disable=C0103
+        predictions: pd.Series,
         y: pd.Series,
     ) -> pd.DataFrame:
         """Calculate the residuals (observed - predicted).
 
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model.
-
-        X (pd.DataFrame): 
-            The input features.
-
+        predictions (pd.Series): 
+            The predicted values.
         y (pd.Series): 
             The true target values.
 
@@ -862,9 +853,7 @@ class EvaluationManager:
         pd.DataFrame: 
             A dataframe containing the observed and residual values.
         """
-        predictions = model.predict(X)
         residuals = y - predictions
-
         plot_data = pd.DataFrame({
             "Observed": y,
             "Residual (Observed - Predicted)": residuals
@@ -899,7 +888,7 @@ class EvaluationManager:
             The name of the output file (without extension).
         """
         plot_data = self._calc_plot_model_comparison(
-            models, X, y, metric
+            *models, X=X, y=y, metric=metric
         )
         if plot_data is None:
             return
@@ -1213,9 +1202,10 @@ class EvaluationManager:
         display_name (str): 
             The name of the algorithm to use in the plot labels.
         """
-        plot_data = self._calc_plot_1d_performance(
-            param_values, mean_test_score, param_name
-        )
+        plot_data = pd.DataFrame({
+            "Hyperparameter": param_values,
+            "Mean Test Score": mean_test_score,
+        })
         param_name = param_name.capitalize()
         title = f"Hyperparameter Performance: {display_name}"
         plot = (
@@ -1239,33 +1229,6 @@ class EvaluationManager:
         self.logger.info(
             "Hyperparameter performance plot saved to '%s'.", output_path
             )
-
-    def _calc_plot_1d_performance(
-        self,
-        param_values: List[Any],
-        mean_test_score: List[float],
-    ) -> pd.DataFrame:
-        """Calculate the plot data for the 1D performance.
-
-        Parameters
-        ----------
-        param_values (List[Any]): 
-            The values of the hyperparameter.
-
-        mean_test_score (List[float]): 
-            The mean test scores for each hyperparameter value.
-
-        Returns
-        -------
-        pd.DataFrame: 
-            A dataframe containing the hyperparameter values and their mean test
-            scores.
-        """
-        plot_data = pd.DataFrame({
-            "Hyperparameter": param_values,
-            "Mean Test Score": mean_test_score,
-        })
-        return plot_data
 
     def _plot_3d_surface(
         self,
@@ -1373,7 +1336,8 @@ class EvaluationManager:
         filename : str
             The name of the output file (without extension).
         """
-        data = self._calc_confusion_matrix(model, X, y)
+        prediction = model.predict(X)
+        data = self._calc_confusion_matrix(prediction, y)
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.json")
         metadata = self._get_metadata(model, is_test=X.attrs["is_test"])
@@ -1390,19 +1354,16 @@ class EvaluationManager:
 
     def _calc_confusion_matrix(
         self,
-        model: Any,
-        X: np.ndarray, # pylint: disable=C0103
+        prediction: pd.Series,
         y: np.ndarray,
     ) -> Dict[str, Any]:
         """Generate a confusion matrix.
 
         Parameters
         ----------
-        model : Any
-            Trained classification model with predict method
-        X : ndarray
-            The input features.
-        y : ndarray
+        prediction (pd.Series): 
+            The predicted target values.
+        y (np.ndarray): 
             The true target values.
 
         Returns
@@ -1410,9 +1371,8 @@ class EvaluationManager:
         Dict[str, Any]: 
             A dictionary containing the confusion matrix and labels.
         """
-        y_pred = model.predict(X)
         labels = np.unique(y).tolist()
-        cm = sk_metrics.confusion_matrix(y, y_pred, labels=labels).tolist()
+        cm = sk_metrics.confusion_matrix(y, prediction, labels=labels).tolist()
         data = {
             "confusion_matrix": cm,
             "labels": labels
@@ -1442,7 +1402,8 @@ class EvaluationManager:
         filename (str): 
             The path to save the confusion matrix heatmap image.
         """
-        plot_data = self._calc_plot_confusion_heatmap(model, X, y)
+        prediction = model.predict(X)
+        plot_data = self._calc_plot_confusion_heatmap(prediction, y)
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
@@ -1470,31 +1431,25 @@ class EvaluationManager:
 
     def _calc_plot_confusion_heatmap(
         self,
-        model: Any,
-        X: np.ndarray, # pylint: disable=C0103
+        prediction: pd.Series,
         y: np.ndarray,
     ) -> pd.DataFrame:
         """Calculate the plot data for the confusion matrix heatmap.
 
         Parameters
         ----------
-        model (Any): 
-            The trained classification model with a `predict` method.
-
-        X (np.ndarray): 
-            The input features.
-
+        prediction (pd.Series): 
+            The predicted target values.
         y (np.ndarray): 
-            The target labels.
+            The true target values.
 
         Returns
         -------
         pd.DataFrame: 
             A dataframe containing the confusion matrix heatmap data.
         """
-        y_pred = model.predict(X)
         labels = np.unique(y).tolist()
-        cm = sk_metrics.confusion_matrix(y, y_pred, labels=labels)
+        cm = sk_metrics.confusion_matrix(y, prediction, labels=labels)
         cm_percent = cm / cm.sum() * 100
 
         plot_data = []
@@ -1516,7 +1471,8 @@ class EvaluationManager:
         model: Any,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
-        filename: str
+        filename: str,
+        pos_label: Optional[str] = None
     ) -> None:
         """Plot a reciever operator curve with area under the curve.
 
@@ -1530,8 +1486,20 @@ class EvaluationManager:
             The true binary labels.
         filename (str): 
             The path to save the ROC curve image.
+        pos_label (Optional[str]): 
+            The label of the positive class.
         """
-        plot_data, auc_data, auc = self._calc_plot_roc_curve(model, X, y)
+        if hasattr(model, "predict_proba"):
+            # Use probability of the positive class
+            y_score = model.predict_proba(X)[:, 1]
+        elif hasattr(model, "decision_function"):
+            # Use decision function score
+            y_score = model.decision_function(X)
+        else:
+            # Use binary predictions as a last resort
+            y_score = model.predict(X)
+
+        plot_data, auc_data, auc = self._calc_plot_roc_curve(y_score, y, pos_label)
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
@@ -1578,18 +1546,16 @@ class EvaluationManager:
 
     def _calc_plot_roc_curve(
         self,
-        model: Any,
-        X: np.ndarray, # pylint: disable=C0103
+        y_score: pd.Series,
         y: np.ndarray,
+        pos_label: Optional[str] = None
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Calculate the plot data for the ROC curve.
 
         Parameters
         ----------
-        model (Any): 
-            The trained binary classification model.
-        X (np.ndarray): 
-            The input features.
+        y_score (pd.Series): 
+            The class probabilities.
         y (np.ndarray): 
             The true binary labels.
 
@@ -1599,17 +1565,7 @@ class EvaluationManager:
             A tuple containing the ROC curve data, the AUC data, and the AUC
             score.
         """
-        if hasattr(model, "predict_proba"):
-            # Use probability of the positive class
-            y_score = model.predict_proba(X)[:, 1]
-        elif hasattr(model, "decision_function"):
-            # Use decision function score
-            y_score = model.decision_function(X)
-        else:
-            # Use binary predictions as a last resort
-            y_score = model.predict(X)
-
-        fpr, tpr, _ = sk_metrics.roc_curve(y, y_score)
+        fpr, tpr, _ = sk_metrics.roc_curve(y, y_score, pos_label=pos_label)
         auc = sk_metrics.roc_auc_score(y, y_score)
 
         roc_data = pd.DataFrame({
@@ -1637,7 +1593,8 @@ class EvaluationManager:
         model: Any,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
-        filename: str
+        filename: str,
+        pos_label: Optional[str] = None
     ) -> None:
         """Plot a precision-recall curve with average precision.
 
@@ -1654,9 +1611,20 @@ class EvaluationManager:
 
         filename (str): 
             The path to save the plot.
+        pos_label (Optional[str]): 
+            The label of the positive class.
         """
+        if hasattr(model, "predict_proba"):
+            # Use probability of the positive class
+            y_score = model.predict_proba(X)[:, 1]
+        elif hasattr(model, "decision_function"):
+            # Use decision function score
+            y_score = model.decision_function(X)
+        else:
+            # Use binary predictions as a last resort
+            y_score = model.predict(X)
         plot_data, ap_score = self._calc_plot_precision_recall_curve(
-            model, X, y
+            y_score, y, pos_label
         )
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
@@ -1694,19 +1662,16 @@ class EvaluationManager:
 
     def _calc_plot_precision_recall_curve(
         self,
-        model: Any,
-        X: np.ndarray, # pylint: disable=C0103
+        y_score: pd.Series,
         y: np.ndarray,
+        pos_label: Optional[str] = None
     ) -> pd.DataFrame:
         """Calculate the plot data for the precision-recall curve.
 
         Parameters
         ----------
-        model (Any): 
-            The trained binary classification model.
-
-        X (np.ndarray): 
-            The input features.
+        y_score (pd.Series): 
+            The class probabilities.
 
         y (np.ndarray): 
             The true binary labels.
@@ -1716,18 +1681,8 @@ class EvaluationManager:
         pd.DataFrame: 
             A dataframe containing the precision-recall curve data.
         """
-        if hasattr(model, "predict_proba"):
-            # Use probability of the positive class
-            y_score = model.predict_proba(X)[:, 1]
-        elif hasattr(model, "decision_function"):
-            # Use decision function score
-            y_score = model.decision_function(X)
-        else:
-            # Use binary predictions as a last resort
-            y_score = model.predict(X)
-
-        precision, recall, _ = sk_metrics.precision_recall_curve(y, y_score)
-        ap_score = sk_metrics.average_precision_score(y, y_score)
+        precision, recall, _ = sk_metrics.precision_recall_curve(y, y_score, pos_label=pos_label)
+        ap_score = sk_metrics.average_precision_score(y, y_score, pos_label=pos_label)
 
         pr_data = pd.DataFrame({
             "Recall": recall,
