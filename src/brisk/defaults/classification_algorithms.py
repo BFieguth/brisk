@@ -87,21 +87,5 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         algorithm_class=linear_model.RidgeClassifier,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="bagging_classifier",
-        display_name="Bagging Classifier",
-        algorithm_class=ensemble.BaggingClassifier,
-        hyperparam_grid={
-            "n_estimators": list(range(10, 160, 20)),
-        }
-    ),
-    algorithm_wrapper.AlgorithmWrapper(
-        name="voting_classifier",
-        display_name="Voting Classifier",
-        algorithm_class=ensemble.VotingClassifier,
-        hyperparam_grid={
-            "voting": ["hard", "soft"],
-        }
     )
 ]
