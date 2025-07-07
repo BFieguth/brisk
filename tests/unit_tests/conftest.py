@@ -148,7 +148,7 @@ def create_configuration() -> ConfigurationManager:
     config.add_experiment_group(
         name="test_group",
         description="The group used for unit testing.",
-        datasets=["data.csv"]
+        datasets=["regression.csv"]
     )
     
     return config.build()
