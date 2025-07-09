@@ -448,6 +448,7 @@ class TestEvaluationManager:
         assert max_range == 359.26584339867804
         assert plot_data.shape == (80, 2)
 
+    @pytest.mark.filterwarnings("ignore:Removed duplicate entries from 'train_sizes':RuntimeWarning")
     def test_plot_learning_curve(self, eval_manager, rf_regressor, regression_data, tmpdir):
         X, y, _ = regression_data
         filename = tmpdir.join("learning_curve")

@@ -399,11 +399,16 @@ class TestDataManager:
             "group_regression": split
         }
 
-    def test_shuffle_split_grouped(self, data_manager, tmp_path):
+    def test_shuffle_split_grouped(self, mock_brisk_project, tmp_path):
         """
         Test the split method using ShuffleSplit.
         """
-        data_manager.group_column = "group"
+        data_manager = DataManager(
+            test_size=0.2, 
+            split_method="shuffle", 
+            group_column="group", 
+            random_state=42
+        )
         split = data_manager.split(
             tmp_path / "datasets" / "group.csv",
             categorical_features=None,
@@ -414,13 +419,13 @@ class TestDataManager:
 
         # Check data was split correctly (remove group column)
         assert isinstance(split, DataSplitInfo)
-        assert split.X_train.shape == (4, 2)
+        assert split.X_train.shape == (3, 2)
         assert isinstance(split.X_train, pd.DataFrame)
-        assert split.X_test.shape == (1, 2)
+        assert split.X_test.shape == (2, 2)
         assert isinstance(split.X_test, pd.DataFrame)
-        assert split.y_train.shape == (4,)
+        assert split.y_train.shape == (3,)
         assert isinstance(split.y_train, pd.Series)
-        assert split.y_test.shape == (1,)
+        assert split.y_test.shape == (2,)
         assert isinstance(split.y_test, pd.Series)
         assert split.filename == tmp_path / "datasets" / "group.csv"
         assert split.scaler == None
