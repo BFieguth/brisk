@@ -526,6 +526,36 @@ class TestConfigurationManager:
 'l1_ratio': [0.1, 0.5, 1.0],
 ```
 
+### Random Forest (`rf`)
+
+- **Algorithm Class**: `RandomForestRegressor`
+
+**Default Parameters:**
+```python
+'n_jobs': 1,
+```
+
+**Hyperparameter Grid:**
+```python
+'n_estimators': [20, 40, 60, 80, 100, 120, 140],
+```
+
+### Random Forest Classifier (`rf_classifier`)
+
+- **Algorithm Class**: `RandomForestClassifier`
+
+**Default Parameters:**
+```python
+'min_samples_split': 10,
+```
+
+**Hyperparameter Grid:**
+```python
+'n_estimators': [20, 40, 60, 80, 100, 120, 140],
+'criterion': ['friedman_mse', 'absolute_error', 'poisson', 'squared_error'],
+'max_depth': [5, 10, 15, 20, None],
+```
+
 ## Experiment Group: group1
 #### Description: 
 
@@ -666,6 +696,36 @@ Continuous: ['x', 'y']
 ```python
 'alpha': [0.1, 0.2, 0.5],
 'l1_ratio': [0.1, 0.5, 1.0],
+```
+
+### Random Forest (`rf`)
+
+- **Algorithm Class**: `RandomForestRegressor`
+
+**Default Parameters:**
+```python
+'n_jobs': 1,
+```
+
+**Hyperparameter Grid:**
+```python
+'n_estimators': [20, 40, 60, 80, 100, 120, 140],
+```
+
+### Random Forest Classifier (`rf_classifier`)
+
+- **Algorithm Class**: `RandomForestClassifier`
+
+**Default Parameters:**
+```python
+'min_samples_split': 10,
+```
+
+**Hyperparameter Grid:**
+```python
+'n_estimators': [20, 40, 60, 80, 100, 120, 140],
+'criterion': ['friedman_mse', 'absolute_error', 'poisson', 'squared_error'],
+'max_depth': [5, 10, 15, 20, None],
 ```
 
 ## Experiment Group: group1
