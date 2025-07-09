@@ -773,7 +773,7 @@ class ReportManager():
         }
 
         html = [
-            f"<h2>Non-Default Parameters</h2>",
+            "<h2>Non-Default Parameters</h2>",
             f"<p><strong>Model:</strong> {display_name}</p>",
             "<div class='model-details'>"
         ]

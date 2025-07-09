@@ -77,7 +77,8 @@ class ExperimentGroup:
         project_root = project.find_project_root()
         datasets_dir = project_root / "datasets"
         return [
-            (datasets_dir / dataset[0], dataset[1]) if isinstance(dataset, tuple)
+            (datasets_dir / dataset[0], dataset[1])
+            if isinstance(dataset, tuple)
             else (datasets_dir / dataset, None)
             for dataset in self.datasets
         ]

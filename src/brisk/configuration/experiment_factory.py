@@ -67,7 +67,8 @@ class ExperimentFactory:
             algorithm_config, algorithm_wrapper.AlgorithmCollection
         ):
             raise TypeError(
-                f"algorithm_config must be an AlgorithmCollection, got {type(algorithm_config)}"
+                "algorithm_config must be an AlgorithmCollection, "
+                f"got {type(algorithm_config)}"
             )
         self.algorithm_config = algorithm_config
         self.categorical_features = categorical_features
@@ -235,11 +236,13 @@ class ExperimentFactory:
             elif isinstance(item, list):
                 if not all(isinstance(i, str) for i in item):
                     raise TypeError(
-                        f"nested algorithm lists must contain strings, got {item}"
+                        "nested algorithm lists must contain strings, "
+                        f"got {item}"
                     )
                 normalized.append(item)
             else:
                 raise TypeError(
-                    f"algorithms must contain strings or lists of strings, got {type(item)}"
+                    "algorithms must contain strings or lists of strings, "
+                    f"got {type(item)}"
                 )
         return normalized

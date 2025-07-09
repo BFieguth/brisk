@@ -458,7 +458,7 @@ class EvaluationManager:
         })
         max_range = plot_data[["Observed", "Predicted"]].max().max()
         return plot_data, max_range
-    
+
     def plot_learning_curve(
         self,
         model: base.BaseEstimator,
@@ -508,23 +508,23 @@ class EvaluationManager:
         axes[0].set_ylabel(display_name, fontsize=12)
         axes[0].grid()
         axes[0].fill_between(
-            results["train_sizes"], 
+            results["train_sizes"],
             results["train_scores_mean"] - results["train_scores_std"],
-            results["train_scores_mean"] + results["train_scores_std"], 
+            results["train_scores_mean"] + results["train_scores_std"],
             alpha=0.1, color="r"
             )
         axes[0].fill_between(
-            results["train_sizes"], 
+            results["train_sizes"],
             results["test_scores_mean"] - results["test_scores_std"],
-            results["test_scores_mean"] + results["test_scores_std"], 
+            results["test_scores_mean"] + results["test_scores_std"],
             alpha=0.1, color="g"
             )
         axes[0].plot(
-            results["train_sizes"], results["train_scores_mean"], "o-", 
+            results["train_sizes"], results["train_scores_mean"], "o-",
             color="r", label="Training Score"
             )
         axes[0].plot(
-            results["train_sizes"], results["test_scores_mean"], "o-", 
+            results["train_sizes"], results["test_scores_mean"], "o-",
             color="g", label="Cross-Validation Score"
             )
         axes[0].legend(loc="best")
@@ -533,9 +533,9 @@ class EvaluationManager:
         axes[1].grid()
         axes[1].plot(results["train_sizes"], results["fit_times_mean"], "o-")
         axes[1].fill_between(
-            results["train_sizes"], 
+            results["train_sizes"],
             results["fit_times_mean"] - results["fit_times_std"],
-            results["fit_times_mean"] + results["fit_times_std"], 
+            results["fit_times_mean"] + results["fit_times_std"],
             alpha=0.1
             )
         axes[1].set_xlabel("Training Examples", fontsize=12)
@@ -548,9 +548,9 @@ class EvaluationManager:
             results["fit_times_mean"], results["test_scores_mean"], "o-"
         )
         axes[2].fill_between(
-            results["fit_times_mean"], 
+            results["fit_times_mean"],
             results["test_scores_mean"] - results["test_scores_std"],
-            results["test_scores_mean"] + results["test_scores_std"], 
+            results["test_scores_mean"] + results["test_scores_std"],
             alpha=0.1
             )
         axes[2].set_xlabel("Fit Times", fontsize=12)
@@ -600,7 +600,9 @@ class EvaluationManager:
             A dictionary containing the learning curve data.
         """
         results = {}
-        cv_splitter = model_select.RepeatedKFold(n_splits=cv, n_repeats=num_repeats)
+        cv_splitter = model_select.RepeatedKFold(
+            n_splits=cv, n_repeats=num_repeats
+        )
         scorer = self.metric_config.get_scorer(metric)
 
         # Generate learning curve data
@@ -1021,7 +1023,7 @@ class EvaluationManager:
         algo_wrapper = self._get_algo_wrapper(model.wrapper_name)
         param_grid = algo_wrapper.get_hyperparam_grid()
         search_result = self._calc_hyperparameter_tuning(
-            model, method, X_train, y_train, scorer, kf, num_rep, n_jobs, 
+            model, method, X_train, y_train, scorer, kf, num_rep, n_jobs,
             param_grid
         )
         tuned_model = algo_wrapper.instantiate_tuned(
@@ -1261,7 +1263,7 @@ class EvaluationManager:
         display_name (str): 
             The name of the algorithm to use in the plot labels.
         """
-        X, Y, mean_test_score = self._calc_plot_3d_surface(
+        X, Y, mean_test_score = self._calc_plot_3d_surface( # pylint: disable=C0103
             param_grid, search_result, param_names
         )
         fig = plt.figure(figsize=(10, 6))
@@ -1499,7 +1501,9 @@ class EvaluationManager:
             # Use binary predictions as a last resort
             y_score = model.predict(X)
 
-        plot_data, auc_data, auc = self._calc_plot_roc_curve(y_score, y, pos_label)
+        plot_data, auc_data, auc = self._calc_plot_roc_curve(
+            y_score, y, pos_label
+        )
         wrapper = self._get_algo_wrapper(model.wrapper_name)
         plot = (
             pn.ggplot(plot_data, pn.aes(
@@ -1682,8 +1686,12 @@ class EvaluationManager:
         pd.DataFrame: 
             A dataframe containing the precision-recall curve data.
         """
-        precision, recall, _ = sk_metrics.precision_recall_curve(y, y_score, pos_label=pos_label)
-        ap_score = sk_metrics.average_precision_score(y, y_score, pos_label=pos_label)
+        precision, recall, _ = sk_metrics.precision_recall_curve(
+            y, y_score, pos_label=pos_label
+        )
+        ap_score = sk_metrics.average_precision_score(
+            y, y_score, pos_label=pos_label
+        )
 
         pr_data = pd.DataFrame({
             "Recall": recall,
