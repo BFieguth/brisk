@@ -1611,6 +1611,7 @@ class EvaluationManager:
 
         filename (str): 
             The path to save the plot.
+        
         pos_label (Optional[str]): 
             The label of the positive class.
         """

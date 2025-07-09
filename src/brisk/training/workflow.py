@@ -7,7 +7,7 @@ EvaluationManager for model evaluation and visualization.
 """
 
 import abc
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -473,7 +473,8 @@ class Workflow(abc.ABC):
         model: Any,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
-        filename: str
+        filename: str,
+        pos_label: Optional[str] = None
     ) -> None:
         """Plot a reciever operator curve with area under the curve.
 
@@ -490,9 +491,12 @@ class Workflow(abc.ABC):
 
         filename (str): 
             The path to save the ROC curve image.
+        
+        pos_label (Optional[str]): 
+            The label of the positive class.
         """
         return self.evaluator.plot_roc_curve(
-            model, X, y, filename
+            model, X, y, filename, pos_label
         )
 
     def plot_precision_recall_curve( # pragma: no cover
@@ -500,7 +504,8 @@ class Workflow(abc.ABC):
         model: Any,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
-        filename: str
+        filename: str,
+        pos_label: Optional[str] = None
     ) -> None:
         """Plot a precision-recall curve with average precision.
 
@@ -517,7 +522,10 @@ class Workflow(abc.ABC):
 
         filename (str): 
             The path to save the plot.
+        
+        pos_label (Optional[str]): 
+            The label of the positive class.
         """
         return self.evaluator.plot_precision_recall_curve(
-            model, X, y, filename
+            model, X, y, filename, pos_label
         )
