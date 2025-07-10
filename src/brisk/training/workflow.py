@@ -474,7 +474,7 @@ class Workflow(abc.ABC):
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         filename: str,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> None:
         """Plot a reciever operator curve with area under the curve.
 
@@ -492,7 +492,7 @@ class Workflow(abc.ABC):
         filename (str): 
             The path to save the ROC curve image.
         
-        pos_label (Optional[str]): 
+        pos_label (Optional[int]): 
             The label of the positive class.
         """
         return self.evaluator.plot_roc_curve(
@@ -505,7 +505,7 @@ class Workflow(abc.ABC):
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         filename: str,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> None:
         """Plot a precision-recall curve with average precision.
 
@@ -523,7 +523,7 @@ class Workflow(abc.ABC):
         filename (str): 
             The path to save the plot.
         
-        pos_label (Optional[str]): 
+        pos_label (int): 
             The label of the positive class.
         """
         return self.evaluator.plot_precision_recall_curve(

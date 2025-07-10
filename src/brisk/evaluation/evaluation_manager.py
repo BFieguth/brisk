@@ -1474,7 +1474,7 @@ class EvaluationManager:
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         filename: str,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> None:
         """Plot a reciever operator curve with area under the curve.
 
@@ -1488,7 +1488,7 @@ class EvaluationManager:
             The true binary labels.
         filename (str): 
             The path to save the ROC curve image.
-        pos_label (Optional[str]): 
+        pos_label (Optional[int]): 
             The label of the positive class.
         """
         if hasattr(model, "predict_proba"):
@@ -1552,7 +1552,7 @@ class EvaluationManager:
         self,
         y_score: pd.Series,
         y: np.ndarray,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Calculate the plot data for the ROC curve.
 
@@ -1562,6 +1562,8 @@ class EvaluationManager:
             The class probabilities.
         y (np.ndarray): 
             The true binary labels.
+        pos_label (Optional[int]): 
+            The label of the positive class.
 
         Returns
         -------
@@ -1598,7 +1600,7 @@ class EvaluationManager:
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         filename: str,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> None:
         """Plot a precision-recall curve with average precision.
 
@@ -1616,7 +1618,7 @@ class EvaluationManager:
         filename (str): 
             The path to save the plot.
         
-        pos_label (Optional[str]): 
+        pos_label (Optional[int]): 
             The label of the positive class.
         """
         if hasattr(model, "predict_proba"):
@@ -1669,7 +1671,7 @@ class EvaluationManager:
         self,
         y_score: pd.Series,
         y: np.ndarray,
-        pos_label: Optional[str] = None
+        pos_label: Optional[int] = 1
     ) -> pd.DataFrame:
         """Calculate the plot data for the precision-recall curve.
 
@@ -1680,6 +1682,9 @@ class EvaluationManager:
 
         y (np.ndarray): 
             The true binary labels.
+
+        pos_label (Optional[int]): 
+            The label of the positive class.
 
         Returns
         -------
