@@ -445,6 +445,8 @@ class TrainingManager:
             self.metric_config,
             experiment_dir,
             data_split.get_split_metadata(),
+            data_split.group_index_train,
+            data_split.group_index_test,
             self.logger
         )
 

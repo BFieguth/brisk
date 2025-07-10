@@ -83,12 +83,20 @@ class EvaluationManager:
         metric_config: metric_manager.MetricManager,
         output_dir: str,
         split_metadata: Dict[str, Any],
-        logger: Optional[logging.Logger]=None,
+        group_index_train: Dict[str, np.array] | None,
+        group_index_test: Dict[str, np.array] | None,
+        logger: Optional[logging.Logger]=None
     ):
         self.algorithm_config = algorithm_config
         self.metric_config = copy.deepcopy(metric_config)
         self.metric_config.set_split_metadata(split_metadata)
         self.output_dir = output_dir
+        self.group_index_train = group_index_train
+        self.group_index_test = group_index_test
+        if group_index_train is not None and group_index_test is not None:
+            self.data_has_groups = True
+        else:
+            self.data_has_groups = False
         self.logger = logger
 
         self.primary_color = "#0074D9" # Celtic Blue
@@ -240,13 +248,14 @@ class EvaluationManager:
         cv (int): 
             The number of cross-validation folds. Defaults to 5.
         """
+        splitter, indices = self._get_cv_splitter(y, cv)
         results = {}
         for metric_name in metrics:
             display_name = self.metric_config.get_name(metric_name)
             scorer = self.metric_config.get_scorer(metric_name)
             if scorer is not None:
                 scores = model_select.cross_val_score(
-                    model, X, y, scoring=scorer, cv=cv
+                    model, X, y, scoring=scorer, cv=splitter, groups=indices
                     )
                 results[display_name] = {
                     "mean_score": scores.mean(),
@@ -571,7 +580,7 @@ class EvaluationManager:
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         cv: int = 5,
-        num_repeats: int = 1,
+        num_repeats: Optional[int] = None,
         n_jobs: int = -1,
         metric: str = "neg_mean_absolute_error",
     ) -> Dict[str, float]:
@@ -588,7 +597,7 @@ class EvaluationManager:
         cv : int, optional
             Number of cross-validation folds, by default 5
         num_repeats : int, optional
-            Number of times to repeat CV, by default 1
+            Number of times to repeat CV, by default None
         n_jobs : int, optional
             Number of parallel jobs, by default -1
         metric : str, optional
@@ -599,18 +608,16 @@ class EvaluationManager:
         Dict[str, float]: 
             A dictionary containing the learning curve data.
         """
+        splitter, indices = self._get_cv_splitter(y_train, cv, num_repeats)
         results = {}
-        cv_splitter = model_select.RepeatedKFold(
-            n_splits=cv, n_repeats=num_repeats
-        )
         scorer = self.metric_config.get_scorer(metric)
 
         # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = (
             model_select.learning_curve(
-                model, X_train, y_train, cv=cv_splitter, n_jobs=n_jobs,
-                train_sizes=np.linspace(0.1, 1.0, 5), return_times=True,
-                scoring=scorer
+                model, X_train, y_train, cv=splitter, groups=indices,
+                n_jobs=n_jobs, train_sizes=np.linspace(0.1, 1.0, 5),
+                return_times=True, scoring=scorer
             )
         )
         results["train_sizes"] = train_sizes
@@ -1107,15 +1114,15 @@ class EvaluationManager:
             model.__class__.__name__
             )
         score = self.metric_config.get_scorer(scorer)
-        cv = model_select.RepeatedKFold(n_splits=kf, n_repeats=num_rep)
+        splitter, indices = self._get_cv_splitter(y_train, kf, num_rep)
+
         # The arguments for each sklearn searcher are different which is why the
         # first two arguments have no keywords. If adding another searcher make
         # sure the argument names do not conflict.
         search = searcher(
-            model, param_grid, n_jobs=n_jobs, cv=cv,
-            scoring=score
+            model, param_grid, n_jobs=n_jobs, cv=splitter, scoring=score
         )
-        search_result = search.fit(X_train, y_train)
+        search_result = search.fit(X_train, y_train, groups=indices)
         return search_result
 
     def _plot_hyperparameter_performance(
@@ -1888,3 +1895,64 @@ class EvaluationManager:
             The AlgorithmWrapper instance
         """
         return self.algorithm_config[wrapper_name]
+
+    def _get_group_index(self, is_test: bool) -> Dict[str, np.array]:
+        """Get the group index for the training or test data.
+
+        Parameters
+        ----------
+        is_test (bool): 
+            Whether the data is test data.
+        """
+        if self.data_has_groups:
+            if is_test:
+                return self.group_index_test
+            return self.group_index_train
+        return None
+
+    def _get_cv_splitter(
+        self,
+        y: pd.Series,
+        cv: int = 5,
+        num_repeats: Optional[int] = None
+    ) -> Tuple[model_select.BaseCrossValidator, np.array]:
+        group_index = self._get_group_index(y.attrs["is_test"])
+
+        is_categorical = False
+        if y.nunique() / len(y) < 0.05:
+            is_categorical = True
+
+        if group_index:
+            if is_categorical and num_repeats:
+                self.logger.warning(
+                    "No splitter for grouped data and repeated splitting, "
+                    "using StratifiedGroupKFold instead."
+                )
+                splitter = model_select.StratifiedGroupKFold(n_splits=cv)
+            elif not is_categorical and num_repeats:
+                self.logger.warning(
+                    "No splitter for grouped data and repeated splitting, "
+                    "using GroupKFold instead."
+                )
+                splitter = model_select.GroupKFold(n_splits=cv)
+            elif is_categorical:
+                splitter = model_select.StratifiedGroupKFold(n_splits=cv)
+            else:
+                splitter = model_select.GroupKFold(n_splits=cv)
+
+        else:
+            if is_categorical and num_repeats:
+                splitter = model_select.RepeatedStratifiedKFold(n_splits=cv)
+            elif not is_categorical and num_repeats:
+                splitter = model_select.RepeatedKFold(n_splits=cv)
+            elif is_categorical:
+                splitter = model_select.StratifiedKFold(n_splits=cv)
+            else:
+                splitter = model_select.KFold(n_splits=cv)
+
+        if group_index:
+            indices = group_index["indices"]
+        else:
+            indices = None
+
+        return splitter, indices

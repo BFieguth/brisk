@@ -88,10 +88,12 @@ class DataSplitInfo:
         X_test: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         y_test: pd.Series,
+        group_index_train: Dict[str, np.array] | None,
+        group_index_test: Dict[str, np.array] | None,
         filename: str,
         scaler: Optional[Any] = None,
         features: Optional[List[str]] = None,
-        categorical_features: Optional[List[str]] = None
+        categorical_features: Optional[List[str]] = None,
     ):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -107,6 +109,8 @@ class DataSplitInfo:
         self.X_test = X_test.copy(deep=True) # pylint: disable=C0103
         self.y_train = y_train.copy(deep=True)
         self.y_test = y_test.copy(deep=True)
+        self.group_index_train = group_index_train
+        self.group_index_test = group_index_test
 
         self.filename = filename
         self.features = features
