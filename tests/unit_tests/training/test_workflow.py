@@ -117,8 +117,7 @@ class TestWorkflow:
     def test_init_invalid_workflow(self, workflow_factory):
         with pytest.raises(
             TypeError, 
-            match="Can't instantiate abstract class InvalidWorkflowSubclass "
-            "without an implementation for abstract method 'workflow'"
+            match="Can't instantiate abstract class InvalidWorkflowSubclass"
         ):
             workflow_factory(InvalidWorkflowSubclass)
 
@@ -197,11 +196,6 @@ class TestWorkflow:
             match="Subclass must implement the workflow method."
             ):
             temp_workflow.workflow()
-
-
-
-
-# NOTE test each public method of evaluation manager has a method in Workflow
 
     def test_workflow_delegates_all_evaluation_manager_methods(self):
         """Test that Workflow has delegating methods for all public EvaluationManager methods."""

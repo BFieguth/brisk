@@ -1053,7 +1053,7 @@ class TestEvaluationManager:
         assert isinstance(metadata["method"], str)
         assert metadata["method"] == "test_get_metadata"
         assert metadata["models"] == {"rf": "Random Forest"}
-        assert metadata["is_test"] is "False"
+        assert metadata["is_test"] == "False"
 
         metadata = eval_manager._get_metadata(ridge, "another_method", is_test=True)
         assert isinstance(metadata, dict)
@@ -1061,4 +1061,4 @@ class TestEvaluationManager:
         assert isinstance(metadata["method"], str)
         assert metadata["method"] == "another_method"
         assert metadata["models"] == {"ridge": "Ridge Regression"}
-        assert metadata["is_test"] is "True"
+        assert metadata["is_test"] == "True"
