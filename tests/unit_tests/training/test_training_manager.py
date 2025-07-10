@@ -472,7 +472,9 @@ test_logfile
                     y_test=pd.Series([1]),
                     filename=filename,
                     scaler=None,
-                    features=["feature1", "feature2"]
+                    features=["feature1", "feature2"],
+                    group_index_train=None,
+                    group_index_test=None
                 )
                 return split_info
 
@@ -484,7 +486,9 @@ test_logfile
                 categorical_features,
                 table_name,
                 group_name,
-                filename
+                filename,
+                group_index_train=None,
+                group_index_test=None
             ):
                 split_info = super().split(
                     data_path, categorical_features, table_name, group_name,

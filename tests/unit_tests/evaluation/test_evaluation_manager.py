@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
+from sklearn import model_selection
 
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.configuration.algorithm_wrapper import AlgorithmCollection
@@ -206,7 +207,8 @@ def eval_manager(tmp_path, tmpdir, algorithm_config):
     }
     return EvaluationManager(
         algorithm_config, metric_config, output_dir=str(tmpdir), 
-        split_metadata=split_metadata, logger=MagicMock()
+        split_metadata=split_metadata, logger=MagicMock(),
+        group_index_train=None, group_index_test=None
     )
 
 
@@ -1062,3 +1064,79 @@ class TestEvaluationManager:
         assert metadata["method"] == "another_method"
         assert metadata["models"] == {"ridge": "Ridge Regression"}
         assert metadata["is_test"] == "True"
+
+    def test_get_group_index(self, eval_manager):
+        group_index = eval_manager._get_group_index(True)
+        assert group_index is None
+
+        group_index = eval_manager._get_group_index(False)
+        assert group_index is None
+
+        eval_manager.data_has_groups = True
+        eval_manager.group_index_train = {
+            "values": np.array([1, 2, 3]),
+            "indices": np.array([0, 1, 2]),
+            "series": pd.Series([1, 2, 3])
+        }
+        eval_manager.group_index_test = {
+            "values": np.array([4, 5, 6]),
+            "indices": np.array([3, 4, 5]),
+            "series": pd.Series([4, 5, 6])
+        }
+        group_index = eval_manager._get_group_index(False)
+        assert np.array_equal(group_index["values"], np.array([1, 2, 3]))
+        assert np.array_equal(group_index["indices"], np.array([0, 1, 2]))
+        assert pd.Series(group_index["series"]).equals(pd.Series([1, 2, 3]))
+
+        group_index = eval_manager._get_group_index(True)
+        assert np.array_equal(group_index["values"], np.array([4, 5, 6]))
+        assert np.array_equal(group_index["indices"], np.array([3, 4, 5]))
+        assert pd.Series(group_index["series"]).equals(pd.Series([4, 5, 6]))
+
+    def test_get_cv_splitter(self, eval_manager, regression100_data, regression100_group_data):
+        _, y, _ = regression100_data
+        y_categorical = pd.Series([1, 0] * 25) 
+        y_categorical.attrs["is_test"] = False
+
+        splitter, _ = eval_manager._get_cv_splitter(y, 5, None)
+        assert isinstance(splitter, model_selection.KFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(y, 5, 2)
+        assert isinstance(splitter, model_selection.RepeatedKFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(
+            y_categorical, 5, None
+        )
+        assert isinstance(splitter, model_selection.StratifiedKFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(
+            y_categorical, 5, 2
+        )
+        assert isinstance(splitter, model_selection.RepeatedStratifiedKFold)
+
+        eval_manager.data_has_groups = True
+        eval_manager.group_index_train = {
+            "values": np.array([1, 2, 3]),
+            "indices": np.array([0, 1, 2]),
+            "series": pd.Series([1, 2, 3])
+        }
+        eval_manager.group_index_test = {
+            "values": np.array([4, 5, 6]),
+            "indices": np.array([3, 4, 5]),
+            "series": pd.Series([4, 5, 6])
+        }
+        splitter, _ = eval_manager._get_cv_splitter(y, 5, None)
+        assert isinstance(splitter, model_selection.GroupKFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(y, 5, 2)
+        assert isinstance(splitter, model_selection.GroupKFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(
+            y_categorical, 5, None
+        )
+        assert isinstance(splitter, model_selection.StratifiedGroupKFold)
+
+        splitter, _ = eval_manager._get_cv_splitter(
+            y_categorical, 5, 2
+        )
+        assert isinstance(splitter, model_selection.StratifiedGroupKFold)
