@@ -1,35 +1,87 @@
 from unittest.mock import MagicMock
-
+import importlib
+import inspect
+        
 import pandas as pd
 import pytest
+from sklearn.linear_model import LinearRegression
 
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.training.workflow import Workflow
 
-class MockWorkflow(Workflow): # pragma: no cover
-
+class WorkflowSubclass(Workflow): # pragma: no cover
     def workflow(self): 
         """Mock workflow implementation for testing."""
+        self.evaluate_model(
+            self.model, self.X_train, self.y_train, "MAE", "evaluate_model"
+        )
+
+
+class InvalidWorkflowSubclass(Workflow): # pragma: no cover
+    def not_a_workflow(self):
         pass
 
 
-class TestWorkflowClass:
-    """Test class for the Workflow base class."""
+@pytest.fixture
+def workflow_factory(mock_brisk_project, tmp_path):
+    """Fixture to initialize a Workflow instance with mock data."""
+    def _create_workflow(workflow_class=WorkflowSubclass, workflow_attributes=None):
+        # Load algorithm config    
+        algorithm_file = tmp_path / "algorithms.py"
+        algorithm_spec = importlib.util.spec_from_file_location(
+            "algorithms", str(algorithm_file)
+        )
+        algorithm_module = importlib.util.module_from_spec(algorithm_spec)
+        algorithm_spec.loader.exec_module(algorithm_module)
+        algorithm_config = algorithm_module.ALGORITHM_CONFIG
 
-    @pytest.fixture
-    def setup_workflow(self):
-        """Fixture to initialize a Workflow instance with mock data."""
-        evaluator = MagicMock(spec=EvaluationManager)
-        X_train = pd.DataFrame({"feature1": [1, 2], "feature2": [3, 4]})
-        X_test = pd.DataFrame({"feature1": [5, 6], "feature2": [7, 8]})
-        y_train = pd.Series([0, 1])
-        y_test = pd.Series([1, 0])
-        output_dir = "mock_output_dir"
-        algorithm_names = ["mock_model1", "mock_model2"]
-        feature_names = ["feature1", "feature2"]
-        workflow_attributes = {"model1": MagicMock(), "model2": MagicMock()}
+        # Load metric config    
+        metric_file = tmp_path / "metric.py"
+        metric_spec = importlib.util.spec_from_file_location(
+            "metric", str(metric_file)
+        )
+        metric_module = importlib.util.module_from_spec(metric_spec)
+        metric_spec.loader.exec_module(metric_module)
+        metric_config = metric_module.METRIC_CONFIG
 
-        return MockWorkflow(
+        # Setup EvaluationManager
+        evaluator = EvaluationManager(
+            algorithm_config,
+            metric_config,
+            tmp_path / "results",
+            {
+                "num_features": 2,
+                "num_samples": 4
+            },
+            logger=None
+        )
+
+        # Load data
+        data_file = tmp_path / "data.py"
+        data_spec = importlib.util.spec_from_file_location(
+            "data", str(data_file)
+        )
+        data_module = importlib.util.module_from_spec(data_spec)
+        data_spec.loader.exec_module(data_module)
+        data_manager = data_module.BASE_DATA_MANAGER
+        data_split = data_manager.split(
+            data_path=tmp_path / "datasets" / "regression.csv",
+            categorical_features=[],
+            table_name=None,
+            group_name=None,
+            filename=None
+        )
+        X_train, X_test, y_train, y_test = data_split.get_train_test()
+
+        # Create workflow
+        output_dir = tmp_path / "results"
+        algorithm_names = ["linear"]
+        feature_names = ["x", "y"]
+        workflow_attributes = workflow_attributes or {
+            "model": algorithm_config["linear"].instantiate(),
+        }
+
+        return workflow_class(
             evaluator=evaluator, 
             X_train=X_train, 
             X_test=X_test, 
@@ -40,28 +92,57 @@ class TestWorkflowClass:
             feature_names=feature_names, 
             workflow_attributes=workflow_attributes
         )
+    return _create_workflow
 
-    def test_unpack_attributes_model_kwargs(self, setup_workflow):
-        """Test that model_kwargs are unpacked as attributes correctly."""
-        workflow = setup_workflow
-        assert hasattr(workflow, "model1")
-        assert hasattr(workflow, "model2")
-        assert isinstance(workflow.model1, MagicMock)
-        assert isinstance(workflow.model2, MagicMock)
 
-    def test_missing_attribute_error(self, setup_workflow):
-        """Test that accessing a missing attribute raises AttributeError with 
-        a detailed message."""
-        workflow = setup_workflow
-        with pytest.raises(AttributeError, match="not_found"):
-            _ = workflow.not_found
+class TestWorkflow:
+    """Test class for the Workflow base class."""
+    def test_init(self, workflow_factory, tmp_path):
+        workflow = workflow_factory(WorkflowSubclass)
+        assert isinstance(workflow, Workflow)
+        assert isinstance(workflow.evaluator, EvaluationManager)
+        assert isinstance(workflow.X_train, pd.DataFrame)
+        assert workflow.X_train.attrs["is_test"] == False
+        assert isinstance(workflow.X_test, pd.DataFrame)
+        assert workflow.X_test.attrs["is_test"] == True
+        assert isinstance(workflow.y_train, pd.Series)
+        assert workflow.y_train.attrs["is_test"] == False
+        assert isinstance(workflow.y_test, pd.Series)
+        assert workflow.y_test.attrs["is_test"] == True
+        assert workflow.output_dir == tmp_path / "results"
+        assert workflow.algorithm_names == ["linear"]
+        assert workflow.feature_names == ["x", "y"]
+        assert isinstance(workflow.model, LinearRegression)
 
-    def test_getattr_error_message(self, setup_workflow):
+    def test_init_invalid_workflow(self, workflow_factory):
+        with pytest.raises(
+            TypeError, 
+            match="Can't instantiate abstract class InvalidWorkflowSubclass"
+        ):
+            workflow_factory(InvalidWorkflowSubclass)
+
+    def test_getattr_error_message(self, workflow_factory):
         """Test that the AttributeError message lists available attributes."""
-        workflow = setup_workflow
+        workflow = workflow_factory(WorkflowSubclass)
         with pytest.raises(AttributeError) as exc:
             _ = workflow.not_found
         assert "Available attributes are:" in str(exc.value)
+
+    def test_unpack_attributes_model_kwargs(self, workflow_factory):
+        """Test that model_kwargs are unpacked as attributes correctly."""
+        workflow = workflow_factory(WorkflowSubclass)
+        assert hasattr(workflow, "model")
+        assert isinstance(workflow.model, LinearRegression)
+
+        workflow2 = workflow_factory(WorkflowSubclass, workflow_attributes={
+            "metrics": ["MAE", "CCC"],
+            "kf": 3,
+            "string_attribute": "test"
+            }
+        )
+        assert workflow2.metrics == ["MAE", "CCC"]
+        assert workflow2.kf == 3
+        assert workflow2.string_attribute == "test"
 
     def test_abstract_method(self):
         """Test that Workflow raises TypeError if instantiated without implementing 'workflow'."""
@@ -116,28 +197,86 @@ class TestWorkflowClass:
             ):
             temp_workflow.workflow()
 
-    def test_method_delegation(self):
-        """Test that unknown attributes are properly delegated to evaluator."""
-        class MockEvaluator:
-            def test_method(self):
-                return "test_result"
+    def test_workflow_delegates_all_evaluation_manager_methods(self):
+        """Test that Workflow has delegating methods for all public EvaluationManager methods."""
+        # Define utility methods to exclude from delegation requirements
+        utility_methods = {'save_model', 'load_model'}
         
-        mock_evaluator = MockEvaluator()        
-        workflow = MockWorkflow(
-            evaluator=mock_evaluator,
-            X_train=pd.DataFrame(),
-            X_test=pd.DataFrame(),
-            y_train=pd.Series(),
-            y_test=pd.Series(),
-            output_dir="",
-            algorithm_names=[],
-            feature_names=[],
-            workflow_attributes={}
-        )
+        # Get all public methods from EvaluationManager
+        evaluation_methods = []
+        for name, _ in inspect.getmembers(
+            EvaluationManager, predicate=inspect.isfunction
+        ):
+            if not name.startswith('_') and name not in utility_methods:
+                evaluation_methods.append(name)
         
-        # Test that the method is properly delegated
-        assert workflow.test_method() == "test_result"
+        # Check each evaluation method exists in Workflow
+        missing_methods = []
+        for method_name in evaluation_methods:
+            if not hasattr(Workflow, method_name):
+                missing_methods.append(method_name)
+
+        assert not missing_methods, \
+            "Workflow is missing delegating methods for EvaluationManager " \
+            f"methods: {missing_methods}"
+
+    def test_workflow_method_signatures_match_evaluation_manager(self):
+        """Test that Workflow delegating methods have matching signatures with EvaluationManager methods."""
+        # Define utility methods to exclude
+        utility_methods = {'save_model', 'load_model'}
         
-        # Test that non-existent attributes raise AttributeError
-        with pytest.raises(AttributeError, match="'nonexistent_method' not found"):
-            workflow.nonexistent_method()
+        # Get evaluation methods
+        evaluation_methods = []
+        for name, _ in inspect.getmembers(EvaluationManager, predicate=inspect.isfunction):
+            if not name.startswith('_') and name not in utility_methods:
+                evaluation_methods.append(name)
+        
+        # Check signatures match for each method
+        signature_mismatches = []
+        for method_name in evaluation_methods:
+            if not hasattr(Workflow, method_name):
+                continue  # Skip if method doesn't exist (covered by other test)
+                
+            eval_method = getattr(EvaluationManager, method_name)
+            workflow_method = getattr(Workflow, method_name)
+            
+            eval_sig = inspect.signature(eval_method)
+            workflow_sig = inspect.signature(workflow_method)
+            
+            # Compare parameters (excluding 'self')
+            eval_params = list(eval_sig.parameters.values())[1:]
+            workflow_params = list(workflow_sig.parameters.values())[1:]
+            
+            # Check parameter count
+            if len(eval_params) != len(workflow_params):
+                signature_mismatches.append(
+                    f"{method_name}: parameter count mismatch - "
+                    f"EvaluationManager has {len(eval_params)}, Workflow has {len(workflow_params)}"
+                )
+                continue
+            
+            # Check each parameter matches exactly
+            for eval_param, workflow_param in zip(eval_params, workflow_params):
+                if eval_param.name != workflow_param.name:
+                    signature_mismatches.append(
+                        f"{method_name}: parameter name mismatch - "
+                        f"'{eval_param.name}' vs '{workflow_param.name}'"
+                    )
+                if eval_param.annotation != workflow_param.annotation:
+                    signature_mismatches.append(
+                        f"{method_name}.{eval_param.name}: type annotation mismatch - "
+                        f"{eval_param.annotation} vs {workflow_param.annotation}"
+                    )
+                if eval_param.default != workflow_param.default:
+                    signature_mismatches.append(
+                        f"{method_name}.{eval_param.name}: default value mismatch - "
+                        f"{eval_param.default} vs {workflow_param.default}"
+                    )
+                if eval_param.kind != workflow_param.kind:
+                    signature_mismatches.append(
+                        f"{method_name}.{eval_param.name}: parameter kind mismatch - "
+                        f"{eval_param.kind} vs {workflow_param.kind}"
+                    )
+        
+        assert not signature_mismatches, \
+            f"Method signature mismatches found:\n" + "\n".join(signature_mismatches)

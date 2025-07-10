@@ -118,7 +118,7 @@ class DataManager:
             ]
         if self.scale_method not in valid_scale_methods:
             raise ValueError(
-                f"Invalid scale_method: {self.scale_method}."
+                f"Invalid scale_method: {self.scale_method}. "
                 "Choose from standard, minmax, robust, maxabs, normalizer"
                 )
 
@@ -183,7 +183,6 @@ class DataManager:
             "Invalid combination of stratified and group_column for "
             "the specified split method."
             )
-
 
     def _set_scaler(self):
         if self.scale_method == "standard":
@@ -299,7 +298,6 @@ class DataManager:
         ) if group_name else data_path
 
         if split_key in self._splits:
-            print(f"Using cached split for {split_key}")
             return self._splits[split_key]
 
         df = self._load_data(data_path, table_name)

@@ -286,6 +286,15 @@ class DataSplitInfo:
 
         return stats
 
+    def _get_bin_number(self, feature_series: pd.Series) -> int:
+        """Get the number of bins for a given feature.
+        
+        Args:
+            feature_series (pd.Series): The series of feature values.
+        """
+        # Sturges' rule
+        return int(np.ceil(np.log2(len(feature_series)) + 1))
+
     def _plot_histogram_boxplot(
         self,
         feature_name: str,
@@ -308,8 +317,8 @@ class DataSplitInfo:
         )
 
         # Histograms
-        bins_train = int(np.ceil(np.log(len(train_series)) + 1)) # Sturges' rule
-        bins_test = int(np.ceil(np.log(len(test_series)) + 1))
+        bins_train = self._get_bin_number(train_series)
+        bins_test = self._get_bin_number(test_series)
 
         axs[0, 0].hist(
             train_series, bins=bins_train, edgecolor="black", alpha=0.7

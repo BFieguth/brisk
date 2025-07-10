@@ -79,7 +79,7 @@ class TrainingManager:
             lambda: collections.defaultdict(lambda: {})
         )
         self.experiment_results = None
-        self._initialize_experiment_results()
+        self._reset_experiment_results()
 
     def run_experiments(
         self,
@@ -101,7 +101,7 @@ class TrainingManager:
             Whether to generate an HTML report after all experiments. 
             Defaults to True.
         """
-        self._initialize_experiment_results()
+        self._reset_experiment_results()
         progress_bar = tqdm.tqdm(
             total=len(self.experiments),
             desc="Running Experiments",
@@ -207,8 +207,8 @@ class TrainingManager:
                 experiment_name
             )
 
-    def _initialize_experiment_results(self) -> None:
-        """Initialize or reset the experiment results dictionary."""
+    def _reset_experiment_results(self) -> None:
+        """Set self.experiment_results to a defaultdict of lists."""
         self.experiment_results = collections.defaultdict(
             lambda: collections.defaultdict(list)
         )

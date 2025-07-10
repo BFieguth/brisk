@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 import inspect
 
 import pytest
@@ -6,22 +5,67 @@ import pytest
 from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.metric_wrapper import MetricWrapper
 from brisk.defaults.regression_metrics import REGRESSION_METRICS
+from brisk.defaults.classification_metrics import CLASSIFICATION_METRICS
+
+@pytest.fixture
+def metric_manager():
+    """Fixture to initialize MetricManager."""
+    return MetricManager(*REGRESSION_METRICS, *CLASSIFICATION_METRICS)
+
 
 class TestMetricManager:
     """Test class for MetricManager."""
-
-    @pytest.fixture
-    def metric_manager(self):
-        """Fixture to initialize MetricManager."""
-        return MetricManager(*REGRESSION_METRICS)
-
     def test_initialization_with_regression(self, metric_manager):
         """
         Test initialization of MetricManager with regression metrics included.
         """
-        assert "mean_absolute_error" in metric_manager._metrics_by_name
-        assert "MSE" in metric_manager._abbreviations_to_name 
-        assert "CCC" in metric_manager._abbreviations_to_name 
+        expected_metrics = [
+            (wrapper.name, wrapper.abbr) for wrapper in [
+                *REGRESSION_METRICS, *CLASSIFICATION_METRICS
+            ]
+        ]
+        for name, abbr in expected_metrics:
+            assert name in metric_manager._metrics_by_name
+            assert abbr in metric_manager._abbreviations_to_name 
+
+    def test_add_metric_removes_old_abbreviation(self):
+        """Test that updating a metric properly removes its old abbreviation."""
+        manager = MetricManager()
+        
+        # Add initial metric with abbreviation
+        initial_metric = MetricWrapper(
+            name="test_metric",
+            display_name="Test Metric",
+            abbr="TM",
+            func=lambda x, y: 0,
+            greater_is_better=True
+        )
+        manager._add_metric(initial_metric)
+        
+        # Add new metric with same name but different abbreviation
+        updated_metric = MetricWrapper(
+            name="test_metric",
+            display_name="Test Metric Updated",
+            abbr="TMU",
+            func=lambda x, y: 0,
+            greater_is_better=True
+        )
+        manager._add_metric(updated_metric)
+        
+        assert "TM" not in manager._abbreviations_to_name
+        assert "TMU" in manager._abbreviations_to_name
+        assert manager._abbreviations_to_name["TMU"] == "test_metric"
+
+    def test_resolve_identifier_by_name(self, metric_manager):
+        """Test that the resolve_identifier method returns the correct name."""
+        name = metric_manager._resolve_identifier("mean_squared_error")
+        assert name == "mean_squared_error"
+
+        name = metric_manager._resolve_identifier("MSE")
+        assert name == "mean_squared_error"
+
+        with pytest.raises(ValueError, match="Metric 'mse' not found"):
+            metric_manager._resolve_identifier("mse")
 
     def test_get_metric_by_name(self, metric_manager):
         """
@@ -97,40 +141,12 @@ class TestMetricManager:
             ):
             metric_manager.get_name("invalid_name")
 
-    def test_add_metric_removes_old_abbreviation(self):
-        """Test that updating a metric properly removes its old abbreviation."""
-        manager = MetricManager()
-        
-        # Add initial metric with abbreviation
-        initial_metric = MetricWrapper(
-            name="test_metric",
-            display_name="Test Metric",
-            abbr="TM",
-            func=lambda x, y: 0,
-            greater_is_better=True
-        )
-        manager._add_metric(initial_metric)
-        
-        # Add new metric with same name but different abbreviation
-        updated_metric = MetricWrapper(
-            name="test_metric",
-            display_name="Test Metric Updated",
-            abbr="TMU",
-            func=lambda x, y: 0,
-            greater_is_better=True
-        )
-        manager._add_metric(updated_metric)
-        
-        assert "TM" not in manager._abbreviations_to_name
-        assert "TMU" in manager._abbreviations_to_name
-        assert manager._abbreviations_to_name["TMU"] == "test_metric"
-
     def test_list_metrics(self, metric_manager):
         """Test that the list_metrics method returns a list of metric names."""
         metric_names = metric_manager.list_metrics()
         assert isinstance(metric_names, list)
         assert all(isinstance(name, str) for name in metric_names)
-        assert len(metric_names) == len(REGRESSION_METRICS)
+        assert len(metric_names) == len(REGRESSION_METRICS) + len(CLASSIFICATION_METRICS)
         
         regression_metric_names = [
             "explained_variance_score",
@@ -147,7 +163,20 @@ class TestMetricManager:
             "concordance_correlation_coefficient",
             "neg_mean_absolute_error"
         ]
+        classification_metric_names = [
+            "accuracy",
+            "precision",
+            "recall",
+            "f1_score",
+            "balanced_accuracy",
+            "top_k_accuracy",
+            "log_loss",
+            "roc_auc",
+            "brier",
+            "roc"
+        ]
         assert all(name in metric_names for name in regression_metric_names)
+        assert all(name in metric_names for name in classification_metric_names)
 
     def test_set_split_metadata(self, metric_manager):
         """Test that the split_metadata is set correctly for all metric 

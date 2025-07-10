@@ -63,6 +63,13 @@ class ExperimentFactory:
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
         categorical_features: Dict[str, List[str]]
     ):
+        if not isinstance(
+            algorithm_config, algorithm_wrapper.AlgorithmCollection
+        ):
+            raise TypeError(
+                "algorithm_config must be an AlgorithmCollection, "
+                f"got {type(algorithm_config)}"
+            )
         self.algorithm_config = algorithm_config
         self.categorical_features = categorical_features
 
@@ -219,9 +226,23 @@ class ExperimentFactory:
         [["algo1"], ["algo2", "algo3"]]
         """
         normalized = []
+        if not isinstance(algorithms, list):
+            raise TypeError(
+                f"algorithms must be a list, got {type(algorithms)}"
+            )
         for item in algorithms:
             if isinstance(item, str):
                 normalized.append([item])
             elif isinstance(item, list):
+                if not all(isinstance(i, str) for i in item):
+                    raise TypeError(
+                        "nested algorithm lists must contain strings, "
+                        f"got {item}"
+                    )
                 normalized.append(item)
+            else:
+                raise TypeError(
+                    "algorithms must contain strings or lists of strings, "
+                    f"got {type(item)}"
+                )
         return normalized

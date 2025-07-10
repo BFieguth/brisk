@@ -63,11 +63,25 @@ class AlgorithmWrapper:
             hyperparam_grid (Optional[Dict[str, Any]]): The hyperparameter grid 
             for model tuning.
         """
+        if not isinstance(name, str):
+            raise TypeError("name must be a string")
+        if not isinstance(display_name, str):
+            raise TypeError("display_name must be a string")
+        if not isinstance(algorithm_class, Type):
+            raise TypeError("algorithm_class must be a class")
+        if not algorithm_class.__module__.startswith("sklearn"):
+            raise ValueError("algorithm_class must be from sklearn")
+
         self.name = name
         self.display_name = display_name
         self.algorithm_class = algorithm_class
         self.default_params = default_params if default_params else {}
         self.hyperparam_grid = hyperparam_grid if hyperparam_grid else {}
+
+        if not isinstance(self.default_params, dict):
+            raise TypeError("default_params must be a dictionary")
+        if not isinstance(self.hyperparam_grid, dict):
+            raise TypeError("hyperparam_grid must be a dictionary")
 
     def __setitem__(self, key: str, value: dict) -> None:
         """Update parameter dictionaries.
@@ -84,6 +98,9 @@ class AlgorithmWrapper:
         KeyError
             If key is not 'default_params' or 'hyperparam_grid'
         """
+        if not isinstance(value, dict):
+            raise TypeError(f"value must be a dict, got {type(value)}")
+
         if key == "default_params":
             self.default_params.update(value)
         elif key == "hyperparam_grid":
@@ -124,8 +141,10 @@ class AlgorithmWrapper:
         If a parameter is set in default_params but not in hyperparam_grid,
         the default value will be preserved in the tuned parameters.
         """
+        if not isinstance(best_params, dict):
+            raise TypeError("best_params must be a dictionary")
         missing_defaults = [
-            param for param in self.default_params 
+            param for param in self.default_params
             if param not in best_params.keys()
         ]
         for param in missing_defaults:

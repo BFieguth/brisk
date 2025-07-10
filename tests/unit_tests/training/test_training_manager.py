@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import sys
+import warnings
 
 import pandas as pd
 import pytest
@@ -27,8 +28,8 @@ from brisk.training.workflow import Workflow
 from brisk.version import __version__
 
 @pytest.fixture
-def metric_config(mock_regression_project):
-    metric_file = mock_regression_project / "metric.py"
+def metric_config(mock_brisk_project):
+    metric_file = mock_brisk_project / "metric.py"
     spec = importlib.util.spec_from_file_location("metric", str(metric_file))
     metric_module = importlib.util.module_from_spec(spec)
     sys.modules["metric"] = metric_module
@@ -38,11 +39,11 @@ def metric_config(mock_regression_project):
 
 
 @pytest.fixture
-def configuration(mock_regression_project):
+def configuration(mock_brisk_project):
     """
     Create a configuration instance using the create_configuration function.
     """
-    settings_file = mock_regression_project / "settings.py"
+    settings_file = mock_brisk_project / "settings.py"
     spec = importlib.util.spec_from_file_location(
         "settings", str(settings_file)
     )
@@ -54,8 +55,8 @@ def configuration(mock_regression_project):
 
 
 @pytest.fixture
-def test_workflow(mock_regression_project):
-    workflow_file = mock_regression_project / "workflows" / "test_workflow.py"
+def workflow(mock_brisk_project):
+    workflow_file = mock_brisk_project / "workflows" / "test_workflow.py"
     spec = importlib.util.spec_from_file_location(
         "test_workflow", str(workflow_file)
     )
@@ -69,6 +70,22 @@ def test_workflow(mock_regression_project):
 @pytest.fixture
 def training_manager(metric_config, configuration):
     return TrainingManager(metric_config, configuration)
+
+
+@pytest.fixture
+def experiment():
+    return Experiment(
+        group_name="test_experiment",
+        dataset_path="./datasets/regression.csv",
+        algorithms={"model": AlgorithmWrapper(
+            name="linear",
+            display_name="Linear Regression",
+            algorithm_class=linear_model.LinearRegression
+        )},
+        workflow_args={},           
+        table_name=None,
+        categorical_features=None
+    )
 
 
 class TestTrainingManager:
@@ -109,6 +126,280 @@ class TestTrainingManager:
         )
         assert isinstance(training_manager.experiment_results[0][0], list)
 
+    @mock.patch("brisk.training.training_manager.TrainingManager._run_single_experiment")
+    def test_run_experiments_resets_results(self, mock_run_single_experiment, training_manager, workflow):
+        initial_experiment_results = collections.defaultdict(
+            lambda: collections.defaultdict(list)
+        )
+        initial_experiment_results["group1"]["exp1"] = ["experiment 1", 10]
+        initial_experiment_results["group1"]["exp2"] = ["experiment 2", 12]
+        initial_experiment_results["group2"]["exp1"] = ["experiment 3", 14]
+
+        training_manager.experiment_results = initial_experiment_results
+        # NOTE mock the _run_single_experiment method so no results are added
+        training_manager.run_experiments(workflow, "test_results", False)
+
+        assert training_manager.experiment_results == collections.defaultdict(
+            lambda: collections.defaultdict(list)
+        )
+
+    @mock.patch("brisk.training.training_manager.TrainingManager._save_config_log")
+    @mock.patch("brisk.training.training_manager.TrainingManager._create_results_dir")
+    @mock.patch("tqdm.tqdm")
+    def  test_run_experiments_progress_bar(self, mock_tqdm,  mock_create_results_dir, mock_save_config_log, training_manager, workflow):
+        mock_progress_bar = mock.Mock()
+        mock_tqdm.return_value = mock_progress_bar
+        mock_create_results_dir.return_value = "test_results_dir"
+        
+        # Add extra experiments to the queue
+        training_manager.experiments.append(Experiment(
+            group_name="group1",
+            dataset_path="./datasets/regression.csv",
+            algorithms={"model": AlgorithmWrapper(
+                name="linear",
+                display_name="Linear Regression",
+                algorithm_class=linear_model.LinearRegression
+            )},
+            workflow_args={},           
+            table_name=None,
+            categorical_features=None
+        ))
+        training_manager.experiments.append(Experiment(
+            group_name="group2",
+            dataset_path="./datasets/regression.csv",
+            algorithms={"model": AlgorithmWrapper(
+                name="linear",
+                display_name="Linear Regression",
+                algorithm_class=linear_model.LinearRegression
+            )},
+            workflow_args={},           
+            table_name=None,
+            categorical_features=None
+        ))
+        
+        training_manager.run_experiments(workflow, "test_results", False)
+        
+        # Verify progress bar was created with correct total
+        mock_tqdm.assert_called_once_with(
+            total=3,
+            desc="Running Experiments",
+            unit="experiment"
+        )
+        
+        # Verify progress bar update was called for each experiment
+        assert mock_progress_bar.update.call_count == 3
+        for call in mock_progress_bar.update.call_args_list:
+            args, _ = call
+            assert args == (1,), f"Expected update(1), got update{args}"
+
+    @mock.patch("brisk.training.training_manager.TrainingManager._save_config_log")
+    @mock.patch("brisk.training.training_manager.TrainingManager._run_single_experiment")
+    @mock.patch("brisk.training.training_manager.TrainingManager._create_results_dir")
+    @mock.patch("tqdm.tqdm")
+    def test_run_experiments_consumes_experiments(self, mock_tqdm, mock_create_results_dir, mock_run_single_experiment, mock_save_config_log, training_manager, workflow):
+        mock_progress_bar = mock.Mock()
+        mock_tqdm.return_value = mock_progress_bar
+        mock_create_results_dir.return_value = "test_results_dir"
+        
+        initial_experiment_count = len(training_manager.experiments)
+        initial_experiments = list(training_manager.experiments)
+        assert initial_experiment_count > 0, "Training manager should have experiments for this test"
+        
+        training_manager.run_experiments(workflow, "test_results", False)
+        
+        # Verify experiments queue is empty after running
+        assert len(training_manager.experiments) == 0, "Experiments queue should be empty after running"
+        # Verify _run_single_experiment was called for each original experiment
+        assert mock_run_single_experiment.call_count == initial_experiment_count
+        # Verify each experiment was passed to _run_single_experiment
+        called_experiments = [call[0][0] for call in mock_run_single_experiment.call_args_list]
+        for original_exp, called_exp in zip(initial_experiments, called_experiments):
+            assert original_exp == called_exp, "Experiments should be processed in order"
+ 
+    @mock.patch("brisk.training.training_manager.TrainingManager._setup_workflow")
+    @mock.patch("brisk.training.training_manager.TrainingManager._handle_success")
+    def test_run_single_experiment_success(self, mock_setup_workflow, mock_handle_success, training_manager, experiment, workflow):
+        training_manager._run_single_experiment(experiment, workflow, "test_results")
+        assert mock_setup_workflow.call_count == 1
+        assert mock_handle_success.call_count == 1
+
+    @mock.patch("brisk.training.training_manager.TrainingManager._handle_success")
+    @mock.patch("brisk.training.training_manager.TrainingManager._handle_failure")
+    @mock.patch("brisk.training.training_manager.TrainingManager._setup_workflow")
+    @mock.patch("tqdm.tqdm.write")
+    @mock.patch("time.time")
+    @pytest.mark.parametrize("error_type, error_message", [
+        (ValueError, "Invalid value provided"),
+        (TypeError, "Wrong type provided"),
+        (AttributeError, "Attribute not found"),
+        (KeyError, "Key not found"),
+        (FileNotFoundError, "File not found"),
+        (ImportError, "Cannot import module"),
+        (MemoryError, "Out of memory"),
+        (RuntimeError, "Runtime error occurred")
+    ])
+    def test_run_single_experiment_failure(
+        self,
+        mock_time,
+        mock_tqdm_write,
+        mock_setup_workflow,
+        mock_handle_failure,
+        mock_handle_success,
+        training_manager,
+        workflow,
+        error_type,
+        error_message
+    ):
+        mock_time.return_value = 1234567890.0
+        
+        mock_experiment = mock.Mock()
+        mock_experiment.group_name = "test_group"
+        mock_experiment.dataset_name = "test_dataset"
+        mock_experiment.name = "test_experiment"
+        
+        # Create a mock workflow instance that raises the specified error
+        mock_workflow_instance = mock.Mock()
+        mock_workflow_instance.workflow.side_effect = error_type(error_message)
+        mock_setup_workflow.return_value = mock_workflow_instance
+        
+        training_manager._run_single_experiment(
+            mock_experiment,
+            workflow,
+            "test_results_dir"
+        )
+        
+        mock_setup_workflow.assert_called_once()        
+        mock_workflow_instance.workflow.assert_called_once()        
+        mock_handle_failure.assert_called_once_with(
+            "test_group",           # group_name
+            "test_dataset",         # dataset_name  
+            "test_experiment",      # experiment_name
+            1234567890.0,          # start_time
+            mock_workflow_instance.workflow.side_effect  # the error instance
+        )
+        
+        mock_handle_success.assert_not_called()
+        
+        # Verify the error passed to _handle_failure is the correct type and message
+        call_args = mock_handle_failure.call_args[0]
+        error_passed = call_args[4]  # 5th argument is the error
+        assert isinstance(error_passed, error_type)
+        assert str(error_passed).replace("'", "") == error_message
+
+    @mock.patch("brisk.training.training_manager.TrainingManager._handle_success")
+    @mock.patch("brisk.training.training_manager.TrainingManager._setup_workflow")
+    @mock.patch("tqdm.tqdm.write")
+    def test_run_single_experiment_logging(
+        self,
+        mock_tqdm_write,
+        mock_setup_workflow,
+        mock_handle_success,
+        training_manager,
+        workflow
+    ):
+        mock_experiment = mock.Mock()
+        mock_experiment.group_name = "test_group"
+        mock_experiment.dataset_name = "test_dataset"
+        mock_experiment.name = "test_experiment"
+        
+        # Create a mock workflow instance that succeeds
+        mock_workflow_instance = mock.Mock()
+        mock_setup_workflow.return_value = mock_workflow_instance
+        
+        training_manager._run_single_experiment(
+            mock_experiment,
+            workflow,
+            "test_results_dir"
+        )
+        
+        expected_calls = [
+            mock.call(f"\n{'=' * 80}"),
+            mock.call(
+                f"\nStarting experiment 'test_experiment' on dataset "
+                f"'test_dataset'."
+            )
+        ]
+        mock_tqdm_write.assert_has_calls(expected_calls, any_order=False)
+        mock_workflow_instance.workflow.assert_called_once()        
+        mock_handle_success.assert_called_once()
+
+    @mock.patch("brisk.training.training_manager.TrainingManager._log_warning")
+    @mock.patch("brisk.training.training_manager.TrainingManager._handle_success")
+    @mock.patch("brisk.training.training_manager.TrainingManager._setup_workflow")
+    @mock.patch("tqdm.tqdm.write")
+    @mock.patch("warnings.warn")
+    def test_run_single_experiment_warning(
+        self,
+        mock_warnings_warn,
+        mock_tqdm_write,
+        mock_setup_workflow,
+        mock_handle_success,
+        mock_log_warning,
+        training_manager,
+        workflow
+    ):
+        mock_experiment = mock.Mock()
+        mock_experiment.group_name = "test_group" 
+        mock_experiment.dataset_name = "test_dataset"
+        mock_experiment.name = "test_experiment"
+
+        # Create a mock workflow instance that triggers a warning
+        def trigger_warning():
+            import warnings
+            warnings.warn("Test warning message", UserWarning)
+
+        mock_workflow_instance = mock.Mock()
+        mock_workflow_instance.workflow = trigger_warning
+        mock_setup_workflow.return_value = mock_workflow_instance
+        
+        original_showwarning = warnings.showwarning
+        
+        try:
+            training_manager._run_single_experiment(
+                mock_experiment,
+                workflow,
+                "test_results_dir"
+            )
+            
+            # Trigger the warning manually to test the custom handler
+            # Since we can't easily capture the lambda function that gets assigned,
+            # we'll verify the behavior by checking that warnings.showwarning was modified
+            assert warnings.showwarning != original_showwarning, \
+                "warnings.showwarning should be modified during experiment execution"
+            
+            # Test the custom warning handler directly
+            test_message = "Test warning message"
+            test_category = UserWarning
+            test_filename = "test_file.py"
+            test_lineno = 123
+            
+            warnings.showwarning(
+                test_message,
+                test_category,
+                test_filename,
+                test_lineno
+            )
+            
+            mock_log_warning.assert_called_with(
+                test_message,
+                test_category,
+                test_filename,
+                test_lineno,
+                "test_dataset",
+                "test_experiment"
+            )
+            
+        finally:
+            warnings.showwarning = original_showwarning
+        
+        mock_handle_success.assert_called_once()
+
+    def test_reset_experiment_results(self, training_manager):
+        training_manager._reset_experiment_results()
+        assert training_manager.experiment_results == collections.defaultdict(
+            lambda: collections.defaultdict(list)
+        )
+
     @mock.patch("brisk.training.training_manager.datetime")
     def test_create_results_dir_with_timestamp(
         self,
@@ -141,6 +432,28 @@ class TestTrainingManager:
             match=f"Results directory '{re.escape(existing_dir)}' already exists." # pylint: disable=line-too-long
         ):
             training_manager._create_results_dir("existing_results")
+
+    @mock.patch("brisk.reporting.report_manager.ReportManager.create_report")
+    def test_create_report(self, mock_create_report, training_manager):
+        training_manager._create_report("test_results_dir")
+        mock_create_report.assert_called_once()
+
+    def test_save_config_log(self, training_manager, tmp_path):
+        os.makedirs(tmp_path / "test_results_dir")
+        training_manager._save_config_log(tmp_path / "test_results_dir", workflow, "test_logfile")
+        assert os.path.exists(tmp_path / "test_results_dir" / "config_log.md")
+        expected_content = """
+# Experiment Configuration Log
+
+## Workflow Configuration
+
+### Workflow Class: `workflow`
+
+test_logfile
+"""
+        with open(tmp_path / "test_results_dir" / "config_log.md", "r") as f:
+            actual_content = f.read()
+        assert actual_content.strip() == expected_content.strip()
 
     def test_save_data_distribution(self, tmp_path, training_manager):
         class DataManagerNoScaler:
@@ -264,13 +577,13 @@ class TestTrainingManager:
         assert logger.handlers[0].level == logging.WARNING
         assert logger.handlers[1].level == logging.ERROR
 
-    def test_setup_workflow(self, test_workflow, training_manager):
+    def test_setup_workflow(self, workflow, training_manager):
         training_manager.logger = mock.Mock()
 
         group_name = "test_group"
         current_experiment = Experiment(
             group_name=group_name,
-            dataset_path="./datasets/data.csv",
+            dataset_path="./datasets/regression.csv",
             algorithms={"model": AlgorithmWrapper(
                 name="linear",
                 display_name="Linear Regression",
@@ -280,9 +593,8 @@ class TestTrainingManager:
             table_name=None,
             categorical_features=None
         )
-        workflow = test_workflow
         results_dir = ""
-        dataset_name = "data"
+        dataset_name = "regression"
         experiment_name = current_experiment.name
         expected_algo_names = ["linear"]
 
@@ -463,59 +775,47 @@ class TestTrainingManager:
 
         assert mock_print.call_args_list == expected_calls
 
-    @mock.patch("brisk.training.training_manager.os.path.normpath")
-    @mock.patch("brisk.training.training_manager.os.path.exists")
-    @mock.patch("brisk.training.training_manager.os.makedirs")
-    @mock.patch("brisk.training.training_manager.os.path.join")
-    def test_get_experiment_dir(
-        self,
-        mock_join,
-        mock_makedirs,
-        mock_exists,
-        mock_normpath,
-        training_manager,
-    ):
-        results_dir = "test_results"
+    def test_get_experiment_dir(self, tmp_path, training_manager):
+        """Test creating a new experiment directory."""
+        results_dir = str(tmp_path / "test_results")
         group_name = "test_group"
-        dataset_name = "data"
-        experiment_name = "experiment"
-        mock_exists.return_value = False
-
-        training_manager._get_experiment_dir(
+        dataset_name = "test_dataset"
+        experiment_name = "test_experiment"
+        
+        result_path = training_manager._get_experiment_dir(
             results_dir, group_name, dataset_name, experiment_name
         )
-
-        mock_normpath.assert_called_once()
-        mock_join.assert_called_once()
-        mock_exists.assert_called_once()
-        mock_makedirs.assert_called_once()
-
-    @mock.patch("brisk.training.training_manager.os.path.normpath")
-    @mock.patch("brisk.training.training_manager.os.path.exists")
-    @mock.patch("brisk.training.training_manager.os.makedirs")
-    @mock.patch("brisk.training.training_manager.os.path.join")
-    def test_get_experiment_dir_exists(
-        self,
-        mock_join,
-        mock_makedirs,
-        mock_exists,
-        mock_normpath,
-        training_manager,
-    ):
-        results_dir = "test_results"
-        group_name = "test_group"
-        dataset_name = "data"
-        experiment_name = "experiment"
-        mock_exists.return_value = True
-
-        training_manager._get_experiment_dir(
-            results_dir, group_name, dataset_name, experiment_name
+        
+        expected_path = os.path.normpath(
+            os.path.join(results_dir, group_name, dataset_name, experiment_name)
         )
+        assert result_path == expected_path
+        assert os.path.exists(result_path)
+        assert os.path.isdir(result_path)
+        assert os.path.exists(os.path.join(results_dir, group_name))
+        assert os.path.exists(os.path.join(results_dir, group_name, dataset_name))
 
-        mock_normpath.assert_called_once()
-        mock_join.assert_called_once()
-        mock_exists.assert_called_once()
-        mock_makedirs.assert_not_called()
+    def test_get_experiment_dir_exists(self, tmp_path, training_manager):
+        """Test that method works correctly when directory already exists."""
+        results_dir = str(tmp_path / "test_results")
+        group_name = "test_group"
+        dataset_name = "test_dataset"
+        experiment_name = "test_experiment"
+        
+        expected_path = os.path.normpath(
+            os.path.join(results_dir, group_name, dataset_name, experiment_name)
+        )
+        os.makedirs(expected_path, exist_ok=True)
+        
+        # Verify it exists before calling the method
+        assert os.path.exists(expected_path)
+        
+        result_path = training_manager._get_experiment_dir(
+            results_dir, group_name, dataset_name, experiment_name
+        )        
+        assert result_path == expected_path
+        assert os.path.exists(result_path)
+        assert os.path.isdir(result_path)
 
     def test_format_time(self, training_manager):
         result = training_manager._format_time(0)
@@ -534,63 +834,65 @@ class TestTrainingManager:
         assert result == "61m 1s"
 
     @mock.patch("brisk.training.training_manager.logging.shutdown")
-    @mock.patch("brisk.training.training_manager.os.path.exists")
-    @mock.patch("brisk.training.training_manager.os.remove")
-    @mock.patch("brisk.training.training_manager.os.path.getsize")
     def test_cleanup_empty_error_log(
         self,
-        mock_getsize,
-        mock_remove,
-        mock_exists,
         mock_logging_shutdown,
+        tmp_path,
         training_manager,
     ):
-        results_dir = "test_results"
+        results_dir = str(tmp_path)
         progress_bar = mock.MagicMock()
 
-        mock_exists.return_value = True
-        mock_getsize.return_value = 0
+        error_log_path = tmp_path / "error_log.txt"
+        error_log_path.write_text("")  # Empty file
 
-        training_manager._cleanup(results_dir, progress_bar)
-
+        # Verify file exists and is empty before cleanup
+        assert error_log_path.exists()
+        assert error_log_path.stat().st_size == 0
+        
+        training_manager._cleanup(results_dir, progress_bar)        
         progress_bar.close.assert_called_once()
-        mock_logging_shutdown.assert_called_once()
-        mock_exists.assert_called_once_with(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        mock_getsize.assert_called_once_with(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        mock_remove.assert_called_once_with(
-            os.path.join(results_dir, "error_log.txt")
-        )
+        mock_logging_shutdown.assert_called_once()    
+        assert not error_log_path.exists()
 
     @mock.patch("brisk.training.training_manager.logging.shutdown")
-    @mock.patch("brisk.training.training_manager.os.path.exists")
-    @mock.patch("brisk.training.training_manager.os.remove")
-    @mock.patch("brisk.training.training_manager.os.path.getsize")
     def test_cleanup_non_empty_error_log(
         self,
-        mock_getsize,
-        mock_remove,
-        mock_exists,
         mock_logging_shutdown,
+        tmp_path,
         training_manager,
     ):
-        results_dir = "test_results"
+        results_dir = str(tmp_path)
         progress_bar = mock.MagicMock()
 
-        mock_exists.return_value = True
-        mock_getsize.return_value = 100
+        error_log_path = tmp_path / "error_log.txt"
+        error_log_path.write_text("Some error occurred\nAnother error\n")
+
+        # Verify file exists and has content before cleanup
+        assert error_log_path.exists()
+        assert error_log_path.stat().st_size > 0
 
         training_manager._cleanup(results_dir, progress_bar)
+        progress_bar.close.assert_called_once()
+        mock_logging_shutdown.assert_called_once()        
+        assert error_log_path.exists()
+        assert error_log_path.stat().st_size > 0
 
+    @mock.patch("brisk.training.training_manager.logging.shutdown")
+    def test_cleanup_no_error_log(
+        self,
+        mock_logging_shutdown,
+        tmp_path,
+        training_manager,
+    ):
+        results_dir = str(tmp_path)
+        progress_bar = mock.MagicMock()
+        
+        # Don't create any error log file
+        error_log_path = tmp_path / "error_log.txt"
+        assert not error_log_path.exists()
+        
+        training_manager._cleanup(results_dir, progress_bar)        
         progress_bar.close.assert_called_once()
         mock_logging_shutdown.assert_called_once()
-        mock_exists.assert_called_once_with(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        mock_getsize.assert_called_once_with(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        mock_remove.assert_not_called()
+        assert not error_log_path.exists()
