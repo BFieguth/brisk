@@ -29,7 +29,8 @@ def sample_data():
     filename = 'sample_dataset.csv'
     features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
-
+    group_index_train = None
+    group_index_test = None
     return {
         'X_train': X_train,
         'X_test': X_test,
@@ -38,6 +39,8 @@ def sample_data():
         'filename': filename,
         'features': features,
         'categorical_features': categorical_features,
+        'group_index_train': group_index_train,
+        'group_index_test': group_index_test,
     }
 
 
@@ -67,6 +70,8 @@ def sample_data_scaler():
         X_train[[feature for feature in features 
                 if feature not in categorical_features]]
         )
+    group_index_train = None
+    group_index_test = None
 
     return {
         'X_train': X_train,
@@ -77,6 +82,8 @@ def sample_data_scaler():
         'scaler': scaler,
         'features': features,
         'categorical_features': categorical_features,
+        'group_index_train': group_index_train,
+        'group_index_test': group_index_test,
     }
 
 
@@ -115,6 +122,8 @@ def categorical_data():
         'feature1', 'feature2', 'categorical_string', 'categorical_int',
         'categorical_bool', 'categorical_category'
     ]
+    group_index_train = None
+    group_index_test = None
     return {
         'X_train': X_train,
         'X_test': X_test,
@@ -122,6 +131,8 @@ def categorical_data():
         'y_test': y_test,
         'filename': filename,
         'features': features,
+        'group_index_train': group_index_train,
+        'group_index_test': group_index_test,
     }
 
 

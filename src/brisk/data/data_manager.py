@@ -313,6 +313,20 @@ class DataManager:
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx] # pylint: disable=C0103
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        if self.group_column:
+            group_index_train = {
+                "values": groups.iloc[train_idx].values.copy(),
+                "indices": train_idx.copy(),
+                "series": groups.iloc[train_idx].copy()
+            }
+            group_index_test = {
+                "values": groups.iloc[test_idx].values.copy(),
+                "indices": test_idx.copy(),
+                "series": groups.iloc[test_idx].copy()
+            }
+        else:
+            group_index_train = None
+            group_index_test = None
 
         scaler = None
         if self.scale_method:
@@ -326,7 +340,9 @@ class DataManager:
             filename=data_path,
             scaler=scaler,
             features=feature_names,
-            categorical_features=categorical_features
+            categorical_features=categorical_features,
+            group_index_train=group_index_train,
+            group_index_test=group_index_test
         )
         self._splits[split_key] = split
         return split

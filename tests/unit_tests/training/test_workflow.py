@@ -53,7 +53,9 @@ def workflow_factory(mock_brisk_project, tmp_path):
                 "num_features": 2,
                 "num_samples": 4
             },
-            logger=None
+            logger=None,
+            group_index_train=None,
+            group_index_test=None
         )
 
         # Load data

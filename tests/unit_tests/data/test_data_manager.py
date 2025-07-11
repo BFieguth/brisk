@@ -431,6 +431,8 @@ class TestDataManager:
         assert split.scaler == None
         assert split.features == ['x', 'y']
         assert split.categorical_features == []
+        assert isinstance(split.group_index_train, dict)
+        assert isinstance(split.group_index_test, dict)
         # Check split was saved
         assert data_manager._splits == {
             "group_data_group": split
