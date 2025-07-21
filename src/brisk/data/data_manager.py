@@ -140,19 +140,19 @@ class DataManager:
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
                 return model_selection.GroupShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
+                    n_splits=self.n_splits, test_size=self.test_size,
                     random_state=self.random_state
                     )
 
             elif self.stratified and not self.group_column:
                 return model_selection.StratifiedShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
+                    n_splits=self.n_splits, test_size=self.test_size,
                     random_state=self.random_state
                     )
 
             elif not self.stratified and not self.group_column:
                 return model_selection.ShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
+                    n_splits=self.n_splits, test_size=self.test_size,
                     random_state=self.random_state
                     )
 
