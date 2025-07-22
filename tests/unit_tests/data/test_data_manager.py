@@ -598,6 +598,13 @@ n_splits: 5
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+n_features_to_select: 5
+feature_selection_cv: 3
 ```
 """
+        print("ACTUAL MARKDOWN:")
+        print(data_manager.to_markdown())
+        print("EXPECTED MARKDOWN:")
+        print(expected_markdown)
         assert data_manager.to_markdown().strip() == expected_markdown.strip()

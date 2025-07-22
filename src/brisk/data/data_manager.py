@@ -5,9 +5,10 @@ splits for machine learning models. It supports several splitting strategies
 such as shuffle, k-fold, and stratified splits, with optional grouping.
 
 Exports:
-    DataManager: A class for configuring and generating train-test splits or 
+    DataManager: A class for configuring and generating train-test splits or
     cross-validation folds.
 """
+
 import os
 import sqlite3
 from typing import Optional, List
@@ -15,26 +16,35 @@ from typing import Optional, List
 import pandas as pd
 from sklearn import model_selection
 from sklearn import preprocessing
+from sklearn.feature_selection import (
+    SelectKBest,
+    RFECV,
+    SequentialFeatureSelector,
+)
 
 from brisk.data import data_split_info
+from brisk.defaults.classification_algorithms import CLASSIFICATION_ALGORITHMS
+from brisk.defaults.regression_algorithms import REGRESSION_ALGORITHMS
 
+
+# pylint: disable=C0103
 class DataManager:
     """A class that handles data splitting logic for creating train-test splits.
 
-    This class allows users to configure different splitting strategies 
-    (e.g., shuffle, k-fold, stratified) and return train-test splits or 
-    cross-validation folds. It supports splitting based on groupings and 
-    includes options for data scaling.
+    This class allows users to configure different splitting strategies
+    (e.g., shuffle, k-fold, stratified) and return train-test splits or
+    cross-validation folds. It supports splitting based on groupings and
+    includes options for data scaling and feature selection.
 
     Parameters
     ----------
     test_size : float, optional
-        The proportion of the dataset to allocate to the test set, by default 
+        The proportion of the dataset to allocate to the test set, by default
         0.2
     n_splits : int, optional
         Number of splits for cross-validation, by default 5
     split_method : str, optional
-        The method to use for splitting ("shuffle" or "kfold"), by default 
+        The method to use for splitting ("shuffle" or "kfold"), by default
         "shuffle"
     group_column : str, optional
         The column to use for grouping (if any), by default None
@@ -43,8 +53,22 @@ class DataManager:
     random_state : int, optional
         The random seed for reproducibility, by default None
     scale_method : str, optional
-        The method to use for scaling ("standard", "minmax", "robust", "maxabs", 
+        The method to use for scaling ("standard", "minmax", "robust", "maxabs",
         "normalizer"), by default None
+    feature_selection_method : str, optional
+        The method to use for feature selection ("selectkbest", "rfe",
+        "sequential"), by default None
+    feature_selection_estimator : str, optional
+        The name of the estimator to use for feature selection.
+        If not specified, defaults to the first algorithm
+        in the relevant wrapper list.
+    problem_type : str, optional
+        The type of problem ("classification" or "regression").
+        Defaults to "classification".
+    n_features_to_select : int, optional
+        Minimum number of features to select, by default 5.
+    feature_selection_cv : int, optional
+        Number of folds for cross-validation in feature selection, by default 3.
 
     Attributes
     ----------
@@ -62,11 +86,22 @@ class DataManager:
         Random seed for reproducibility
     scale_method : str or None
         Method used for scaling features
+    feature_selection_method : str
+        Method used for feature selection
+    feature_selection_estimator : str or None
+        Name of the estimator used for feature selection
+    problem_type : str or None
+        Type of problem (classification or regression)
+    n_features_to_select : int
+        Minimum number of features to select during feature selection
+    feature_selection_cv : int
+        Number of folds for cross-validation in feature selection
     splitter : sklearn.model_selection._BaseKFold
         The initialized scikit-learn splitter object
     _splits : dict
         Cache of previously computed splits
     """
+
     def __init__(
         self,
         test_size: float = 0.2,
@@ -76,6 +111,11 @@ class DataManager:
         stratified: bool = False,
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
+        feature_selection_method: Optional[str] = None,
+        feature_selection_estimator: Optional[str] = None,
+        problem_type: str = "classification",
+        n_features_to_select: int = 5,
+        feature_selection_cv: int = 3,
     ):
         self.test_size = test_size
         self.split_method = split_method
@@ -84,6 +124,11 @@ class DataManager:
         self.n_splits = n_splits
         self.random_state = random_state
         self.scale_method = scale_method
+        self.feature_selection_method = feature_selection_method
+        self.feature_selection_estimator = feature_selection_estimator
+        self.problem_type = problem_type
+        self.n_features_to_select = n_features_to_select
+        self.feature_selection_cv = feature_selection_cv
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
@@ -94,7 +139,7 @@ class DataManager:
         Raises
         ------
             ValueError
-                If invalid split method or incompatible combination of group 
+                If invalid split method or incompatible combination of group
                 column and stratification is provided.
         """
         valid_split_methods = ["shuffle", "kfold"]
@@ -102,59 +147,96 @@ class DataManager:
             raise ValueError(
                 f"Invalid split_method: {self.split_method}. "
                 "Choose 'shuffle' or 'kfold'."
-                )
+            )
 
-        if (self.group_column and
-            self.stratified and
-            self.split_method == "shuffle"
-            ):
+        if (
+            self.group_column
+            and self.stratified
+            and self.split_method == "shuffle"
+        ):
             raise ValueError(
                 "Group stratified shuffle is not supported. "
                 "Use split_method='kfold' for grouped and stratified splits."
-                )
+            )
 
         valid_scale_methods = [
-            "standard", "minmax", "robust", "maxabs", "normalizer", None
-            ]
+            "standard",
+            "minmax",
+            "robust",
+            "maxabs",
+            "normalizer",
+            None,
+        ]
         if self.scale_method not in valid_scale_methods:
             raise ValueError(
                 f"Invalid scale_method: {self.scale_method}. "
                 "Choose from standard, minmax, robust, maxabs, normalizer"
-                )
+            )
+
+        valid_feature_selection_methods = [
+            "selectkbest",
+            "rfecv",
+            "sequential",
+            None,
+        ]
+        if self.feature_selection_method not in valid_feature_selection_methods:
+            raise ValueError(
+                f"Invalid feature_selection_method: {self.feature_selection_method}."
+                "Choose from selectkbest, rfecv, sequential."
+            )
+        valid_problem_types = ["classification", "regression"]
+        if self.problem_type not in valid_problem_types:
+            raise ValueError(
+                f"Invalid problem_type: {self.problem_type}. "
+                "Choose from 'classification' or 'regression'."
+            )
+        if (
+            not isinstance(self.n_features_to_select, int)
+            or self.n_features_to_select < 1
+        ):
+            raise ValueError("n_features_to_select must be a larger than 1.")
+        if (
+            not isinstance(self.feature_selection_cv, int)
+            or self.feature_selection_cv < 2
+        ):
+            raise ValueError("feature_selection_cv must be larger than 2.")
 
     def _set_splitter(self):
         """Selects the appropriate splitter based on the configuration.
 
         Returns
         -------
-        sklearn.model_selection._BaseKFold or 
-            sklearn.model_selection._Splitter: The initialized splitter 
+        sklearn.model_selection._BaseKFold or
+            sklearn.model_selection._Splitter: The initialized splitter
             object based on the configuration.
 
         Raises
         ------
         ValueError
-            If invalid combination of stratified and group_column settings 
+            If invalid combination of stratified and group_column settings
             is provided.
         """
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
                 return model_selection.GroupShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
+                    n_splits=1,
+                    test_size=self.test_size,
+                    random_state=self.random_state,
+                )
 
             elif self.stratified and not self.group_column:
                 return model_selection.StratifiedShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
+                    n_splits=1,
+                    test_size=self.test_size,
+                    random_state=self.random_state,
+                )
 
             elif not self.stratified and not self.group_column:
                 return model_selection.ShuffleSplit(
-                    n_splits=1, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
+                    n_splits=1,
+                    test_size=self.test_size,
+                    random_state=self.random_state,
+                )
 
         elif self.split_method == "kfold":
             if self.group_column and not self.stratified:
@@ -164,25 +246,25 @@ class DataManager:
                 return model_selection.StratifiedKFold(
                     n_splits=self.n_splits,
                     shuffle=True if self.random_state else False,
-                    random_state=self.random_state
-                    )
+                    random_state=self.random_state,
+                )
 
             elif not self.stratified and not self.group_column:
                 return model_selection.KFold(
                     n_splits=self.n_splits,
                     shuffle=True if self.random_state else False,
-                    random_state=self.random_state
-                    )
+                    random_state=self.random_state,
+                )
 
             elif self.group_column and self.stratified:
                 return model_selection.StratifiedGroupKFold(
                     n_splits=self.n_splits
-                    )
+                )
 
         raise ValueError(
             "Invalid combination of stratified and group_column for "
             "the specified split method."
-            )
+        )
 
     def _set_scaler(self):
         if self.scale_method == "standard":
@@ -203,10 +285,42 @@ class DataManager:
         else:
             return None
 
+    def _get_feature_selection_estimator(self):
+        """Get the estimator for feature selection based on user input and problem type."""
+        if self.problem_type == "regression":
+            wrapper_list = REGRESSION_ALGORITHMS
+        else:
+            wrapper_list = CLASSIFICATION_ALGORITHMS
+        if self.feature_selection_estimator:
+            for wrapper in wrapper_list:
+                if wrapper.name == self.feature_selection_estimator:
+                    return wrapper.instantiate()
+        return wrapper_list[0].instantiate()
+
+    def _set_feature_selector(self):
+        if self.feature_selection_method == "selectkbest":
+            return SelectKBest(k=self.n_features_to_select)
+        elif self.feature_selection_method == "rfecv":
+            estimator = self._get_feature_selection_estimator()
+            return RFECV(
+                estimator=estimator,
+                min_features_to_select=self.n_features_to_select,
+                step=1,
+                cv=self.feature_selection_cv,
+            )
+        elif self.feature_selection_method == "sequential":
+            estimator = self._get_feature_selection_estimator()
+            return SequentialFeatureSelector(
+                estimator,
+                n_features_to_select=self.n_features_to_select,
+                direction="forward",
+                cv=self.feature_selection_cv,
+            )
+        else:
+            return None
+
     def _load_data(
-        self,
-        data_path: str,
-        table_name: Optional[str] = None
+        self, data_path: str, table_name: Optional[str] = None
     ) -> pd.DataFrame:
         """Loads data from a CSV, Excel file, or SQL database.
 
@@ -224,7 +338,7 @@ class DataManager:
         Raises
         ------
         ValueError
-            If file format is unsupported or table_name is missing for SQL 
+            If file format is unsupported or table_name is missing for SQL
             database.
         """
         file_extension = os.path.splitext(data_path)[1].lower()
@@ -239,7 +353,7 @@ class DataManager:
             if table_name is None:
                 raise ValueError(
                     "For SQL databases, 'table_name' must be provided."
-                    )
+                )
 
             conn = sqlite3.connect(data_path)
             query = f"SELECT * FROM {table_name}"
@@ -251,7 +365,7 @@ class DataManager:
             raise ValueError(
                 f"Unsupported file format: {file_extension}. "
                 "Supported formats are CSV, Excel, and SQL database."
-                )
+            )
 
     def split(
         self,
@@ -293,36 +407,59 @@ class DataManager:
             )
 
         split_key = (
-            f"{group_name}_{filename}_{table_name}" if table_name
-            else f"{group_name}_{filename}"
-        ) if group_name else data_path
+            (
+                f"{group_name}_{filename}_{table_name}"
+                if table_name
+                else f"{group_name}_{filename}"
+            )
+            if group_name
+            else data_path
+        )
 
         if split_key in self._splits:
             return self._splits[split_key]
 
         df = self._load_data(data_path, table_name)
-        X = df.iloc[:, :-1] # pylint: disable=C0103
+        X = df.iloc[:, :-1]
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
 
         if self.group_column:
-            X = X.drop(columns=self.group_column) # pylint: disable=C0103
+            X = X.drop(columns=self.group_column)
 
         feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx] # pylint: disable=C0103
+        X_train, X_test = (
+            X.iloc[train_idx],
+            X.iloc[test_idx],
+        )  # pylint: disable=C0103
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+        selector = self._set_feature_selector()
+        if selector is not None:
+            selector.fit(X_train, y_train)
+            X_train = pd.DataFrame(
+                selector.transform(X_train), index=X_train.index
+            )
+            X_test = pd.DataFrame(
+                selector.transform(X_test), index=X_test.index
+            )
+            selected_mask = selector.get_support()
+            feature_names = [
+                name for name, keep in zip(feature_names, selected_mask) if keep
+            ]
+
         if self.group_column:
             group_index_train = {
                 "values": groups.iloc[train_idx].values.copy(),
                 "indices": train_idx.copy(),
-                "series": groups.iloc[train_idx].copy()
+                "series": groups.iloc[train_idx].copy(),
             }
             group_index_test = {
                 "values": groups.iloc[test_idx].values.copy(),
                 "indices": test_idx.copy(),
-                "series": groups.iloc[test_idx].copy()
+                "series": groups.iloc[test_idx].copy(),
             }
         else:
             group_index_train = None
@@ -342,7 +479,7 @@ class DataManager:
             features=feature_names,
             categorical_features=categorical_features,
             group_index_train=group_index_train,
-            group_index_test=group_index_test
+            group_index_test=group_index_test,
         )
         self._splits[split_key] = split
         return split
@@ -362,6 +499,11 @@ class DataManager:
             "stratified": self.stratified,
             "random_state": self.random_state,
             "scale_method": self.scale_method,
+            "feature_selection_method": self.feature_selection_method,
+            "feature_selection_estimator": self.feature_selection_estimator,
+            "problem_type": self.problem_type,
+            "n_features_to_select": self.n_features_to_select,
+            "feature_selection_cv": self.feature_selection_cv,
         }
 
         md = [
