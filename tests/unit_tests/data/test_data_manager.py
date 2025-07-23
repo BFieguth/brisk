@@ -95,7 +95,7 @@ class TestDataManager:
         splitter_obj = data_manager.splitter
 
         assert isinstance(splitter_obj, ShuffleSplit)
-        assert splitter_obj.n_splits == 1
+        assert splitter_obj.n_splits == 5
         assert splitter_obj.test_size == 0.2
 
     def test_shuffle_with_group_column(self):
@@ -107,7 +107,7 @@ class TestDataManager:
         splitter_obj = data_manager.splitter
 
         assert isinstance(splitter_obj, GroupShuffleSplit)
-        assert splitter_obj.n_splits == 1
+        assert splitter_obj.n_splits == 5
         assert splitter_obj.test_size == 0.2
 
     def test_shuffle_with_stratified(self):
@@ -119,7 +119,7 @@ class TestDataManager:
         splitter_obj = data_manager.splitter
 
         assert isinstance(splitter_obj, StratifiedShuffleSplit)
-        assert splitter_obj.n_splits == 1
+        assert splitter_obj.n_splits == 5
         assert splitter_obj.test_size == 0.2
 
     def test_kfold_with_group_column(self):

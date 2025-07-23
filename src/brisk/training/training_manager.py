@@ -76,7 +76,11 @@ class TrainingManager:
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
         self.experiment_paths = collections.defaultdict(
-            lambda: collections.defaultdict(lambda: {})
+            lambda: collections.defaultdict(
+                lambda: collections.defaultdict(
+                    lambda: {}
+                )
+            )
         )
         self.experiment_results = None
         self._reset_experiment_results()
@@ -311,30 +315,34 @@ class TrainingManager:
             group_dir = os.path.join(result_dir, group_name)
             os.makedirs(group_dir, exist_ok=True)
             group_data_manager = self.data_managers[group_name]
+            n_splits = group_data_manager.n_splits
 
             for dataset_name, (data_path, table_name) in datasets.items():
-                split_info = group_data_manager.split(
-                    data_path=data_path,
-                    categorical_features=None,
-                    table_name=table_name,
-                    group_name=group_name,
-                    filename=pathlib.Path(data_path).stem
-                )
+                for index in range(n_splits):
+                    split_info = group_data_manager.split(
+                        data_path=data_path,
+                        categorical_features=None,
+                        table_name=table_name,
+                        group_name=group_name,
+                        filename=pathlib.Path(data_path).stem
+                    ).get_split(index)
+    
+                    dataset_dir = os.path.join(group_dir, dataset_name)
+                    os.makedirs(dataset_dir, exist_ok=True)
+                    split_dir = os.path.join(dataset_dir, f"split_{index}")
+                    os.makedirs(split_dir, exist_ok=True)
 
-                dataset_dir = os.path.join(group_dir, dataset_name)
-                os.makedirs(dataset_dir, exist_ok=True)
+                    split_info.save_distribution(
+                        os.path.join(split_dir, "split_distribution")
+                        )
 
-                split_info.save_distribution(
-                    os.path.join(dataset_dir, "split_distribution")
-                    )
-
-                if hasattr(split_info, "scaler") and split_info.scaler:
-                    split_name = split_info.scaler.__class__.__name__
-                    scaler_path = os.path.join(
-                        dataset_dir,
-                        f"{dataset_name}_{split_name}.joblib"
-                    )
-                    joblib.dump(split_info.scaler, scaler_path)
+                    if hasattr(split_info, "scaler") and split_info.scaler:
+                        split_name = split_info.scaler.__class__.__name__
+                        scaler_path = os.path.join(
+                            split_dir,
+                            f"{dataset_name}_{split_name}.joblib"
+                        )
+                        joblib.dump(split_info.scaler, scaler_path)
 
     def _setup_logger(self, results_dir: str) -> logging.Logger:
         """Set up logging for the TrainingManager.
@@ -425,18 +433,14 @@ class TrainingManager:
             table_name=current_experiment.table_name,
             group_name=group_name,
             filename=dataset_name
-        )
+        ).get_split(current_experiment.split_index)
 
         X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
 
         experiment_dir = self._get_experiment_dir(
-            results_dir, group_name, dataset_name, experiment_name
+            results_dir, group_name, dataset_name,
+            current_experiment.split_index, experiment_name
         )
-
-        (self.experiment_paths
-         [group_name]
-         [dataset_name]
-         [experiment_name]) = experiment_dir
 
         eval_manager = evaluation_manager.EvaluationManager(
             algorithm_wrapper.AlgorithmCollection(
@@ -606,6 +610,7 @@ class TrainingManager:
         results_dir: str,
         group_name: str,
         dataset_name: str,
+        split_index: int,
         experiment_name: str
     ) -> str:
         """Creates and returns the directory path for experiment results.
@@ -630,10 +635,18 @@ class TrainingManager:
             Path to the experiment directory.
         """
         full_path = os.path.normpath(
-            os.path.join(results_dir, group_name, dataset_name, experiment_name)
+            os.path.join(
+                results_dir, group_name, dataset_name, f"split_{split_index}", 
+                experiment_name
+            )
         )
         if not os.path.exists(full_path):
             os.makedirs(full_path)
+
+        (self.experiment_paths
+            [group_name][dataset_name][f"split_{split_index}"][experiment_name]
+         ) = full_path
+
         return full_path
 
     def _format_time(self, seconds: float) -> str:

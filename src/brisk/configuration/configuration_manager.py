@@ -302,7 +302,10 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            experiments = factory.create_experiments(group)
+            n_splits = group.data_config.get(
+                "n_splits", self.base_data_manager.n_splits
+            )
+            experiments = factory.create_experiments(group, n_splits)
             all_experiments.extend(experiments)
 
         return all_experiments
@@ -393,7 +396,7 @@ class ConfigurationManager:
                     table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
-                )
+                ).get_split(0)
 
                 md_content.extend([
                     f"#### {dataset_path.name}",
