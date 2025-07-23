@@ -1,0 +1,25 @@
+name: Check PR Source Branch
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check_source_branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        run: |
+          SOURCE_BRANCH="${{ github.head_ref }}"
+          TARGET_BRANCH="${{ github.base_ref }}"
+
+          echo "Pull Request Source Branch: $SOURCE_BRANCH"
+          echo "Pull Request Target Branch: $TARGET_BRANCH"
+
+          if [ "$SOURCE_BRANCH" == "testing" ]; then
+            echo "Success: Pull Request from 'testing' branch to 'main' is allowed."
+          else
+            echo "Error: Pull Request to 'main' must originate from the 'testing' branch. Found: '$SOURCE_BRANCH'"
+            exit 1 # Fail the job
+          fi
