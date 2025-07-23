@@ -302,7 +302,10 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            experiments = factory.create_experiments(group)
+            n_splits = group.data_config.get(
+                "n_splits", self.base_data_manager.n_splits
+            )
+            experiments = factory.create_experiments(group, n_splits)
             all_experiments.extend(experiments)
 
         return all_experiments

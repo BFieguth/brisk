@@ -44,6 +44,8 @@ class Experiment:
         Path to the dataset file
     workflow_args : dict
         Arguments to pass to the workflow
+    split_index: int
+        Index value used to select a DataSplitInfo instance from DataSplits
     table_name : str, optional
         Name of table for database files
     categorical_features : list of str, optional
@@ -66,6 +68,7 @@ class Experiment:
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
     workflow_args: Dict[str, Any]
+    split_index: int
     table_name: Optional[str | None]
     categorical_features: Optional[List[str] | None]
 
