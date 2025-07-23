@@ -396,7 +396,7 @@ class ConfigurationManager:
                     table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
-                )
+                ).get_split(0)
 
                 md_content.extend([
                     f"#### {dataset_path.name}",
