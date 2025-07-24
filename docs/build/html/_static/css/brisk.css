@@ -1,0 +1,198 @@
+@import "../basic.css";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+    /* Font Size */
+    --pst-font-size-base: 16px;
+    --pst-font-size-h1: 36px;
+    --pst-font-size-h2: 30px;
+    --pst-font-size-h3: 26px;
+    --pst-font-size-h4: 22px;
+    --pst-font-size-h5: 18px;
+    --pst-font-size-h6: 16px;
+
+    /* Font Family */
+    --pst-font-family-base: 'Montserrat', sans-serif;
+
+    /* Celtic Blue (Bright Blue) */
+    --primary-color: #0074D9;
+    --primary-color-dark: #005fb3;
+    --primary-color-light: #80c4ff;
+
+    /* Federal Blue (Dark Blue) */
+    --secondary-color: #07004D;
+    --secondary-color-dark: #060040;
+    --secondary-color-light: #0e0095;
+
+    /* Columbia Blue (Light Blue) */
+    --background-color: #C4E0F9;
+    --background-color-dark: #7DBCF2;
+    --background-color-light: #DAECFB;
+
+    /* Jade */
+    --accent-color: #00A878;
+    --accent-color-dark: #00523A;
+    --accent-color-light: #00E0A1;
+
+    /* Mulberry */
+    --important-color: #B95F89;
+    --important-color-dark: #803859;
+    --important-color-light: #D39CB6;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--important-color) !important;
+}
+
+strong {
+    color: var(--primary-color);
+}
+
+em {
+    color: var(--primary-color);
+}
+
+.reference.external {
+    color: var(--primary-color);
+}
+
+.std.std-ref {
+    color: var(--primary-color);
+}
+.std.std-ref:hover {
+    color: var(--important-color);
+}
+
+/* ----------------- */
+/* Grid Card         */
+/* ----------------- */
+.sd-card:hover {
+    border-color: var(--important-color) !important;
+}
+.sd-card-header {
+    font-size: var(--pst-font-size-h4);
+    font-weight: 600;
+}
+.sd-card-body {
+    font-size: var(--pst-font-size-base);
+}
+
+/* ----------------- */
+/* Code Block         */
+/* ----------------- */
+.code-block-caption span{
+    font-size: var(--pst-font-size-h5);
+    font-weight: 600;
+}
+
+/* ----------------- */
+/* Primary Sidebar */
+/* ----------------- */
+.bd-sidebar-primary {
+    --pst-color-primary: var(--accent-color);
+}
+.bd-links-nav a:hover {
+    color: var(--important-color) !important;
+}
+
+/* ----------------- */
+/* Secondary Sidebar */
+/* ----------------- */
+.bd-sidebar-secondary {
+    --pst-color-primary: var(--accent-color);
+}
+
+/* ----------------- */
+/* Prev/Next Buttons */
+/* ----------------- */
+.prev-next-title {
+    color: var(--accent-color) !important;
+}
+.prev-next-title:hover {
+    color: var(--important-color) !important;
+}
+
+/* ----------------- */
+/* Light/Dark Theme */
+/* ----------------- */
+html[data-theme="light"] {
+    --pst-color-primary: var(--primary-color-dark);
+    --pst-text-color: #000000 !important;
+
+    /* Navbar */
+    .bd-header {
+        background-color: var(--primary-color-light) !important;
+    }
+    .bd-header a p {
+        color: var(--pst-text-color) !important;
+    }
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: var(--primary-color-light);
+    --pst-text-color: #EFEFEF !important;
+
+    /* Navbar */
+    .bd-header {
+        background-color: var(--primary-color-dark) !important;
+    }
+    .bd-header a p {
+        color: var(--pst-text-color) !important;
+    }
+}
+
+/* -------------------- */
+/* API Reference Tables */
+/* -------------------- */
+.pst-scrollable-table-container tr:hover {
+    background-color: inherit !important;
+}
+
+.pst-scrollable-table-container th {
+    padding: 0.75rem;
+    vertical-align: bottom;
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
+}
+
+/* First column (Object column) styling */
+.pst-scrollable-table-container td:first-child {
+    width: 30%;
+    font-family: var(--pst-font-family-monospace);
+}
+
+/* Second column (Description column) styling */
+.pst-scrollable-table-container td:last-child {
+    width: 70%;
+}
+
+/* ----------------------- */
+/* API Function Signatures */
+/* ----------------------- */
+dt:target {
+    background-color: rgba(0, 224, 161, 0.1) !important;
+    border-left: 3px solid var(--accent-color);
+}
+
+dt.sig {
+    transition: background-color 1.0s ease;
+}
+
+
+/* Navbar */
+#navbar-main-elements .nav-link {
+    color: var(--pst-text-color) !important;
+}
+
+#navbar-main-elements .nav-link:hover {
+    color: var(--important-color) !important;
+}
+
+#navbar-main-elements .active-nav-link {
+    color: var(--accent-color) !important;
+    font-weight: bold;
+}

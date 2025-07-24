@@ -347,12 +347,12 @@ class TestConfigurationManager:
             'feature_selection_estimator': None,
             'problem_type': 'classification',
             'n_features_to_select': 5,
-            'feature_selection_cv': 3
+            'feature_selection_cv': 3,
+            'algorithm_config': None
         }
-        print("base_params:", base_params)
-        print("expected_params:", expected_params)
         assert base_params == expected_params
-
+        print("Actual base_params:", base_params)
+        print("Expected params:", expected_params)
     def test_data_config_does_not_change_base(self, mock_brisk_project):
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
@@ -378,10 +378,9 @@ class TestConfigurationManager:
             'feature_selection_estimator': None,
             'problem_type': 'classification',
             'n_features_to_select': 5,
-            'feature_selection_cv': 3
+            'feature_selection_cv': 3,
+            'algorithm_config': None
         }
-        print("base_params:", base_params)
-        print("expected_params:", expected_params)
         assert base_params == expected_params
 
     def test_data_manager_reuse(self, mock_brisk_project):

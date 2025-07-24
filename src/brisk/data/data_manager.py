@@ -23,11 +23,8 @@ from sklearn.feature_selection import (
 )
 
 from brisk.data import data_split_info
-from brisk.defaults.classification_algorithms import CLASSIFICATION_ALGORITHMS
-from brisk.defaults.regression_algorithms import REGRESSION_ALGORITHMS
 
 
-# pylint: disable=C0103
 class DataManager:
     """A class that handles data splitting logic for creating train-test splits.
 
@@ -69,6 +66,8 @@ class DataManager:
         Minimum number of features to select, by default 5.
     feature_selection_cv : int, optional
         Number of folds for cross-validation in feature selection, by default 3.
+    algorithm_config : list or AlgorithmCollection of AlgorithmWrapper, optional
+        User-provided collection of AlgorithmWrapper objects to use for feature selection.
 
     Attributes
     ----------
@@ -96,6 +95,8 @@ class DataManager:
         Minimum number of features to select during feature selection
     feature_selection_cv : int
         Number of folds for cross-validation in feature selection
+    algorithm_config : list of AlgorithmWrapper or None
+        List of algorithms to use as feature selection estimators
     splitter : sklearn.model_selection._BaseKFold
         The initialized scikit-learn splitter object
     _splits : dict
@@ -116,7 +117,9 @@ class DataManager:
         problem_type: str = "classification",
         n_features_to_select: int = 5,
         feature_selection_cv: int = 3,
+        algorithm_config=None,
     ):
+
         self.test_size = test_size
         self.split_method = split_method
         self.group_column = group_column
@@ -129,6 +132,7 @@ class DataManager:
         self.problem_type = problem_type
         self.n_features_to_select = n_features_to_select
         self.feature_selection_cv = feature_selection_cv
+        self.algorithm_config = algorithm_config
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
@@ -167,6 +171,7 @@ class DataManager:
             "normalizer",
             None,
         ]
+
         if self.scale_method not in valid_scale_methods:
             raise ValueError(
                 f"Invalid scale_method: {self.scale_method}. "
@@ -179,11 +184,22 @@ class DataManager:
             "sequential",
             None,
         ]
+
         if self.feature_selection_method not in valid_feature_selection_methods:
             raise ValueError(
-                f"Invalid feature_selection_method: {self.feature_selection_method}."
+                f"Invalid feature_selection_method: "
+                f"{self.feature_selection_method}. "
                 "Choose from selectkbest, rfecv, sequential."
             )
+
+        if (
+            self.feature_selection_method in ("rfecv", "sequential")
+            and self.algorithm_config is None
+        ):
+            raise ValueError(
+                "algorithm_config must be provided."
+            )
+
         valid_problem_types = ["classification", "regression"]
         if self.problem_type not in valid_problem_types:
             raise ValueError(
@@ -286,16 +302,16 @@ class DataManager:
             return None
 
     def _get_feature_selection_estimator(self):
-        """Get the estimator for feature selection based on user input and problem type."""
-        if self.problem_type == "regression":
-            wrapper_list = REGRESSION_ALGORITHMS
-        else:
-            wrapper_list = CLASSIFICATION_ALGORITHMS
-        if self.feature_selection_estimator:
-            for wrapper in wrapper_list:
-                if wrapper.name == self.feature_selection_estimator:
-                    return wrapper.instantiate()
-        return wrapper_list[0].instantiate()
+        if self.feature_selection_method in ("rfecv", "sequential"):
+            if self.algorithm_config is None:
+                raise ValueError("algorithm_config must be provided.")
+            wrapper_list = self.algorithm_config
+            if self.feature_selection_estimator:
+                for wrapper in wrapper_list:
+                    if wrapper.name == self.feature_selection_estimator:
+                        return wrapper.instantiate()
+            return wrapper_list[0].instantiate()
+        return None
 
     def _set_feature_selector(self):
         if self.feature_selection_method == "selectkbest":
@@ -318,6 +334,24 @@ class DataManager:
             )
         else:
             return None
+
+    def get_selected_features(
+        self, X_train, X_test, y_train, feature_names
+    ):  # pylint: disable=C0103
+        selector = self._set_feature_selector()
+        if selector is not None:
+            selector.fit(X_train, y_train)
+            X_train = pd.DataFrame(
+                selector.transform(X_train), index=X_train.index
+            )
+            X_test = pd.DataFrame(
+                selector.transform(X_test), index=X_test.index
+            )
+            selected_mask = selector.get_support()
+            feature_names = [
+                name for name, keep in zip(feature_names, selected_mask) if keep
+            ]
+        return X_train, X_test, feature_names
 
     def _load_data(
         self, data_path: str, table_name: Optional[str] = None
@@ -420,34 +454,27 @@ class DataManager:
             return self._splits[split_key]
 
         df = self._load_data(data_path, table_name)
-        X = df.iloc[:, :-1]
+        X = df.iloc[:, :-1]  # pylint: disable=C0103
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None
 
         if self.group_column:
-            X = X.drop(columns=self.group_column)
+            X = X.drop(columns=self.group_column)  # pylint: disable=C0103
 
         feature_names = list(X.columns)
 
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
-        X_train, X_test = (
-            X.iloc[train_idx],
-            X.iloc[test_idx],
-        )  # pylint: disable=C0103
-        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        X_train = X.iloc[train_idx]  # pylint: disable=C0103
+        X_test = X.iloc[test_idx]  # pylint: disable=C0103
+        y_train = y.iloc[train_idx]  # pylint: disable=C0103
+        y_test = y.iloc[test_idx]  # pylint: disable=C0103
 
-        selector = self._set_feature_selector()
-        if selector is not None:
-            selector.fit(X_train, y_train)
-            X_train = pd.DataFrame(
-                selector.transform(X_train), index=X_train.index
-            )
-            X_test = pd.DataFrame(
-                selector.transform(X_test), index=X_test.index
-            )
-            selected_mask = selector.get_support()
-            feature_names = [
-                name for name, keep in zip(feature_names, selected_mask) if keep
+        X_train, X_test, feature_names = self.get_selected_features( # pylint: disable=C0103
+            X_train, X_test, y_train, feature_names
+        )  # pylint: disable=C0103
+        if categorical_features is not None:
+            categorical_features = [
+                f for f in categorical_features if f in feature_names
             ]
 
         if self.group_column:
@@ -512,10 +539,9 @@ class DataManager:
         ]
 
         for key, value in config.items():
-            if (value is not None
-                and (isinstance(value, list) and value
-                or not isinstance(value, list))
-                ):
+            if value is not None and (
+                isinstance(value, list) and value or not isinstance(value, list)
+            ):
                 md.append(f"{key}: {value}")
 
         md.append("```")
