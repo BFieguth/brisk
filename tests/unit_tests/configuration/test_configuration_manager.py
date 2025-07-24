@@ -351,8 +351,7 @@ class TestConfigurationManager:
             'algorithm_config': None
         }
         assert base_params == expected_params
-        print("Actual base_params:", base_params)
-        print("Expected params:", expected_params)
+       
     def test_data_config_does_not_change_base(self, mock_brisk_project):
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
