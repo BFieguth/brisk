@@ -1,0 +1,541 @@
+/* Default Styles */
+@font-face {
+    font-family: 'Montserrat';
+    src: url('./src/brisk/theme/Montserrat-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --primary: oklch(56.2% 0.1696 253.7);
+    --secondary: oklch(64.8% 0.137516 164.3);
+    --accent: oklch(65.8% 0.153 37.6);
+    --text: oklch(100% 0 0);
+    --text-muted: oklch(76.7% 0 0);
+    --bg-dark: oklch(18.2% 0 0);
+    --bg: oklch(20.9% 0 0);
+    --bg-light: oklch(27.7% 0 0);
+    --border: oklch(37.2% 0 0);
+    --border-muted: oklch(33.4% 0 0);
+    --success: oklch(70.8% 0.1576 146.1);
+    --warning: oklch(89.5% 0.1335 94.3);
+    --info: oklch(67.2% 0.177417 247.7);
+    --danger: oklch(67.9% 0.2092 29.4);
+}
+
+h1, h2, h3, h4, h5, h6, p{
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    font-weight: 400;
+}
+
+h1 { 
+    font-size: 3rem;
+}
+
+h2 { 
+    font-size: 2.25rem;
+}
+
+h3 { 
+    font-size: 1.75rem;
+}
+
+h4 { 
+    font-size: 1.5rem;
+}
+
+h5 { 
+    font-size: 1.25rem;
+}
+
+h6 { 
+    font-size: 1.125rem;
+}
+
+p {
+    font-size: 1.125rem;
+}
+
+/* Layout */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+body {
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Element Styles */
+hr {
+    color: var(--text);
+    width: 90%;
+}
+
+/* Table Styles */
+.table-container {
+    margin: 0px;
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 16px 0;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.data-table th {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-top: 0px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.data-table tr:nth-child(even) {
+    background-color: var(--bg);
+}
+
+.data-table tr:nth-child(odd) {
+    background-color: var(--bg-light);
+}
+
+.data-table tr:hover {
+    background-color: var(--bg-dark);
+    transition: background-color 0.2s ease-in-out;
+}
+
+.table-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.data-table th:first-child,
+.data-table td:first-child {
+    border-left: none;
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+    border-right: none;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--bg-dark);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px var(--bg-dark)
+}
+
+.navbar-left {
+    margin: 0;
+}
+
+.navbar-title {
+    color: var(--text);
+    font-weight: 400;
+    margin: 10px 0px;
+}
+
+.navbar-version,
+.navbar-timestamp {
+    color: var(--text-muted);
+    margin: 0px;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 25px;
+    padding-right: 25px;
+}
+
+/* Github and Docs Icons */
+.github-container,
+.docs-container {
+    position: relative;
+    display: inline-block;
+}
+
+.github-button,
+.docs-button {
+    background: none; 
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.github-svg,
+.docs-svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text);
+    transition: transform 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+.github-button:hover .github-svg,
+.docs-button:hover .docs-svg {
+    transform: scale(1.25);
+    stroke: var(--primary);
+}
+
+.github-text,
+.docs-text {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0); /* -translate-x-[50%] + initial scale(0) for hidden state */
+    z-index: 20;
+    transform-origin: left center;
+    padding: 8px 12px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* transition-all duration-300 ease-in-out */
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.github-container:hover .github-text,
+.docs-container:hover .docs-text {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+}
+
+/* Home Page */
+.home-container {
+    display: flex;
+    height: 100%;
+}
+
+.home-left {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.home-right {
+    width: 50%;
+    /* height: 100%; */
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+/* ExperimentGroup Card */
+.experiment-group-container {
+    flex: 1;
+    min-height: 0;
+    margin: 0px;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.experiment-group-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 16px 0;
+
+}
+
+.experiment-group-title {
+    color: var(--text);
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 0px;
+}
+
+.group-dataset-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.dataset-name {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    font-family: "Montserrat";
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin: 0px;
+}
+
+.dataset-name:hover {
+    color: var(--primary);
+}
+
+.dataset-name.selected {
+    color: var(--primary);
+}
+
+.group-card-content {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    width: 100%;
+}
+
+.group-card-left {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 10px;
+    color: var(--text);
+}
+
+.group-card-right {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 10px;
+    color: var(--text);
+}
+
+.group-description {
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 10px;
+}
+
+.experiment-list li {
+    margin-bottom: 0.5rem;
+    font-family: "Montserrat";
+}
+
+.experiment-link {
+    text-decoration: none;
+    color: var(--text);
+    font-family: "Montserrat";
+    transition: color 0.2s ease;
+}
+
+.experiment-link:hover,
+.experiment-link:focus {
+    color: var(--primary);
+}
+
+.experiment-link:visited {
+    color: var(--accent);
+}
+
+.data-split-selector {
+    height: 100%;
+    overflow: auto;
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    margin-right: 1.5rem;
+    padding-right: 1.5rem;
+    box-sizing: border-box;
+}
+
+.data-split-selector h4 {
+    text-align: center;
+    margin: 0.5rem 0 0.5rem 0;
+}
+
+.split-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg);
+    overflow: hidden;
+}
+
+.split-table th,
+.split-table td {
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.25rem;
+}
+
+.split-table th {
+    background-color: var(--bg);
+    font-weight: bold;
+    font-size: 1.125rem;
+    color: var(--text);
+}
+
+.split-row {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.split-row:hover {
+    color: var(--primary);
+}
+
+.split-row.selected {
+    color: var(--primary);
+}
+
+.split-row.selected:hover {
+    color: var(--primary);
+}
+
+.score {
+    text-align: right;
+}
+
+.group-dataset-link {
+    text-align: center;
+    margin: 10px 0;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-family: "Montserrat";
+}
+
+.group-dataset-link:hover {
+    color: var(--primary)
+}
+
+/* ExperimentGroup Card Carousel */
+.card-carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-height: 700px;
+}
+
+.nav-arrow {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.3s ease;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.nav-arrow:hover {
+    background: var(--primary);
+    color: var(--text);
+    transform: translateX(-50%) scale(1.15);
+}
+
+.nav-arrow svg {
+    width: 24px;
+    height: 24px;
+}
+
+.cards-viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-height: 600px;
+}
+
+.cards-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.experiment-card-wrapper {
+    position: absolute;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 90%;
+    max-width: 700px;
+    left: 50%;
+    top: 50%;
+    transform-origin: center center;
+}
+
+.experiment-card-wrapper.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    z-index: 3;
+}
+
+.experiment-card-wrapper.above {
+    opacity: 0.2;
+    transform: translate(-50%, -120%) scale(0.7);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.experiment-card-wrapper.below {
+    opacity: 0.2;
+    transform: translate(-50%, 20%) scale(0.7);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.experiment-card-wrapper.hidden {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.experiment-group-card {
+    width: 100%;
+    min-height: 400px;
+    max-height: 500px;
+    margin: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}

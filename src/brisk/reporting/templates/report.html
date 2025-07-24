@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<script>
+    let currentActiveIndex = 0;
+    let totalCards = 0;
+    
+    // Initialize carousel on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCarousel();
+        positionArrows(); // Position arrows relative to active card
+        window.addEventListener('resize', positionArrows); // Reposition on resize
+    });
+    
+    function initializeCarousel() {
+        const cardWrappers = document.querySelectorAll('.experiment-card-wrapper');
+        totalCards = cardWrappers.length;
+        
+        if (totalCards === 0) return;
+        
+        updateCardStates();
+        setTimeout(positionArrows, 100);
+    }
+    
+    function positionArrows() {
+        const activeCard = document.querySelector('.experiment-card-wrapper.active .experiment-group-card');
+        const upArrow = document.querySelector('.nav-arrow-up');
+        const downArrow = document.querySelector('.nav-arrow-down');
+        const carousel = document.querySelector('.card-carousel');
+        
+        if (!activeCard || !upArrow || !downArrow || !carousel) return;
+        
+        const cardRect = activeCard.getBoundingClientRect();
+        const carouselRect = carousel.getBoundingClientRect();
+        
+        // Calculate positions relative to carousel container
+        const cardTopRelative = cardRect.top - carouselRect.top;
+        const cardBottomRelative = cardRect.bottom - carouselRect.top;
+        const arrowSize = 44; // Arrow height/width
+        const gap = 20; // Distance from card edge
+        
+        // Position arrows with safety bounds
+        const upPosition = Math.max(10, cardTopRelative - gap - arrowSize);
+        const downPosition = Math.min(
+            carouselRect.height - arrowSize - 10, 
+            cardBottomRelative + gap
+        );
+        
+        upArrow.style.top = `${upPosition}px`;
+        downArrow.style.top = `${downPosition}px`;
+        
+        // Hide arrows if card is too small or positioned unusually
+        const cardHeight = cardRect.height;
+        const minCardHeight = 200; // Minimum height to show arrows
+        
+        if (cardHeight < minCardHeight) {
+            upArrow.style.opacity = '0.3';
+            downArrow.style.opacity = '0.3';
+        } else {
+            upArrow.style.opacity = '1';
+            downArrow.style.opacity = '1';
+        }
+    }
+
+    function navigateCards(direction) {
+        if (totalCards <= 1) return;
+        
+        // Update current index (with wrapping)
+        currentActiveIndex = (currentActiveIndex + direction + totalCards) % totalCards;
+        
+        updateCardStates();
+        setTimeout(positionArrows, 650);
+    }
+    
+    function updateCardStates() {
+        const cardWrappers = document.querySelectorAll('.experiment-card-wrapper');
+        
+        cardWrappers.forEach((wrapper, index) => {
+            // Remove all state classes
+            wrapper.classList.remove('active', 'above', 'below', 'hidden');
+            
+            if (index === currentActiveIndex) {
+                // Active card (center)
+                wrapper.classList.add('active');
+            } else if (index === (currentActiveIndex - 1 + totalCards) % totalCards) {
+                // Card above active
+                wrapper.classList.add('above');
+            } else if (index === (currentActiveIndex + 1) % totalCards) {
+                // Card below active
+                wrapper.classList.add('below');
+            } else {
+                // Hidden cards
+                wrapper.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Update existing selectDataset function to work with card carousel
+    function selectDataset(element, name) {
+        // Find the active card's dataset elements
+        const activeCard = document.querySelector('.experiment-card-wrapper.active');
+        if (!activeCard) return;
+        
+        // Remove selected class from all dataset names in active card
+        activeCard.querySelectorAll('.dataset-name').forEach(el => {
+            el.classList.remove('selected');
+        });
+        // Add selected class to clicked element
+        element.classList.add('selected');
+        
+        // Update split table for active card
+        const tableId = activeCard.querySelector('.split-table').id;
+        
+        if (window.cardDataSplitScores && window.cardDataSplitScores[name]) {
+            updateSplitTable(tableId, name, window.cardDataSplitScores[name]);
+        }
+    }
+
+    function selectSplit(row) {
+        const table = row.closest('table');
+        table.querySelectorAll('.split-row').forEach(r => {
+            r.classList.remove('selected');
+        });
+        row.classList.add('selected');
+    }
+    
+    function updateSplitTable(tableId, datasetName, datasetScores) {
+        const table = document.getElementById(tableId);
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        datasetScores.forEach((item, index) => {
+            const [splitName, algorithm, score] = item;
+            const row = document.createElement('tr');
+            row.className = `split-row ${index === 0 ? 'selected' : ''}`;
+            row.onclick = () => selectSplit(row);
+            row.innerHTML = `
+                <td class="split-name">${splitName}</td>
+                <td class="algorithm">${algorithm}</td>
+                <td class="score">${score}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report.title }}</title>
+    <link rel="stylesheet" href="report.css">
+</head>
+<body>
+    <!-- Jinja2 Macro for rendering tables -->
+    {%- macro render_table(table_data) -%}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {%- for column in table_data.columns -%}
+                    <th>{{ column }}</th>
+                    {%- endfor -%}
+                </tr>
+            </thead>
+            <tbody>
+                {%- for row in table_data.rows -%}
+                <tr>
+                    {%- for cell in row -%}
+                    <td>{{ cell }}</td>
+                    {%- endfor -%}
+                </tr>
+                {%- endfor -%}
+            </tbody>
+        </table>
+        {%- if table_data.description -%}
+        <p class="table-description">{{ table_data.description }}</p>
+        {%- endif -%}
+    </div>
+    {%- endmacro -%}
+
+    <!-- Jinja2 Macro for rendering ExperimentGroup cards -->
+    {%- macro render_experiment_card(card, card_index) -%}
+    <div class="experiment-group-card">
+        <h2 class="experiment-group-title">{{ card.group_name }}</h2>     
+        <div class="group-dataset-container">
+            {%- for name in card.dataset_names -%}
+            <a href="#" class="dataset-name {% if name == selected_dataset %}selected{% endif %}" 
+               onclick="selectDataset(this, '{{ name }}')">
+                {{ name }}
+            </a>
+            {%- endfor -%}
+        </div>   
+        <hr>
+        <p class="group-description">{{ card.description }}</p>
+        <div class="group-card-content">
+            <div class="group-card-left">
+                <ol class="experiment-list">
+                {%- for (experiment_name, experiment_link) in card.experiments -%}
+                    <li>
+                        <a href="{{ experiment_link }}" class="experiment-link">{{ experiment_name }}</a>
+                    </li>
+                {%- endfor -%}
+                </ol>
+            </div>
+            <div class="group-card-right">
+                <div class="data-split-selector">
+                    <h4>Select Data Split<h4>
+                    <table class="split-table" id="split-table-{{ card_index }}">
+                        <thead>
+                            <tr>
+                                <th>Split</th>
+                                <th>Best Algorithm</th>
+                                <th>CCC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {%- set first_dataset = card.dataset_names[0] -%}
+                            {%- for split_name, algorithm, score in card.data_split_scores[first_dataset] -%}
+                            <tr class="split-row {% if loop.first %}selected{% endif %}" 
+                                onclick="selectSplit(this)">
+                                <td class="split-name">{{ split_name }}</td>
+                                <td class="algorithm">{{ algorithm }}</td>
+                                <td class="score">{{ score }}</td>
+                            </tr>
+                            {%- endfor -%}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <a href="link" class="group-dataset-link">View data splits</a>
+    </div>
+    {%- endmacro -%}
+
+    <header class="navbar">
+        <div class="navbar-left">
+            <h1 class="navbar-title">{{ report.title }}</h1>
+            <p class="navbar-version">{{ report.brisk_version }}</p>
+            <p class="navbar-timestamp">{{ report.timestamp }}</p>
+        </div>
+        <div class="navbar-right">
+            <div class="github-container">
+                <button class="github-button" onclick="window.open('https://github.com/BFieguth/brisk', '_blank')">
+                    <svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" fill="none" viewBox="0 0 24 24" class="github-svg">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                </button>
+                <span class="github-text">GitHub</span>
+            </div>
+
+            <div class="docs-container">
+                <button class="docs-button" onclick="window.open('https://brisk.readthedocs.io/en/latest/index.html', '_blank')">
+                    <svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" stroke="currentColor" fill="none" viewBox="0 0 50 50" width="50px" height="50px" class="docs-svg">
+                        <path d="M 7 2 L 7 48 L 43 48 L 43 14.59375 L 42.71875 14.28125 L 30.71875 2.28125 L 30.40625 2 Z M 9 4 L 29 4 L 29 16 L 41 16 L 41 46 L 9 46 Z M 31 5.4375 L 39.5625 14 L 31 14 Z M 15 22 L 15 24 L 35 24 L 35 22 Z M 15 28 L 15 30 L 31 30 L 31 28 Z M 15 34 L 15 36 L 35 36 L 35 34 Z"/>
+                    </svg>                  
+                </button>
+                <span class="docs-text">Documentation</span>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="home-container">
+            <div class="home-left">
+                {%- if report.tables -%}
+                    {%- for table in report.tables -%}
+                        {{ render_table(table) }}
+                    {%- endfor -%}
+                {%- endif -%}
+            </div>
+            <div class="home-right">
+                <div class="experiment-group-container">
+                    {%- if report.experiment_group_cards -%}
+                        <div class="card-carousel">
+                            <!-- Navigation arrows -->
+                            <button class="nav-arrow nav-arrow-up" onclick="navigateCards(-1)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Cards container -->
+                            <div class="cards-viewport">
+                                <div class="cards-track" id="cards-track">
+                                    {%- for card in report.experiment_group_cards.values() -%}
+                                        <div class="experiment-card-wrapper" data-index="{{ loop.index0 }}">
+                                            {{ render_experiment_card(card, loop.index) }}
+                                        </div>
+                                    {%- endfor -%}
+                                </div>
+                            </div>
+                            
+                            <!-- Navigation arrows -->
+                            <button class="nav-arrow nav-arrow-down" onclick="navigateCards(1)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    {%- endif -%}
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
