@@ -342,10 +342,16 @@ class TestConfigurationManager:
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None
+            'scale_method': None,
+            'feature_selection_method': None,
+            'feature_selection_estimator': None,
+            'problem_type': 'classification',
+            'n_features_to_select': 5,
+            'feature_selection_cv': 3,
+            'algorithm_config': None
         }
         assert base_params == expected_params
-
+       
     def test_data_config_does_not_change_base(self, mock_brisk_project):
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
@@ -366,7 +372,13 @@ class TestConfigurationManager:
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None
+            'scale_method': None,
+            'feature_selection_method': None,
+            'feature_selection_estimator': None,
+            'problem_type': 'classification',
+            'n_features_to_select': 5,
+            'feature_selection_cv': 3,
+            'algorithm_config': None
         }
         assert base_params == expected_params
 
@@ -567,6 +579,9 @@ n_splits: 5
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+n_features_to_select: 5
+feature_selection_cv: 3
 ```
 
 ### Datasets
@@ -593,6 +608,9 @@ n_splits: 5
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+n_features_to_select: 5
+feature_selection_cv: 3
 ```
 
 ### Datasets
@@ -604,6 +622,10 @@ Continuous: ['x', 'y']
 ```
 """
         # Strip whitespace from both files
+        print("ACTUAL LOGFILE CONTENT:")
+        print(manager.logfile)
+        print("EXPECTED LOGFILE CONTENT:")
+        print(expected_logfile_content)
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
     def test_create_logfile_with_all_args(self, mock_brisk_project):
@@ -745,6 +767,9 @@ n_splits: 3
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+n_features_to_select: 5
+feature_selection_cv: 3
 ```
 
 ### Datasets
@@ -779,6 +804,9 @@ split_method: shuffle
 group_column: group
 stratified: False
 random_state: 42
+problem_type: classification
+n_features_to_select: 5
+feature_selection_cv: 3
 ```
 
 ### Datasets
@@ -790,6 +818,10 @@ Continuous: ['x', 'y']
 ```
 """
         # Strip whitespace from both files
+        print("ACTUAL LOGFILE CONTENT:")
+        print(manager.logfile)
+        print("EXPECTED LOGFILE CONTENT:")
+        print(expected_logfile_content)
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
     def test_get_output_structure(self, mock_brisk_project, tmp_path):
