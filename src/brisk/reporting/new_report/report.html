@@ -57,13 +57,19 @@
         }
 
         render() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'experiment-card-wrapper';
+            wrapper.setAttribute('group-card-index', this.cardIndex);
+
             const template = document.getElementById('experiment-group-card-template').content.cloneNode(true);
             this.renderTitle(template);
             this.renderDescription(template);
             this.renderDatasets(template);
             this.renderExperiments(template);
             this.renderDataSplits(template);
-            return template;
+            
+            wrapper.appendChild(template);
+            return wrapper;
         }
 
         renderTitle(template) {

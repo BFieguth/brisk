@@ -9,11 +9,11 @@ hr {
     flex-direction: column;
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
     background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
     border: 1px solid var(--border);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin: 16px 0;
+    overflow: hidden;
 }
 
 .group-card-content {

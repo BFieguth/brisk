@@ -10,6 +10,7 @@
 <script>
     let reportData = {};
     let currentPage = 'home';
+    let currentExperimentGroupCard = 0;
 
     // Theme management
     function toggleTheme() {
@@ -84,8 +85,7 @@
 
             if (pageType === 'home') {
                 // Ensure DOM is ready first
-                // setTimeout(initalizeCarousel, 50);
-                console.error("carousel not implemented yet, see base.html");
+                setTimeout(initializeCarousel, 50);
             }
         } catch (e) {
             console.error('Error rendering page:', e);
@@ -123,6 +123,42 @@
         return false;
     }
 
+    // ExperimentGroup Card Carousel Control
+    function initializeCarousel() {
+        const cards = document.querySelectorAll(".experiment-card-wrapper");
+        if (cards.length === 0) return;
+
+        currentExperimentGroupCard = 0;
+        updateCarousel();
+    }
+
+    function navigateCards(direction) {
+        const cards = document.querySelectorAll(".experiment-card-wrapper");
+        if (cards.length === 0) return;
+        
+        currentExperimentGroupCard = (currentExperimentGroupCard + direction + cards.length) % cards.length;
+        updateCarousel();
+    }
+
+    function updateCarousel() {
+        const cards = document.querySelectorAll(".experiment-card-wrapper");
+
+        cards.forEach((card, index) => {
+            card.classList.remove('active', 'above', 'below', 'hidden');
+
+            if (index === currentExperimentGroupCard) {
+                card.classList.add('active');
+            } else if (index === (currentExperimentGroupCard - 1 + cards.length) % cards.length) {
+                card.classList.add('above');
+            } else if (index === (currentExperimentGroupCard + 1) % cards.length) {
+                card.classList.add('below');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    }
+
+    window.navigateCards = navigateCards; // Make function global for onclick handlers
 </script>
 {% endraw %}
 {% block page_renderers %}
