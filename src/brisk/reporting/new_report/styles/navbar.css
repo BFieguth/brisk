@@ -40,6 +40,60 @@
     padding-right: 25px;
 }
 
+/* Theme toggle button */
+.theme-container {
+    position: relative;
+    display: inline-block;
+}
+
+.theme-button {
+    background: none; 
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text);
+    transition: transform 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+.theme-button:hover .theme-svg {
+    transform: scale(1.25);
+    color: var(--primary);
+}
+
+.theme-text {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0);
+    z-index: 20;
+    transform-origin: left center;
+    padding: 8px 12px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.theme-container:hover .theme-text {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+}
+
 /* Github and Docs Icons */
 .github-container,
 .docs-container {

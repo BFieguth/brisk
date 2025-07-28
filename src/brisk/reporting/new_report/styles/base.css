@@ -23,6 +23,16 @@
     --danger: oklch(67.9% 0.2092 29.4);
 }
 
+:root.light-theme {
+    --text: oklch(0% 0 0);
+    --text-muted: oklch(23.3% 0 0);
+    --bg-dark: oklch(87.3% 0 0);
+    --bg: oklch(94.1% 0 0);
+    --bg-light: oklch(96.9% 0 0);
+    --border: oklch(81.7% 0 0);
+    --border-muted: oklch(77.8% 0 0);
+}
+
 h1, h2, h3, h4, h5, h6, p{
     font-family: 'Montserrat', sans-serif;
     color: var(--text);
