@@ -1,0 +1,101 @@
+.navbar {
+    background-color: var(--bg-dark);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px var(--bg-dark)
+}
+
+.navbar-left {
+    margin: 0;
+}
+
+.navbar-title {
+    color: var(--text);
+    font-weight: 400;
+    margin: 10px 0px;
+}
+
+.navbar-title a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.navbar-title a:hover {
+    color: var(--primary);
+    cursor: pointer;
+}
+
+.navbar-version,
+.navbar-timestamp {
+    color: var(--text-muted);
+    margin: 0px;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 25px;
+    padding-right: 25px;
+}
+
+/* Github and Docs Icons */
+.github-container,
+.docs-container {
+    position: relative;
+    display: inline-block;
+}
+
+.github-button,
+.docs-button {
+    background: none; 
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.github-svg,
+.docs-svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text);
+    transition: transform 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+.github-button:hover .github-svg,
+.docs-button:hover .docs-svg {
+    transform: scale(1.25);
+    stroke: var(--primary);
+}
+
+.github-text,
+.docs-text {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0); /* -translate-x-[50%] + initial scale(0) for hidden state */
+    z-index: 20;
+    transform-origin: left center;
+    padding: 8px 12px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* transition-all duration-300 ease-in-out */
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.github-container:hover .github-text,
+.docs-container:hover .docs-text {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+}
