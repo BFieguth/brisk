@@ -1,0 +1,31 @@
+<div class="home-container">
+    <div class="home-left">
+        <div class="tables-container"></div>
+    </div>
+    <div class="home-right">
+        <div class="experiment-group-container">
+            <div class="card-carousel">
+                <!-- Navigation arrows -->
+                <button class="nav-arrow nav-arrow-up" onclick="navigateCards(-1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+                    </svg>
+                </button>
+                
+                <!-- Cards container -->
+                <div class="cards-viewport">
+                    <div class="cards-track" id="cards-track">
+                        <!-- Cards will be inserted here -->
+                    </div>
+                </div>
+                
+                <!-- Navigation arrows -->
+                <button class="nav-arrow nav-arrow-down" onclick="navigateCards(1)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

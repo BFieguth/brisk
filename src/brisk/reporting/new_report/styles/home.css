@@ -1,0 +1,12 @@
+.home-container {
+    display: flex;
+    height: 100%;
+}
+
+.home-left, .home-right {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    overflow: auto;
+}
