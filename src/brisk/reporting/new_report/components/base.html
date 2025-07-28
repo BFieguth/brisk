@@ -1,0 +1,99 @@
+<!-- Defines the structure of all report pages and handles navigation -->
+<!DOCTYPE html>
+<html>
+<!-- Embed all data as JSON -->
+<script type="application/json" id="report-data">
+    {{ report_json }}
+</script>
+<!-- Navigation Framework -->
+{% raw %}
+<script>
+    let reportData = {};
+    let currentPage = 'home';
+
+    // Initalize the app
+    document.addEventListener('DOMContentLoaded', function() {
+        const dataElement = document.getElementById('report-data')
+        if (!dataElement) {
+            console.error('report-data element not found!');
+            return;
+        }
+        try {
+            reportData = JSON.parse(dataElement.textContent);
+        } catch (e) {
+            console.error('Failed to parse report data:', e)
+            return;
+        }
+
+        showPage('home');
+        setupNavigation();
+    });
+
+    // Switch to a different page type
+    function showPage(pageType, pageData = null) {
+        const mainContent = document.getElementById('main-content');
+        currentPage = pageType;
+
+        try {
+            let content = renderPage(pageType, pageData);
+            mainContent.innerHTML = content;
+
+            if (pageType === 'home') {
+                // Ensure DOM is ready first
+                // setTimeout(initalizeCarousel, 50);
+                console.error("carousel not implemented yet, see base.html");
+            }
+        } catch (e) {
+            console.error('Error rendering page:', e);
+            mainContent.innerHTML = '<div>Error rendering page: ' + e.message + '</div>';
+        }
+    }
+
+    function renderPage(pageType, pageData = null) {
+    //  Rendering logic is implemented by report.html
+            return '<div>No renderer found</div>';
+        }
+
+    // Add event listener for page-type
+    function setupNavigation() {
+        document.addEventListener('click', function(event) {
+            if (event.target.matches('[page-type]')) {
+                event.preventDefault();
+                const pageType = event.target.getAttribute('page-type');
+                const pageData = event.target.getAttribute('page-data');
+                showPage(pageType, pageData)
+            }
+        });
+    }
+</script>
+{% endraw %}
+{% block page_renderers %}
+<!-- Page rendering logic will be included here from report.html -->
+{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brisk Report</title>
+    <style>
+        {{ base_css }}
+        {{ navbar_css }}
+        {{ table_css }}
+        {{ home_css }}
+    </style>
+    <template id="home-template">
+        {{ home_template|safe }}
+    </template>
+    <template id="table-template">
+        {{ table_component|safe }}
+    </template>
+</head>
+<body>
+    {% with navbar = report.navbar %}
+        {% include 'components/navbar.html' %}
+    {% endwith %}
+
+    <main id="main-content">
+        <!-- Content will be dynamically inserted here by showPage-->
+    </main>
+</body>
+</html>

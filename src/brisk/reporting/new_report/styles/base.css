@@ -1,0 +1,78 @@
+@font-face {
+    font-family: 'Montserrat';
+    src: url('./src/brisk/theme/Montserrat-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --primary: oklch(56.2% 0.1696 253.7);
+    --secondary: oklch(64.8% 0.137516 164.3);
+    --accent: oklch(65.8% 0.153 37.6);
+    --text: oklch(100% 0 0);
+    --text-muted: oklch(76.7% 0 0);
+    --bg-dark: oklch(18.2% 0 0);
+    --bg: oklch(20.9% 0 0);
+    --bg-light: oklch(27.7% 0 0);
+    --border: oklch(37.2% 0 0);
+    --border-muted: oklch(33.4% 0 0);
+    --success: oklch(70.8% 0.1576 146.1);
+    --warning: oklch(89.5% 0.1335 94.3);
+    --info: oklch(67.2% 0.177417 247.7);
+    --danger: oklch(67.9% 0.2092 29.4);
+}
+
+h1, h2, h3, h4, h5, h6, p{
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    font-weight: 400;
+}
+
+h1 { 
+    font-size: 3rem;
+}
+
+h2 { 
+    font-size: 2.25rem;
+}
+
+h3 { 
+    font-size: 1.75rem;
+}
+
+h4 { 
+    font-size: 1.5rem;
+}
+
+h5 { 
+    font-size: 1.25rem;
+}
+
+h6 { 
+    font-size: 1.125rem;
+}
+
+p {
+    font-size: 1.125rem;
+}
+
+/* Layout */
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+body {
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-attachment: fixed;
+}
+
+#main-content {
+    flex: 1;
+    overflow: auto;
+}

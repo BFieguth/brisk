@@ -1,0 +1,109 @@
+<!-- Handle rendering of different pages -->
+{%- extends 'components/base.html' -%}
+
+{% block page_renderers %}
+{% raw %}
+<script>
+    // Reusable class to render TableData instances
+    class TableRenderer {
+        constructor(tableData) {
+            this.tableData = tableData;
+        }
+
+        render() {
+            const template = document.getElementById('table-template').content.cloneNode(true);
+            this.renderHeaders(template);
+            this.renderRows(template);
+            this.renderDescription(template);
+            return template;
+        }
+
+        renderHeaders(template) {
+            const headerRow = template.querySelector('.table-header-row');
+            this.tableData.columns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column;
+                headerRow.appendChild(th);
+            });
+        }
+
+        renderRows(template) {
+            const tbody = template.querySelector('.table-body');
+            this.tableData.rows.forEach(rowData => {
+                const row = document.createElement('tr');
+
+                rowData.forEach(cellData => {
+                    const td = document.createElement('td');
+                    td.textContent = cellData;
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+        }
+
+        renderDescription(template) {
+            const descriptionElement = template.querySelector('.table-description');
+            if (this.tableData.description) {
+                descriptionElement.textContent = this.tableData.description;
+            }
+        }
+    }
+
+
+    // Class to process json data for each page type
+    class HomeRenderer {
+        constructor(data) {
+            this.data = data;
+        }
+
+        render() {
+            const template = document.getElementById('home-template').content.cloneNode(true);
+            this.renderTables(template);
+            // this.renderExperimentGroupCards(template);
+            return template;
+        }
+
+        renderTables(template) {
+            const container = template.querySelector('.tables-container');
+
+            if (!this.data.tables || this.data.tables.length === 0) {
+                return;
+            }
+
+            this.data.tables.forEach(tableData => {
+                const tableRenderer = new TableRenderer(tableData);
+                const tableElement = tableRenderer.render();
+                container.appendChild(tableElement);
+            });
+        }
+    }
+
+
+    // Client side page rendering
+    function renderPage(pageType, pageData = null) {
+        switch(pageType) {
+            case 'home':
+                return renderHomePage();
+            case 'experiment':
+                return renderExperimentPage(pageData);
+            case 'dataset':
+                return renderDatasetPage(pageData);
+            default:
+                return '<div>Page not found</div>';
+        }
+    }
+
+    function renderHomePage() {
+        const renderer = new HomeRenderer({
+            tables: reportData.tables,
+            experiment_group_cards: reportData.experiment_group_cards
+        });
+
+        const renderedElement = renderer.render();
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(renderedElement);
+        return tempDiv.innerHTML;
+    }
+</script>
+{% endraw %}
+{% endblock %}
