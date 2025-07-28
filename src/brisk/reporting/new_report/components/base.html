@@ -140,6 +140,24 @@
         updateCarousel();
     }
 
+    function updateCarouselHeight() {
+        const activeCard = document.querySelector('.experiment-card-wrapper.active');
+        const viewport = document.querySelector('.cards-viewport');
+        const track = document.querySelector('.cards-track');
+        
+        if (activeCard && viewport && track) {
+            setTimeout(() => {
+                const cardContent = activeCard.querySelector('.experiment-group-card');
+                if (cardContent) {
+                    const cardHeight = cardContent.scrollHeight;
+                    const totalHeight = Math.max(cardHeight + 25, 400);                    
+                    viewport.style.height = totalHeight + 'px';
+                    track.style.height = totalHeight + 'px';
+                }
+            }, 50);
+        }
+    }
+
     function updateCarousel() {
         const cards = document.querySelectorAll(".experiment-card-wrapper");
 
@@ -156,6 +174,7 @@
                 card.classList.add('hidden');
             }
         });
+        updateCarouselHeight();
     }
 
     window.navigateCards = navigateCards; // Make function global for onclick handlers
