@@ -1,0 +1,162 @@
+hr {
+    width: 90%;
+    color: var(--text);
+}
+
+/* Card Layout */
+.experiment-group-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 16px 0;
+}
+
+.group-card-content {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    width: 100%;
+}
+
+.group-card-left, .group-card-right {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 10px;
+    color: var(--text);
+}
+
+/* Dataset selection styles */
+.group-dataset-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.dataset-name {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    font-family: "Montserrat";
+    padding: 0.25rem 0.5rem;
+    margin: 0px;
+    cursor: pointer;
+}
+
+.dataset-name:hover {
+    background-color: var(--bg);
+}
+
+.dataset-name.selected {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.group-dataset-container {
+    margin: 0px 10px;
+}
+
+/* Title */
+.experiment-group-title {
+    color: var(--text);
+    text-align: center;
+}
+
+/* Description */
+.card-description {
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 10px;
+}
+
+/* Experiment Link List */
+.experiment-list li {
+    margin-bottom: 0.5rem;
+    font-family: "Montserrat";
+}
+
+.experiment-link {
+    text-decoration: none;
+    color: var(--text);
+    font-family: "Montserrat";
+    transition: color 0.2s ease;
+}
+
+.experiment-link:hover,
+.experiment-link:focus {
+    color: var(--primary);
+}
+
+/* DataSplit Selector */
+.data-split-selector {
+    height: 100%;
+    overflow: auto;
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    margin-right: 1.5rem;
+    padding-right: 1.5rem;
+    box-sizing: border-box;
+}
+
+/* Split table styles */
+.split-table {
+    font-family: "Montserrat";
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg);
+    overflow: hidden;
+}
+
+.split-table th,
+.split-table td {
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.25rem;
+}
+
+.split-table th {
+    background-color: var(--bg);
+    font-weight: bold;
+    font-size: 1.125rem;
+    color: var(--text);
+}
+
+.split-row {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.split-row:hover {
+    color: var(--primary);
+}
+
+.split-row.selected {
+    color: var(--primary);
+}
+
+.split-row.selected:hover {
+    color: var(--primary);
+}
+
+/* View Data Link */
+.group-dataset-link {
+    text-align: center;
+    margin: 10px 0;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-family: "Montserrat";
+}
+
+.group-dataset-link:hover {
+    color: var(--primary)
+}

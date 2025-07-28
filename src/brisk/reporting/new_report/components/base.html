@@ -35,7 +35,6 @@
         }
     }
 
-    // Initialize theme on page load
     function initializeTheme() {
         const savedTheme = localStorage.getItem('theme');
         const root = document.documentElement;
@@ -110,6 +109,20 @@
             }
         });
     }
+
+    // Select Dataset (Home ExperimentGroup Cards)
+    function selectDataset(clickedElement, datasetName, cardIndex) {
+        const card = clickedElement.closest('.experiment-group-card');
+        const allDatasetItems = card.querySelectorAll('.dataset-name');
+        allDatasetItems.forEach(item => item.classList.remove('selected'));
+        
+        // Add selected class to clicked item
+        clickedElement.classList.add('selected');
+
+        // Prevent default link behavior
+        return false;
+    }
+
 </script>
 {% endraw %}
 {% block page_renderers %}
@@ -123,6 +136,7 @@
         {{ base_css }}
         {{ navbar_css }}
         {{ table_css }}
+        {{ experiment_group_card_css }}
         {{ home_css }}
     </style>
     <template id="home-template">
@@ -130,6 +144,9 @@
     </template>
     <template id="table-template">
         {{ table_component|safe }}
+    </template>
+    <template id="experiment-group-card-template">
+        {{ experiment_group_card_component|safe }}
     </template>
 </head>
 <body>
