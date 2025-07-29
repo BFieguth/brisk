@@ -2,6 +2,8 @@ class App {
     constructor(reportData) {
         this.reportData = reportData;
         this.currentPage = 'home';
+        this.pendingTableUpdate = null;
+        this.isProcessingAnimation = false;
 
         //  Home page state
         this.currentExperimentGroupCard = 0;
@@ -259,17 +261,193 @@ class App {
 
     updateHomeTables() {
         const selectedTable = this.getCurrentSelectedTableData();
-        const tablesContainer = document.querySelector('.tables-container');
+        
+        this.pendingTableUpdate = {
+            tableData: selectedTable,
+            timestamp: Date.now()
+        };
 
-        if (!tablesContainer) return;
-
-        tablesContainer.innerHTML = '';
-
-        if (selectedTable) {
-            const tableRenderer = new TableRenderer(selectedTable);
-            const tableElement = tableRenderer.render();
-            tablesContainer.appendChild(tableElement);
+        if (!this.isProcessingAnimation) {
+            this.processNextTableUpdate();
         }
+    }
+
+    async processNextTableUpdate() {
+        if (this.isProcessingAnimation) return;
+        
+        this.isProcessingAnimation = true;
+
+        // Keep processing until no more pending updates
+        while (this.pendingTableUpdate) {
+            const currentRequest = this.pendingTableUpdate;
+            this.pendingTableUpdate = null; // Clear pending before processing
+            
+            await this.executeTableUpdate(currentRequest.tableData);
+        }
+
+        this.isProcessingAnimation = false;
+    }
+
+    executeTableUpdate(selectedTable) {
+        return new Promise((resolve) => {
+            const tablesContainer = document.querySelector('.tables-container');
+
+            if (!tablesContainer) {
+                resolve();
+                return;
+            }
+
+            if (!selectedTable) {
+                this.animateTableTransition(tablesContainer, null, resolve);
+                return;
+            }
+
+            try {
+                const tableRenderer = new TableRenderer(selectedTable);
+                const newTableElement = tableRenderer.render();
+                
+                if (!newTableElement || !newTableElement.firstElementChild) {
+                    console.error('TableRenderer failed to create valid element');
+                    resolve();
+                    return;
+                }
+                this.animateTableTransition(tablesContainer, newTableElement.firstElementChild, resolve);
+            } catch (error) {
+                console.error('Error creating table:', error);
+                resolve();
+            }
+        });
+    }
+
+    animateTableTransition(container, newTableElement, onComplete) {
+        if (this.pendingAnimationTimeout) {
+            clearTimeout(this.pendingAnimationTimeout);
+            this.pendingAnimationTimeout = null;
+        }
+        this.forceCleanupAnimation(container);
+
+        const currentContent = container.firstElementChild;        
+        if (!currentContent && !newTableElement) {
+            onComplete();
+            return;
+        }
+        
+        if (!currentContent && newTableElement) {
+            container.setAttribute('data-transition', 'fade-in');
+            container.appendChild(newTableElement);
+            
+            this.pendingAnimationTimeout = setTimeout(() => {
+                container.setAttribute('data-transition', 'idle');
+                this.pendingAnimationTimeout = null;
+                onComplete();
+            }, 600);
+            return;
+        }
+        
+        if (!newTableElement) {
+            container.setAttribute('data-transition', 'fade-out');
+            
+            this.pendingAnimationTimeout = setTimeout(() => {
+                container.innerHTML = '';
+                container.style.height = '';
+                container.setAttribute('data-transition', 'idle');
+                this.pendingAnimationTimeout = null;
+                onComplete();
+            }, 500);
+            return;
+        }        
+        this.performSmoothTableSwap(container, newTableElement, onComplete);
+    }
+
+    forceCleanupAnimation(container) {
+        const oldContents = container.querySelectorAll('.old-content');
+        oldContents.forEach(content => {
+            if (content.parentNode === container) {
+                container.removeChild(content);
+            }
+        });
+
+        const newContents = container.querySelectorAll('.new-content');
+        newContents.forEach(content => {
+            content.classList.remove('new-content', 'fade-in');
+            content.style.position = '';
+            content.style.top = '';
+            content.style.left = '';
+            content.style.right = '';
+        });
+
+        container.style.height = '';
+        container.setAttribute('data-transition', 'idle');
+    }
+
+    performSmoothTableSwap(container, newTableElement, onComplete) {
+        const currentContent = container.firstElementChild;
+        if (!newTableElement || !newTableElement.classList) {
+            console.error('Invalid new table element');
+            onComplete();
+            return;
+        }
+        
+        if (!currentContent) {
+            container.setAttribute('data-transition', 'fade-in');
+            container.appendChild(newTableElement);
+            
+            this.pendingAnimationTimeout = setTimeout(() => {
+                container.setAttribute('data-transition', 'idle');
+                this.pendingAnimationTimeout = null;
+                onComplete();
+            }, 600);
+            return;
+        }
+        
+        const currentHeight = container.offsetHeight;        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+            position: absolute;
+            visibility: hidden;
+            width: ${container.offsetWidth}px;
+            top: -9999px;
+            left: -9999px;
+        `;
+        tempContainer.appendChild(newTableElement.cloneNode(true));
+        document.body.appendChild(tempContainer);
+        const newHeight = tempContainer.offsetHeight;
+        document.body.removeChild(tempContainer);
+        
+        container.setAttribute('data-transition', 'crossfade');
+        container.style.height = currentHeight + 'px';        
+        if (currentContent.classList) {
+            currentContent.classList.add('old-content');
+        }
+        newTableElement.classList.add('new-content');        
+        container.appendChild(newTableElement);
+        
+        requestAnimationFrame(() => {
+            container.style.height = newHeight + 'px';            
+            if (currentContent.classList) {
+                currentContent.classList.add('fade-out');
+            }
+            newTableElement.classList.add('fade-in');
+            
+            this.pendingAnimationTimeout = setTimeout(() => {
+                if (currentContent && currentContent.parentNode === container) {
+                    container.removeChild(currentContent);
+                }
+                
+                if (newTableElement.classList) {
+                    newTableElement.classList.remove('new-content', 'fade-in');
+                }
+                newTableElement.style.position = '';
+                newTableElement.style.top = '';
+                newTableElement.style.left = '';
+                newTableElement.style.right = '';
+                
+                container.style.height = '';
+                container.setAttribute('data-transition', 'idle');
+                this.pendingAnimationTimeout = null;
+                onComplete();
+            }, 800);
+        });
     }
 
     updateCarousel() {

@@ -15,6 +15,67 @@
     overflow: auto;
 }
 
+/* Test Data Table States */
+.tables-container {
+    position: relative;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tables-container[data-transition="idle"] {
+    overflow: visible;
+}
+
+.tables-container[data-transition="measuring"],
+.tables-container[data-transition="swapping"] {
+    overflow: hidden;
+}
+
+.table-container {
+    transition: opacity 0.5s ease;
+    opacity: 1;
+}
+
+.tables-container[data-transition="fade-out"] .table-container {
+    opacity: 0;
+}
+
+.tables-container[data-transition="fade-in"] .table-container {
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.tables-container[data-transition="crossfade"] {
+    position: relative;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.old-content {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.new-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease 0.2s;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.old-content.fade-out {
+    opacity: 0;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.new-content.fade-in {
+    opacity: 1;
+}
+
 /* ExperimentGroup Card Carousel */
 .experiment-group-container {
     flex: 1;
