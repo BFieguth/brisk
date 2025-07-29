@@ -11,6 +11,7 @@ class App {
     }
 
     init() {
+        this.initializeTheme();
         this.showPage('home');
         this.setupNavigation();
     }
@@ -54,6 +55,16 @@ class App {
         const darkIcon = document.querySelector('.dark-mode-icon');
         const lightIcon = document.querySelector('.light-mode-icon');
         
+        let themeToApply;
+
+        if (savedTheme) {
+            themeToApply = savedTheme;
+        } else {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            themeToApply = prefersDark ? 'dark' : 'light';
+            localStorage.setItem('theme', themeToApply);
+        }
+
         if (savedTheme === 'light') {
             root.classList.add('light-theme');
             themeText.textContent = 'Dark Mode';
