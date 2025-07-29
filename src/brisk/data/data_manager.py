@@ -305,12 +305,11 @@ class DataManager:
         if self.feature_selection_method in ("rfecv", "sequential"):
             if self.algorithm_config is None:
                 raise ValueError("algorithm_config must be provided.")
-            wrapper_list = self.algorithm_config
             if self.feature_selection_estimator:
-                for wrapper in wrapper_list:
-                    if wrapper.name == self.feature_selection_estimator:
-                        return wrapper.instantiate()
-            return wrapper_list[0].instantiate()
+                wrapper = self.algorithm_config[self.feature_selection_estimator]
+                return wrapper.instantiate()
+            # return wrapper_list[0].instantiate()
+            # NOTE: I would throw an error instead of defaulting to a unkown algorithm
         return None
 
     def _set_feature_selector(self):
@@ -336,8 +335,12 @@ class DataManager:
             return None
 
     def get_selected_features(
-        self, X_train, X_test, y_train, feature_names
-    ):  # pylint: disable=C0103
+        self,
+        X_train, # pylint: disable=C0103
+        X_test,
+        y_train,
+        feature_names
+    ):
         selector = self._set_feature_selector()
         if selector is not None:
             selector.fit(X_train, y_train)
@@ -354,7 +357,9 @@ class DataManager:
         return X_train, X_test, feature_names
 
     def _load_data(
-        self, data_path: str, table_name: Optional[str] = None
+        self,
+        data_path: str,
+        table_name: Optional[str] = None
     ) -> pd.DataFrame:
         """Loads data from a CSV, Excel file, or SQL database.
 
