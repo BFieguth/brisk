@@ -2,12 +2,25 @@ class App {
     constructor(reportData) {
         this.reportData = reportData;
         this.currentPage = 'home';
+
+        //  Home page state
         this.currentExperimentGroupCard = 0;
+        this.selectedDataset = null;
+        this.selectedSplit = 0;
+        this.initalizeHomeSelections();
     }
 
     init() {
         this.showPage('home');
         this.setupNavigation();
+    }
+
+    initalizeHomeSelections() {
+        const experimentGroupKeys = Object.keys(this.reportData.experiment_group_cards);
+        if (experimentGroupKeys.length > 0) {
+            const firstGroup = this.reportData.experiment_group_cards[experimentGroupKeys[0]];
+            this.selectedDataset = firstGroup.dataset_names[0];
+        }
     }
 
     // Theme Management
@@ -87,9 +100,13 @@ class App {
     }
 
     renderHomePage() {
+        const selectedTable = this.getCurrentSelectedTableData();
+        
         const renderer = new HomeRenderer({
-            tables: this.reportData.tables,
-            experiment_group_cards: this.reportData.experiment_group_cards
+            // tables: this.reportData.tables,
+            tables: selectedTable ? [selectedTable] : [],
+            experiment_group_cards: this.reportData.experiment_group_cards,
+            selectedTable: selectedTable
         });
         const renderedElement = renderer.render();
         const tempDiv = document.createElement('div');
@@ -139,8 +156,109 @@ class App {
         // Add selected class to clicked item
         clickedElement.classList.add('selected');
 
+        this.selectedDataset = datasetName;
+        this.selectedSplit = 0;
+
+        this.updateDataSplitsTable(cardIndex, datasetName);
+        this.updateHomeTables();
+
         // Prevent default link behavior
         return false;
+    }
+
+    getCurrentExperimentGroupName() {
+        const experimentGroupKeys = Object.keys(this.reportData.experiment_group_cards);
+        if (experimentGroupKeys.length > this.currentExperimentGroupCard) {
+            return experimentGroupKeys[this.currentExperimentGroupCard];
+        }
+        return null;
+    }
+
+    getCurrentSelectedTableData() {
+        const groupName = this.getCurrentExperimentGroupName();
+        if (!groupName || !this.selectDataset) {
+            return null;
+        }
+
+        const tableKey = `${groupName}_${this.selectedDataset}_split${this.selectedSplit}`;
+        return this.reportData.tables[tableKey] || null;
+    }
+
+    updateDataSplitsTable(cardIndex, datasetName) {
+        const groupName = this.getCurrentExperimentGroupName();
+        if (!groupName) return;
+
+        const groupData = this.reportData.experiment_group_cards[groupName];
+        const splitTable = document.getElementById(`split-table-${cardIndex}`);
+
+        if (!splitTable || !groupData.data_split_scores[datasetName]) return;
+
+        const splitData = groupData.data_split_scores[datasetName];
+        
+        // Update table header with correct metric
+        const thead = splitTable.querySelector('thead');
+        let metricName = "Score"; // Default fallback
+        if (splitData && splitData.length > 0) {
+            const firstSplit = splitData[0];
+            if (firstSplit.length > 3) {
+                metricName = firstSplit[3];
+            }
+        }
+        
+        thead.innerHTML = `
+            <tr>
+                <th>Split</th>
+                <th>Best Algorithm</th>
+                <th>${metricName}</th>
+            </tr>
+        `;
+
+        const tbody = splitTable.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        splitData.forEach((split, index) => {
+            const [splitName, algorithm, score] = split;
+            const row = document.createElement('tr');
+            row.className = 'split-row';
+            row.setAttribute('data-split-index', index);
+            if (index === this.selectedSplit) {
+                row.classList.add('selected');
+            }
+            row.setAttribute('onclick', `window.app.selectSplit(this, ${index})`);
+
+            row.innerHTML = `
+                <td class="split-name">${splitName}</td>
+                <td class="algorithm">${algorithm}</td>
+                <td class="score">${score}</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    }
+
+    selectSplit(clickedRow, splitIndex) {
+        const table = clickedRow.closest('table');
+        const allRows = table.querySelectorAll('.split-row');
+        allRows.forEach(row => row.classList.remove('selected'));
+
+        clickedRow.classList.add('selected');
+        this.selectedSplit = splitIndex;
+        this.updateHomeTables();
+    }
+
+    updateHomeTables() {
+        const selectedTable = this.getCurrentSelectedTableData();
+        const tablesContainer = document.querySelector('.tables-container');
+
+        if (!tablesContainer) return;
+
+        tablesContainer.innerHTML = '';
+
+        if (selectedTable) {
+            const tableRenderer = new TableRenderer(selectedTable);
+            const tableElement = tableRenderer.render();
+            tablesContainer.appendChild(tableElement);
+        }
     }
 
     updateCarousel() {
@@ -168,7 +286,10 @@ class App {
         if (cards.length === 0) return;
 
         this.currentExperimentGroupCard = 0;
+        this.updateDatasetSelectionForCurrentCard();
         this.updateCarousel();
+
+        setTimeout(() => this.updateHomeTables(), 100);
     }
 
     navigateCards(direction) {
@@ -176,7 +297,18 @@ class App {
         if (cards.length === 0) return;
         
         this.currentExperimentGroupCard = (this.currentExperimentGroupCard + direction + cards.length) % cards.length;
+        this.updateDatasetSelectionForCurrentCard();
         this.updateCarousel();
+        this.updateHomeTables();
+    }
+
+    updateDatasetSelectionForCurrentCard() {
+        const groupName = this.getCurrentExperimentGroupName();
+        if (!groupName) return;
+
+        const groupData = this.reportData.experiment_group_cards[groupName];
+        this.selectedDataset = groupData.dataset_names[0];
+        this.selectedSplit = 0;
     }
 
     updateCarouselHeight() {

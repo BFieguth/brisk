@@ -95,12 +95,24 @@ class ExperimentGroupCardRenderer {
         table.className = 'split-table';
         table.id = `split-table-${this.cardIndex}`;
         
+        const firstDataset = this.cardData.dataset_names[0];
+        const firstDatasetSplits = this.cardData.data_split_scores[firstDataset];
+        
+        // Get metric from first split (4th element in tuple)
+        let metricName = "Score"; // Default fallback
+        if (firstDatasetSplits && firstDatasetSplits.length > 0) {
+            const firstSplit = firstDatasetSplits[0];
+            if (firstSplit.length > 3) {
+                metricName = firstSplit[3];
+            }
+        }
+        
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr>
                 <th>Split</th>
                 <th>Best Algorithm</th>
-                <th>CCC</th>
+                <th>${metricName}</th>
             </tr>
         `;
         table.appendChild(thead);
@@ -108,19 +120,17 @@ class ExperimentGroupCardRenderer {
         const tbody = document.createElement('tbody');
         table.appendChild(tbody);
         
-        const firstDataset = this.cardData.dataset_names[0];
-        const firstDatasetSplits = this.cardData.data_split_scores[firstDataset];
-        
         if (firstDatasetSplits) {
             firstDatasetSplits.forEach((split, index) => {
                 const [splitName, algorithm, score] = split;
                 
                 const row = document.createElement('tr');
                 row.className = 'split-row';
+                row.setAttribute('data-split-index', index);
                 if (index === 0) {
                     row.classList.add('selected');
                 }
-                row.setAttribute('onclick', 'selectSplit(this)');
+                row.setAttribute('onclick', `window.app.selectSplit(this, ${index})`);
                 
                 row.innerHTML = `
                     <td class="split-name">${splitName}</td>
