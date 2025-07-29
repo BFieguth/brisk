@@ -52,7 +52,7 @@ class ExperimentGroupCard(BaseModel):
     )
     data_splits_link: Dict[str, str] = Field(
         default_factory=dict, 
-        description="Dict mapping dataset name to data split page links"
+        description="Dict mapping dataset name to dataset page links"
     )
     data_split_scores: Dict[str, List[Tuple[str, str, str]]] = Field(
         default_factory=dict,

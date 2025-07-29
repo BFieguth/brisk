@@ -1,19 +1,17 @@
-<!-- Defines the structure of all report pages and handles navigation -->
-<!DOCTYPE html>
-<html>
-<!-- Embed all data as JSON -->
-<script type="application/json" id="report-data">
-    {{ report_json }}
-</script>
-<!-- Navigation Framework -->
-{% raw %}
-<script>
-    let reportData = {};
-    let currentPage = 'home';
-    let currentExperimentGroupCard = 0;
+class App {
+    constructor(reportData) {
+        this.reportData = reportData;
+        this.currentPage = 'home';
+        this.currentExperimentGroupCard = 0;
+    }
 
-    // Theme management
-    function toggleTheme() {
+    init() {
+        this.showPage('home');
+        this.setupNavigation();
+    }
+
+    // Theme Management
+    toggleTheme() {
         const root = document.documentElement;
         const themeText = document.querySelector('.theme-text');
         const darkIcon = document.querySelector('.dark-mode-icon');
@@ -36,7 +34,7 @@
         }
     }
 
-    function initializeTheme() {
+    initializeTheme() {
         const savedTheme = localStorage.getItem('theme');
         const root = document.documentElement;
         const themeText = document.querySelector('.theme-text');
@@ -56,36 +54,18 @@
         }
     }
 
-    // Initalize the app
-    document.addEventListener('DOMContentLoaded', function() {
-        const dataElement = document.getElementById('report-data')
-        if (!dataElement) {
-            console.error('report-data element not found!');
-            return;
-        }
-        try {
-            reportData = JSON.parse(dataElement.textContent);
-        } catch (e) {
-            console.error('Failed to parse report data:', e)
-            return;
-        }
-
-        showPage('home');
-        setupNavigation();
-    });
-
-    // Switch to a different page type
-    function showPage(pageType, pageData = null) {
+    //  Client side page rendering
+    showPage(pageType, pageData = null) {
         const mainContent = document.getElementById('main-content');
-        currentPage = pageType;
+        this.currentPage = pageType;
 
         try {
-            let content = renderPage(pageType, pageData);
+            let content = this.renderPage(pageType, pageData);
             mainContent.innerHTML = content;
 
             if (pageType === 'home') {
                 // Ensure DOM is ready first
-                setTimeout(initializeCarousel, 50);
+                setTimeout(() => this.initializeCarousel(), 50);
             }
         } catch (e) {
             console.error('Error rendering page:', e);
@@ -93,25 +73,65 @@
         }
     }
 
-    function renderPage(pageType, pageData = null) {
-    //  Rendering logic is implemented by report.html
-            return '<div>No renderer found</div>';
+    renderPage(pageType, pageData = null) {
+        switch(pageType) {
+            case 'home':
+                return this.renderHomePage();
+            case 'experiment':
+                return this.renderExperimentPage(pageData);
+            case 'dataset':
+                return this.renderDatasetPage(pageData);
+            default:
+                return '<div>Renderer not found</div>';
         }
+    }
 
-    // Add event listener for page-type
-    function setupNavigation() {
+    renderHomePage() {
+        const renderer = new HomeRenderer({
+            tables: this.reportData.tables,
+            experiment_group_cards: this.reportData.experiment_group_cards
+        });
+        const renderedElement = renderer.render();
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(renderedElement);
+        return tempDiv.innerHTML;
+    }
+
+    renderExperimentPage(experimentData) {
+        const renderer = new ExperimentPageRenderer(experimentData);
+        // const renderedElement = renderer.render();
+        // const tempDiv = document.createElement('div');
+        // tempDiv.appendChild(renderedElement);
+        // return tempDiv.innerHTML;
+        return renderer.render()
+    }
+
+    renderDatasetPage(datasetData) {
+        const renderer = new DatasetPageRenderer(datasetData);
+        // const renderedElement = renderer.render();
+        // const tempDiv = document.createElement('div');
+        // tempDiv.appendChild(renderedElement);
+        // return tempDiv.innerHTML;
+        return renderer.render()
+
+    }
+
+    //  Navigation
+    setupNavigation() {
+        const self = this;
         document.addEventListener('click', function(event) {
             if (event.target.matches('[page-type]')) {
                 event.preventDefault();
                 const pageType = event.target.getAttribute('page-type');
                 const pageData = event.target.getAttribute('page-data');
-                showPage(pageType, pageData)
+                self.showPage(pageType, pageData);
             }
         });
     }
 
-    // Select Dataset (Home ExperimentGroup Cards)
-    function selectDataset(clickedElement, datasetName, cardIndex) {
+    //  Home Page Logic
+    selectDataset(clickedElement, datasetName, cardIndex) {
+        // Select Dataset (Home ExperimentGroup Cards)
         const card = clickedElement.closest('.experiment-group-card');
         const allDatasetItems = card.querySelectorAll('.dataset-name');
         allDatasetItems.forEach(item => item.classList.remove('selected'));
@@ -123,24 +143,43 @@
         return false;
     }
 
-    // ExperimentGroup Card Carousel Control
-    function initializeCarousel() {
+    updateCarousel() {
+        const cards = document.querySelectorAll(".experiment-card-wrapper");
+
+        cards.forEach((card, index) => {
+            card.classList.remove('active', 'above', 'below', 'hidden');
+
+            if (index === this.currentExperimentGroupCard) {
+                card.classList.add('active');
+            } else if (index === (this.currentExperimentGroupCard - 1 + cards.length) % cards.length) {
+                card.classList.add('above');
+            } else if (index === (this.currentExperimentGroupCard + 1) % cards.length) {
+                card.classList.add('below');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+        this.updateCarouselHeight();
+    }
+
+    initializeCarousel() {
+        // ExperimentGroup Card Carousel Control
         const cards = document.querySelectorAll(".experiment-card-wrapper");
         if (cards.length === 0) return;
 
-        currentExperimentGroupCard = 0;
-        updateCarousel();
+        this.currentExperimentGroupCard = 0;
+        this.updateCarousel();
     }
 
-    function navigateCards(direction) {
+    navigateCards(direction) {
         const cards = document.querySelectorAll(".experiment-card-wrapper");
         if (cards.length === 0) return;
         
-        currentExperimentGroupCard = (currentExperimentGroupCard + direction + cards.length) % cards.length;
-        updateCarousel();
+        this.currentExperimentGroupCard = (this.currentExperimentGroupCard + direction + cards.length) % cards.length;
+        this.updateCarousel();
     }
 
-    function updateCarouselHeight() {
+    updateCarouselHeight() {
         const activeCard = document.querySelector('.experiment-card-wrapper.active');
         const viewport = document.querySelector('.cards-viewport');
         const track = document.querySelector('.cards-track');
@@ -157,60 +196,4 @@
             }, 50);
         }
     }
-
-    function updateCarousel() {
-        const cards = document.querySelectorAll(".experiment-card-wrapper");
-
-        cards.forEach((card, index) => {
-            card.classList.remove('active', 'above', 'below', 'hidden');
-
-            if (index === currentExperimentGroupCard) {
-                card.classList.add('active');
-            } else if (index === (currentExperimentGroupCard - 1 + cards.length) % cards.length) {
-                card.classList.add('above');
-            } else if (index === (currentExperimentGroupCard + 1) % cards.length) {
-                card.classList.add('below');
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-        updateCarouselHeight();
-    }
-
-    window.navigateCards = navigateCards; // Make function global for onclick handlers
-</script>
-{% endraw %}
-{% block page_renderers %}
-<!-- Page rendering logic will be included here from report.html -->
-{% endblock %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brisk Report</title>
-    <style>
-        {{ base_css }}
-        {{ navbar_css }}
-        {{ table_css }}
-        {{ experiment_group_card_css }}
-        {{ home_css }}
-    </style>
-    <template id="home-template">
-        {{ home_template|safe }}
-    </template>
-    <template id="table-template">
-        {{ table_component|safe }}
-    </template>
-    <template id="experiment-group-card-template">
-        {{ experiment_group_card_component|safe }}
-    </template>
-</head>
-<body>
-    {% with navbar = report.navbar %}
-        {% include 'components/navbar.html' %}
-    {% endwith %}
-
-    <main id="main-content">
-        <!-- Content will be dynamically inserted here by showPage-->
-    </main>
-</body>
-</html>
+}

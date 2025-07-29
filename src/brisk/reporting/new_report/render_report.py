@@ -54,6 +54,37 @@ def load_component_templates(component_dir: str) -> Dict[str, str]:
     return templates
 
 
+def load_javascript(js_dir: str) -> str:
+    """
+    Load and concatenate all JavaScript files in the correct dependency order.
+    """
+    js_content = ""
+    
+    js_files_order = [
+        # Renderers (no dependencies)
+        os.path.join(js_dir, "renderers", "table.js"),
+        os.path.join(js_dir, "renderers", "experiment_group_card.js"), 
+        os.path.join(js_dir, "renderers", "home.js"),
+        os.path.join(js_dir, "renderers", "dataset_page.js"),
+        os.path.join(js_dir, "renderers", "experiment_page.js"),
+        # Core (depends on renderers)
+        os.path.join(js_dir, "core", "app.js")
+    ]
+    
+    for js_file in js_files_order:
+        if os.path.exists(js_file):
+            with open(js_file, "r", encoding="utf-8") as f:
+                content = f.read()
+                # Remove ES6 import/export statements
+                # content = remove_es6_imports_exports(content)
+                js_content += f"\n// === {os.path.basename(js_file)} ===\n"
+                js_content += content + "\n"
+                print(f"DEBUG: Loaded {js_file} ({len(content)} characters)")
+        else:
+            print(f"WARNING: JS file not found: {js_file}")
+    
+    return js_content
+
 if __name__ == "__main__":
     styles_dir = "./src/brisk/reporting/new_report/styles"
     css_content = load_css(styles_dir)
@@ -64,6 +95,9 @@ if __name__ == "__main__":
     components_dir = "./src/brisk/reporting/new_report/components"
     component_templates = load_component_templates(components_dir)
 
+    js_dir = "./src/brisk/reporting/new_report/js"
+    javascript = load_javascript(js_dir)
+
     env = Environment(
         loader=FileSystemLoader(searchpath="./src/brisk/reporting/new_report")
     )
@@ -72,9 +106,10 @@ if __name__ == "__main__":
     html_output = template.render(
         report=report_data.model_dump(),
         report_json=report_data.model_dump_json(),
+        javascript=javascript,
         **css_content,
         **page_templates,
-        **component_templates # NOTE used for table-template (table.html)
+        **component_templates # NOTE used for table-template (table.html, experiment_group_card.html)
     )
 
     with open("dev_report.html", "w", encoding="utf-8") as f:
