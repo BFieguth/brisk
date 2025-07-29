@@ -54,6 +54,7 @@ hr {
 
 .dataset-name:hover {
     background-color: var(--bg);
+    color: var(--secondary);
 }
 
 .dataset-name.selected {
@@ -93,7 +94,8 @@ hr {
 
 .experiment-link:hover,
 .experiment-link:focus {
-    color: var(--primary);
+    /* color: var(--primary); */
+    color: var(--secondary);
 }
 
 /* DataSplit Selector */
@@ -137,7 +139,8 @@ hr {
 }
 
 .split-row:hover {
-    color: var(--primary);
+    /* color: var(--primary); */
+    color: var(--secondary);
 }
 
 .split-row.selected {
@@ -145,7 +148,8 @@ hr {
 }
 
 .split-row.selected:hover {
-    color: var(--primary);
+    /* color: var(--primary); */
+    color: var(--secondary);
 }
 
 /* View Data Link */
@@ -158,5 +162,6 @@ hr {
 }
 
 .group-dataset-link:hover {
-    color: var(--primary)
+    /* color: var(--primary) */
+    color: var(--secondary)
 }
