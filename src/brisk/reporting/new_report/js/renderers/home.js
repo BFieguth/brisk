@@ -1,6 +1,7 @@
 class HomeRenderer {
-    constructor(data) {
-        this.data = data;
+    constructor(experiment_groups, selectedTable) {
+        this.experiment_groups = experiment_groups;
+        this.selectedTable = selectedTable;
     }
 
     render() {
@@ -12,27 +13,22 @@ class HomeRenderer {
 
     renderTables(template) {
         const container = template.querySelector('.tables-container');
-
-        if (!this.data.tables || this.data.tables.length === 0) {
-            return;
-        }
-
-        this.data.tables.forEach(tableData => {
-            const tableRenderer = new TableRenderer(tableData);
-            const tableElement = tableRenderer.render();
-            container.appendChild(tableElement);
-        });
+        const tableRenderer = new TableRenderer(this.selectedTable);
+        const tableElement = tableRenderer.render();
+        container.appendChild(tableElement);
     }
 
     renderExperimentGroupCards(template) {
         const container = template.querySelector('#cards-track');
 
-        if (!this.data.experiment_group_cards || Object.keys(this.data.experiment_group_cards).length === 0) {
+        if (!this.experiment_groups || this.experiment_groups.length === 0) {
             return;
         }
 
-        Object.entries(this.data.experiment_group_cards).forEach(([groupName, cardData], index) => {
-            const cardRenderer = new ExperimentGroupCardRenderer(cardData, index);
+        this.experiment_groups.forEach((experiment_group, index) => {
+            const cardRenderer = new ExperimentGroupCardRenderer(
+                experiment_group, index
+            );
             const cardElement = cardRenderer.render();
             container.appendChild(cardElement);
         });

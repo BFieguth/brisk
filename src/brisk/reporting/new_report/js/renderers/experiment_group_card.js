@@ -22,9 +22,7 @@ class ExperimentGroupCardRenderer {
 
     renderTitle(template) {
         const titleElement = template.querySelector('.card-title');
-        if (this.cardData.group_name) {
-            titleElement.textContent = this.cardData.group_name;
-        }
+        titleElement.textContent = this.cardData.name;
     }
 
     renderDescription(template) {
@@ -37,11 +35,12 @@ class ExperimentGroupCardRenderer {
     renderDatasets(template) {
         const datasetContainer = template.querySelector('.group-dataset-container');
         
-        if (!this.cardData.dataset_names || this.cardData.dataset_names.length === 0) {
+        if (!this.cardData.datasets || this.cardData.datasets.length === 0) {
             return;
         }
 
-        this.cardData.dataset_names.forEach((datasetName, index) => {
+        this.cardData.datasets.forEach((datasetID, index) => {
+            const datasetName = this.formatDatasetName(datasetID);
             const datasetLink = document.createElement('a');
             datasetLink.href = '#';
             datasetLink.className = 'dataset-name';
@@ -56,8 +55,8 @@ class ExperimentGroupCardRenderer {
             datasetContainer.appendChild(datasetLink);
         });
         
-        if (this.cardData.dataset_names.length > 0) {
-            datasetContainer.setAttribute('data-selected-dataset', this.cardData.dataset_names[0]);
+        if (this.cardData.datasets.length > 0) {
+            datasetContainer.setAttribute('data-selected-dataset', this.cardData.datasets[0]);
         }
     }
 
@@ -68,16 +67,16 @@ class ExperimentGroupCardRenderer {
             return;
         }
 
-        this.cardData.experiments.forEach(experiment => {
-            const [experimentName, experimentLink] = experiment;
-            
+        this.cardData.experiments.forEach(experimentID => {
+            const experimentData = window.app.reportData.experiments[experimentID]
             const listItem = document.createElement('li');
+
             const experimentAnchor = document.createElement('a');
             experimentAnchor.href = '#';
             experimentAnchor.setAttribute('page-type', 'experiment');
-            experimentAnchor.setAttribute('page-data', experimentLink);
+            experimentAnchor.setAttribute('page-data', experimentData);
             experimentAnchor.className = 'experiment-link';
-            experimentAnchor.textContent = experimentName;
+            experimentAnchor.textContent = experimentID;
             
             listItem.appendChild(experimentAnchor);
             experimentList.appendChild(listItem);
@@ -95,7 +94,7 @@ class ExperimentGroupCardRenderer {
         table.className = 'split-table';
         table.id = `split-table-${this.cardIndex}`;
         
-        const firstDataset = this.cardData.dataset_names[0];
+        const firstDataset = this.cardData.datasets[0];
         const firstDatasetSplits = this.cardData.data_split_scores[firstDataset];
         
         // Get metric from first split (4th element in tuple)
@@ -143,5 +142,10 @@ class ExperimentGroupCardRenderer {
         }
         
         splitSelector.appendChild(table);
+    }
+
+    formatDatasetName(datasetID) {
+        const datasetName = datasetID.replace(`${this.cardData.name}_`, '');
+        return datasetName;
     }
 }

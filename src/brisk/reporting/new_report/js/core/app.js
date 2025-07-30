@@ -7,7 +7,7 @@ class App {
 
         //  Home page state
         this.currentExperimentGroupCard = 0;
-        this.selectedDataset = null;
+        this.selectedDataset = null; // This must be as Dataset instance
         this.selectedSplit = 0;
         this.initalizeHomeSelections();
     }
@@ -19,13 +19,13 @@ class App {
     }
 
     initalizeHomeSelections() {
-        const experimentGroupKeys = Object.keys(this.reportData.experiment_group_cards);
-        if (experimentGroupKeys.length > 0) {
-            const firstGroup = this.reportData.experiment_group_cards[experimentGroupKeys[0]];
-            this.selectedDataset = firstGroup.dataset_names[0];
+        const experimentGroups = this.reportData.experiment_groups;
+        if (experimentGroups.length > 0) {
+            const firstGroup = experimentGroups[0];
+            const datasetID = firstGroup.datasets[0];
+            this.selectedDataset = this.reportData.datasets[datasetID];
         }
     }
-
     // Theme Management
     toggleTheme() {
         const root = document.documentElement;
@@ -114,13 +114,9 @@ class App {
 
     renderHomePage() {
         const selectedTable = this.getCurrentSelectedTableData();
-        
-        const renderer = new HomeRenderer({
-            // tables: this.reportData.tables,
-            tables: selectedTable ? [selectedTable] : [],
-            experiment_group_cards: this.reportData.experiment_group_cards,
-            selectedTable: selectedTable
-        });
+        const renderer = new HomeRenderer(
+            this.reportData.experiment_groups, selectedTable
+        );
         const renderedElement = renderer.render();
         const tempDiv = document.createElement('div');
         tempDiv.appendChild(renderedElement);
@@ -164,49 +160,54 @@ class App {
         // Select Dataset (Home ExperimentGroup Cards)
         const card = clickedElement.closest('.experiment-group-card');
         const allDatasetItems = card.querySelectorAll('.dataset-name');
+        const groupName = this.reportData.experiment_groups[cardIndex];
+        const datasetID = `${groupName.name}_${datasetName}`;
+        const datasetInstance = this.reportData.datasets[datasetID];
         allDatasetItems.forEach(item => item.classList.remove('selected'));
-        
+
         // Add selected class to clicked item
         clickedElement.classList.add('selected');
 
-        this.selectedDataset = datasetName;
+        this.selectedDataset = datasetInstance;
         this.selectedSplit = 0;
 
-        this.updateDataSplitsTable(cardIndex, datasetName);
+        this.updateDataSplitsTable(cardIndex, datasetInstance.ID);
         this.updateHomeTables();
 
         // Prevent default link behavior
         return false;
     }
 
-    getCurrentExperimentGroupName() {
-        const experimentGroupKeys = Object.keys(this.reportData.experiment_group_cards);
-        if (experimentGroupKeys.length > this.currentExperimentGroupCard) {
-            return experimentGroupKeys[this.currentExperimentGroupCard];
+    getCurrentExperimentGroup() {
+        const experimentGroups = this.reportData.experiment_groups;
+        if (experimentGroups.length > this.currentExperimentGroupCard) {
+            return experimentGroups[this.currentExperimentGroupCard];
         }
         return null;
     }
 
     getCurrentSelectedTableData() {
-        const groupName = this.getCurrentExperimentGroupName();
-        if (!groupName || !this.selectDataset) {
+        const experimentGroup = this.getCurrentExperimentGroup();
+        if (!experimentGroup || !this.selectDataset) {
             return null;
         }
-
-        const tableKey = `${groupName}_${this.selectedDataset}_split${this.selectedSplit}`;
-        return this.reportData.tables[tableKey] || null;
+        const tableKey = `${this.selectedDataset.ID}_split_${this.selectedSplit}`;
+        return experimentGroup.test_scores[tableKey] || null;
     }
 
-    updateDataSplitsTable(cardIndex, datasetName) {
-        const groupName = this.getCurrentExperimentGroupName();
-        if (!groupName) return;
+    updateDataSplitsTable(cardIndex, datasetID) {
+        const experimentGroup = this.getCurrentExperimentGroup();
+        if (!experimentGroup) return;
 
-        const groupData = this.reportData.experiment_group_cards[groupName];
         const splitTable = document.getElementById(`split-table-${cardIndex}`);
 
-        if (!splitTable || !groupData.data_split_scores[datasetName]) return;
+        console.log(datasetID)
 
-        const splitData = groupData.data_split_scores[datasetName];
+        if (!splitTable || !experimentGroup.data_split_scores[datasetID]) return;
+
+        const splitData = experimentGroup.data_split_scores[datasetID];
+
+        console.log('selcted split', splitData)
         
         // Update table header with correct metric
         const thead = splitTable.querySelector('thead');
@@ -281,7 +282,6 @@ class App {
         while (this.pendingTableUpdate) {
             const currentRequest = this.pendingTableUpdate;
             this.pendingTableUpdate = null; // Clear pending before processing
-            
             await this.executeTableUpdate(currentRequest.tableData);
         }
 
@@ -492,11 +492,10 @@ class App {
     }
 
     updateDatasetSelectionForCurrentCard() {
-        const groupName = this.getCurrentExperimentGroupName();
-        if (!groupName) return;
-
-        const groupData = this.reportData.experiment_group_cards[groupName];
-        this.selectedDataset = groupData.dataset_names[0];
+        const experimentGroup = this.getCurrentExperimentGroup();
+        if (!experimentGroup) return;
+        const datasetID = experimentGroup.datasets[0];
+        this.selectedDataset = this.reportData.datasets[datasetID];
         this.selectedSplit = 0;
     }
 
