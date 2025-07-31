@@ -45,7 +45,6 @@ class ExperimentGroupCardRenderer {
             datasetLink.href = '#';
             datasetLink.className = 'dataset-name';
             datasetLink.textContent = datasetName;
-            datasetLink.setAttribute('data-dataset', datasetName);
 
             if (index === 0) {
                 datasetLink.classList.add('selected');
@@ -74,7 +73,7 @@ class ExperimentGroupCardRenderer {
             const experimentAnchor = document.createElement('a');
             experimentAnchor.href = '#';
             experimentAnchor.setAttribute('page-type', 'experiment');
-            experimentAnchor.setAttribute('page-data', experimentData);
+            experimentAnchor.setAttribute('page-data', JSON.stringify(experimentData));
             experimentAnchor.className = 'experiment-link';
             experimentAnchor.textContent = experimentID;
             

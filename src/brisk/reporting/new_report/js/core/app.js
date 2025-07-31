@@ -125,11 +125,10 @@ class App {
 
     renderExperimentPage(experimentData) {
         const renderer = new ExperimentPageRenderer(experimentData);
-        // const renderedElement = renderer.render();
-        // const tempDiv = document.createElement('div');
-        // tempDiv.appendChild(renderedElement);
-        // return tempDiv.innerHTML;
-        return renderer.render()
+        const renderedElement = renderer.render();
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(renderedElement);
+        return tempDiv.innerHTML;
     }
 
     renderDatasetPage(datasetData) {
@@ -149,7 +148,8 @@ class App {
             if (event.target.matches('[page-type]')) {
                 event.preventDefault();
                 const pageType = event.target.getAttribute('page-type');
-                const pageData = event.target.getAttribute('page-data');
+                const pageDataAttr = event.target.getAttribute('page-data');
+                const pageData = pageDataAttr && pageDataAttr.trim() !== '' ? JSON.parse(pageDataAttr) : pageDataAttr;
                 self.showPage(pageType, pageData);
             }
         });
@@ -201,13 +201,9 @@ class App {
 
         const splitTable = document.getElementById(`split-table-${cardIndex}`);
 
-        console.log(datasetID)
-
         if (!splitTable || !experimentGroup.data_split_scores[datasetID]) return;
 
         const splitData = experimentGroup.data_split_scores[datasetID];
-
-        console.log('selcted split', splitData)
         
         // Update table header with correct metric
         const thead = splitTable.querySelector('thead');

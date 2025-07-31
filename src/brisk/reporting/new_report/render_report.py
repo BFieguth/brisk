@@ -67,6 +67,7 @@ def load_javascript(js_dir: str) -> str:
         os.path.join(js_dir, "renderers", "home.js"),
         os.path.join(js_dir, "renderers", "dataset_page.js"),
         os.path.join(js_dir, "renderers", "experiment_page.js"),
+        os.path.join(js_dir, "renderers", "plot.js"),
         # Core (depends on renderers)
         os.path.join(js_dir, "core", "app.js")
     ]

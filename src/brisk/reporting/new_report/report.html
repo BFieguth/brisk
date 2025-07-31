@@ -41,6 +41,7 @@
         {{ table_css }}
         {{ experiment_group_card_css }}
         {{ home_css }}
+        {{ experiment_css }}
     </style>
     <template id="home-template">
         {{ home_template|safe }}
@@ -48,8 +49,14 @@
     <template id="table-template">
         {{ table_component|safe }}
     </template>
+    <template id="plot-template">
+        {{ plot_component|safe }}
+    </template>
     <template id="experiment-group-card-template">
         {{ experiment_group_card_component|safe }}
+    </template>
+    <template id="experiment-template">
+        {{ experiment_template|safe }}
     </template>
 </head>
 <body>

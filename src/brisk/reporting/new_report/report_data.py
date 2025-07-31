@@ -5,14 +5,25 @@ from pydantic import BaseModel, Field
 
 from brisk.version import __version__
 
-# Base64 encoded SVG images
-matplotlib_simple_line_svg = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjU2OC41MzM0MzdwdCIgaGVpZ2h0PSI0MjMuODM0MDYycHQiIHZpZXdCb3g9IjAgMCA1NjguNTMzNDM3IDQyMy44MzQwNjIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIj4="
+from pathlib import Path
 
-plotnine_simple_scatter_svg = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjY4Ni4wOTc2NTZwdCIgaGVpZ2h0PSI1MjcuMTIzNzVwdCIgdmlld0JveD0iMCAwIDY4Ni4wOTc2NTYgNTI3LjEyMzc1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSI+="
+def load_svg_file(file_path: str) -> str:
+    """Load SVG content directly from file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Warning: SVG file not found: {file_path}")
+        return '<svg><text>Image not found</text></svg>'
 
-comparison_scatter_plotnine_svg = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjcxMS43MjAzMTNwdCIgaGVpZ2h0PSI1NjYuMzk0MDYzcHQiIHZpZXdCb3g9IjAgMCA3MTEuNzIwMzEzIDU2Ni4zOTQwNjMiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIj4="
+# Load SVG files directly (much better than Base64!)
+base_path = Path(__file__).parent.parent.parent.parent.parent / "dev" / "test_images"
 
-comparison_scatter_matplotlib_svg = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjcxMS43MjAzMTNwdCIgaGVpZ2h0PSI1NjYuMzk0MDYzcHQiIHZpZXdCb3g9IjAgMCA3MTEuNzIwMzEzIDU2Ni4zOTQwNjMiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIj4="
+matplotlib_simple_line_svg = load_svg_file(base_path / "simple" / "matplotlib_simple_line.svg")
+plotnine_simple_scatter_svg = load_svg_file(base_path / "simple" / "plotnine_simple_scatter.svg")
+comparison_scatter_plotnine_svg = load_svg_file(base_path / "plotnine" / "comparison_scatter_plotnine.svg")
+comparison_scatter_matplotlib_svg = load_svg_file(base_path / "matplotlib" / "comparison_scatter_matplotlib.svg")
+
 
 class TableData(BaseModel):
     """
@@ -79,6 +90,9 @@ class Experiment(BaseModel):
     ID: str
     # group: str # Is this needed if ID is unique?
     dataset: str # Dataset ID
+    algorithm: List[str] = Field(
+        default_factory=list, description="Display names of algorithms in experiment"
+    )
     tuned_params: Dict[str, str] = Field(
         default_factory=dict, description="Tuned hyperparameter names and values"
     )
@@ -169,6 +183,7 @@ dataset_2 = Dataset(
 linear_experiment = Experiment(
     ID="linear_regression",
     dataset="Linear Methods_housing_data",
+    algorithm=["Linear Regression", "Second Algo"],
     tuned_params={"fit_intercept": "True", "normalize": "False"},
     hyperparam_grid={"fit_intercept": "[True, False]", "normalize": "[True, False]"},
     tables=[
@@ -210,6 +225,7 @@ linear_experiment = Experiment(
 ridge_experiment = Experiment(
     ID="ridge_regression",
     dataset="Linear Methods_housing_data",
+    algorithm=["Ridge Regression"],
     tuned_params={"alpha": "1.0", "fit_intercept": "True"},
     hyperparam_grid={"alpha": "[0.1, 1.0, 10.0]", "fit_intercept": "[True, False]"},
     tables=[
@@ -251,6 +267,7 @@ ridge_experiment = Experiment(
 lasso_experiment = Experiment(
     ID="lasso_regression",
     dataset="Linear Methods_housing_data",
+    algorithm=["LASSO Regression"],
     tuned_params={"alpha": "0.1", "fit_intercept": "True"},
     hyperparam_grid={"alpha": "[0.01, 0.1, 1.0]", "fit_intercept": "[True, False]"},
     tables=[
@@ -406,6 +423,7 @@ sensor_dataset = Dataset(
 rf_experiment = Experiment(
     ID="random_forest",
     dataset="Tree-Based Methods_clinical_data",
+    algorithm=["Random Forest"],
     tuned_params={"n_estimators": "100", "max_depth": "10", "min_samples_split": "5"},
     hyperparam_grid={"n_estimators": "[50, 100, 200]", "max_depth": "[5, 10, 15]"},
     tables=[
@@ -445,6 +463,7 @@ rf_experiment = Experiment(
 xgb_experiment = Experiment(
     ID="xgboost",
     dataset="Tree-Based Methods_clinical_data",
+    algorithm=["XGBoost"],
     tuned_params={"n_estimators": "150", "learning_rate": "0.1", "max_depth": "8"},
     hyperparam_grid={"n_estimators": "[100, 150, 200]", "learning_rate": "[0.05, 0.1, 0.2]"},
     tables=[
@@ -484,6 +503,7 @@ xgb_experiment = Experiment(
 et_experiment = Experiment(
     ID="extra_trees",
     dataset="Tree-Based Methods_sensor_data",
+    algorithm=["Extra Trees"],
     tuned_params={"n_estimators": "100", "max_features": "sqrt", "bootstrap": "False"},
     hyperparam_grid={"n_estimators": "[50, 100, 200]", "max_features": "['sqrt', 'log2']"},
     tables=[
@@ -630,6 +650,7 @@ multimodal_dataset = Dataset(
 cnn_experiment = Experiment(
     ID="cnn_model",
     dataset="Deep Learning Methods_imaging_data",
+    algorithm=["CNN"],
     tuned_params={"learning_rate": "0.001", "batch_size": "32", "epochs": "100"},
     hyperparam_grid={"learning_rate": "[0.0001, 0.001, 0.01]", "batch_size": "[16, 32, 64]"},
     tables=[
@@ -671,6 +692,7 @@ cnn_experiment = Experiment(
 resnet_experiment = Experiment(
     ID="resnet_model",
     dataset="Deep Learning Methods_imaging_data", 
+    algorithm=["ResNet"],
     tuned_params={"learning_rate": "0.0005", "weight_decay": "0.001", "epochs": "150"},
     hyperparam_grid={"learning_rate": "[0.0001, 0.0005, 0.001]", "weight_decay": "[0.0001, 0.001]"},
     tables=[
@@ -712,6 +734,7 @@ resnet_experiment = Experiment(
 transformer_experiment = Experiment(
     ID="transformer_model",
     dataset="Deep Learning Methods_genomic_data",
+    algorithm=["Transformer"],
     tuned_params={"num_heads": "8", "num_layers": "6", "learning_rate": "0.0001"},
     hyperparam_grid={"num_heads": "[4, 8, 12]", "num_layers": "[4, 6, 8]"},
     tables=[
@@ -751,6 +774,7 @@ transformer_experiment = Experiment(
 multimodal_experiment = Experiment(
     ID="multimodal_net",
     dataset="Deep Learning Methods_multimodal_data",
+    algorithm=["Multimodal-Net"],
     tuned_params={"fusion_type": "late", "dropout": "0.2", "learning_rate": "0.001"},
     hyperparam_grid={"fusion_type": "['early', 'late']", "dropout": "[0.1, 0.2, 0.3]"},
     tables=[
@@ -909,6 +933,7 @@ timeseries_dataset = Dataset(
 lstm_experiment = Experiment(
     ID="lstm_model",
     dataset="Time Series Methods_timeseries_data",
+    algorithm=["LSTM"],
     tuned_params={"hidden_size": "128", "num_layers": "2", "sequence_length": "30"},
     hyperparam_grid={"hidden_size": "[64, 128, 256]", "num_layers": "[1, 2, 3]"},
     tables=[
@@ -952,6 +977,7 @@ lstm_experiment = Experiment(
 ts_transformer_experiment = Experiment(
     ID="transformer_ts",
     dataset="Time Series Methods_timeseries_data",
+    algorithm=["Transformer"],
     tuned_params={"d_model": "256", "nhead": "8", "sequence_length": "60"},
     hyperparam_grid={"d_model": "[128, 256, 512]", "nhead": "[4, 8, 16]"},
     tables=[
@@ -995,6 +1021,7 @@ ts_transformer_experiment = Experiment(
 prophet_experiment = Experiment(
     ID="prophet_model",
     dataset="Time Series Methods_timeseries_data",
+    algorithm=["Prophet"],
     tuned_params={"seasonality_mode": "multiplicative", "changepoint_prior_scale": "0.05"},
     hyperparam_grid={"seasonality_mode": "['additive', 'multiplicative']", "changepoint_prior_scale": "[0.01, 0.05, 0.1]"},
     tables=[
@@ -1038,6 +1065,7 @@ prophet_experiment = Experiment(
 arima_experiment = Experiment(
     ID="arima_model",
     dataset="Time Series Methods_timeseries_data",
+    algorithm=["ARIMA"],
     tuned_params={"p": "2", "d": "1", "q": "2"},
     hyperparam_grid={"p": "[1, 2, 3]", "d": "[0, 1, 2]", "q": "[1, 2, 3]"},
     tables=[
