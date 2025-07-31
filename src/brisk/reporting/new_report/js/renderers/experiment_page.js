@@ -4,7 +4,6 @@ class ExperimentPageRenderer {
         this.selectedAlgorithmIndex = 0; // Track selected algorithm
         this.selectedTableIndex = 0; // Track selected table
         this.selectedPlotIndex = 0; // Track selected plot
-        console.log(this.experimentData.ID)
     }
 
     render() {
@@ -210,9 +209,7 @@ class ExperimentPageRenderer {
                 algorithmText.classList.add('selected');
                 
                 // Update the algorithm title
-                this.updateAlgorithmTitle(template);
-                
-                console.log(`Switched to Algorithm: ${algorithm}`);
+                this.updateAlgorithmTitle(template);                
             });
             
             algorithmNav.appendChild(algorithmText);
@@ -314,9 +311,6 @@ class ExperimentPageRenderer {
                     text.classList.remove('selected');
                 });
                 splitText.classList.add('selected');
-                
-                // Here you would handle the split data display logic
-                console.log(`Switched to Split ${i}`);
             });
             
             splitsNav.appendChild(splitText);

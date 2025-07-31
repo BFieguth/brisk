@@ -66,16 +66,38 @@ class ExperimentGroupCardRenderer {
             return;
         }
 
-        this.cardData.experiments.forEach(experimentID => {
-            const experimentData = window.app.reportData.experiments[experimentID]
-            const listItem = document.createElement('li');
+        // Get experiments for this dataset
+        const currentDataset = this.cardData.datasets[0];
+        const datasetExperiments = this.cardData.experiments.filter(expId => {
+            const exp = window.app.reportData.experiments[expId];
+            return exp && exp.dataset === currentDataset;
+        });
 
+        // Group by base experiment (before the final parameters)
+        const baseExperiments = new Map(); // Using Map to store base name -> full ID mapping
+        datasetExperiments.forEach(experimentID => {
+            const exp = window.app.reportData.experiments[experimentID];
+            const baseExpName = exp.algorithm.join('_');
+            
+            if (!baseExperiments.has(baseExpName)) {
+                baseExperiments.set(baseExpName, experimentID);
+            }
+        });
+
+        // Create links for each unique base experiment
+        Array.from(baseExperiments.entries()).sort().forEach(([baseExpName, fullExperimentID]) => {
+            const listItem = document.createElement('li');
+            
             const experimentAnchor = document.createElement('a');
             experimentAnchor.href = '#';
             experimentAnchor.setAttribute('page-type', 'experiment');
-            experimentAnchor.setAttribute('page-data', JSON.stringify(experimentData));
+            experimentAnchor.setAttribute('page-data', fullExperimentID);
             experimentAnchor.className = 'experiment-link';
-            experimentAnchor.textContent = experimentID;
+            
+            // Use the algorithm name(s) directly from the experiment object
+            const exp = window.app.reportData.experiments[fullExperimentID];
+            const cleanName = exp.algorithm.join('_').replace(/_/g, ' ');
+            experimentAnchor.textContent = cleanName;
             
             listItem.appendChild(experimentAnchor);
             experimentList.appendChild(listItem);

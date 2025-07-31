@@ -1227,7 +1227,85 @@ experiment_group_4 = ExperimentGroup(
     }
 )
 
-# Create the final report data structure
+# Create the final report data structure with cross-dataset experiments
+def create_experiment_for_dataset(base_experiment: Experiment, dataset_id: str) -> Experiment:
+    """Create a copy of an experiment for a specific dataset."""
+    # Extract base algorithm names from the original experiment
+    base_algorithms = base_experiment.algorithm
+    
+    return Experiment(
+        ID=f"{base_experiment.ID}_{dataset_id.replace(' ', '_')}",
+        dataset=dataset_id,
+        algorithm=base_algorithms,
+        tuned_params=base_experiment.tuned_params.copy(),
+        hyperparam_grid=base_experiment.hyperparam_grid.copy(),
+        tables=base_experiment.tables.copy(),
+        plots=base_experiment.plots.copy()
+    )
+
+# Base experiments (original templates)
+base_experiments = {
+    "linear_regression": linear_experiment,
+    "ridge_regression": ridge_experiment,
+    "lasso_regression": lasso_experiment,
+    "random_forest": rf_experiment,
+    "xgboost": xgb_experiment,
+    "extra_trees": et_experiment,
+    "cnn_model": cnn_experiment,
+    "resnet_model": resnet_experiment,
+    "transformer_model": transformer_experiment,
+    "multimodal_net": multimodal_experiment,
+    "lstm_model": lstm_experiment,
+    "transformer_ts": ts_transformer_experiment,
+    "prophet_model": prophet_experiment,
+    "arima_model": arima_experiment
+}
+
+# Create all experiment instances for each dataset in each group
+all_experiments = {}
+
+# Group 1: Linear Methods
+linear_datasets = ["Linear Methods_housing_data", "Linear Methods_medical_data"]
+linear_base_experiments = ["linear_regression", "ridge_regression", "lasso_regression"]
+
+for dataset_id in linear_datasets:
+    for exp_id in linear_base_experiments:
+        full_exp_id = f"{exp_id}_{dataset_id.replace(' ', '_')}"
+        all_experiments[full_exp_id] = create_experiment_for_dataset(base_experiments[exp_id], dataset_id)
+
+# Group 2: Tree-Based Methods  
+tree_datasets = ["Tree-Based Methods_clinical_data", "Tree-Based Methods_sensor_data"]
+tree_base_experiments = ["random_forest", "xgboost", "extra_trees"]
+
+for dataset_id in tree_datasets:
+    for exp_id in tree_base_experiments:
+        full_exp_id = f"{exp_id}_{dataset_id.replace(' ', '_')}"
+        all_experiments[full_exp_id] = create_experiment_for_dataset(base_experiments[exp_id], dataset_id)
+
+# Group 3: Deep Learning Methods
+dl_datasets = ["Deep Learning Methods_imaging_data", "Deep Learning Methods_genomic_data", "Deep Learning Methods_multimodal_data"]
+dl_base_experiments = ["cnn_model", "resnet_model", "transformer_model", "multimodal_net"]
+
+for dataset_id in dl_datasets:
+    for exp_id in dl_base_experiments:
+        full_exp_id = f"{exp_id}_{dataset_id.replace(' ', '_')}"
+        all_experiments[full_exp_id] = create_experiment_for_dataset(base_experiments[exp_id], dataset_id)
+
+# Group 4: Time Series Methods
+ts_datasets = ["Time Series Methods_timeseries_data"]
+ts_base_experiments = ["lstm_model", "transformer_ts", "prophet_model", "arima_model"]
+
+for dataset_id in ts_datasets:
+    for exp_id in ts_base_experiments:
+        full_exp_id = f"{exp_id}_{dataset_id.replace(' ', '_')}"
+        all_experiments[full_exp_id] = create_experiment_for_dataset(base_experiments[exp_id], dataset_id)
+
+# Update experiment groups to reference the new experiment IDs
+experiment_group_1.experiments = [f"{exp}_{dataset.replace(' ', '_')}" for dataset in linear_datasets for exp in linear_base_experiments]
+experiment_group_2.experiments = [f"{exp}_{dataset.replace(' ', '_')}" for dataset in tree_datasets for exp in tree_base_experiments]
+experiment_group_3.experiments = [f"{exp}_{dataset.replace(' ', '_')}" for dataset in dl_datasets for exp in dl_base_experiments]
+experiment_group_4.experiments = [f"{exp}_{dataset.replace(' ', '_')}" for dataset in ts_datasets for exp in ts_base_experiments]
+
 report_data = ReportData(
     navbar=navbar,
     datasets={
@@ -1240,22 +1318,7 @@ report_data = ReportData(
         "Deep Learning Methods_multimodal_data": multimodal_dataset,
         "Time Series Methods_timeseries_data": timeseries_dataset
     },
-    experiments={
-        "linear_regression": linear_experiment,
-        "ridge_regression": ridge_experiment,
-        "lasso_regression": lasso_experiment,
-        "random_forest": rf_experiment,
-        "xgboost": xgb_experiment,
-        "extra_trees": et_experiment,
-        "cnn_model": cnn_experiment,
-        "resnet_model": resnet_experiment,
-        "transformer_model": transformer_experiment,
-        "multimodal_net": multimodal_experiment,
-        "lstm_model": lstm_experiment,
-        "transformer_ts": ts_transformer_experiment,
-        "prophet_model": prophet_experiment,
-        "arima_model": arima_experiment
-    },
+    experiments=all_experiments,
     experiment_groups=[
         experiment_group_1, experiment_group_2, experiment_group_3, experiment_group_4
     ],

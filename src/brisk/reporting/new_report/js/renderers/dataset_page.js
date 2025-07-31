@@ -2,7 +2,6 @@ class DatasetPageRenderer {
     constructor(datasetData) {
         this.datasetData = datasetData;
         this.selectedFeatureIndex = 0;
-        console.log(this.datasetData);
     }
 
     render() {
@@ -217,9 +216,7 @@ class DatasetPageRenderer {
                 splitsNav.querySelectorAll('.split-text').forEach(text => {
                     text.classList.remove('selected');
                 });
-                splitText.classList.add('selected');
-                
-                console.log(`Switched to Split ${index}`);
+                splitText.classList.add('selected');                
             });
             
             splitsNav.appendChild(splitText);
@@ -253,9 +250,7 @@ class DatasetPageRenderer {
                 featureText.classList.add('selected');
                 
                 // Re-render distribution section with new feature
-                this.renderDatasetDistribution(template);
-                
-                console.log(`Switched to Feature: ${feature}`);
+                this.renderDatasetDistribution(template);                
             });
             
             featuresNav.appendChild(featureText);

@@ -89,13 +89,20 @@ class App {
             let content = this.renderPage(pageType, pageData);
             mainContent.innerHTML = content;
 
+            // Handle experiment navigation
+            if (pageType === 'experiment' && pageData) {
+                this.showExperimentNavigation(pageData);
+            } else {
+                this.hideExperimentNavigation();
+            }
+
             if (pageType === 'home') {
                 // Ensure DOM is ready first
                 setTimeout(() => this.initializeCarousel(), 50);
             }
         } catch (e) {
             console.error('Error rendering page:', e);
-            mainContent.innerHTML = '<div>Error rendering page: ' + e.message + '</div>';
+            mainContent.innerHTML = '<div>Error loading page</div>';
         }
     }
 
@@ -124,7 +131,8 @@ class App {
     }
 
     renderExperimentPage(experimentData) {
-        const renderer = new ExperimentPageRenderer(experimentData);
+        const experimentInstance = this.reportData.experiments[experimentData]
+        const renderer = new ExperimentPageRenderer(experimentInstance);
         const renderedElement = renderer.render();
         const tempDiv = document.createElement('div');
         tempDiv.appendChild(renderedElement);
@@ -132,7 +140,6 @@ class App {
     }
 
     renderDatasetPage() {
-        console.log('render dataset page')
         const renderer = new DatasetPageRenderer(this.selectedDataset);
         const renderedElement = renderer.render();
         const tempDiv = document.createElement('div');
@@ -148,8 +155,7 @@ class App {
             if (event.target.matches('[page-type]')) {
                 event.preventDefault();
                 const pageType = event.target.getAttribute('page-type');
-                const pageDataAttr = event.target.getAttribute('page-data');
-                const pageData = pageDataAttr && pageDataAttr.trim() !== '' ? JSON.parse(pageDataAttr) : pageDataAttr;
+                const pageData = event.target.getAttribute('page-data');
                 self.showPage(pageType, pageData);
             }
         });
@@ -173,9 +179,59 @@ class App {
 
         this.updateDataSplitsTable(cardIndex, datasetInstance.ID);
         this.updateHomeTables();
+        
+        // Update experiment list for the selected dataset
+        this.updateExperimentList(card, cardIndex, datasetInstance.ID);
 
         // Prevent default link behavior
         return false;
+    }
+
+    updateExperimentList(card, cardIndex, datasetID) {
+        const experimentList = card.querySelector('.experiment-list');
+        if (!experimentList) return;
+
+        // Clear existing experiments
+        experimentList.innerHTML = '';
+
+        const experimentGroup = this.reportData.experiment_groups[cardIndex];
+        if (!experimentGroup) return;
+
+        // Get experiments for the selected dataset
+        const datasetExperiments = experimentGroup.experiments.filter(expId => {
+            const exp = this.reportData.experiments[expId];
+            return exp && exp.dataset === datasetID;
+        });
+
+        // Group by algorithm name
+        const baseExperiments = new Map(); // Using Map to store algorithm name -> full ID mapping
+        datasetExperiments.forEach(experimentID => {
+            const exp = this.reportData.experiments[experimentID];
+            const baseExpName = exp.algorithm.join('_');
+            
+            if (!baseExperiments.has(baseExpName)) {
+                baseExperiments.set(baseExpName, experimentID);
+            }
+        });
+
+        // Create links for each unique base experiment
+        Array.from(baseExperiments.entries()).sort().forEach(([baseExpName, fullExperimentID]) => {
+            const listItem = document.createElement('li');
+
+            const experimentAnchor = document.createElement('a');
+            experimentAnchor.href = '#';
+            experimentAnchor.setAttribute('page-type', 'experiment');
+            experimentAnchor.setAttribute('page-data', fullExperimentID);
+            experimentAnchor.className = 'experiment-link';
+            
+            // Use the algorithm name directly
+            const exp = this.reportData.experiments[fullExperimentID];
+            const cleanName = exp.algorithm.join('_').replace(/_/g, ' ');
+            experimentAnchor.textContent = cleanName;
+            
+            listItem.appendChild(experimentAnchor);
+            experimentList.appendChild(listItem);
+        });
     }
 
     getCurrentExperimentGroup() {
@@ -510,6 +566,114 @@ class App {
                     track.style.height = totalHeight + 'px';
                 }
             }, 50);
+        }
+    }
+
+    // Experiment Navigation Logic
+    showExperimentNavigation(experimentId) {
+        const navContainer = document.getElementById('experiment-navigation');
+        if (!navContainer) return;
+
+        const experiment = this.reportData.experiments[experimentId];
+        if (!experiment) return;
+
+        // Find the experiment group that contains this experiment
+        const experimentGroup = this.findExperimentGroup(experimentId);
+        if (!experimentGroup) return;
+
+        // Get experiments for the same dataset, sorted alphabetically
+        const datasetExperiments = this.getDatasetExperiments(experimentGroup, experiment.dataset);
+        const currentIndex = datasetExperiments.indexOf(experimentId);
+
+        // Populate navigation data
+        this.populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex);
+
+        // Setup navigation buttons
+        this.setupExperimentNavigationButtons(datasetExperiments, currentIndex);
+
+        // Show the navigation
+        navContainer.style.display = 'block';
+    }
+
+    hideExperimentNavigation() {
+        const navContainer = document.getElementById('experiment-navigation');
+        if (navContainer) {
+            navContainer.style.display = 'none';
+        }
+    }
+
+    findExperimentGroup(experimentId) {
+        return this.reportData.experiment_groups.find(group => 
+            group.experiments.includes(experimentId)
+        );
+    }
+
+    getDatasetExperiments(experimentGroup, datasetId) {
+        // Filter experiments for the specific dataset and sort alphabetically
+        return experimentGroup.experiments
+            .filter(expId => {
+                const exp = this.reportData.experiments[expId];
+                return exp && exp.dataset === datasetId;
+            })
+            .sort((a, b) => {
+                // Sort by base experiment name (before the dataset suffix)
+                const baseA = a.replace(/_[^_]+_[^_]+$/, '');
+                const baseB = b.replace(/_[^_]+_[^_]+$/, '');
+                return baseA.localeCompare(baseB);
+            });
+    }
+
+    populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex) {
+        // Extract base experiment name (remove dataset suffix)
+        const baseExperimentName = experiment.ID.replace(/_[^_]+_[^_]+$/, '').replace(/_/g, ' ');
+        
+        // Populate the navigation elements
+        document.getElementById('current-experiment-group').textContent = experimentGroup.name;
+        document.getElementById('current-dataset-name').textContent = 
+            experiment.dataset.replace(/^[^_]+_/, '').replace(/_/g, ' ');
+
+        // Create breadcrumb link
+        const breadcrumb = document.getElementById('experiment-breadcrumb');
+        const groupSlug = experimentGroup.name.toLowerCase().replace(/\s+/g, '-');
+        const datasetSlug = experiment.dataset.replace(/^[^_]+_/, '').toLowerCase().replace(/\s+/g, '-');
+        const experimentSlug = baseExperimentName.toLowerCase().replace(/\s+/g, '-');
+        
+        breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split-0/${experimentSlug}`;
+        breadcrumb.href = '#'; // Could be used for deep linking in the future
+    }
+
+    setupExperimentNavigationButtons(datasetExperiments, currentIndex) {
+        const prevBtn = document.getElementById('prev-experiment-btn');
+        const nextBtn = document.getElementById('next-experiment-btn');
+
+        // Remove existing event listeners
+        prevBtn.replaceWith(prevBtn.cloneNode(true));
+        nextBtn.replaceWith(nextBtn.cloneNode(true));
+        
+        // Get the new references
+        const newPrevBtn = document.getElementById('prev-experiment-btn');
+        const newNextBtn = document.getElementById('next-experiment-btn');
+
+        // Setup previous button
+        if (currentIndex > 0) {
+            newPrevBtn.disabled = false;
+            newPrevBtn.addEventListener('click', () => {
+                const prevExperimentId = datasetExperiments[currentIndex - 1];
+                this.showPage('experiment', prevExperimentId);
+            });
+        } else {
+            newPrevBtn.disabled = true;
+        }
+
+        // Setup next button
+        if (currentIndex < datasetExperiments.length - 1) {
+            newNextBtn.disabled = false;
+            newNextBtn.addEventListener('click', () => {
+                const nextExperimentId = datasetExperiments[currentIndex + 1];
+                this.showPage('experiment', nextExperimentId);
+            });
+        } else {
+            newNextBtn.disabled = true;
         }
     }
 }

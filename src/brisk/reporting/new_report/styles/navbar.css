@@ -4,11 +4,29 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 8px var(--bg-dark)
+    box-shadow: 0 2px 8px var(--bg-dark);
+    position: relative;
 }
 
 .navbar-left {
     margin: 0;
+    flex: 0 0 auto;
+    min-width: 200px;
+}
+
+.navbar-middle {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 2rem;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 25px;
+    padding-right: 25px;
+    flex: 0 0 auto;
 }
 
 .navbar-title {
@@ -32,12 +50,6 @@
 .navbar-timestamp {
     color: var(--text-muted);
     margin: 0px;
-}
-
-.navbar-right {
-    display: flex;
-    gap: 25px;
-    padding-right: 25px;
 }
 
 /* Theme toggle button */
@@ -152,4 +164,112 @@
 .docs-container:hover .docs-text {
     transform: translate(-50%, 0) scale(1);
     opacity: 1;
+}
+
+/* Experiment Navigation Section - Now integrated in navbar middle */
+.experiment-nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Navigation buttons - smaller for navbar integration */
+.nav-button {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+.nav-button:hover:not(:disabled) {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+    color: var(--text);
+}
+
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-light);
+}
+
+/* Experiment info section - compact for navbar */
+.experiment-nav-info {
+    text-align: center;
+    color: var(--text);
+    font-family: "Montserrat", sans-serif;
+    margin: 0 1rem;
+}
+
+.experiment-nav-group,
+.experiment-nav-dataset {
+    color: var(--text);
+    margin-bottom: 0.15rem;
+}
+
+.experiment-nav-breadcrumb {
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .navbar {
+        flex-wrap: wrap;
+        padding: 10px 20px;
+    }
+    
+    .navbar-left {
+        min-width: auto;
+        flex: 1 1 auto;
+    }
+    
+    .navbar-middle {
+        order: 3;
+        flex: 1 1 100%;
+        margin: 0.5rem 0 0 0;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+    }
+    
+    .experiment-nav-content {
+        max-width: none;
+    }
+    
+    .experiment-nav-info {
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-right {
+        gap: 15px;
+        padding-right: 10px;
+    }
+    
+    .experiment-nav-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .experiment-nav-info {
+        order: -1;
+        margin: 0;
+    }
+    
+    .nav-button {
+        flex: 1;
+        max-width: 100px;
+    }
 }

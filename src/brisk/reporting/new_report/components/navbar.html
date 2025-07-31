@@ -6,6 +6,34 @@
         <p class="navbar-version">{{ navbar.brisk_version }}</p>
         <p class="navbar-timestamp">{{ navbar.timestamp }}</p>
     </div>
+    
+    <!-- Experiment navigation section - middle of navbar -->
+    <div id="experiment-navigation" class="navbar-middle" style="display: none;">
+        <div class="experiment-nav-content">
+            <button id="prev-experiment-btn" class="nav-button nav-button-prev" disabled>
+                <span>Previous</span>
+            </button>
+            
+            <div class="experiment-nav-info">
+                <div class="experiment-nav-group">
+                    <span>Experiment Group: </span>
+                    <span id="current-experiment-group"></span>
+                </div>
+                <div class="experiment-nav-dataset">
+                    <span>Dataset: </span>
+                    <span id="current-dataset-name"></span>
+                </div>
+                <div class="experiment-nav-breadcrumb">
+                    <span id="experiment-breadcrumb"></span>
+                </div>
+            </div>
+            
+            <button id="next-experiment-btn" class="nav-button nav-button-next" disabled>
+                <span>Next</span>
+            </button>
+        </div>
+    </div>
+    
     <div class="navbar-right">
         <div class="theme-container">
             <button class="theme-button" onclick="window.app.toggleTheme()">
