@@ -106,7 +106,7 @@ class App {
             case 'experiment':
                 return this.renderExperimentPage(pageData);
             case 'dataset':
-                return this.renderDatasetPage(pageData);
+                return this.renderDatasetPage();
             default:
                 return '<div>Renderer not found</div>';
         }
@@ -131,13 +131,13 @@ class App {
         return tempDiv.innerHTML;
     }
 
-    renderDatasetPage(datasetData) {
-        const renderer = new DatasetPageRenderer(datasetData);
-        // const renderedElement = renderer.render();
-        // const tempDiv = document.createElement('div');
-        // tempDiv.appendChild(renderedElement);
-        // return tempDiv.innerHTML;
-        return renderer.render()
+    renderDatasetPage() {
+        console.log('render dataset page')
+        const renderer = new DatasetPageRenderer(this.selectedDataset);
+        const renderedElement = renderer.render();
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(renderedElement);
+        return tempDiv.innerHTML;
 
     }
 

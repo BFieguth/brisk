@@ -139,6 +139,66 @@ class ReportData(BaseModel):
     experiment_groups: List[ExperimentGroup] = Field(
         default_factory=list, description="List of experiment groups"
     )
+    data_managers: Dict[str, DataManager] = Field(
+        default_factory=dict, description="Map IDs to DataManager instances"
+    )
+
+
+
+# Define available plots for cycling through
+available_plots = [
+    PlotData(name="Feature Distribution", description="Distribution of feature values", image=matplotlib_simple_line_svg),
+    PlotData(name="Feature Scatter", description="Feature scatter plot", image=plotnine_simple_scatter_svg),
+    PlotData(name="Feature Comparison", description="Feature comparison plot", image=comparison_scatter_plotnine_svg),
+    PlotData(name="Feature Analysis", description="Feature analysis visualization", image=comparison_scatter_matplotlib_svg)
+]
+
+def create_feature_distribution(feature_name: str, plot_index: int) -> FeatureDistribution:
+    """Create a FeatureDistribution instance for a given feature."""
+    # Create sample statistics table for the feature
+    table = TableData(
+        name=f"{feature_name} Statistics",
+        description=f"Statistical summary for feature {feature_name}",
+        columns=["Statistic", "Value"],
+        rows=[
+            ["Mean", f"{(hash(feature_name) % 100 + 50):.2f}"],
+            ["Std Dev", f"{(hash(feature_name) % 20 + 5):.2f}"],
+            ["Min", f"{(hash(feature_name) % 10):.2f}"],
+            ["Max", f"{(hash(feature_name) % 200 + 100):.2f}"],
+            ["25th Percentile", f"{(hash(feature_name) % 40 + 20):.2f}"],
+            ["75th Percentile", f"{(hash(feature_name) % 60 + 80):.2f}"]
+        ]
+    )
+    
+    # Cycle through available plots
+    plot = available_plots[plot_index % len(available_plots)]
+    
+    return FeatureDistribution(
+        ID=feature_name,
+        table=table,
+        plot=plot
+    )
+
+def create_data_manager(dm_id: str, n_splits: int):
+    """Create a DataManager instance for a given ID."""
+    return DataManager(
+        ID=dm_id,
+        n_splits=str(n_splits),
+        split_method="shuffle"
+    )
+
+# Create DataManager instances
+data_managers_dict = {
+    "dm_housing": create_data_manager("dm_housing", 3),
+    "dm_medical": create_data_manager("dm_medical", 3),
+    "dm_clinical": create_data_manager("dm_clinical", 2),
+    "dm_sensor": create_data_manager("dm_sensor", 2),
+    "dm_imaging": create_data_manager("dm_imaging", 3),
+    "dm_genomic": create_data_manager("dm_genomic", 2),
+    "dm_multimodal": create_data_manager("dm_multimodal", 2),
+    "dm_timeseries": create_data_manager("dm_timeseries", 4)
+}
+
 
 
 # Create navbar
@@ -161,7 +221,7 @@ dataset_1 = Dataset(
         image=matplotlib_simple_line_svg
     ),
     features=["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"])]
 )
 
 dataset_2 = Dataset(
@@ -176,7 +236,7 @@ dataset_2 = Dataset(
         image=plotnine_simple_scatter_svg
     ),
     features=["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"])]
 )
 
 # Create experiments for Linear Methods group
@@ -401,7 +461,7 @@ clinical_dataset = Dataset(
         image=comparison_scatter_plotnine_svg
     ),
     features=["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"])]
 )
 
 sensor_dataset = Dataset(
@@ -416,7 +476,7 @@ sensor_dataset = Dataset(
         image=matplotlib_simple_line_svg
     ),
     features=["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"])]
 )
 
 # Create experiments for Tree-Based Methods
@@ -613,7 +673,7 @@ imaging_dataset = Dataset(
         image=comparison_scatter_matplotlib_svg
     ),
     features=["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"])]
 )
 
 genomic_dataset = Dataset(
@@ -628,7 +688,7 @@ genomic_dataset = Dataset(
         image=matplotlib_simple_line_svg
     ),
     features=["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"])]
 )
 
 multimodal_dataset = Dataset(
@@ -643,7 +703,7 @@ multimodal_dataset = Dataset(
         image=plotnine_simple_scatter_svg
     ),
     features=["image_features", "text_embeddings", "numerical_features", "categorical_encoded"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["image_features", "text_embeddings", "numerical_features", "categorical_encoded"])]
 )
 
 # Create experiments for Deep Learning Methods
@@ -926,7 +986,7 @@ timeseries_dataset = Dataset(
         image=comparison_scatter_matplotlib_svg
     ),
     features=["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"],
-    feature_distributions=[]
+    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])]
 )
 
 # Create experiments for Time Series Methods
@@ -1198,5 +1258,6 @@ report_data = ReportData(
     },
     experiment_groups=[
         experiment_group_1, experiment_group_2, experiment_group_3, experiment_group_4
-    ]
+    ],
+    data_managers=data_managers_dict
 )
