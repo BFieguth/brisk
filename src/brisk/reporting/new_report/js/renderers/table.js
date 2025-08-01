@@ -8,6 +8,7 @@ class TableRenderer {
         this.renderHeaders(template);
         this.renderRows(template);
         this.renderDescription(template);
+        this.setupCopyButton(template);
         return template;
     }
 
@@ -40,5 +41,53 @@ class TableRenderer {
             descriptionElement.textContent = this.tableData.description;
         }
     }
-}
 
+    setupCopyButton(template) {
+        const copyButton = template.querySelector('.container');
+        const checkbox = template.querySelector('.copy-checkbox');
+        
+        if (copyButton && checkbox) {
+            copyButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.copyTableAsCSV(checkbox);
+            });
+        }
+    }
+
+    convertTableToCSV() {
+        let csvContent = this.tableData.columns.join(',') + '\n';
+        
+        this.tableData.rows.forEach(row => {
+            const escapedRow = row.map(cell => {
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return '"' + cellStr.replace(/"/g, '""') + '"';
+                }
+                return cellStr;
+            });
+            csvContent += escapedRow.join(',') + '\n';
+        });
+        
+        return csvContent;
+    }
+
+    async copyTableAsCSV(checkbox) {
+        try {
+            const csvData = this.convertTableToCSV();
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(csvData);
+                checkbox.checked = true;
+                setTimeout(() => {
+                    checkbox.checked = false;
+                }, 2000);
+            } else {
+                console.warn('Clipboard API not supported');
+                checkbox.checked = false;
+            }
+        } catch (error) {
+            console.error('Failed to copy table data:', error);
+            checkbox.checked = false;
+        }
+    }
+}
