@@ -808,8 +808,23 @@ class App {
     updateExperimentSummary() {
         const experiment = this.reportData.experiments[this.currentExperimentId];
         if (!experiment) return;
-        this.updateTunedHyperparameters(experiment);        
+
+        this.updateExperimentTitle(experiment);
+        this.updateTunedHyperparameters(experiment);
         this.updateHyperparameterGrid(experiment);
+    }
+
+    updateExperimentTitle(experiment) {
+        const titleElement = document.querySelector('.experiment-title');
+        if (!titleElement) return;
+
+        const selectedAlgorithm = experiment.algorithm[this.selectedAlgorithmIndex];
+        
+        if (experiment.algorithm.length > 1) {
+            titleElement.textContent = `Experiment: ${selectedAlgorithm}`;
+        } else {
+            titleElement.textContent = selectedAlgorithm || experiment.ID;
+        }
     }
 
     updateTunedHyperparameters(experiment) {
