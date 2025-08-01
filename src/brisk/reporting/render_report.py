@@ -4,7 +4,7 @@ from typing import Dict
 
 from jinja2 import Environment, FileSystemLoader
 
-from src.brisk.reporting.new_report.report_data import report_data
+from src.brisk.reporting.report_data import report_data
 
 def load_css(styles_dir: str) -> Dict[str, str]:
     """
@@ -87,20 +87,20 @@ def load_javascript(js_dir: str) -> str:
     return js_content
 
 if __name__ == "__main__":
-    styles_dir = "./src/brisk/reporting/new_report/styles"
+    styles_dir = "./src/brisk/reporting/styles"
     css_content = load_css(styles_dir)
 
-    pages_dir = "./src/brisk/reporting/new_report/pages"
+    pages_dir = "./src/brisk/reporting/pages"
     page_templates = load_page_template(pages_dir)
 
-    components_dir = "./src/brisk/reporting/new_report/components"
+    components_dir = "./src/brisk/reporting/components"
     component_templates = load_component_templates(components_dir)
 
-    js_dir = "./src/brisk/reporting/new_report/js"
+    js_dir = "./src/brisk/reporting/js"
     javascript = load_javascript(js_dir)
 
     env = Environment(
-        loader=FileSystemLoader(searchpath="./src/brisk/reporting/new_report")
+        loader=FileSystemLoader(searchpath="./src/brisk/reporting")
     )
     template = env.get_template("report.html")
 

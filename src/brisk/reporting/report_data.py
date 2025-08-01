@@ -17,7 +17,7 @@ def load_svg_file(file_path: str) -> str:
         return '<svg><text>Image not found</text></svg>'
 
 # Load SVG files directly (much better than Base64!)
-base_path = Path(__file__).parent.parent.parent.parent.parent / "dev" / "test_images"
+base_path = Path(__file__).parent.parent.parent.parent / "dev" / "test_images"
 
 matplotlib_simple_line_svg = load_svg_file(base_path / "simple" / "matplotlib_simple_line.svg")
 plotnine_simple_scatter_svg = load_svg_file(base_path / "simple" / "plotnine_simple_scatter.svg")
