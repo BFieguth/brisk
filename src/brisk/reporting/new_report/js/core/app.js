@@ -577,21 +577,14 @@ class App {
         const experiment = this.reportData.experiments[experimentId];
         if (!experiment) return;
 
-        // Find the experiment group that contains this experiment
         const experimentGroup = this.findExperimentGroup(experimentId);
         if (!experimentGroup) return;
 
-        // Get experiments for the same dataset, sorted alphabetically
         const datasetExperiments = this.getDatasetExperiments(experimentGroup, experiment.dataset);
         const currentIndex = datasetExperiments.indexOf(experimentId);
 
-        // Populate navigation data
         this.populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex);
-
-        // Setup navigation buttons
         this.setupExperimentNavigationButtons(datasetExperiments, currentIndex);
-
-        // Show the navigation
         navContainer.style.display = 'block';
     }
 
@@ -609,52 +602,53 @@ class App {
     }
 
     getDatasetExperiments(experimentGroup, datasetId) {
-        // Filter experiments for the specific dataset and sort alphabetically
         return experimentGroup.experiments
             .filter(expId => {
                 const exp = this.reportData.experiments[expId];
                 return exp && exp.dataset === datasetId;
             })
-            .sort((a, b) => {
-                // Sort by base experiment name (before the dataset suffix)
-                const baseA = a.replace(/_[^_]+_[^_]+$/, '');
-                const baseB = b.replace(/_[^_]+_[^_]+$/, '');
-                return baseA.localeCompare(baseB);
-            });
+            .sort((a, b) => a.localeCompare(b));
     }
 
     populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex) {
-        // Extract base experiment name (remove dataset suffix)
-        const baseExperimentName = experiment.ID.replace(/_[^_]+_[^_]+$/, '').replace(/_/g, ' ');
+        document.getElementById('current-experiment-group').textContent = experimentGroup.name;        
+        const dataset = this.reportData.datasets[experiment.dataset];
         
-        // Populate the navigation elements
-        document.getElementById('current-experiment-group').textContent = experimentGroup.name;
-        document.getElementById('current-dataset-name').textContent = 
-            experiment.dataset.replace(/^[^_]+_/, '').replace(/_/g, ' ');
+        let datasetDisplayName;
+        if (dataset) {
+            const groupPrefix = experimentGroup.name + '_';
+            if (experiment.dataset.startsWith(groupPrefix)) {
+                datasetDisplayName = experiment.dataset.substring(groupPrefix.length);
+            } else {
+                datasetDisplayName = experiment.dataset;
+            }
+        } else {
+            datasetDisplayName = 'Unknown Dataset';
+        }
+        
+        document.getElementById('current-dataset-name').textContent = datasetDisplayName;
 
-        // Create breadcrumb link
         const breadcrumb = document.getElementById('experiment-breadcrumb');
         const groupSlug = experimentGroup.name.toLowerCase().replace(/\s+/g, '-');
-        const datasetSlug = experiment.dataset.replace(/^[^_]+_/, '').toLowerCase().replace(/\s+/g, '-');
-        const experimentSlug = baseExperimentName.toLowerCase().replace(/\s+/g, '-');
+        const datasetSlug = experiment.dataset.toLowerCase().replace(/\s+/g, '-');
         
-        breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split-0/${experimentSlug}`;
-        breadcrumb.href = '#'; // Could be used for deep linking in the future
+        const experimentDisplayName = experiment.algorithm && experiment.algorithm.length > 0 
+            ? experiment.algorithm.join('-').toLowerCase().replace(/\s+/g, '-')
+            : experiment.ID.toLowerCase().replace(/\s+/g, '-');
+        
+        breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split-0/${experimentDisplayName}`;
     }
 
     setupExperimentNavigationButtons(datasetExperiments, currentIndex) {
         const prevBtn = document.getElementById('prev-experiment-btn');
-        const nextBtn = document.getElementById('next-experiment-btn');
-
-        // Remove existing event listeners
         prevBtn.replaceWith(prevBtn.cloneNode(true));
+
+        const nextBtn = document.getElementById('next-experiment-btn');
         nextBtn.replaceWith(nextBtn.cloneNode(true));
         
-        // Get the new references
         const newPrevBtn = document.getElementById('prev-experiment-btn');
         const newNextBtn = document.getElementById('next-experiment-btn');
 
-        // Setup previous button
         if (currentIndex > 0) {
             newPrevBtn.disabled = false;
             newPrevBtn.addEventListener('click', () => {
@@ -665,7 +659,6 @@ class App {
             newPrevBtn.disabled = true;
         }
 
-        // Setup next button
         if (currentIndex < datasetExperiments.length - 1) {
             newNextBtn.disabled = false;
             newNextBtn.addEventListener('click', () => {
