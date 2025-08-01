@@ -125,12 +125,12 @@ hr {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px; /* Reduce padding */
+    padding: 8px 12px;
     background-color: var(--bg-light);
     border-bottom: 1px solid var(--border);
     cursor: pointer;
     color: var(--text);
-    font-size: 0.95em; /* Smaller font */
+    font-size: 0.95em;
     font-weight: 500;
     transition: background-color 0.2s ease;
 }
@@ -150,7 +150,7 @@ hr {
 
 /* Collapsible content improvements */
 .collapsible-content {
-    padding: 0.75rem; /* Slightly more padding for better appearance */
+    padding: 0.75rem;
     background-color: var(--bg);
 }
 
@@ -160,7 +160,7 @@ hr {
 }
 
 .correlation-content {
-    background-color: white;
+    background-color: var(--bg);
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 0.5rem; 
@@ -216,7 +216,7 @@ hr {
 
 .correlation-placeholder {
     color: var(--text-muted);
-    font-size: 1em; /* Smaller font */
+    font-size: 1em;
     text-align: center;
 }
 
@@ -226,7 +226,7 @@ hr {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
-    margin: 1rem 0 0.5rem 0; /* Add top margin, reduce bottom margin */
+    margin: 1rem 0 0.5rem 0;
 }
 
 .split-text {
@@ -256,13 +256,13 @@ hr {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
-    margin: 0; /* Remove margin to fix gap */
-    padding: 0.75rem; /* Reduce padding */
+    margin: 0;
+    padding: 0.75rem;
     background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
     border: 1px solid var(--border);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 6px;
-    height: fit-content; /* Don't stretch */
+    height: fit-content;
 }
 
 .feature-text {
@@ -295,7 +295,7 @@ hr {
     background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
     border: 1px solid var(--border);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin: 0; /* Remove margin to fix gap */
+    margin: 0;
 }
 
 .distribution-table-container {
@@ -320,7 +320,7 @@ hr {
     color: var(--text);
     text-align: center;
     margin: 0 0 1rem 0;
-    font-size: 1.1em; /* Smaller font */
+    font-size: 1.1em;
     font-weight: 600;
 }
 
@@ -336,7 +336,7 @@ hr {
 .distribution-table th,
 .distribution-table td {
     text-align: center;
-    font-size: 0.9em; /* Smaller font */
+    font-size: 0.9em;
     padding: 0.5rem;
     color: var(--text);
     border: 1px solid var(--border);
@@ -345,7 +345,7 @@ hr {
 .distribution-table th {
     background-color: var(--bg-light);
     font-weight: bold;
-    font-size: 1em; /* Smaller font */
+    font-size: 1em;
 }
 
 /* Plot placeholder */
@@ -359,7 +359,7 @@ hr {
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
-    font-size: 1em; /* Smaller font */
+    font-size: 1em;
     font-family: "Montserrat";
 }
 
