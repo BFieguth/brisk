@@ -692,7 +692,7 @@ class App {
         const splitItems = splitsNav.querySelectorAll('.split-text');
         splitItems.forEach((item, index) => {
             item.addEventListener('click', () => {
-                this.selectSplit(index);
+                this.selectExperimentSplit(index);
             });
         });
     }
@@ -729,7 +729,7 @@ class App {
         this.updateExperimentPlots();
     }
 
-    selectSplit(splitIndex) {
+    selectExperimentSplit(splitIndex) {
         this.selectedSplitIndex = splitIndex;        
         this.updateSplitSelection();        
         this.updateExperimentSummary();
