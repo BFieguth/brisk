@@ -10,6 +10,14 @@ class App {
         this.selectedDataset = null; // This must be as Dataset instance
         this.selectedSplit = 0;
         this.initalizeHomeSelections();
+
+        // Experiment page state
+        this.currentExperimentId = null;
+        this.selectedAlgorithmIndex = 0;
+        this.selectedSplitIndex = 0;
+        this.selectedTableIndex = 0;
+        this.selectedPlotIndex = 0;
+        this.currentDatasetSplits = [];
     }
 
     init() {
@@ -92,6 +100,7 @@ class App {
             // Handle experiment navigation
             if (pageType === 'experiment' && pageData) {
                 this.showExperimentNavigation(pageData);
+                this.initializeExperimentPage(pageData);
             } else {
                 this.hideExperimentNavigation();
             }
@@ -566,6 +575,414 @@ class App {
                     track.style.height = totalHeight + 'px';
                 }
             }, 50);
+        }
+    }
+
+    // Experiment Page Logic
+    initializeExperimentPage(experimentId) {
+        const experiment = this.reportData.experiments[experimentId];
+        if (!experiment) return;
+
+        this.currentExperimentId = experimentId;
+        this.selectedAlgorithmIndex = 0;
+        this.selectedSplitIndex = 0;
+        this.selectedTableIndex = 0;
+        this.selectedPlotIndex = 0;
+
+        const dataset = this.reportData.datasets[experiment.dataset];
+        this.currentDatasetSplits = dataset ? dataset.splits : ['split_0'];
+
+        setTimeout(() => {
+            this.setupExperimentInteractivity();
+            this.updateExperimentSummary();
+            this.updateExperimentTables();
+            this.updateExperimentPlots();
+        }, 50);
+    }
+
+    setupExperimentInteractivity() {
+        this.setupAlgorithmSelector();
+        this.setupSplitSelector();
+        this.setupTableSelector();
+        this.setupPlotSelector();        
+        this.updateAlgorithmSelection();
+        this.updateSplitSelection();
+        this.updateTableSelection();
+        this.updatePlotSelection();
+    }
+
+    setupAlgorithmSelector() {
+        const algorithmNav = document.querySelector('.algorithm-nav');
+        if (!algorithmNav) return;
+
+        const algorithmItems = algorithmNav.querySelectorAll('.algorithm-text');
+        algorithmItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectAlgorithm(index);
+            });
+        });
+    }
+
+    setupSplitSelector() {
+        const splitsNav = document.querySelector('.splits-nav');
+        if (!splitsNav) return;
+
+        const splitItems = splitsNav.querySelectorAll('.split-text');
+        splitItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectSplit(index);
+            });
+        });
+    }
+
+    setupTableSelector() {
+        const tablesList = document.querySelector('.tables-list');
+        if (!tablesList) return;
+
+        const tableItems = tablesList.querySelectorAll('.table-name');
+        tableItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectTable(index);
+            });
+        });
+    }
+
+    setupPlotSelector() {
+        const plotsList = document.querySelector('.plots-list');
+        if (!plotsList) return;
+
+        const plotItems = plotsList.querySelectorAll('.plot-name');
+        plotItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectPlot(index);
+            });
+        });
+    }
+
+    selectAlgorithm(algorithmIndex) {
+        this.selectedAlgorithmIndex = algorithmIndex;
+        this.updateAlgorithmSelection();        
+        this.updateExperimentSummary();
+        this.updateExperimentTables();
+        this.updateExperimentPlots();
+    }
+
+    selectSplit(splitIndex) {
+        this.selectedSplitIndex = splitIndex;        
+        this.updateSplitSelection();        
+        this.updateExperimentSummary();
+        this.updateExperimentTables();
+        this.updateExperimentPlots();
+    }
+
+    selectTable(tableIndex) {
+        this.selectedTableIndex = tableIndex;
+        this.updateTableSelection();        
+        this.updateSelectedTable();
+    }
+
+    selectPlot(plotIndex) {
+        this.selectedPlotIndex = plotIndex;
+        this.updatePlotSelection();        
+        this.updateSelectedPlot();
+    }
+
+    updateAlgorithmSelection() {
+        const algorithmNav = document.querySelector('.algorithm-nav');
+        if (!algorithmNav) return;
+
+        const algorithmItems = algorithmNav.querySelectorAll('.algorithm-text');
+        algorithmItems.forEach((item, index) => {
+            if (index === this.selectedAlgorithmIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updateSplitSelection() {
+        const splitsNav = document.querySelector('.splits-nav');
+        if (!splitsNav) return;
+
+        const splitItems = splitsNav.querySelectorAll('.split-text');
+        splitItems.forEach((item, index) => {
+            if (index === this.selectedSplitIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updateTableSelection() {
+        const tablesList = document.querySelector('.tables-list');
+        if (!tablesList) return;
+
+        const tableItems = tablesList.querySelectorAll('.table-name');
+        tableItems.forEach((item, index) => {
+            if (index === this.selectedTableIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updatePlotSelection() {
+        const plotsList = document.querySelector('.plots-list');
+        if (!plotsList) return;
+
+        const plotItems = plotsList.querySelectorAll('.plot-name');
+        plotItems.forEach((item, index) => {
+            if (index === this.selectedPlotIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updateExperimentSummary() {
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment) return;
+        this.updateTunedHyperparameters(experiment);        
+        this.updateHyperparameterGrid(experiment);
+    }
+
+    updateTunedHyperparameters(experiment) {
+        const tbody = document.querySelector('.tuned-hyperparams-body');
+        const message = document.querySelector('.tuned-hyperparams-message');
+        const table = document.querySelector('.tuned-hyperparams-table');
+        
+        if (!tbody || !message || !table) return;
+
+        tbody.innerHTML = '';
+        
+        if (experiment.tuned_params && Object.keys(experiment.tuned_params).length > 0) {
+            message.style.display = 'none';
+            table.style.display = 'table';
+            
+            Object.entries(experiment.tuned_params).forEach(([param, value]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${param}</td>
+                    <td>${value}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            message.style.display = 'block';
+            table.style.display = 'none';
+        }
+    }
+
+    updateHyperparameterGrid(experiment) {
+        const tbody = document.querySelector('.hyperparam-grid-body');
+        const message = document.querySelector('.hyperparam-grid-message');
+        const table = document.querySelector('.hyperparam-grid-table');
+        
+        if (!tbody || !message || !table) return;
+
+        tbody.innerHTML = '';
+        
+        if (experiment.hyperparam_grid && Object.keys(experiment.hyperparam_grid).length > 0) {
+            message.style.display = 'none';
+            table.style.display = 'table';
+            
+            Object.entries(experiment.hyperparam_grid).forEach(([param, values]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${param}</td>
+                    <td>${values}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            message.style.display = 'block';
+            table.style.display = 'none';
+        }
+    }
+
+    updateExperimentTables() {
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment) return;
+
+        this.renderFilteredTables(experiment);
+        
+        const maxTableIndex = (experiment.tables || []).length - 1;
+        if (this.selectedTableIndex > maxTableIndex) {
+            this.selectedTableIndex = Math.max(0, maxTableIndex);
+        }
+        
+        this.updateTableSelection();        
+        this.updateSelectedTable();
+    }
+
+    updateExperimentPlots() {
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment) return;
+
+        this.renderFilteredPlots(experiment);
+        
+        const maxPlotIndex = (experiment.plots || []).length - 1;
+        if (this.selectedPlotIndex > maxPlotIndex) {
+            this.selectedPlotIndex = Math.max(0, maxPlotIndex);
+        }
+        
+        this.updatePlotSelection();        
+        this.updateSelectedPlot();
+    }
+
+    renderFilteredTables(experiment) {
+        const tablesList = document.querySelector('.tables-list');
+        if (!tablesList) return;
+
+        tablesList.innerHTML = '';
+
+        const tables = experiment.tables || [];
+
+        tables.forEach((tableData, index) => {
+            const tableName = document.createElement('div');
+            tableName.textContent = tableData.name || `Table ${index + 1}`;
+            tableName.className = `table-name ${index === this.selectedTableIndex ? 'selected' : ''}`;
+            tableName.dataset.tableIndex = index;
+            
+            tableName.addEventListener('click', () => {
+                this.selectTable(index);
+            });
+            
+            tablesList.appendChild(tableName);
+        });
+    }
+
+    renderFilteredPlots(experiment) {
+        const plotsList = document.querySelector('.plots-list');
+        if (!plotsList) return;
+
+        plotsList.innerHTML = '';
+
+        const plots = experiment.plots || [];
+
+        plots.forEach((plotData, index) => {
+            const plotName = document.createElement('div');
+            plotName.textContent = plotData.name || `Plot ${index + 1}`;
+            plotName.className = `plot-name ${index === this.selectedPlotIndex ? 'selected' : ''}`;
+            plotName.dataset.plotIndex = index;
+            
+            plotName.addEventListener('click', () => {
+                this.selectPlot(index);
+            });
+            
+            plotsList.appendChild(plotName);
+        });
+    }
+
+    filterTableDataForCurrentSelection(originalTableData) {
+        if (!originalTableData) return originalTableData;
+        
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment) return originalTableData;
+
+        const splitDisplayName = `Split ${this.selectedSplitIndex}`;
+        const currentAlgorithm = experiment.algorithm[this.selectedAlgorithmIndex];
+        const splitColumnIndex = originalTableData.columns.findIndex(col => 
+            col.toLowerCase().includes('split')
+        );
+
+        let filteredRows = originalTableData.rows;
+        if (splitColumnIndex !== -1) {
+            filteredRows = filteredRows.filter(row => 
+                row[splitColumnIndex] === splitDisplayName
+            );
+        }
+
+        if (experiment.algorithm.length > 1) {
+            const algorithmColumnIndex = originalTableData.columns.findIndex(col => 
+                col.toLowerCase().includes('algorithm')
+            );
+            
+            if (algorithmColumnIndex !== -1) {
+                filteredRows = filteredRows.filter(row => 
+                    row[algorithmColumnIndex] === currentAlgorithm
+                );
+            }
+        }
+
+        return {
+            ...originalTableData,
+            rows: filteredRows,
+            description: `${originalTableData.description} (Split ${this.selectedSplitIndex}${experiment.algorithm.length > 1 ? `, ${currentAlgorithm}` : ''})`
+        };
+    }
+
+    updateSelectedTable() {
+        const tablesContent = document.querySelector('.tables-content');
+        if (!tablesContent) return;
+
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment || !experiment.tables) return;
+
+        tablesContent.innerHTML = '';
+
+        const selectedTable = experiment.tables[this.selectedTableIndex];
+        if (selectedTable) {
+            try {
+                const filteredTableData = this.filterTableDataForCurrentSelection(selectedTable);
+                const tableRenderer = new TableRenderer(filteredTableData);
+                const tableElement = tableRenderer.render();
+                tablesContent.appendChild(tableElement);
+            } catch (error) {
+                console.error('Error rendering table:', error);
+                tablesContent.innerHTML = '<div class="error-message">Error loading table</div>';
+            }
+        } else {
+            tablesContent.innerHTML = '<div class="no-data-message">No table selected</div>';
+        }
+    }
+
+    filterPlotDataForCurrentSelection(originalPlotData) {
+        if (!originalPlotData) return originalPlotData;
+        
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment) return originalPlotData;
+
+        const currentAlgorithm = experiment.algorithm[this.selectedAlgorithmIndex];
+        let updatedDescription = originalPlotData.description;
+        if (experiment.algorithm.length > 1) {
+            updatedDescription = `${originalPlotData.description} (${currentAlgorithm}, Split ${this.selectedSplitIndex})`;
+        } else {
+            updatedDescription = `${originalPlotData.description} (Split ${this.selectedSplitIndex})`;
+        }
+
+        return {
+            ...originalPlotData,
+            description: updatedDescription
+        };
+    }
+
+    updateSelectedPlot() {
+        const plotsContent = document.querySelector('.plots-content');
+        if (!plotsContent) return;
+
+        const experiment = this.reportData.experiments[this.currentExperimentId];
+        if (!experiment || !experiment.plots) return;
+
+        plotsContent.innerHTML = '';
+
+        const selectedPlot = experiment.plots[this.selectedPlotIndex];
+        if (selectedPlot) {
+            try {
+                const filteredPlotData = this.filterPlotDataForCurrentSelection(selectedPlot);
+                const plotRenderer = new PlotRenderer(filteredPlotData);
+                const plotElement = plotRenderer.render();
+                plotsContent.appendChild(plotElement);
+            } catch (error) {
+                console.error('Error rendering plot:', error);
+                plotsContent.innerHTML = '<div class="error-message">Error loading plot</div>';
+            }
+        } else {
+            plotsContent.innerHTML = '<div class="no-data-message">No plot selected</div>';
         }
     }
 
