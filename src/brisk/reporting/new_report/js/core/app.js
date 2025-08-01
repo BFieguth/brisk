@@ -1193,6 +1193,7 @@ class App {
         this.setupDatasetSplitSelector();
         this.setupDatasetFeatureSelector();
         this.setupDatasetCollapsibleSections();
+        this.setupCorrelationModal();
         this.updateDatasetSplitSelection();
         this.updateDatasetFeatureSelection();
     }
@@ -1233,6 +1234,89 @@ class App {
                 this.selectDatasetFeature(index);
             });
         });
+    }
+
+    setupCorrelationModal() {
+        const correlationContent = document.querySelector('.correlation-content');
+        const modal = document.getElementById('correlationModal');
+        const modalClose = document.getElementById('correlationModalClose');
+        const modalPlot = document.getElementById('correlationModalPlot');
+        
+        if (!correlationContent || !modal || !modalClose || !modalPlot) return;
+        
+        // Open modal on correlation matrix click
+        correlationContent.addEventListener('click', () => {
+            this.openCorrelationModal();
+        });
+        
+        // Close modal on close button click
+        modalClose.addEventListener('click', () => {
+            this.closeCorrelationModal();
+        });
+        
+        // Close modal on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeCorrelationModal();
+            }
+        });
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                this.closeCorrelationModal();
+            }
+        });
+    }
+
+    openCorrelationModal() {
+        const modal = document.getElementById('correlationModal');
+        const modalPlot = document.getElementById('correlationModalPlot');
+        const modalTitle = document.querySelector('.correlation-modal-title');
+        const correlationPlot = document.querySelector('.correlation-plot');
+        
+        if (!modal || !modalPlot || !correlationPlot) return;
+        
+        // Update modal title with current dataset and split info
+        if (modalTitle && this.selectedDataset) {
+            const splitText = `Split ${this.selectedDatasetSplitIndex}`;
+            modalTitle.textContent = `Correlation Matrix - ${this.selectedDataset.ID} (${splitText})`;
+        }
+        
+        // Copy the correlation matrix content to modal
+        modalPlot.innerHTML = correlationPlot.innerHTML;
+        
+        // Add blur to background
+        document.body.classList.add('modal-open');
+        
+        // Show modal with animation
+        modal.classList.add('show');
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeCorrelationModal() {
+        const modal = document.getElementById('correlationModal');
+        
+        if (!modal) return;
+        
+        // Remove blur from background
+        document.body.classList.remove('modal-open');
+        
+        // Hide modal with animation
+        modal.classList.remove('show');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        // Clear modal content after animation
+        setTimeout(() => {
+            const modalPlot = document.getElementById('correlationModalPlot');
+            if (modalPlot) {
+                modalPlot.innerHTML = '';
+            }
+        }, 300);
     }
 
     selectDatasetSplit(splitIndex) {
@@ -1348,6 +1432,18 @@ class App {
             corrPlot.innerHTML = currentCorrMatrix.image;
         } else {
             corrPlot.innerHTML = '<div class="correlation-placeholder">Correlation Matrix</div>';
+        }
+        
+        const modal = document.getElementById('correlationModal');
+        const modalPlot = document.getElementById('correlationModalPlot');
+        if (modal && modal.classList.contains('show') && modalPlot) {
+            modalPlot.innerHTML = corrPlot.innerHTML;
+            
+            const modalTitle = document.querySelector('.correlation-modal-title');
+            if (modalTitle) {
+                const splitText = `Split ${this.selectedDatasetSplitIndex}`;
+                modalTitle.textContent = `Correlation Matrix - ${this.selectedDataset.ID} (${splitText})`;
+            }
         }
     }
 

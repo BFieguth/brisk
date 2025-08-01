@@ -156,18 +156,26 @@ hr {
 
 /* Correlation matrix section */
 .correlation-section {
-    margin-bottom: 10px; /* Reduce margin */
+    margin-bottom: 10px;
 }
 
 .correlation-content {
     background-color: white;
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: 0.5rem; /* Reduce padding */
+    padding: 0.5rem; 
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 120px; /* Reduce height */
+    min-height: 80px;
+    cursor: pointer; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.correlation-content:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary);
 }
 
 .correlation-plot {
@@ -176,6 +184,27 @@ hr {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+.correlation-plot::after {
+    font-family: 'Montserrat';
+    content: "Click to expand";
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7em;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.correlation-content:hover .correlation-plot::after {
+    opacity: 1;
 }
 
 .correlation-plot svg {
@@ -471,4 +500,101 @@ hr {
     padding: 2rem;
     margin: 0;
     font-size: 1em;
+}
+
+/* Correlation Matrix Modal */
+.correlation-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.correlation-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.correlation-modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+    overflow: auto;
+}
+
+.correlation-modal.show .correlation-modal-content {
+    transform: scale(1);
+}
+
+.correlation-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.correlation-modal-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.correlation-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.correlation-modal-close:hover {
+    background-color: var(--bg-light);
+    color: var(--text);
+}
+
+.correlation-modal-plot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.correlation-modal-plot svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+/* Backdrop blur for page content when modal is open */
+body.modal-open .dataset-container {
+    filter: blur(2px);
+    transition: filter 0.3s ease;
 }
