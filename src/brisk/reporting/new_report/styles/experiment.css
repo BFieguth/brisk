@@ -26,8 +26,10 @@
 }
 
 .experiment-tables, .experiment-plots {
-    height: 50%;
+    height: calc(50vh - 24px);
     width: 100%;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height, flex;
 }
 
 /* Tables and Plots Layout */
@@ -50,13 +52,137 @@
     min-height: 0;
 }
 
+/* Section header with expand button */
+.section-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+    padding: 0.5rem 1rem;
+}
+
 .section-title {
+    margin: 0;
     color: var(--text);
-    text-align: center;
-    margin: 1rem 0;
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: 600;
-    padding: 0 1rem;
+    text-align: center;
+    flex: 1;
+}
+
+/* Expand/collapse button styles */
+.expand-container {
+    position: absolute;
+    right: 1rem;
+    --color: var(--text-muted);
+    --size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: var(--size);
+    user-select: none;
+    fill: var(--color);
+    transition: fill 0.2s ease;
+}
+
+.expand-container:hover {
+    --color: var(--primary);
+}
+
+.expand-container .expand {
+    position: absolute;
+    animation: keyframes-fill .5s;
+}
+
+.expand-container .compress {
+    position: absolute;
+    display: none;
+    animation: keyframes-fill .5s;
+}
+
+/* On check event */
+.expand-container input:checked ~ .expand {
+    display: none;
+}
+
+.expand-container input:checked ~ .compress {
+    display: block;
+}
+
+/* Hide the default checkbox */
+.expand-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Animation */
+@keyframes keyframes-fill {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Smooth expand/collapse container behavior */
+.experiment-right {
+    transition: none;
+}
+
+/* Expanded states with smooth transitions */
+.experiment-right.tables-expanded .experiment-tables {
+    height: calc(80vh - 32px);
+    flex: none;
+}
+
+.experiment-right.tables-expanded .experiment-plots {
+    height: calc(20vh - 16px);
+    flex: none;
+    min-height: 120px;
+}
+
+.experiment-right.plots-expanded .experiment-plots {
+    height: calc(80vh - 32px);
+    flex: none;
+}
+
+.experiment-right.plots-expanded .experiment-tables {
+    height: calc(20vh - 16px);
+    flex: none;
+    min-height: 120px;
+}
+
+/* Reset to normal state when neither is expanded */
+.experiment-right:not(.tables-expanded):not(.plots-expanded) .experiment-tables,
+.experiment-right:not(.tables-expanded):not(.plots-expanded) .experiment-plots {
+    height: calc(50vh - 24px);
+    flex: none;
+}
+
+/* Collapsed state adjustments with smooth transitions */
+.experiment-right.tables-expanded .experiment-plots .plots-content,
+.experiment-right.plots-expanded .experiment-tables .tables-content {
+    height: 60px;
+    overflow: hidden;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.experiment-right.tables-expanded .experiment-plots .plots-list,
+.experiment-right.plots-expanded .experiment-tables .tables-list {
+    max-height: 40px;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tables-list, .plots-list {

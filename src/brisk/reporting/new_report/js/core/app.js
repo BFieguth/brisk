@@ -604,11 +604,73 @@ class App {
         this.setupAlgorithmSelector();
         this.setupSplitSelector();
         this.setupTableSelector();
-        this.setupPlotSelector();        
+        this.setupPlotSelector();
+        this.setupExpandCollapseButtons();        
         this.updateAlgorithmSelection();
         this.updateSplitSelection();
         this.updateTableSelection();
         this.updatePlotSelection();
+    }
+
+    setupExpandCollapseButtons() {
+        const tablesExpandButton = document.querySelector('.experiment-tables .expand-container');
+        const plotsExpandButton = document.querySelector('.experiment-plots .expand-container');
+        
+        if (tablesExpandButton) {
+            tablesExpandButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleTableExpansion();
+            });
+        }
+        
+        if (plotsExpandButton) {
+            plotsExpandButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.togglePlotExpansion();
+            });
+        }
+    }
+
+    toggleTableExpansion() {
+        const experimentRight = document.querySelector('.experiment-right');
+        const tablesCheckbox = document.querySelector('.experiment-tables .expand-checkbox');
+        const plotsCheckbox = document.querySelector('.experiment-plots .expand-checkbox');
+        
+        if (!experimentRight || !tablesCheckbox) return;
+
+        const isTablesExpanded = experimentRight.classList.contains('tables-expanded');
+        
+        experimentRight.classList.remove('tables-expanded', 'plots-expanded');
+        
+        if (isTablesExpanded) {
+            tablesCheckbox.checked = false;
+            if (plotsCheckbox) plotsCheckbox.checked = false;
+        } else {
+            experimentRight.classList.add('tables-expanded');
+            tablesCheckbox.checked = true;
+            if (plotsCheckbox) plotsCheckbox.checked = false;
+        }
+    }
+
+    togglePlotExpansion() {
+        const experimentRight = document.querySelector('.experiment-right');
+        const tablesCheckbox = document.querySelector('.experiment-tables .expand-checkbox');
+        const plotsCheckbox = document.querySelector('.experiment-plots .expand-checkbox');
+        
+        if (!experimentRight || !plotsCheckbox) return;
+
+        const isPlotsExpanded = experimentRight.classList.contains('plots-expanded');
+        
+        experimentRight.classList.remove('tables-expanded', 'plots-expanded');
+        
+        if (isPlotsExpanded) {
+            plotsCheckbox.checked = false;
+            if (tablesCheckbox) tablesCheckbox.checked = false;
+        } else {
+            experimentRight.classList.add('plots-expanded');
+            plotsCheckbox.checked = true;
+            if (tablesCheckbox) tablesCheckbox.checked = false;
+        }
     }
 
     setupAlgorithmSelector() {
