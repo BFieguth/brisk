@@ -139,6 +139,10 @@ hr {
     background-color: var(--secondary);
 }
 
+.collapsible-header span {
+    font-family: 'Montserrat';
+}
+
 .collapse-icon {
     color: var(--text-muted);
     font-size: 0.8em;

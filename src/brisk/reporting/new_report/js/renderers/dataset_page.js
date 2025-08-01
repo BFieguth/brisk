@@ -11,6 +11,7 @@ class DatasetPageRenderer {
         this.renderDatasetSummary(template);
         this.renderDatasetFeatures(template);
         this.renderDatasetDistribution(template);
+        this.renderDataManagerSettings(template);
         return template;
     }
 
@@ -19,7 +20,6 @@ class DatasetPageRenderer {
         titleElement.textContent = `Dataset: ${this.datasetData.ID}`;
         this.renderDatasetSplits(template);
         this.renderCombinedInfoTables(template);
-        this.renderDataManagerSettings(template);
         this.renderCorrelationMatrix(template);
     }
 
@@ -77,8 +77,10 @@ class DatasetPageRenderer {
     renderDataManagerSettings(template) {
         const dmContent = template.querySelector('.collapsible-content');
         dmContent.innerHTML = '';
-        const dataManager = window.app.reportData.data_managers[this.datasetData.data_manager_id];
+        if (!dmContent) return;
         
+        const dataManager = window.app.reportData.data_managers[this.datasetData.data_manager_id];
+                
         if (dataManager) {
             Object.entries(dataManager).forEach(([key, value]) => {
                 if (!['ID'].includes(key)) {
@@ -110,11 +112,9 @@ class DatasetPageRenderer {
     }
 
     renderDatasetSplits(template) {
-        const splitsContainer = template.querySelector('.dataset-splits');        
-        splitsContainer.innerHTML = '';
-        
-        const splitsNav = document.createElement('div');
-        splitsNav.className = 'splits-nav';
+        const splitsContainer = template.querySelector('.dataset-splits');
+        const splitsNav = splitsContainer.querySelector('.splits-nav');
+        splitsNav.innerHTML = '';
         
         this.datasetData.splits.forEach((splitId, index) => {
             const splitText = document.createElement('span');
@@ -125,16 +125,12 @@ class DatasetPageRenderer {
             
             splitsNav.appendChild(splitText);
         });
-        
-        splitsContainer.appendChild(splitsNav);
     }
 
     renderDatasetFeatures(template) {
-        const container = template.querySelector('.dataset-features');        
-        container.innerHTML = '';
-        
-        const featuresNav = document.createElement('div');
-        featuresNav.className = 'features-nav';
+        const container = template.querySelector('.dataset-features');
+        const featuresNav = container.querySelector('.features-nav');
+        featuresNav.innerHTML = '';
         
         const displayFeatures = this.datasetData.features;
         
@@ -146,8 +142,6 @@ class DatasetPageRenderer {
             
             featuresNav.appendChild(featureText);
         });
-        
-        container.appendChild(featuresNav);
     }
 
     renderDatasetDistribution(template) {

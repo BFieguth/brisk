@@ -18,6 +18,11 @@ class App {
         this.selectedTableIndex = 0;
         this.selectedPlotIndex = 0;
         this.currentDatasetSplits = [];
+
+        // Dataset page state
+        this.currentDatasetId = null;
+        this.selectedDatasetSplitIndex = 0;
+        this.selectedFeatureIndex = 0;
     }
 
     init() {
@@ -108,6 +113,11 @@ class App {
             if (pageType === 'home') {
                 // Ensure DOM is ready first
                 setTimeout(() => this.initializeCarousel(), 50);
+            }
+
+            if (pageType === 'dataset') {
+                // Initialize dataset page interactivity
+                this.initializeDatasetPage();
             }
         } catch (e) {
             console.error('Error rendering page:', e);
@@ -1163,4 +1173,223 @@ class App {
             newNextBtn.disabled = true;
         }
     }
+
+    // Dataset Page Logic
+    initializeDatasetPage() {
+        if (!this.selectedDataset) return;
+
+        this.currentDatasetId = this.selectedDataset.ID;
+        this.selectedDatasetSplitIndex = 0;
+        this.selectedFeatureIndex = 0;
+
+        setTimeout(() => {
+            this.setupDatasetInteractivity();
+            this.updateDatasetSummary();
+            this.updateDatasetDistribution();
+        }, 50);
+    }
+
+    setupDatasetInteractivity() {
+        this.setupDatasetSplitSelector();
+        this.setupDatasetFeatureSelector();
+        this.setupDatasetCollapsibleSections();
+        this.updateDatasetSplitSelection();
+        this.updateDatasetFeatureSelection();
+    }
+
+    setupDatasetCollapsibleSections() {
+        const dmHeader = document.querySelector('.collapsible-header');
+        const dmContent = document.querySelector('.collapsible-content');
+        const collapseIcon = document.querySelector('.collapse-icon');
+        
+        if (dmHeader && dmContent && collapseIcon) {
+            dmHeader.addEventListener('click', () => {
+                const isCollapsed = dmContent.style.display === 'none';
+                dmContent.style.display = isCollapsed ? 'block' : 'none';
+                collapseIcon.textContent = isCollapsed ? '▼' : '▲';
+            });
+        }
+    }
+
+    setupDatasetSplitSelector() {
+        const splitsNav = document.querySelector('.dataset-splits .splits-nav');
+        if (!splitsNav) return;
+
+        const splitItems = splitsNav.querySelectorAll('.split-text');
+        splitItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectDatasetSplit(index);
+            });
+        });
+    }
+
+    setupDatasetFeatureSelector() {
+        const featuresNav = document.querySelector('.dataset-features .features-nav');
+        if (!featuresNav) return;
+
+        const featureItems = featuresNav.querySelectorAll('.feature-text');
+        featureItems.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectDatasetFeature(index);
+            });
+        });
+    }
+
+    selectDatasetSplit(splitIndex) {
+        this.selectedDatasetSplitIndex = splitIndex;
+        this.updateDatasetSplitSelection();        
+        this.updateDatasetSummary();
+        this.updateDatasetDistribution();
+    }
+
+    selectDatasetFeature(featureIndex) {
+        this.selectedFeatureIndex = featureIndex;        
+        this.updateDatasetFeatureSelection();        
+        this.updateDatasetDistribution();
+    }
+
+    updateDatasetSplitSelection() {
+        const splitsNav = document.querySelector('.dataset-splits .splits-nav');
+        if (!splitsNav) return;
+
+        const splitItems = splitsNav.querySelectorAll('.split-text');
+        splitItems.forEach((item, index) => {
+            if (index === this.selectedDatasetSplitIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updateDatasetFeatureSelection() {
+        const featuresNav = document.querySelector('.dataset-features .features-nav');
+        if (!featuresNav) return;
+
+        const featureItems = featuresNav.querySelectorAll('.feature-text');
+        featureItems.forEach((item, index) => {
+            if (index === this.selectedFeatureIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    updateDatasetSummary() {
+        if (!this.selectedDataset) return;
+        this.updateDatasetInfoTables();
+        this.updateDatasetCorrelationMatrix();
+    }
+
+    updateDatasetInfoTables() {
+        const datasetInfoContent = document.querySelector('.dataset-info-content');
+        datasetInfoContent.innerHTML = '';
+       
+        const targetInfoContent = document.querySelector('.target-info-content');
+        targetInfoContent.innerHTML = '';
+        
+        if (!datasetInfoContent || !targetInfoContent || !this.selectedDataset) return;
+
+        const currentSplitId = this.selectedDataset.splits[this.selectedDatasetSplitIndex];
+        const currentSplitSizes = this.selectedDataset.split_sizes[currentSplitId] || {};
+        const currentTargetStats = this.selectedDataset.split_target_stats[currentSplitId] || {};
+        
+        
+        if (currentSplitSizes.features && currentSplitSizes.total_obs) {
+            datasetInfoContent.innerHTML = `
+                <div class="info-item-compact">
+                    <span class="info-label-compact">Features:</span>
+                    <span class="info-value-compact">${currentSplitSizes.features}</span>
+                </div>
+                <div class="info-item-compact">
+                    <span class="info-label-compact">Total Observations:</span>
+                    <span class="info-value-compact">${currentSplitSizes.total_obs}</span>
+                </div>
+                <div class="info-item-compact">
+                    <span class="info-label-compact">Train Observations:</span>
+                    <span class="info-value-compact">${currentSplitSizes.train_obs || 'N/A'}</span>
+                </div>
+                <div class="info-item-compact">
+                    <span class="info-label-compact">Test Observations:</span>
+                    <span class="info-value-compact">${currentSplitSizes.test_obs || 'N/A'}</span>
+                </div>
+            `;
+        } else {
+            datasetInfoContent.innerHTML = '<div class="info-item-compact">No dataset information available</div>';
+        }
+        
+        // Populate target feature stats
+        if (Object.keys(currentTargetStats).length > 0) {
+            Object.entries(currentTargetStats).forEach(([stat, value]) => {
+                const statItem = document.createElement('div');
+                statItem.className = 'info-item-compact';
+                statItem.innerHTML = `
+                    <span class="info-label-compact">${stat.charAt(0).toUpperCase() + stat.slice(1)}:</span>
+                    <span class="info-value-compact">${value}</span>
+                `;
+                targetInfoContent.appendChild(statItem);
+            });
+        } else {
+            targetInfoContent.innerHTML = '<div class="info-item-compact">No target stats available</div>';
+        }
+    }
+
+    updateDatasetCorrelationMatrix() {
+        const corrPlot = document.querySelector('.correlation-plot');
+        if (!corrPlot || !this.selectedDataset) return;
+        
+        corrPlot.innerHTML = '';
+        
+        const currentSplitId = this.selectedDataset.splits[this.selectedDatasetSplitIndex];
+        const currentCorrMatrix = this.selectedDataset.split_corr_matrices[currentSplitId];
+        
+        if (currentCorrMatrix && currentCorrMatrix.image) {
+            corrPlot.innerHTML = currentCorrMatrix.image;
+        } else {
+            corrPlot.innerHTML = '<div class="correlation-placeholder">Correlation Matrix</div>';
+        }
+    }
+
+    updateDatasetDistribution() {
+        const tableContainer = document.querySelector('.distribution-table-content');
+        tableContainer.innerHTML = '';
+       
+        const plotContainer = document.querySelector('.distribution-plot-content');
+        plotContainer.innerHTML = '';
+
+        const tableTitle = document.querySelector('.distribution-table-title');
+        
+        if (!tableContainer || !plotContainer || !tableTitle || !this.selectedDataset) return;
+        
+        
+        const currentSplitId = this.selectedDataset.splits[this.selectedDatasetSplitIndex];
+        const currentFeatureDistributions = this.selectedDataset.split_feature_distributions[currentSplitId];
+        
+        if (currentFeatureDistributions && currentFeatureDistributions.length > 0) {
+            const selectedDistribution = currentFeatureDistributions[this.selectedFeatureIndex] || currentFeatureDistributions[0];
+            
+            tableTitle.textContent = selectedDistribution.table.name;
+            
+            const tableRenderer = new TableRenderer(selectedDistribution.table);
+            const tableElement = tableRenderer.render();
+            tableContainer.appendChild(tableElement);
+            
+            const plotRenderer = new PlotRenderer(selectedDistribution.plot);
+            const plotElement = plotRenderer.render();
+            plotContainer.appendChild(plotElement);
+        } else {
+            tableTitle.textContent = 'Feature Distribution';
+            
+            const noDataMessage = document.createElement('p');
+            noDataMessage.textContent = 'No feature distribution data available';
+            noDataMessage.className = 'no-data-message';
+            tableContainer.appendChild(noDataMessage);
+            
+            const plotPlaceholder = document.createElement('div');
+            plotPlaceholder.className = 'plot-placeholder';
+            plotPlaceholder.textContent = 'Distribution Plot';
+            plotContainer.appendChild(plotPlaceholder);
+        }
+    }    
 }
