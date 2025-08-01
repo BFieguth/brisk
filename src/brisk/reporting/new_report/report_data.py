@@ -110,21 +110,27 @@ class Experiment(BaseModel):
 class Dataset(BaseModel):
     ID: str
     splits: List[str] = Field(
-        default_factory=list, description="List of data split indexs"
+        default_factory=list, description="List of data split indexes"
     )
-    size: Tuple[str, str] = Field(
-        default_factory=tuple, description="Number of rows, number of columns"
+    split_sizes: Dict[str, Dict[str, str]] = Field(
+        default_factory=dict, 
+        description="Size info per split: {split_id: {'total_obs': '506', 'features': '13', 'train_obs': '404', 'test_obs': '102'}}"
     )
-    target_stats: Dict[str, str] = Field(
-        default_factory=dict, description="Target feature stats, stat name: value"
+    split_target_stats: Dict[str, Dict[str, str]] = Field(
+        default_factory=dict, 
+        description="Target feature stats per split: {split_id: {'mean': '22.53', 'std': '9.20', ...}}"
+    )
+    split_corr_matrices: Dict[str, PlotData] = Field(
+        default_factory=dict,
+        description="Correlation matrix per split: {split_id: PlotData}"
     )
     data_manager_id: str
-    corr_matrix: PlotData
     features: List[str] = Field(
         default_factory=list, description="List of feature names"
     )
-    feature_distributions: List[FeatureDistribution] = Field(
-        default_factory=list, description="List of feature distributions"
+    split_feature_distributions: Dict[str, List[FeatureDistribution]] = Field(
+        default_factory=dict, 
+        description="Feature distributions per split: {split_id: [FeatureDistribution, ...]}"
     )
 
 
@@ -153,20 +159,21 @@ available_plots = [
     PlotData(name="Feature Analysis", description="Feature analysis visualization", image=comparison_scatter_matplotlib_svg)
 ]
 
-def create_feature_distribution(feature_name: str, plot_index: int) -> FeatureDistribution:
-    """Create a FeatureDistribution instance for a given feature."""
-    # Create sample statistics table for the feature
+def create_feature_distribution(feature_name: str, plot_index: int, split_suffix: str = "") -> FeatureDistribution:
+    """Create a FeatureDistribution instance for a given feature and split."""
+    # Create sample statistics table for the feature with split variation
+    base_hash = hash(feature_name + split_suffix)
     table = TableData(
         name=f"{feature_name} Statistics",
         description=f"Statistical summary for feature {feature_name}",
         columns=["Statistic", "Value"],
         rows=[
-            ["Mean", f"{(hash(feature_name) % 100 + 50):.2f}"],
-            ["Std Dev", f"{(hash(feature_name) % 20 + 5):.2f}"],
-            ["Min", f"{(hash(feature_name) % 10):.2f}"],
-            ["Max", f"{(hash(feature_name) % 200 + 100):.2f}"],
-            ["25th Percentile", f"{(hash(feature_name) % 40 + 20):.2f}"],
-            ["75th Percentile", f"{(hash(feature_name) % 60 + 80):.2f}"]
+            ["Mean", f"{(base_hash % 100 + 50):.2f}"],
+            ["Std Dev", f"{(base_hash % 20 + 5):.2f}"],
+            ["Min", f"{(base_hash % 10):.2f}"],
+            ["Max", f"{(base_hash % 200 + 100):.2f}"],
+            ["25th Percentile", f"{(base_hash % 40 + 20):.2f}"],
+            ["75th Percentile", f"{(base_hash % 60 + 80):.2f}"]
         ]
     )
     
@@ -174,7 +181,7 @@ def create_feature_distribution(feature_name: str, plot_index: int) -> FeatureDi
     plot = available_plots[plot_index % len(available_plots)]
     
     return FeatureDistribution(
-        ID=feature_name,
+        ID=f"{feature_name}_{split_suffix}",
         table=table,
         plot=plot
     )
@@ -212,31 +219,79 @@ navbar = Navbar(
 dataset_1 = Dataset(
     ID="Linear Methods_housing_data",
     splits=["split_0", "split_1", "split_2"],
-    size=("506", "13"),
-    target_stats={"mean": "22.53", "std": "9.20", "min": "5.00", "max": "50.00"},
+    split_sizes={
+        "split_0": {"total_obs": "506", "features": "13", "train_obs": "404", "test_obs": "102"},
+        "split_1": {"total_obs": "506", "features": "13", "train_obs": "405", "test_obs": "101"},
+        "split_2": {"total_obs": "506", "features": "13", "train_obs": "403", "test_obs": "103"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "22.53", "std": "9.20", "min": "5.00", "max": "50.00"},
+        "split_1": {"mean": "22.41", "std": "9.35", "min": "5.20", "max": "49.80"},
+        "split_2": {"mean": "22.68", "std": "9.05", "min": "4.90", "max": "50.20"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Correlation Matrix - Housing Data Split 0",
+            description="Feature correlation matrix for housing dataset split 0",
+            image=matplotlib_simple_line_svg
+        ),
+        "split_1": PlotData(
+            name="Correlation Matrix - Housing Data Split 1",
+            description="Feature correlation matrix for housing dataset split 1",
+            image=plotnine_simple_scatter_svg
+        ),
+        "split_2": PlotData(
+            name="Correlation Matrix - Housing Data Split 2",
+            description="Feature correlation matrix for housing dataset split 2",
+            image=comparison_scatter_plotnine_svg
+        )
+    },
     data_manager_id="dm_housing",
-    corr_matrix=PlotData(
-        name="Correlation Matrix - Housing Data",
-        description="Feature correlation matrix for housing dataset",
-        image=matplotlib_simple_line_svg
-    ),
     features=["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"])],
+        "split_2": [create_feature_distribution(feature, i, "split_2") for i, feature in enumerate(["CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "B", "LSTAT"])]
+    }
 )
 
 dataset_2 = Dataset(
     ID="Linear Methods_medical_data",
     splits=["split_0", "split_1", "split_2"],
-    size=("442", "10"),
-    target_stats={"mean": "152.13", "std": "77.09", "min": "25.00", "max": "346.00"},
+    split_sizes={
+        "split_0": {"total_obs": "442", "features": "10", "train_obs": "353", "test_obs": "89"},
+        "split_1": {"total_obs": "442", "features": "10", "train_obs": "354", "test_obs": "88"},
+        "split_2": {"total_obs": "442", "features": "10", "train_obs": "352", "test_obs": "90"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "152.13", "std": "77.09", "min": "25.00", "max": "346.00"},
+        "split_1": {"mean": "151.85", "std": "77.42", "min": "24.80", "max": "345.20"},
+        "split_2": {"mean": "152.41", "std": "76.75", "min": "25.20", "max": "346.80"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Correlation Matrix - Medical Data Split 0",
+            description="Feature correlation matrix for medical dataset split 0",
+            image=plotnine_simple_scatter_svg
+        ),
+        "split_1": PlotData(
+            name="Correlation Matrix - Medical Data Split 1", 
+            description="Feature correlation matrix for medical dataset split 1",
+            image=comparison_scatter_matplotlib_svg
+        ),
+        "split_2": PlotData(
+            name="Correlation Matrix - Medical Data Split 2",
+            description="Feature correlation matrix for medical dataset split 2",
+            image=matplotlib_simple_line_svg
+        )
+    },
     data_manager_id="dm_medical",
-    corr_matrix=PlotData(
-        name="Correlation Matrix - Medical Data",
-        description="Feature correlation matrix for medical dataset",
-        image=plotnine_simple_scatter_svg
-    ),
     features=["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"])],
+        "split_2": [create_feature_distribution(feature, i, "split_2") for i, feature in enumerate(["age", "sex", "bmi", "bp", "s1", "s2", "s3", "s4", "s5", "s6"])]
+    }
 )
 
 # Create experiments for Linear Methods group
@@ -452,31 +507,63 @@ experiment_group_1 = ExperimentGroup(
 clinical_dataset = Dataset(
     ID="Tree-Based Methods_clinical_data",
     splits=["split_0", "split_1"],
-    size=("1000", "25"),
-    target_stats={"mean": "68.5", "std": "12.8", "min": "45.0", "max": "95.0"},
+    split_sizes={
+        "split_0": {"total_obs": "1000", "features": "25", "train_obs": "800", "test_obs": "200"},
+        "split_1": {"total_obs": "1000", "features": "25", "train_obs": "799", "test_obs": "201"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "68.5", "std": "12.8", "min": "45.0", "max": "95.0"},
+        "split_1": {"mean": "68.3", "std": "12.9", "min": "44.8", "max": "95.2"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Clinical Features Correlation Split 0",
+            description="Correlation matrix for clinical features split 0",
+            image=comparison_scatter_plotnine_svg
+        ),
+        "split_1": PlotData(
+            name="Clinical Features Correlation Split 1",
+            description="Correlation matrix for clinical features split 1",
+            image=matplotlib_simple_line_svg
+        )
+    },
     data_manager_id="dm_clinical",
-    corr_matrix=PlotData(
-        name="Clinical Features Correlation",
-        description="Correlation matrix for clinical features",
-        image=comparison_scatter_plotnine_svg
-    ),
     features=["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["age", "gender", "bmi", "blood_pressure", "cholesterol", "glucose", "smoking", "exercise"])]
+    }
 )
 
 sensor_dataset = Dataset(
     ID="Tree-Based Methods_sensor_data", 
     splits=["split_0", "split_1"],
-    size=("2000", "15"),
-    target_stats={"mean": "35.2", "std": "8.9", "min": "18.0", "max": "65.0"},
+    split_sizes={
+        "split_0": {"total_obs": "2000", "features": "15", "train_obs": "1600", "test_obs": "400"},
+        "split_1": {"total_obs": "2000", "features": "15", "train_obs": "1601", "test_obs": "399"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "35.2", "std": "8.9", "min": "18.0", "max": "65.0"},
+        "split_1": {"mean": "35.0", "std": "9.1", "min": "17.8", "max": "65.3"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Sensor Data Correlation Split 0",
+            description="Correlation matrix for sensor measurements split 0",
+            image=matplotlib_simple_line_svg
+        ),
+        "split_1": PlotData(
+            name="Sensor Data Correlation Split 1",
+            description="Correlation matrix for sensor measurements split 1",
+            image=plotnine_simple_scatter_svg
+        )
+    },
     data_manager_id="dm_sensor",
-    corr_matrix=PlotData(
-        name="Sensor Data Correlation",
-        description="Correlation matrix for sensor measurements",
-        image=matplotlib_simple_line_svg
-    ),
     features=["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["temp", "humidity", "pressure", "acceleration_x", "acceleration_y", "acceleration_z"])]
+    }
 )
 
 # Create experiments for Tree-Based Methods
@@ -664,46 +751,102 @@ experiment_group_2 = ExperimentGroup(
 imaging_dataset = Dataset(
     ID="Deep Learning Methods_imaging_data",
     splits=["split_0", "split_1", "split_2"],
-    size=("5000", "2048"),
-    target_stats={"mean": "0.73", "std": "0.12", "min": "0.35", "max": "0.98"},
+    split_sizes={
+        "split_0": {"total_obs": "5000", "features": "2048", "train_obs": "4000", "test_obs": "1000"},
+        "split_1": {"total_obs": "5000", "features": "2048", "train_obs": "3999", "test_obs": "1001"},
+        "split_2": {"total_obs": "5000", "features": "2048", "train_obs": "4001", "test_obs": "999"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "0.73", "std": "0.12", "min": "0.35", "max": "0.98"},
+        "split_1": {"mean": "0.72", "std": "0.13", "min": "0.34", "max": "0.97"},
+        "split_2": {"mean": "0.74", "std": "0.11", "min": "0.36", "max": "0.99"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Image Feature Correlation Split 0",
+            description="Principal component correlation for image features split 0",
+            image=comparison_scatter_matplotlib_svg
+        ),
+        "split_1": PlotData(
+            name="Image Feature Correlation Split 1",
+            description="Principal component correlation for image features split 1",
+            image=plotnine_simple_scatter_svg
+        ),
+        "split_2": PlotData(
+            name="Image Feature Correlation Split 2",
+            description="Principal component correlation for image features split 2",
+            image=matplotlib_simple_line_svg
+        )
+    },
     data_manager_id="dm_imaging",
-    corr_matrix=PlotData(
-        name="Image Feature Correlation",
-        description="Principal component correlation for image features",
-        image=comparison_scatter_matplotlib_svg
-    ),
     features=["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"])],
+        "split_2": [create_feature_distribution(feature, i, "split_2") for i, feature in enumerate(["PC1", "PC2", "PC3", "texture_contrast", "texture_energy", "edge_density"])]
+    }
 )
 
 genomic_dataset = Dataset(
     ID="Deep Learning Methods_genomic_data",
     splits=["split_0", "split_1"],
-    size=("3000", "10000"),
-    target_stats={"mean": "2.85", "std": "1.45", "min": "0.12", "max": "8.90"},
+    split_sizes={
+        "split_0": {"total_obs": "3000", "features": "10000", "train_obs": "2400", "test_obs": "600"},
+        "split_1": {"total_obs": "3000", "features": "10000", "train_obs": "2401", "test_obs": "599"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "2.85", "std": "1.45", "min": "0.12", "max": "8.90"},
+        "split_1": {"mean": "2.83", "std": "1.47", "min": "0.11", "max": "8.95"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Gene Expression Correlation Split 0",
+            description="Top genes correlation matrix split 0",
+            image=matplotlib_simple_line_svg
+        ),
+        "split_1": PlotData(
+            name="Gene Expression Correlation Split 1",
+            description="Top genes correlation matrix split 1",
+            image=comparison_scatter_plotnine_svg
+        )
+    },
     data_manager_id="dm_genomic",
-    corr_matrix=PlotData(
-        name="Gene Expression Correlation",
-        description="Top genes correlation matrix",
-        image=matplotlib_simple_line_svg
-    ),
     features=["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["GENE_001", "GENE_002", "GENE_003", "pathway_score_1", "pathway_score_2"])]
+    }
 )
 
 multimodal_dataset = Dataset(
     ID="Deep Learning Methods_multimodal_data",
     splits=["split_0", "split_1"],
-    size=("1500", "5000"),
-    target_stats={"mean": "0.68", "std": "0.18", "min": "0.15", "max": "0.95"},
+    split_sizes={
+        "split_0": {"total_obs": "1500", "features": "5000", "train_obs": "1200", "test_obs": "300"},
+        "split_1": {"total_obs": "1500", "features": "5000", "train_obs": "1199", "test_obs": "301"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "0.68", "std": "0.18", "min": "0.15", "max": "0.95"},
+        "split_1": {"mean": "0.67", "std": "0.19", "min": "0.14", "max": "0.96"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Multimodal Feature Correlation Split 0",
+            description="Cross-modal feature correlation analysis split 0",
+            image=plotnine_simple_scatter_svg
+        ),
+        "split_1": PlotData(
+            name="Multimodal Feature Correlation Split 1",
+            description="Cross-modal feature correlation analysis split 1",
+            image=comparison_scatter_matplotlib_svg
+        )
+    },
     data_manager_id="dm_multimodal",
-    corr_matrix=PlotData(
-        name="Multimodal Feature Correlation",
-        description="Cross-modal feature correlation analysis",
-        image=plotnine_simple_scatter_svg
-    ),
     features=["image_features", "text_embeddings", "numerical_features", "categorical_encoded"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["image_features", "text_embeddings", "numerical_features", "categorical_encoded"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["image_features", "text_embeddings", "numerical_features", "categorical_encoded"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["image_features", "text_embeddings", "numerical_features", "categorical_encoded"])]
+    }
 )
 
 # Create experiments for Deep Learning Methods
@@ -977,16 +1120,48 @@ experiment_group_3 = ExperimentGroup(
 timeseries_dataset = Dataset(
     ID="Time Series Methods_timeseries_data",
     splits=["split_0", "split_1", "split_2", "split_3"],
-    size=("10000", "50"),
-    target_stats={"mean": "125.8", "std": "45.2", "min": "45.0", "max": "280.0"},
+    split_sizes={
+        "split_0": {"total_obs": "10000", "features": "50", "train_obs": "8000", "test_obs": "2000"},
+        "split_1": {"total_obs": "10000", "features": "50", "train_obs": "7999", "test_obs": "2001"},
+        "split_2": {"total_obs": "10000", "features": "50", "train_obs": "8001", "test_obs": "1999"},
+        "split_3": {"total_obs": "10000", "features": "50", "train_obs": "8000", "test_obs": "2000"}
+    },
+    split_target_stats={
+        "split_0": {"mean": "125.8", "std": "45.2", "min": "45.0", "max": "280.0"},
+        "split_1": {"mean": "125.5", "std": "45.6", "min": "44.8", "max": "279.5"},
+        "split_2": {"mean": "126.1", "std": "44.8", "min": "45.2", "max": "280.5"},
+        "split_3": {"mean": "125.9", "std": "45.0", "min": "45.1", "max": "280.2"}
+    },
+    split_corr_matrices={
+        "split_0": PlotData(
+            name="Time Series Features Correlation Split 0",
+            description="Lag correlation and seasonality patterns split 0",
+            image=comparison_scatter_matplotlib_svg
+        ),
+        "split_1": PlotData(
+            name="Time Series Features Correlation Split 1",
+            description="Lag correlation and seasonality patterns split 1",
+            image=matplotlib_simple_line_svg
+        ),
+        "split_2": PlotData(
+            name="Time Series Features Correlation Split 2",
+            description="Lag correlation and seasonality patterns split 2",
+            image=plotnine_simple_scatter_svg
+        ),
+        "split_3": PlotData(
+            name="Time Series Features Correlation Split 3",
+            description="Lag correlation and seasonality patterns split 3",
+            image=comparison_scatter_plotnine_svg
+        )
+    },
     data_manager_id="dm_timeseries",
-    corr_matrix=PlotData(
-        name="Time Series Features Correlation",
-        description="Lag correlation and seasonality patterns",
-        image=comparison_scatter_matplotlib_svg
-    ),
     features=["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"],
-    feature_distributions=[create_feature_distribution(feature, i) for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])]
+    split_feature_distributions={
+        "split_0": [create_feature_distribution(feature, i, "split_0") for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])],
+        "split_1": [create_feature_distribution(feature, i, "split_1") for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])],
+        "split_2": [create_feature_distribution(feature, i, "split_2") for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])],
+        "split_3": [create_feature_distribution(feature, i, "split_3") for i, feature in enumerate(["lag_1", "lag_7", "lag_30", "trend", "seasonal", "moving_avg_7", "moving_avg_30"])]
+    }
 )
 
 # Create experiments for Time Series Methods
