@@ -244,8 +244,8 @@ linear_experiment = Experiment(
     ID="linear_regression",
     dataset="Linear Methods_housing_data",
     algorithm=["Linear Regression", "Second Algo"],
-    tuned_params={"fit_intercept": "True", "normalize": "False"},
-    hyperparam_grid={"fit_intercept": "[True, False]", "normalize": "[True, False]"},
+    tuned_params={},
+    hyperparam_grid={},
     tables=[
         TableData(
             name="Test Scores",

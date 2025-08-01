@@ -1,17 +1,96 @@
 <div class="experiment-container">
     <div class="experiment-summary">
+        <!-- Algorithm selector (hidden by default, shown when multiple algorithms) -->
+        <div class="algorithm-selector-container">
+            <div class="algorithm-nav">
+                <!-- Algorithm options will be populated dynamically -->
+            </div>
+        </div>
+        
         <hr>
         <h2 class="experiment-title"></h2>
-        <div class="tuned-hyperparams"></div>
-        <div class="hyperparam-grid"></div>
+        
+        <!-- Tuned Hyperparameters Section -->
+        <div class="tuned-hyperparams">
+            <div class="parameter-section">
+                <h3 class="parameter-title">Tuned Hyperparameters</h3>
+                <p class="tuned-hyperparams-message text-muted">No tuned hyperparameters available.</p>
+                <table class="split-table parameter-table tuned-hyperparams-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody class="tuned-hyperparams-body">
+                        <!-- Parameter rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Hyperparameter Grid Section -->
+        <div class="hyperparam-grid">
+            <div class="parameter-section">
+                <h3 class="parameter-title">Hyperparameter Grid</h3>
+                <p class="hyperparam-grid-message text-muted">No hyperparameter grid available.</p>
+                <table class="split-table parameter-table hyperparam-grid-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Values</th>
+                        </tr>
+                    </thead>
+                    <tbody class="hyperparam-grid-body">
+                        <!-- Parameter rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
         <hr>
-        <div class="data-splits"></div>
+        
+        <!-- Data Splits Section -->
+        <div class="data-splits">
+            <div class="splits-nav">
+                <!-- Split navigation will be populated dynamically -->
+            </div>
+        </div>
     </div>
 
     <div class="experiment-right">
         <div class="experiment-tables">
+            <div class="tables-layout">
+                <!-- Left side - table navigation -->
+                <div class="tables-nav">
+                    <h3 class="section-title">Tables</h3>
+                    <div class="tables-list">
+                        <!-- Table names will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Right side - table content -->
+                <div class="tables-content">
+                    <!-- Selected table will be rendered here -->
+                </div>
+            </div>
         </div>
+        
         <div class="experiment-plots">
+            <div class="plots-layout">
+                <!-- Left side - plot navigation -->
+                <div class="plots-nav">
+                    <h3 class="section-title">Plots</h3>
+                    <div class="plots-list">
+                        <!-- Plot names will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Right side - plot content -->
+                <div class="plots-content">
+                    <!-- Selected plot will be rendered here -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
