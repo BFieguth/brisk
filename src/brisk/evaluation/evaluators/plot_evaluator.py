@@ -27,8 +27,7 @@ class PlotEvaluator(BaseEvaluator):
         y: pd.Series,
         filename: str
     ) -> None:
-        prediction = self._generate_prediction(model, X)
-        plot_data = self._generate_plot_data(model, prediction, y)
+        plot_data = self._generate_plot_data(model, X, y)
         plot = self._create_plot(plot_data)
         metadata = self._generate_metadata(model, X.attrs["is_test"])
         self._save_plot(filename, metadata, plot)
@@ -57,7 +56,7 @@ class PlotEvaluator(BaseEvaluator):
     def _generate_plot_data(
         self,
         model: base.BaseEstimator,
-        prediction: pd.Series, 
+        X: pd.DataFrame,
         y: pd.Series,
         **kwargs
     ) -> Any:
