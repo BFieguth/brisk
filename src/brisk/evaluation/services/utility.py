@@ -29,7 +29,7 @@ class UtilityService(BaseService):
         else:
             self.data_has_groups = False
 
-    def _get_algo_wrapper(
+    def get_algo_wrapper(
         self,
         wrapper_name: str
     ) -> algorithm_wrapper.AlgorithmWrapper:
@@ -47,7 +47,7 @@ class UtilityService(BaseService):
         """
         return self.algorithm_config[wrapper_name]
 
-    def _get_group_index(self, is_test: bool) -> Dict[str, np.array]:
+    def get_group_index(self, is_test: bool) -> Dict[str, np.array]:
         """Get the group index for the training or test data.
 
         Parameters
@@ -61,13 +61,13 @@ class UtilityService(BaseService):
             return self.group_index_train
         return None
 
-    def _get_cv_splitter(
+    def get_cv_splitter(
         self,
         y: pd.Series,
         cv: int = 5,
         num_repeats: Optional[int] = None
     ) -> Tuple[model_select.BaseCrossValidator, np.array]:
-        group_index = self._get_group_index(y.attrs["is_test"])
+        group_index = self.get_group_index(y.attrs["is_test"])
 
         is_categorical = False
         if y.nunique() / len(y) < 0.05:
