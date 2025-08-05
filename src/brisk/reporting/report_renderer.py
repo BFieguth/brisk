@@ -6,7 +6,7 @@ from typing import Dict
 
 from jinja2 import Environment, FileSystemLoader
 
-from src.brisk.reporting.report_data import ReportData
+from brisk.reporting.report_data import ReportData
 
 class ReportRenderer():
     def __init__(self):
