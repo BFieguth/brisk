@@ -24,7 +24,7 @@ class ReportRenderer():
             Path(report_dir, "js/renderers"), Path(report_dir, "js/core/app.js") 
         )
         self.env = Environment(
-            loader=FileSystemLoader(searchpath="./src/brisk/reporting")
+            loader=FileSystemLoader(searchpath=report_dir)
         )
         self.template = self.env.get_template("report.html")
 
@@ -74,5 +74,6 @@ class ReportRenderer():
             **self.page_templates,
             **self.component_templates
         )
-        with open(output_path, "w", encoding="utf-8") as f:
+        output_file = Path(output_path, "report.html")
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(html_output)
