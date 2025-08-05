@@ -18,7 +18,7 @@ import joblib
 import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
-from brisk.reporting import report_manager as report
+# from brisk.reporting import report_manager as report
 from brisk.training import logging_util
 from brisk.configuration import algorithm_wrapper, configuration
 from brisk.version import __version__
@@ -256,11 +256,12 @@ class TrainingManager:
         results_dir : str
             Directory where results are stored.
         """
-        report_manager = report.ReportManager(
-            results_dir, self.experiment_paths, self.output_structure,
-            self.description_map
-            )
-        report_manager.create_report()
+        pass
+        # report_manager = report.ReportManager(
+        #     results_dir, self.experiment_paths, self.output_structure,
+        #     self.description_map
+        #     )
+        # report_manager.create_report()
 
     def _save_config_log(
         self,
@@ -455,7 +456,7 @@ class TrainingManager:
         )
 
         workflow_instance = workflow(
-            evaluator=eval_manager,
+            evaluation_manager=eval_manager,
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
