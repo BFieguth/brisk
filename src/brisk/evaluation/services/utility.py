@@ -1,7 +1,6 @@
 """Miscellaneous utility methods for evaluators."""
 
 from typing import Optional, Dict, Tuple
-import logging
 
 import numpy as np
 import pandas as pd
@@ -14,14 +13,25 @@ class UtilityService(BaseService):
     """Utility service with helper functions for the EvaluationManager."""
     def __init__(
         self,
-        output_dir: str,
-        logger: logging.Logger,
+        name: str,
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None
     ):
-        super().__init__(output_dir, logger)
+        super().__init__(name)
         self.algorithm_config = algorithm_config
+        self.group_index_train = None
+        self.group_index_test = None
+        self.data_has_groups = False
+        self.set_split_indices(
+            group_index_train, group_index_test
+        )
+
+    def set_split_indices(
+        self,
+        group_index_train: Dict[str, np.array] | None,
+        group_index_test: Dict[str, np.array] | None,
+    ) -> None:
         self.group_index_train = group_index_train
         self.group_index_test = group_index_test
         if group_index_train is not None and group_index_test is not None:
@@ -75,13 +85,13 @@ class UtilityService(BaseService):
 
         if group_index:
             if is_categorical and num_repeats:
-                self.logger.warning(
+                self._other_services["logging"].logger.warning(
                     "No splitter for grouped data and repeated splitting, "
                     "using StratifiedGroupKFold instead."
                 )
                 splitter = model_select.StratifiedGroupKFold(n_splits=cv)
             elif not is_categorical and num_repeats:
-                self.logger.warning(
+                self._other_services["logging"].logger.warning(
                     "No splitter for grouped data and repeated splitting, "
                     "using GroupKFold instead."
                 )

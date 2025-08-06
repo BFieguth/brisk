@@ -11,6 +11,13 @@ from brisk.evaluation.services.base import BaseService
 
 class IOService(BaseService):
     """IO service for saving and loading files."""
+    def __init__(self, name: str, output_dir: Path):
+        super().__init__(name)
+        self.output_dir = output_dir
+
+    def set_output_dir(self, output_dir: Path) -> None:
+        self.output_dir = output_dir
+
     def save_to_json(
         self,
         data: Dict[str, Any],
@@ -38,7 +45,7 @@ class IOService(BaseService):
                 json.dump(data, file, indent=4)
 
         except IOError as e:
-            self.logger.info(f"Failed to save JSON to {output_path}: {e}")
+            self._other_services["logging"].logger.info(f"Failed to save JSON to {output_path}: {e}")
 
     def save_plot(
         self,
@@ -79,7 +86,8 @@ class IOService(BaseService):
                 )
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
-                plt.close()
+                # plt.close('all')
 
         except IOError as e:
-            self.logger.info(f"Failed to save plot to {output_path}: {e}")
+            self._other_services["logging"].logger.info(f"Failed to save plot to {output_path}: {e}")
+            # plt.close('all')

@@ -38,6 +38,7 @@ from sklearn import datasets
 
 from brisk.training.workflow import Workflow
 from brisk.configuration import project
+from brisk.evaluation.services import initialize_services, shutdown_services
 
 @click.group()
 def cli():
@@ -182,10 +183,17 @@ class MyWorkflow(Workflow):
     default=False,
     help='Disable the creation of an HTML report.'
 )
+@click.option(
+    '--verbose',
+    is_flag=True,
+    default=False,
+    help='Change the verbosity of the logger.'
+)
 def run(
     workflow: str,
     results_name: Optional[str],
-    disable_report: bool
+    disable_report: bool,
+    verbose: bool
 ) -> None:
     """Run experiments using the specified workflow.
 
@@ -197,6 +205,8 @@ def run(
         Custom name for results directory
     disable_report : bool, default=False
         Whether to disable HTML report generation
+    verbose : bool, default=False
+        Whether to enable verbose logging
 
     Raises
     ------
@@ -211,6 +221,11 @@ def run(
 
         if project_root not in sys.path:
             sys.path.insert(0, str(project_root))
+
+        algorithm_config = load_module_object(
+            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
+        )
+        initialize_services(algorithm_config, verbose=verbose)
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -237,6 +252,8 @@ def run(
             results_name=results_name,
             create_report=create_report
         )
+
+        shutdown_services()
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

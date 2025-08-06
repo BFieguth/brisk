@@ -1,7 +1,5 @@
 """Metadata related utilities for evaluators"""
 
-from pathlib import Path
-import logging
 from typing import Dict, Any, Union, List
 import datetime
 
@@ -14,11 +12,10 @@ class MetadataService(BaseService):
     """Metadata generation."""
     def __init__(
         self,
-        output_dir: Path,
-        logger: logging.Logger,
+        name,
         algorithm_config: AlgorithmCollection
     ):
-        super().__init__(output_dir, logger)
+        super().__init__(name)
         self.algorithm_config = algorithm_config
 
     def get_metadata(
