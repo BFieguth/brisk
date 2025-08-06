@@ -5,12 +5,14 @@ from typing import List, Dict, Any, Union
 from sklearn import base
 
 from brisk.evaluation.services.bundle import ServiceBundle
+from brisk.evaluation.services import get_services
 
 class BaseEvaluator(ABC):
     """Base class to enforce a common interface for all evaluators."""
-    def __init__(self, method_name: str, services: ServiceBundle):
+    def __init__(self, method_name: str):
         self.method_name = method_name
-        self.services = services
+        self.services = get_services()
+        self.metric_config = None
 
     @property
     def metadata(self):
@@ -28,9 +30,8 @@ class BaseEvaluator(ABC):
     def logger(self):
         return self.services.logger
 
-    @property
-    def metric_config(self):
-        return self.services.metric_config
+    def set_metric_config(self, metric_config):
+        self.metric_config = metric_config
 
     def _generate_metadata(
         self,

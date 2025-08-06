@@ -240,7 +240,7 @@ class PlotRocCurve(PlotEvaluator):
 
     def _log_results(self, plot_name: str, auc: float, filename: str):
         output_path = self.io.output_dir / f"{filename}.svg"
-        self.logger.info(
+        self.services.logger.logger.info(
             "%s with AUC = %.2f saved to %s", plot_name, auc, output_path
         )
 
@@ -354,7 +354,7 @@ class PlotPrecisionRecallCurve(PlotEvaluator):
 
     def _log_results(self, plot_name: str, ap_score: float, filename: str):
         output_path = self.io.output_dir / f"{filename}.svg"
-        self.logger.info(
+        self.services.logger.logger.info(
             "%s with AP Score = %.2f saved to %s", 
             plot_name, ap_score, output_path
         )

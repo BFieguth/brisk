@@ -140,7 +140,7 @@ class HyperparameterTuning(MeasureEvaluator):
                 f"method must be one of (grid, random). {method} was entered."
                 )
 
-        self.logger.info(
+        self.services.logger.logger.info(
             "Starting hyperparameter optimization for %s", 
             model.__class__.__name__
             )
@@ -157,7 +157,7 @@ class HyperparameterTuning(MeasureEvaluator):
         return search_result
 
     def _log_results(self, model: base.BaseEstimator):
-        self.logger.info(
+        self.services.logger.logger.info(
             "Hyperparameter optimization for %s complete.",
             model.__class__.__name__
         )
@@ -207,7 +207,7 @@ class HyperparameterTuning(MeasureEvaluator):
                 display_name=display_name
             )
         else:
-            self.logger.info(
+            self.services.logger.logger.info(
                 "Higher dimensional visualization not implemented yet"
                 )
 

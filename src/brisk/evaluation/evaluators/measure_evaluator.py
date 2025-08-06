@@ -58,6 +58,6 @@ class MeasureEvaluator(BaseEvaluator):
     def _log_results(self, results: Dict[str, float], filename: str):
         """Default logging - can be overridden."""
         scores_log = "\n".join([f"{k}: {v:.4f}" for k, v in results.items()])
-        self.logger.info(
+        self.services.logger.logger.info(
             f"Results:\n{scores_log}\n Saved to '{filename}.json'."
         )

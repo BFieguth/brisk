@@ -11,8 +11,8 @@ from brisk.evaluation.evaluators.base import BaseEvaluator
 
 class PlotEvaluator(BaseEvaluator):
     """Template for evaluators that plot data."""
-    def __init__(self, method_name: str, services: ServiceBundle):
-        super().__init__(method_name, services)
+    def __init__(self, method_name: str):
+        super().__init__(method_name)
         self.theme = theme
         self.primary_color = "#0074D9" # Celtic Blue
         self.secondary_color = "#07004D" # Federal Blue
@@ -71,4 +71,6 @@ class PlotEvaluator(BaseEvaluator):
     def _log_results(self, plot_name: str, filename: str) -> None:
         """Default logging - can be overridden."""
         output_path = self.io.output_dir / f"{filename}.svg"
-        self.logger.info(f"{plot_name} plot saved to {output_path}!")
+        self.services.logger.logger.info(
+            f"{plot_name} plot saved to {output_path}!"
+        )

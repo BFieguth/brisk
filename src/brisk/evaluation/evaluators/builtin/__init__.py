@@ -6,30 +6,28 @@ from .classification_measures import ConfusionMatrix
 from .classification_plots import PlotConfusionHeatmap, PlotRocCurve, PlotPrecisionRecallCurve
 from .tools import HyperparameterTuning
 
-def register_builtin_evaluators(registry, services):
+def register_builtin_evaluators(registry):
     """Register all built-in evaluators.
     
     Parameters
     ----------
     registry : EvaluatorRegistry
         The registry to register evaluators with
-    services : ServiceBundle
-        Bundle of services for evaluator initialization
     """
-    registry.register(EvaluateModel("evaluate_model", services))
-    registry.register(EvaluateModelCV("evaluate_model_cv", services))
-    registry.register(CompareModels("compare_models", services))
-    registry.register(PlotLearningCurve("plot_learning_curve", services))
+    registry.register(EvaluateModel("evaluate_model"))
+    registry.register(EvaluateModelCV("evaluate_model_cv"))
+    registry.register(CompareModels("compare_models"))
+    registry.register(PlotLearningCurve("plot_learning_curve"))
     registry.register(
-        PlotFeatureImportance("plot_feature_importance", services)
+        PlotFeatureImportance("plot_feature_importance")
     )
-    registry.register(PlotModelComparison("plot_model_comparison", services))
-    registry.register(PlotPredVsObs("plot_pred_vs_obs", services))
-    registry.register(PlotResiduals("plot_residuals", services))
-    registry.register(ConfusionMatrix("confusion_matrix", services))
-    registry.register(PlotConfusionHeatmap("plot_confusion_heatmap", services))
-    registry.register(PlotRocCurve("plot_roc_curve", services))
+    registry.register(PlotModelComparison("plot_model_comparison"))
+    registry.register(PlotPredVsObs("plot_pred_vs_obs"))
+    registry.register(PlotResiduals("plot_residuals"))
+    registry.register(ConfusionMatrix("confusion_matrix"))
+    registry.register(PlotConfusionHeatmap("plot_confusion_heatmap"))
+    registry.register(PlotRocCurve("plot_roc_curve"))
     registry.register(PlotPrecisionRecallCurve(
-        "plot_precision_recall_curve", services)
+        "plot_precision_recall_curve")
     )
-    registry.register(HyperparameterTuning("hyperparameter_tuning", services))
+    registry.register(HyperparameterTuning("hyperparameter_tuning"))

@@ -419,7 +419,7 @@ class PlotModelComparison(PlotEvaluator):
                 score = scorer(y, predictions)
                 metric_values.append(round(score, 3))
             else:
-                self.logger.info(f"Scorer for {metric} not found.")
+                self.services.logger.logger.info(f"Scorer for {metric} not found.")
                 return None
 
         plot_data = pd.DataFrame({

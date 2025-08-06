@@ -66,25 +66,24 @@ class EvaluateModel(MeasureEvaluator):
                 score = scorer(y_true, predictions)
                 results[display_name] = score
             else:
-                self.logger.info(f"Scorer for {metric_name} not found.")
+                self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
         return results
 
     def _log_results(self, results: Dict[str, float], filename: str):
         """Overrides default logging."""
-        if self.logger:
-            scores_log = "\n".join([
-                f"{metric}: {score:.4f}"
-                if isinstance(score, (int, float))
-                else f"{metric}: {score}"
-                for metric, score in results.items()
-                if metric != "_metadata"
-                ]
-            )
-            output_path = self.services.io.output_dir / f"{filename}.json"
-            self.logger.info(
-                "Model evaluation results:\n%s\nSaved to '%s'.", 
-                scores_log, output_path
-            )
+        scores_log = "\n".join([
+            f"{metric}: {score:.4f}"
+            if isinstance(score, (int, float))
+            else f"{metric}: {score}"
+            for metric, score in results.items()
+            if metric != "_metadata"
+            ]
+        )
+        output_path = self.services.io.output_dir / f"{filename}.json"
+        self.services.logger.logger.info(
+            "Model evaluation results:\n%s\nSaved to '%s'.", 
+            scores_log, output_path
+        )
 
 
 class EvaluateModelCV(MeasureEvaluator):
@@ -158,7 +157,7 @@ class EvaluateModelCV(MeasureEvaluator):
                     "all_scores": scores.tolist()
                 }
             else:
-                self.logger.info(f"Scorer for {metric_name} not found.")
+                self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
         return results
 
     def _log_results(self, results: Dict[str, float], filename: str):
@@ -170,7 +169,7 @@ class EvaluateModelCV(MeasureEvaluator):
             if metric != "_metadata"
         ])
         output_path = self.services.io.output_dir / f"{filename}.json"
-        self.logger.info(
+        self.services.logger.logger.info(
             "Cross-validation results:\n%s\nSaved to '%s'.", 
             scores_log, output_path
         )
@@ -261,7 +260,7 @@ class CompareModels(MeasureEvaluator):
                     score = scorer(y, predictions)
                     results[display_name] = score
                 else:
-                    self.logger.info(f"Scorer for {metric_name} not found.")
+                    self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
 
             comparison_results[model_name] = results
 
@@ -297,7 +296,7 @@ class CompareModels(MeasureEvaluator):
             if model not in ["differences", "_metadata"]
         ])
         output_path = self.services.io.output_dir / f"{filename}.json"
-        self.logger.info(
+        self.services.logger.logger.info(
             "Model comparison results:\n%s\nSaved to '%s'.", 
             comparison_log, output_path
         )

@@ -71,4 +71,4 @@ class ConfusionMatrix(MeasureEvaluator):
                 for label, row in zip(data["labels"], data["confusion_matrix"])]
         table = header + "\n".join(rows)
         confusion_log = f"Confusion Matrix:\n{table}"
-        self.logger.info(confusion_log)
+        self.services.logger.logger.info(confusion_log)
