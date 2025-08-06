@@ -330,8 +330,8 @@ class ConfigurationManager:
                 group_data_manager.split(
                     data_path=str(dataset_path),
                     categorical_features=categorical_features,
-                    table_name=table_name,
                     group_name=group.name,
+                    table_name=table_name,
                     filename=dataset_path.stem
                 )
 

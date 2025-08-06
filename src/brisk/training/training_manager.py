@@ -13,17 +13,23 @@ import pathlib
 import time
 from typing import Dict, Tuple, Optional, Type
 import warnings
+import re
 
 import joblib
 import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
+
 # from brisk.reporting import report_manager as report
+from brisk.reporting import report_data_collector
+from brisk.reporting import report_renderer
+
 from brisk.training import logging_util
 from brisk.configuration import algorithm_wrapper, configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
+from brisk.evaluation.services import get_services
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
@@ -38,15 +44,11 @@ class TrainingManager:
         Configuration for evaluation metrics
     config_manager : ConfigurationManager
         Instance containing data needed to run experiments
-    verbose : bool, optional
-        Controls logging verbosity level, by default False
 
     Attributes
     ----------
     metric_config : MetricManager
         Configuration for evaluation metrics
-    verbose : bool
-        Controls logging verbosity level
     data_managers : dict
         Maps group names to their data managers
     experiments : collections.deque
@@ -66,10 +68,15 @@ class TrainingManager:
         self,
         metric_config: metric_manager.MetricManager,
         config_manager: configuration.ConfigurationManager,
-        verbose=False
     ):
+        self.services = get_services()
+
+
         self.metric_config = metric_config
-        self.verbose = verbose
+        self.eval_manager = evaluation_manager.EvaluationManager(
+            self.metric_config
+        )
+
         self.data_managers = config_manager.data_managers
         self.experiments = config_manager.experiment_queue
         self.logfile = config_manager.logfile
@@ -84,6 +91,18 @@ class TrainingManager:
         )
         self.experiment_results = None
         self._reset_experiment_results()
+        
+        # NOTE: New report logic, could move to a method
+        self.report_data_collector = report_data_collector.ReportDataCollector()
+        for group_name, data_manager in self.data_managers.items():
+            self.report_data_collector.add_data_manager(
+                group_name, data_manager
+            )
+            for key, data_split in data_manager._splits.items():
+                if key[0] == group_name:
+                    self.report_data_collector.add_dataset(
+                        group_name, data_split
+                    )
 
     def run_experiments(
         self,
@@ -115,7 +134,6 @@ class TrainingManager:
         results_dir = self._create_results_dir(results_name)
         self._save_config_log(results_dir, workflow, self.logfile)
         self._save_data_distributions(results_dir, self.output_structure)
-        self.logger = self._setup_logger(results_dir)
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
@@ -256,12 +274,8 @@ class TrainingManager:
         results_dir : str
             Directory where results are stored.
         """
-        pass
-        # report_manager = report.ReportManager(
-        #     results_dir, self.experiment_paths, self.output_structure,
-        #     self.description_map
-        #     )
-        # report_manager.create_report()
+        report_data = self.report_data_collector.get_report_data()
+        report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _save_config_log(
         self,
@@ -345,51 +359,6 @@ class TrainingManager:
                         )
                         joblib.dump(split_info.scaler, scaler_path)
 
-    def _setup_logger(self, results_dir: str) -> logging.Logger:
-        """Set up logging for the TrainingManager.
-
-        Configures file and console handlers with different logging levels.
-
-        Parameters
-        ----------
-        results_dir : str
-            Directory to store log files
-
-        Returns
-        -------
-        logging.Logger
-            Configured logger instance
-        """
-        logging.captureWarnings(True)
-
-        logger = logging.getLogger("TrainingManager")
-        logger.setLevel(logging.DEBUG)
-
-        file_handler = logging.FileHandler(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        file_handler.setLevel(logging.WARNING)
-
-        console_handler = logging_util.TqdmLoggingHandler()
-        if self.verbose:
-            console_handler.setLevel(logging.INFO)
-        else:
-            console_handler.setLevel(logging.ERROR)
-
-        formatter = logging.Formatter(
-            "\n%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_formatter = logging_util.FileFormatter(
-            "%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
-
-        return logger
-
     def _setup_workflow(
         self,
         current_experiment: experiment.Experiment,
@@ -443,20 +412,13 @@ class TrainingManager:
             current_experiment.split_index, experiment_name
         )
 
-        eval_manager = evaluation_manager.EvaluationManager(
-            algorithm_wrapper.AlgorithmCollection(
-                *current_experiment.algorithms.values()
-            ),
-            self.metric_config,
-            experiment_dir,
-            data_split.get_split_metadata(),
-            data_split.group_index_train,
-            data_split.group_index_test,
-            self.logger
+        self.eval_manager.set_experiment_values(
+            experiment_dir, data_split.get_split_metadata(), 
+            data_split.group_index_train, data_split.group_index_test
         )
 
         workflow_instance = workflow(
-            evaluation_manager=eval_manager,
+            evaluation_manager=self.eval_manager,
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
@@ -529,7 +491,7 @@ class TrainingManager:
             f"Experiment Name: {experiment_name}\n\n"
             f"Error: {error}"
         )
-        self.logger.exception(error_message)
+        self.services.logger.logger.exception(error_message)
 
         self.experiment_results[group_name][dataset_name].append({
             "experiment": experiment_name,
