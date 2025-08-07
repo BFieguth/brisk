@@ -29,7 +29,7 @@ from brisk.configuration import algorithm_wrapper, configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
-from brisk.evaluation.services import get_services
+from brisk.services import get_services
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
@@ -235,37 +235,6 @@ class TrainingManager:
             lambda: collections.defaultdict(list)
         )
 
-    # def _create_results_dir(self, results_name: str) -> str:
-    #     """Set up the results directory.
-
-    #     Parameters
-    #     ----------
-    #     results_name : str
-    #         Name of the results directory
-
-    #     Returns
-    #     -------
-    #     str
-    #         Path to created results directory
-
-    #     Raises
-    #     ------
-    #     FileExistsError
-    #         If results directory already exists
-    #     """
-    #     if not results_name:
-    #         timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-    #         results_dir = os.path.join("results", timestamp)
-    #     else:
-    #         results_dir = os.path.join("results", results_name)
-
-    #     if os.path.exists(results_dir):
-    #         raise FileExistsError(
-    #             f"Results directory '{results_dir}' already exists."
-    #         )
-    #     os.makedirs(results_dir, exist_ok=False)
-    #     return results_dir
-
     def _create_report(self, results_dir: str) -> None:
         """Create an HTML report from the experiment results.
 
@@ -311,53 +280,6 @@ class TrainingManager:
 
         with open(config_log_path, "w", encoding="utf-8") as f:
             f.write(full_content)
-
-    # def _save_data_distributions(
-    #     self,
-    #     result_dir: str,
-    #     output_structure: Dict[str, Dict[str, Tuple[str, str]]]
-    # ) -> None:
-    #     """Save data distribution information for each dataset.
-
-    #     Parameters
-    #     ----------
-    #     result_dir : str
-    #         Base directory for results
-    #     output_structure : dict
-    #         Mapping of groups to their datasets and split info
-    #     """
-    #     for group_name, datasets in output_structure.items():
-    #         group_dir = os.path.join(result_dir, group_name)
-    #         os.makedirs(group_dir, exist_ok=True)
-    #         group_data_manager = self.data_managers[group_name]
-    #         n_splits = group_data_manager.n_splits
-
-    #         for dataset_name, (data_path, table_name) in datasets.items():
-    #             for index in range(n_splits):
-    #                 split_info = group_data_manager.split(
-    #                     data_path=data_path,
-    #                     categorical_features=None,
-    #                     table_name=table_name,
-    #                     group_name=group_name,
-    #                     filename=pathlib.Path(data_path).stem
-    #                 ).get_split(index)
-    
-    #                 dataset_dir = os.path.join(group_dir, dataset_name)
-    #                 os.makedirs(dataset_dir, exist_ok=True)
-    #                 split_dir = os.path.join(dataset_dir, f"split_{index}")
-    #                 os.makedirs(split_dir, exist_ok=True)
-
-    #                 split_info.save_distribution(
-    #                     os.path.join(split_dir, "split_distribution")
-    #                     )
-
-    #                 if hasattr(split_info, "scaler") and split_info.scaler:
-    #                     split_name = split_info.scaler.__class__.__name__
-    #                     scaler_path = os.path.join(
-    #                         split_dir,
-    #                         f"{dataset_name}_{split_name}.joblib"
-    #                     )
-    #                     joblib.dump(split_info.scaler, scaler_path)
 
     def _setup_workflow(
         self,

@@ -7,7 +7,7 @@ import pandas as pd
 import sklearn.model_selection as model_select
 
 from brisk.configuration import algorithm_wrapper
-from brisk.evaluation.services.base import BaseService
+from brisk.services.base import BaseService
 
 class UtilityService(BaseService):
     """Utility service with helper functions for the EvaluationManager."""

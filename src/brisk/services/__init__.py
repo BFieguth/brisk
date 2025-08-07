@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from brisk.evaluation.services import bundle, logging, metadata, io, utility
+from brisk.services import bundle, logging, metadata, io, utility
 from brisk.configuration import algorithm_wrapper
 
 class GlobalServiceManager:

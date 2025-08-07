@@ -4,8 +4,8 @@ from typing import List, Dict, Any, Union
 
 from sklearn import base
 
-from brisk.evaluation.services.bundle import ServiceBundle
-from brisk.evaluation.services import get_services
+from brisk.services.bundle import ServiceBundle
+from brisk.services import get_services
 
 class BaseEvaluator(ABC):
     """Base class to enforce a common interface for all evaluators."""

@@ -20,7 +20,7 @@ from .evaluators.registry import EvaluatorRegistry
 from ..evaluation.metric_manager import MetricManager
 from .evaluators.builtin import register_builtin_evaluators
 
-from brisk.evaluation.services import get_services, update_experiment_config
+from brisk.services import get_services, update_experiment_config
 
 class EvaluationManager:
     """Coordinator for evaluation operations.

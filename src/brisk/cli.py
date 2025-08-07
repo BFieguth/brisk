@@ -39,7 +39,7 @@ from sklearn import datasets
 
 from brisk.training.workflow import Workflow
 from brisk.configuration import project
-from brisk.evaluation.services import initialize_services, shutdown_services
+from brisk.services import initialize_services, shutdown_services
 
 @click.group()
 def cli():

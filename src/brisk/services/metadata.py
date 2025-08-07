@@ -5,7 +5,7 @@ import datetime
 
 from sklearn import base
 
-from brisk.evaluation.services.base import BaseService
+from brisk.services.base import BaseService
 from brisk.configuration.algorithm_wrapper import AlgorithmCollection
 
 class MetadataService(BaseService):

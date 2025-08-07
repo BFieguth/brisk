@@ -5,7 +5,7 @@ import os
 import pathlib
 from typing import Optional
 
-from brisk.evaluation.services import base
+from brisk.services import base
 from brisk.training import logging_util
 
 class LoggingService(base.BaseService):

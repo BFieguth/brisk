@@ -23,7 +23,7 @@ import pandas as pd
 
 from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 from brisk.evaluation.evaluators.builtin import register_dataset_evaluators
-from brisk.evaluation.services import get_services
+from brisk.services import get_services
 
 class DataSplitInfo:
     """Store and analyze features and labels of training and testing splits.

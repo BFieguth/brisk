@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import plotnine as pn
 
-from brisk.evaluation.services.base import BaseService
+from brisk.services.base import BaseService
 
 class IOService(BaseService):
     """IO service for saving and loading files."""
