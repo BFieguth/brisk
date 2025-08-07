@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from brisk.services import bundle, logging, metadata, io, utility
+from brisk.services import bundle, logging, metadata, io, utility, reporting
 from brisk.configuration import algorithm_wrapper
 
 class GlobalServiceManager:
@@ -26,6 +26,7 @@ class GlobalServiceManager:
         self.services["utility"] = utility.UtilityService(
             "utility", algorithm_config, None, None
         )
+        self.services["reporting"] = reporting.ReportingService("reporting")
         self._register_services()
 
     def _register_services(self) -> None:
@@ -41,7 +42,8 @@ class GlobalServiceManager:
             logger=self.services['logging'],
             metadata=self.services['metadata'],
             io=self.services['io'],
-            utility=self.services['utility']
+            utility=self.services['utility'],
+            reporting=self.services['reporting']
         )
 
     def shutdown(self) -> None:
