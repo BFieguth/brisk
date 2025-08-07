@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, Any, Dict, Union
 import json
 import os
+import io
 
 import matplotlib.pyplot as plt
 import plotnine as pn
@@ -61,6 +62,10 @@ class IOService(BaseService):
             with open(output_path, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=4)
 
+            self._other_services["reporting"].store_table_data(
+                data, metadata["method"]
+            )
+
         except IOError as e:
             self._other_services["logging"].logger.info(f"Failed to save JSON to {output_path}: {e}")
 
@@ -93,6 +98,9 @@ class IOService(BaseService):
         """
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
+        
+        self._convert_to_svg(metadata, plot)
+
         try:
             if metadata:
                 for key, value in metadata.items():
@@ -111,3 +119,28 @@ class IOService(BaseService):
         except IOError as e:
             self._other_services["logging"].logger.info(f"Failed to save plot to {output_path}: {e}")
             # plt.close('all')
+
+    def _convert_to_svg(
+        self,
+        metadata: Dict[str, Any],
+        plot: Optional[pn.ggplot] = None,
+        height: int = 6,
+        width: int = 8
+    ):
+        try:
+            svg_buffer = io.BytesIO()
+            if plot: 
+                plot.save(svg_buffer, format="svg", height=height, width=width)
+            else:
+                plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
+        
+            svg_str = svg_buffer.getvalue().decode("utf-8")
+            svg_buffer.close()
+            self._other_services["reporting"].store_plot_svg(
+                svg_str, metadata["method"]
+            )
+
+        except IOError as e:
+            self._other_services["logging"].logger.info(
+                f"Failed to convert plot to SVG: {e}"
+            )

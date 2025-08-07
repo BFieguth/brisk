@@ -18,6 +18,7 @@ from sklearn import preprocessing
 
 from brisk.data import data_split_info
 from brisk.data import data_splits
+from brisk.services import get_services
 
 class DataManager:
     """A class that handles data splitting logic for creating train-test splits.
@@ -78,6 +79,7 @@ class DataManager:
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
     ):
+        self.services = get_services()
         self.test_size = test_size
         self.split_method = split_method
         self.group_column = group_column
@@ -294,10 +296,6 @@ class DataManager:
             )
 
         split_key = (group_name, filename, table_name)
-        # split_key = (
-        #     (group_name, filename, table_name) if table_name
-        #     else (group_name, filename)
-        # )# if group_name else data_path
 
         if split_key in self._splits:
             return self._splits[split_key]
@@ -342,7 +340,6 @@ class DataManager:
                 X_test=X_test,
                 y_train=y_train,
                 y_test=y_test,
-                # filename=data_path,
                 split_key=split_key,
                 split_index=split_index,
                 scaler=scaler,
@@ -354,6 +351,7 @@ class DataManager:
             split_container.add(split)
 
         self._splits[split_key] = split_container
+        self.services.reporting.add_dataset(group_name, split_container)
         return split_container
 
     def to_markdown(self) -> str:

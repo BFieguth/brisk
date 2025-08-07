@@ -143,45 +143,51 @@ class DataSplitInfo:
         self.evaluate_data_split()
 
     def evaluate_data_split(self):
-        self.services.logger.logger.info(
-            "Calculating stats for continuous features in %s split.", 
-            self.dataset_name
+        self.services.reporting.set_context(
+            self.group_name, self.dataset_name, self.split_index, self.features
         )
-        evaluator = self.registry.get("continuous_statistics")
-        evaluator.evaluate(
-            self.X_train, self.X_test, self.continuous_features,
-            "continuous_stats", self.group_name, self.dataset_name
-        )
+        try:
+            self.services.logger.logger.info(
+                "Calculating stats for continuous features in %s split.", 
+                self.dataset_name
+            )
+            evaluator = self.registry.get("brisk_continuous_statistics")
+            evaluator.evaluate(
+                self.X_train, self.X_test, self.continuous_features,
+                "continuous_stats", self.group_name, self.dataset_name
+            )
 
-        self.services.logger.logger.info(
-            "Calculating stats for categorical features in %s split.", 
-            self.dataset_name
+            self.services.logger.logger.info(
+                "Calculating stats for categorical features in %s split.", 
+                self.dataset_name
+                )
+            evaluator = self.registry.get("brisk_categorical_statistics")
+            evaluator.evaluate(
+                self.X_train, self.X_test, self.categorical_features,
+                "categorical_stats", self.group_name, self.dataset_name
             )
-        evaluator = self.registry.get("categorical_statistics")
-        evaluator.evaluate(
-            self.X_train, self.X_test, self.categorical_features,
-            "categorical_stats", self.group_name, self.dataset_name
-        )
-        for feature in self.continuous_features:
-            evaluator = self.registry.get("histogram_boxplot")
+            for feature in self.continuous_features:
+                evaluator = self.registry.get("brisk_histogram_boxplot")
+                evaluator.plot(
+                    self.X_train[feature], self.X_test[feature],
+                    feature, f"hist_box_plot/{feature}_hist_box_plot", 
+                    self.dataset_name, self.group_name
+                )
+            for feature in self.categorical_features:
+                evaluator = self.registry.get("brisk_pie_plot")
+                evaluator.plot(
+                    self.X_train[feature], self.X_test[feature],
+                    feature, f"pie_plot/{feature}_pie_plot", 
+                    self.dataset_name, self.group_name
+                )
+            evaluator = self.registry.get("brisk_correlation_matrix")
             evaluator.plot(
-                self.X_train[feature], self.X_test[feature],
-                feature, f"hist_box_plot/{feature}_hist_box_plot", 
+                self.X_train, self.continuous_features,
+                f"correlation_matrix", 
                 self.dataset_name, self.group_name
             )
-        for feature in self.categorical_features:
-            evaluator = self.registry.get("pie_plot")
-            evaluator.plot(
-                self.X_train[feature], self.X_test[feature],
-                feature, f"pie_plot/{feature}_pie_plot", 
-                self.dataset_name, self.group_name
-            )
-        evaluator = self.registry.get("correlation_matrix")
-        evaluator.plot(
-            self.X_train, self.continuous_features,
-            f"correlation_matrix", 
-            self.dataset_name, self.group_name
-        )
+        finally:
+            self.services.reporting.clear_context()
 
     def _detect_categorical_features(self) -> List[str]:
         """Detect possible categorical features in the dataset.

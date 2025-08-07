@@ -34,8 +34,13 @@ class FeatureDistribution(BaseModel):
 class DataManager(BaseModel):
     """Represents a DataManager instance."""
     ID: str
+    test_size: str
     n_splits: str
     split_method: str
+    group_column: str
+    stratified: str
+    random_state: str
+    scale_method: str
 
 
 class Navbar(BaseModel):

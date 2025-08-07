@@ -164,6 +164,10 @@ class TrainingManager:
         dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
 
+        self.services.reporting.set_context(
+            group_name, dataset_name, current_experiment.split_index, None
+        )
+
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
         tqdm.tqdm.write(
             f"\nStarting experiment '{experiment_name}' on dataset "
@@ -206,6 +210,7 @@ class TrainingManager:
                 start_time,
                 e
             )
+            self.services.reporting.clear_context()
 
         if success:
             self._handle_success(
@@ -214,6 +219,7 @@ class TrainingManager:
                 dataset_name,
                 experiment_name
             )
+            self.services.reporting.clear_context()
 
     def _reset_experiment_results(self) -> None:
         """Set self.experiment_results to a defaultdict of lists."""
