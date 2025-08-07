@@ -5,9 +5,11 @@ from .regression_plots import PlotPredVsObs, PlotResiduals
 from .classification_measures import ConfusionMatrix
 from .classification_plots import PlotConfusionHeatmap, PlotRocCurve, PlotPrecisionRecallCurve
 from .tools import HyperparameterTuning
+from .dataset_measures import ContinuousStatistics, CategoricalStatistics
+from .dataset_plots import HistogramBoxplot, PiePlot, CorrelationMatrix
 
 def register_builtin_evaluators(registry):
-    """Register all built-in evaluators.
+    """Register built-in evaluators for model evaluation.
     
     Parameters
     ----------
@@ -31,3 +33,18 @@ def register_builtin_evaluators(registry):
         "plot_precision_recall_curve")
     )
     registry.register(HyperparameterTuning("hyperparameter_tuning"))
+
+
+def register_dataset_evaluators(registry):
+    """Register evaluators for dataset evaluation.
+    
+    Parameters
+    ----------
+    registry : EvaluatorRegistry
+        The registry to register evaluators with
+    """
+    registry.register(ContinuousStatistics("continuous_statistics"))
+    registry.register(CategoricalStatistics("categorical_statistics"))
+    registry.register(HistogramBoxplot("histogram_boxplot"))
+    registry.register(PiePlot("pie_plot"))
+    registry.register(CorrelationMatrix("correlation_matrix"))
