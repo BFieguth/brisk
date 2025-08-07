@@ -12,6 +12,7 @@ class GlobalServiceManager:
     def __init__(
         self,
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        results_dir: Path,
         verbose: bool = False
     ):
         self.services = {}
@@ -21,7 +22,7 @@ class GlobalServiceManager:
         self.services["metadata"] = metadata.MetadataService(
             "metadata", algorithm_config
         )
-        self.services["io"] = io.IOService("io", None)
+        self.services["io"] = io.IOService("io", results_dir, None)
         self.services["utility"] = utility.UtilityService(
             "utility", algorithm_config, None, None
         )
@@ -63,11 +64,13 @@ _global_service_manager = None
 
 def initialize_services(
     algorithm_config: algorithm_wrapper.AlgorithmCollection,
+    results_dir: Path,
     verbose: bool = False
 ) -> None:
     global _global_service_manager
     _global_service_manager = GlobalServiceManager(
         algorithm_config=algorithm_config,
+        results_dir=results_dir,
         verbose=verbose
     )
 

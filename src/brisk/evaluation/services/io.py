@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Optional, Any, Dict, Union
 import json
+import os
 
 import matplotlib.pyplot as plt
 import plotnine as pn
@@ -11,8 +12,22 @@ from brisk.evaluation.services.base import BaseService
 
 class IOService(BaseService):
     """IO service for saving and loading files."""
-    def __init__(self, name: str, output_dir: Path):
+    def __init__(self, name: str, results_dir: Path, output_dir: Path):
+        """
+        Parameters
+        ----------
+        name : str
+            The name of the service
+
+        results_dir : Path
+            The root directory for all results, does not change at runtime.
+            
+        output_dir : Path
+            The current output directory, will be changed at runtime.
+        """
+
         super().__init__(name)
+        self.results_dir = results_dir
         self.output_dir = output_dir
 
     def set_output_dir(self, output_dir: Path) -> None:
@@ -37,6 +52,8 @@ class IOService(BaseService):
         metadata : dict
             Metadata to include, by default None
         """
+        if not os.path.exists(output_path.parent):
+            os.makedirs(output_path.parent, exist_ok=True)
         try:
             if metadata:
                 data["_metadata"] = metadata
@@ -49,7 +66,7 @@ class IOService(BaseService):
 
     def save_plot(
         self,
-        output_path: str,
+        output_path: Path,
         metadata: Optional[Dict[str, Any]] = None,
         plot: Optional[pn.ggplot] = None,
         height: int = 6,
@@ -59,7 +76,7 @@ class IOService(BaseService):
 
         Parameters
         ----------
-        output_path (str): 
+        output_path (Path): 
             The path to the output file.
 
         metadata (dict, optional): 
@@ -74,6 +91,8 @@ class IOService(BaseService):
         width (int, optional): 
             The plot width in inches, by default 8
         """
+        if not os.path.exists(output_path.parent):
+            os.makedirs(output_path.parent, exist_ok=True)
         try:
             if metadata:
                 for key, value in metadata.items():
@@ -86,6 +105,7 @@ class IOService(BaseService):
                 )
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
+                plt.close()
                 # plt.close('all')
 
         except IOError as e:

@@ -31,6 +31,7 @@ import inspect
 import os
 import sys
 from typing import Optional, Union
+from datetime import datetime
 
 import click
 import pandas as pd
@@ -222,10 +223,21 @@ def run(
         if project_root not in sys.path:
             sys.path.insert(0, str(project_root))
 
+        if not results_name:
+            results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            results_dir = os.path.join("results", results_name)
+        else:
+            results_dir = os.path.join("results", results_name)
+        if os.path.exists(results_dir):
+            raise FileExistsError(
+                f"Results directory '{results_dir}' already exists."
+            )
+        os.makedirs(results_dir, exist_ok=False)
+
         algorithm_config = load_module_object(
             project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
         )
-        initialize_services(algorithm_config, verbose=verbose)
+        initialize_services(algorithm_config, results_dir, verbose=verbose)
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -249,7 +261,7 @@ def run(
 
         manager.run_experiments(
             workflow=workflow_class,
-            results_name=results_name,
+            # results_name=results_name,
             create_report=create_report
         )
 
