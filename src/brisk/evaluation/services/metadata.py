@@ -18,13 +18,13 @@ class MetadataService(BaseService):
         super().__init__(name)
         self.algorithm_config = algorithm_config
 
-    def get_metadata(
+    def get_model(
         self,
         models: Union[base.BaseEstimator, List[base.BaseEstimator]],
         method_name: str,
         is_test: bool = False
     ) -> Dict[str, Any]:
-        """Generate metadata for output files.
+        """Generate metadata for a model evaluation.
 
         Parameters
         ----------
@@ -44,6 +44,7 @@ class MetadataService(BaseService):
             and algorithm display name
         """
         metadata = {
+            "type": "model",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "method": method_name,
             "models": {},
@@ -57,3 +58,18 @@ class MetadataService(BaseService):
             metadata["models"][wrapper.name] = wrapper.display_name
 
         return metadata
+
+    def get_dataset(
+        self,
+        method_name: str,
+        dataset_name: str,
+        group_name: str
+    ) -> Dict[str, Any]:
+        """Generate metadata for a dataset evaluation."""
+        return {
+            "type": "dataset",
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "method": method_name,
+            "dataset": dataset_name,
+            "group": group_name
+        }

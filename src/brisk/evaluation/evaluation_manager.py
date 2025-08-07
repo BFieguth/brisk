@@ -79,7 +79,7 @@ class EvaluationManager:
         """
         os.makedirs(self.output_dir, exist_ok=True)
         output_path = os.path.join(self.output_dir, f"{filename}.pkl")
-        metadata = self.services.metadata.get_metadata(
+        metadata = self.services.metadata.get_model(
             model, method_name="save_model"
         )
         model_package = {

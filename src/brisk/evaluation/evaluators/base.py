@@ -39,6 +39,6 @@ class BaseEvaluator(ABC):
         is_test: bool
     ) -> Dict[str, Any]:
         """Enforced: generate metadata for output."""
-        return self.metadata.get_metadata(
+        return self.metadata.get_model(
             models, self.method_name, is_test
         )
