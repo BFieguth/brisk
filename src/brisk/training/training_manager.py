@@ -20,8 +20,6 @@ import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
 
-# from brisk.reporting import report_manager as report
-from brisk.reporting import report_data_collector
 from brisk.reporting import report_renderer
 
 from brisk.training import logging_util
@@ -92,18 +90,6 @@ class TrainingManager:
         self.experiment_results = None
         self._reset_experiment_results()
         
-        # NOTE: New report logic, could move to a method
-        self.report_data_collector = report_data_collector.ReportDataCollector()
-        for group_name, data_manager in self.data_managers.items():
-            self.report_data_collector.add_data_manager(
-                group_name, data_manager
-            )
-            for key, data_split in data_manager._splits.items():
-                if key[0] == group_name:
-                    self.report_data_collector.add_dataset(
-                        group_name, data_split
-                    )
-
     def run_experiments(
         self,
         workflow: workflow_module.Workflow,
@@ -243,7 +229,7 @@ class TrainingManager:
         results_dir : str
             Directory where results are stored.
         """
-        report_data = self.report_data_collector.get_report_data()
+        report_data = self.services.reporting.get_report_data()
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _save_config_log(
