@@ -74,6 +74,8 @@ class HyperparameterTuning(MeasureEvaluator):
         tuned_model.fit(X_train, y_train)
         self._log_results(model)
 
+        self.reporting.cache_tuned_params(search_result.best_params_)
+
         if plot_results:
             plot = self._plot_hyperparameter_performance(
                 param_grid, search_result, algo_wrapper.display_name

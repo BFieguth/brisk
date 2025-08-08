@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Tuple, List, Optional, Any
 from pathlib import Path
+from collections import defaultdict
 
 from brisk.services.base import BaseService
 from brisk.reporting import report_data
@@ -9,31 +10,19 @@ from brisk.version import __version__
 
 if TYPE_CHECKING:
     from brisk.types import DataManager, DataSplits
+    from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 
 # Report Generation
 # =================
-# Data Containers (Used to store data from result files)
-# - TableData
-# - PlotData
-
-
-# Pre-experiment Running (In DataSplitInfo)
-# 2.1 FeatureDistribution <- DataSplitInfo.NEW METHOD
-#   - iterate data_manger._splits to collect, build IDs in ReportDataCollector
-
-
-# Pre-experiment Running (In TrainingManager)
-# 2. Dataset
-    # - get FeatureDistribution instances as this is being created
-
 # During experiment runs (In TrainingManager)
+# NOTE: All experiments instances are added before groups are made. Track IDs by group
 # 3. Experiment <- Process after each experiment is run using EvaluationManager service
 
 
 # Post-experiment Runnning (In TrainingManager)
+# NOTE: Get experiment IDs from internal dict using group name
 # 4. ExperimentGroup <- Collect values as each experiment is run, 
 #                       when all expected data is available create the pydantic model
-# 6. ReportData <- collects all data from above
 
 class ReportingContext:
     """Context for the reporting service."""
@@ -42,13 +31,14 @@ class ReportingContext:
         group_name: str,
         dataset_name: str,
         split_index: int,
-        feature_names: Optional[List[str]] = None
+        feature_names: Optional[List[str]] = None,
+        algorithm_names: Optional[List[str]] = None
     ):
         self.group_name = group_name
         self.dataset_name = dataset_name
         self.split_index = split_index
         self.feature_names = feature_names
-
+        self.algorithm_names = algorithm_names
 
 class ReportingService(BaseService):
     """Reporting service handles creation of ReportData object."""
@@ -65,19 +55,26 @@ class ReportingService(BaseService):
         self.experiment_groups = []
         self.data_managers = {}
 
-        self._current_context: Optional[ReportingContext] = None
-        self._pending_images: Dict[Tuple[str, str, str], str] = {}
-        self._pending_tables: Dict[Tuple[str, str, str, str], Dict[str, Any]] = {}
+        self.registry: Optional["EvaluatorRegistry"] = None
 
+        self.group_to_experiment = defaultdict(list) # NOTE Map group name to experiment ID
+
+        self._current_context: Optional[ReportingContext] = None
+        self._image_cache: Dict[Tuple[str, str, str], str] = {}
+        self._table_cache: Dict[Tuple[str, str, str, str], Dict[str, Any]] = {}
+        self._cached_tuned_params: Dict[str, Any] = {}
+
+# Context Control
     def set_context(
         self,
         group_name: str,
         dataset_name: str,
         split_index: int,
-        feature_names: Optional[List[str]] = None
+        feature_names: Optional[List[str]] = None,
+        algorithm_names: Optional[str] = None
     ) -> None:
         self._current_context = ReportingContext(
-            group_name, dataset_name, split_index, feature_names
+            group_name, dataset_name, split_index, feature_names, algorithm_names
         )
 
     def clear_context(self) -> None:
@@ -89,10 +86,14 @@ class ReportingService(BaseService):
                 self._current_context.group_name, 
                 self._current_context.dataset_name, 
                 self._current_context.split_index, 
-                self._current_context.feature_names
+                self._current_context.feature_names,
+                self._current_context.algorithm_names
             )
         raise ValueError("No context set")
 
+
+
+# Methods to create Pydantic models
     def add_data_manager(
         self,
         group_name: str,
@@ -110,6 +111,7 @@ class ReportingService(BaseService):
             scale_method=str(data_manager.scale_method)
         )
         self.data_managers[group_name] = manager
+        self._clear_cache()
 
     def add_dataset(
         self,
@@ -140,7 +142,7 @@ class ReportingService(BaseService):
         split_corr_matrices = {}
         for split in split_ids:
             image_key = (group_name, dataset_name, split, "brisk_correlation_matrix")
-            image = self._pending_images.get(image_key)
+            image = self._image_cache.get(image_key)
             split_corr_matrices[split] = self._create_plot_data(
                 f"{group_name}_{dataset_name}_{split}_correlation_matrix",
                 image
@@ -169,6 +171,38 @@ class ReportingService(BaseService):
             features=data_splits._data_splits[0].features,
             split_feature_distributions=split_feature_distributions
         )
+        self._clear_cache()
+
+    def add_experiment(
+        self,
+        algorithms: Dict
+    ) -> None:
+        group_name, dataset_name, _, _, algorithm_names = self.get_context()
+
+        experiment_id = f"{"_".join(algorithm_names)}_{group_name}_{dataset_name}"
+        hyperparam_grid = {
+            key: str(value)
+            for key, value in algorithms["model"].hyperparam_grid.items()
+        }
+        tuned_params = {
+            key: str(value)
+            for key, value in self._cached_tuned_params.items()
+        }
+        tables = self._process_table_cache()
+        plots = self._process_image_cache()
+
+        self.group_to_experiment[group_name].append(experiment_id)
+        self.experiments[experiment_id] = report_data.Experiment(
+            ID=experiment_id,
+            dataset=f"{group_name}_{dataset_name}",
+            algorithm=algorithm_names,
+            tuned_params=tuned_params,
+            hyperparam_grid=hyperparam_grid,
+            tables=tables,
+            plots=plots
+        )
+        self._clear_cache()
+
 
     def _create_feature_distribution(
         self, 
@@ -183,8 +217,8 @@ class ReportingService(BaseService):
         pie_method = f"brisk_pie_plot_{feature_name}"
         
         plot_image = (
-            self._pending_images.get((group_name, dataset_name, split_id, hist_method)) or
-            self._pending_images.get((group_name, dataset_name, split_id, pie_method))
+            self._image_cache.get((group_name, dataset_name, split_id, hist_method)) or
+            self._image_cache.get((group_name, dataset_name, split_id, pie_method))
         )
         
         if not plot_image:
@@ -198,8 +232,8 @@ class ReportingService(BaseService):
         cat_stats_method = f"brisk_categorical_statistics_{feature_name}"
         
         table_data = (
-            self._pending_tables.get((group_name, dataset_name, split_id, stats_method)) or
-            self._pending_tables.get((group_name, dataset_name, split_id, cat_stats_method))
+            self._table_cache.get((group_name, dataset_name, split_id, stats_method)) or
+            self._table_cache.get((group_name, dataset_name, split_id, cat_stats_method))
         )
         
         # Create table from stored data or placeholder
@@ -220,6 +254,17 @@ class ReportingService(BaseService):
             plot=plot
         )
 
+    def get_report_data(self) -> report_data.ReportData:
+        return report_data.ReportData(
+            navbar=self.navbar,
+            datasets=self.datasets,
+            experiments=self.experiments,
+            experiment_groups=self.experiment_groups,
+            data_managers=self.data_managers
+        )
+
+
+# Utilities
     def _create_table_from_stats(self, feature_name: str, stats_data: Dict[str, Any]) -> report_data.TableData:
         """Convert stored statistics into TableData format."""
         # Extract statistics from the stored data
@@ -250,30 +295,21 @@ class ReportingService(BaseService):
             ]
         )
 
-    def get_report_data(self) -> report_data.ReportData:
-        return report_data.ReportData(
-            navbar=self.navbar,
-            datasets=self.datasets,
-            experiments=self.experiments,
-            experiment_groups=self.experiment_groups,
-            data_managers=self.data_managers
-        )
-
     def store_plot_svg(
         self,
         image: str,
         creating_method: str
     ) -> None:
-        group_name, dataset_name, split, _ = self.get_context()
+        group_name, dataset_name, split, _, algorithm_names = self.get_context()
         image_id = (group_name, dataset_name, f"split_{split}", creating_method)
-        self._pending_images[image_id] = image
+        self._image_cache[image_id] = image
 
     def store_table_data(self, data: Dict[str, Any], creating_method: str) -> None:
         """Store table data using current context."""
-        group_name, dataset_name, split_index, _ = self.get_context()
+        group_name, dataset_name, split_index, _, algorithm_names = self.get_context()
         split_id = f"split_{split_index}"
         table_id = (group_name, dataset_name, split_id, creating_method)
-        self._pending_tables[table_id] = data
+        self._table_cache[table_id] = data
 
     def _create_plot_data(
         self,
@@ -286,3 +322,59 @@ class ReportingService(BaseService):
             description="This is a placeholder description",
             image=image
         )
+
+    def _process_table_cache(self) -> List[report_data.TableData]:
+        if self.registry is None:
+            raise RuntimeError("Evaluator registry not set. Call set_evaluator_registry() first.")
+
+        tables = []
+        _, _, split_index, _, _ = self.get_context()
+
+        for context, data in self._table_cache.items():
+            evaluator_name = context[3]
+            evaluator = self.registry.get(evaluator_name)
+
+            description = evaluator.description + f"(Split {split_index}, DATA TYPE)"
+            columns, rows = evaluator.report(data)
+
+            table = report_data.TableData(
+                name=evaluator.method_name,
+                description=description,
+                columns=columns,
+                rows=rows
+            )
+            tables.append(table)
+        return tables
+
+    def _process_image_cache(self):
+        if self.registry is None:
+            raise RuntimeError("Evaluator registry not set. Call set_evaluator_registry() first.")
+
+        plots = []
+        _, _, split_index, _, _ = self.get_context()
+
+        for context, image in self._image_cache.items():
+            evaluator_name = context[3]
+            evaluator = self.registry.get(evaluator_name)
+
+            description = evaluator.description + f"(Split {split_index}, DATA TYPE)"
+
+            plot = report_data.PlotData(
+                name=evaluator.method_name,
+                description=description,
+                image=image
+            )
+            plots.append(plot)
+        return plots
+
+    def _clear_cache(self):
+        self._image_cache = {}
+        self._table_cache = {}
+        self._cached_tuned_params = {}
+
+    def cache_tuned_params(self, tuned_params: Dict[str, Any]) -> None:
+        self._cached_tuned_params = tuned_params
+
+    def set_evaluator_registry(self, registry: "EvaluatorRegistry") -> None:
+        """Set the evaluator registry for this reporting service."""
+        self.registry = registry

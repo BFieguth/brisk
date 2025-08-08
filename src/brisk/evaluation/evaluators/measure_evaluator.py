@@ -2,7 +2,7 @@
 Base class for all evaluators that calculate measures of model performance.
 """
 from abc import abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 from sklearn import base
 import pandas as pd
@@ -54,6 +54,20 @@ class MeasureEvaluator(BaseEvaluator):
     ) -> Dict[str, float]:
         """Must implement this method to calculate something."""
         pass
+
+    # @abstractmethod
+    def report(self, results: Dict[str, Any]) -> Tuple[List[str], List[List[Any]]]:
+        """Default reporting - can be overridden.
+        
+        By default reporting assumes that the keys of dict are column headers
+        and values are lists corresponding to each row. If the results are in a
+        different format, this method should be overridden to return the list of
+        column headers and a nested list of rows.
+        """
+        columns = [key for key in results.keys() if key != "_metadata"]
+        rows = [row for key in columns for row in results[key]]
+        return columns, rows
+        # pass
 
     def _log_results(self, results: Dict[str, float], filename: str):
         """Default logging - can be overridden."""

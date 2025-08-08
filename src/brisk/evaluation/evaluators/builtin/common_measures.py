@@ -1,5 +1,5 @@
 """Evaluators that calculate measures of model performance."""
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 import itertools
 
 import pandas as pd
@@ -118,6 +118,18 @@ class EvaluateModelCV(MeasureEvaluator):
         metadata = self._generate_metadata(model, X.attrs["is_test"])
         self._save_json(results, filename, metadata)
         self._log_results(results, filename)
+
+    def report(self, results: Dict[str, Any]) -> Tuple[List[str], List[List[Any]]]:
+        columns = ["Metric","Mean Score", "All Scores"]
+        metrics = [key for key in results.keys() if key != "_metadata"]
+        rows = []
+        for metric in metrics:
+            rows.append([
+                metric,
+                f"{results[metric]['mean_score']} ({results[metric]['std_dev']})",
+                str(results[metric]["all_scores"])
+            ])
+        return columns, rows
 
     def _calculate_measures(
         self,

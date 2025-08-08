@@ -60,6 +60,11 @@ class EvaluationManager:
         """Initalize all built-in evaluators with shared services."""
         register_builtin_evaluators(self.registry)
 
+        for evaluator in self.registry._evaluators.values():
+            evaluator.set_services(self.services)
+
+        self.services.reporting.set_evaluator_registry(self.registry)
+
     def get_evaluator(self, name: str):
         """Return an evaluator instance."""
         evaluator = self.registry.get(name)

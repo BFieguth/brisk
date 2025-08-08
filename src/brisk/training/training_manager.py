@@ -165,7 +165,8 @@ class TrainingManager:
         experiment_name = current_experiment.name
 
         self.services.reporting.set_context(
-            group_name, dataset_name, current_experiment.split_index, None
+            group_name, dataset_name, current_experiment.split_index, None,
+            current_experiment.algorithm_names
         )
 
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
@@ -219,6 +220,7 @@ class TrainingManager:
                 dataset_name,
                 experiment_name
             )
+            self.services.reporting.add_experiment(current_experiment.algorithms)
             self.services.reporting.clear_context()
 
     def _reset_experiment_results(self) -> None:
@@ -236,6 +238,9 @@ class TrainingManager:
             Directory where results are stored.
         """
         report_data = self.services.reporting.get_report_data()
+        import json
+        with open("./dev_report_data.json", "w") as f:
+            json.dump(report_data.model_dump(), f, indent=4)
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _save_config_log(

@@ -11,9 +11,10 @@ class DatasetPlotEvaluator(BaseEvaluator):
     """Template for evaluators that plot datasets."""
     def __init__(
         self,
-        method_name: str
+        method_name: str,
+        description: str
     ):
-        super().__init__(method_name)
+        super().__init__(method_name, description)
         self.theme = theme
         self.primary_color = "#0074D9" # Celtic Blue
         self.secondary_color = "#07004D" # Federal Blue

@@ -10,8 +10,8 @@ from brisk.evaluation.evaluators.base import BaseEvaluator
 
 class PlotEvaluator(BaseEvaluator):
     """Template for model evaluators that plot data."""
-    def __init__(self, method_name: str):
-        super().__init__(method_name)
+    def __init__(self, method_name: str, description: str):
+        super().__init__(method_name, description)
         self.theme = theme
         self.primary_color = "#0074D9" # Celtic Blue
         self.secondary_color = "#07004D" # Federal Blue
