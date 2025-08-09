@@ -1,5 +1,5 @@
 """Implement evaluators to plot datasets."""
-from typing import Any, List
+from typing import Any, List, Dict
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ from brisk.evaluation.evaluators.dataset_plot_evaluator import DatasetPlotEvalua
 class HistogramBoxplot(DatasetPlotEvaluator):
     def plot(
         self,
-        train_data: pd.Series, # pylint: disable=C0103
+        train_data: pd.Series,
         test_data: pd.Series,
         feature_name: str,
         filename: str,
@@ -22,7 +22,7 @@ class HistogramBoxplot(DatasetPlotEvaluator):
             train_data, test_data, feature_name
         )
         self._create_plot(plot_data)
-        metadata = self._generate_metadata(dataset_name, group_name)
+        metadata = self._generate_metadata(dataset_name, group_name, feature_name)
         self._save_plot(filename, metadata)
         self._log_results(self.method_name, filename)
 
@@ -80,11 +80,23 @@ class HistogramBoxplot(DatasetPlotEvaluator):
         # Sturges' rule
         return int(np.ceil(np.log2(len(feature_series)) + 1))
 
+    def _generate_metadata(
+        self,
+        dataset_name: str,
+        group_name: str,
+        feature_name: str
+    ) -> Dict[str, Any]:
+        """Enforced: generate metadata for output."""
+        method = f"{self.method_name}_{feature_name}"
+        return self.metadata.get_dataset(
+            method, dataset_name, group_name
+        )
+
 
 class PiePlot(DatasetPlotEvaluator):
     def plot(
         self,
-        train_data: pd.Series, # pylint: disable=C0103
+        train_data: pd.Series,
         test_data: pd.Series,
         feature_name: str,
         filename: str,
@@ -95,7 +107,7 @@ class PiePlot(DatasetPlotEvaluator):
             train_data, test_data, feature_name
         )
         self._create_plot(plot_data)
-        metadata = self._generate_metadata(dataset_name, group_name)
+        metadata = self._generate_metadata(dataset_name, group_name, feature_name)
         self._save_plot(filename, metadata)
         self._log_results(self.method_name, filename)
 
@@ -128,6 +140,18 @@ class PiePlot(DatasetPlotEvaluator):
         axs[1].set_title(f"Test {plot_data['feature_name']} Distribution")
 
         plt.tight_layout()
+
+    def _generate_metadata(
+        self,
+        dataset_name: str,
+        group_name: str,
+        feature_name: str
+    ) -> Dict[str, Any]:
+        """Enforced: generate metadata for output."""
+        method = f"{self.method_name}_{feature_name}"
+        return self.metadata.get_dataset(
+            method, dataset_name, group_name
+        )
 
 
 class CorrelationMatrix(DatasetPlotEvaluator):

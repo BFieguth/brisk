@@ -63,7 +63,7 @@ class IOService(BaseService):
                 json.dump(data, file, indent=4)
 
             self._other_services["reporting"].store_table_data(
-                data, metadata["method"]
+                data, metadata
             )
 
         except IOError as e:
@@ -137,7 +137,7 @@ class IOService(BaseService):
             svg_str = svg_buffer.getvalue().decode("utf-8")
             svg_buffer.close()
             self._other_services["reporting"].store_plot_svg(
-                svg_str, metadata["method"]
+                svg_str, metadata
             )
 
         except IOError as e:

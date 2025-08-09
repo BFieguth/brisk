@@ -14,11 +14,6 @@ if TYPE_CHECKING:
 
 # Report Generation
 # =================
-# During experiment runs (In TrainingManager)
-# NOTE: All experiments instances are added before groups are made. Track IDs by group
-# 3. Experiment <- Process after each experiment is run using EvaluationManager service
-
-
 # Post-experiment Runnning (In TrainingManager)
 # NOTE: Get experiment IDs from internal dict using group name
 # 4. ExperimentGroup <- Collect values as each experiment is run, 
@@ -60,9 +55,16 @@ class ReportingService(BaseService):
         self.group_to_experiment = defaultdict(list) # NOTE Map group name to experiment ID
 
         self._current_context: Optional[ReportingContext] = None
-        self._image_cache: Dict[Tuple[str, str, str], str] = {}
-        self._table_cache: Dict[Tuple[str, str, str, str], Dict[str, Any]] = {}
+        self._image_cache: Dict[Tuple[str, str, str], Tuple[str, Dict[str, str]]] = {}
+        self._table_cache: Dict[Tuple[str, str, str, str], Tuple[Dict[str, Any], Dict[str, str]]] = {}
         self._cached_tuned_params: Dict[str, Any] = {}
+        self.test_scores = defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(
+                    lambda: {"columns": [], "rows": []}
+                )
+            )
+        )
 
 # Context Control
     def set_context(
@@ -142,7 +144,7 @@ class ReportingService(BaseService):
         split_corr_matrices = {}
         for split in split_ids:
             image_key = (group_name, dataset_name, split, "brisk_correlation_matrix")
-            image = self._image_cache.get(image_key)
+            image, metadata = self._image_cache.get(image_key)
             split_corr_matrices[split] = self._create_plot_data(
                 f"{group_name}_{dataset_name}_{split}_correlation_matrix",
                 image
@@ -203,6 +205,37 @@ class ReportingService(BaseService):
         )
         self._clear_cache()
 
+    def add_experiment_groups(self, groups: List):
+        for group in groups:
+            datasets = [
+                f"{group.name}_{dataset.split(".")[0]}" for dataset in group.datasets
+            ]
+
+            test_scores = {}
+            data_manager = self.data_managers[group.name]
+            num_splits = int(data_manager.n_splits)
+            for dataset in group.datasets:
+                for split in range(num_splits):
+                    dataset_name = dataset.split(".")[0]
+                    run_id = f"{group.name}_{dataset_name}_split_{split}"
+                    test_scores[run_id] = report_data.TableData(
+                        name=run_id,
+                        description=f"Test set performance on {dataset_name} (Split {split})",
+                        columns=self.test_scores[group.name][dataset_name][split]["columns"],
+                        rows=self.test_scores[group.name][dataset_name][split]["rows"]
+                    )
+
+            experiment_group = report_data.ExperimentGroup(
+                name=group.name,
+                description=group.description,
+                datasets=datasets,
+                experiments=self.group_to_experiment[group.name],
+                data_split_scores={},
+                test_scores=test_scores
+            )
+            self.experiment_groups.append(experiment_group)
+
+
 
     def _create_feature_distribution(
         self, 
@@ -216,7 +249,8 @@ class ReportingService(BaseService):
         hist_method = f"brisk_histogram_boxplot_{feature_name}"
         pie_method = f"brisk_pie_plot_{feature_name}"
         
-        plot_image = (
+        # NOTE: if not found this throws an error trying to unpack NoneType
+        plot_image, metadata = (
             self._image_cache.get((group_name, dataset_name, split_id, hist_method)) or
             self._image_cache.get((group_name, dataset_name, split_id, pie_method))
         )
@@ -227,11 +261,10 @@ class ReportingService(BaseService):
             )
             return None
             
-        # Look for table data (statistics)
-        stats_method = f"brisk_continuous_statistics_{feature_name}"  # or categorical_statistics
-        cat_stats_method = f"brisk_categorical_statistics_{feature_name}"
+        stats_method = f"brisk_continuous_statistics"
+        cat_stats_method = f"brisk_categorical_statistics"
         
-        table_data = (
+        table_data, metadata = (
             self._table_cache.get((group_name, dataset_name, split_id, stats_method)) or
             self._table_cache.get((group_name, dataset_name, split_id, cat_stats_method))
         )
@@ -295,22 +328,6 @@ class ReportingService(BaseService):
             ]
         )
 
-    def store_plot_svg(
-        self,
-        image: str,
-        creating_method: str
-    ) -> None:
-        group_name, dataset_name, split, _, algorithm_names = self.get_context()
-        image_id = (group_name, dataset_name, f"split_{split}", creating_method)
-        self._image_cache[image_id] = image
-
-    def store_table_data(self, data: Dict[str, Any], creating_method: str) -> None:
-        """Store table data using current context."""
-        group_name, dataset_name, split_index, _, algorithm_names = self.get_context()
-        split_id = f"split_{split_index}"
-        table_id = (group_name, dataset_name, split_id, creating_method)
-        self._table_cache[table_id] = data
-
     def _create_plot_data(
         self,
         name: str,
@@ -323,6 +340,44 @@ class ReportingService(BaseService):
             image=image
         )
 
+    def _collect_test_scores(self, metadata, rows):
+        """Checking for brisk_evaluate_model on test set to record results"""
+        if (
+            metadata["method"] == "brisk_evaluate_model" and 
+            metadata["is_test"] == "True"
+        ):
+            group_name, dataset_name, split_index, _, _ = self.get_context()
+            columns = ["Algorithm"] + [row[0] for row in rows]  # Extract metric names
+            test_row = list(metadata["models"].values()) + [row[1] for row in rows] # Extract scores
+
+            self.test_scores[group_name][dataset_name][split_index]["columns"] = columns
+            self.test_scores[group_name][dataset_name][split_index]["rows"].append(test_row)
+
+# NOTE description and name created from keys of dicts
+# rows is nested lists
+# columns is list
+
+# Cache related
+    def store_plot_svg(
+        self,
+        image: str,
+        metadata: Dict[str, str]
+    ) -> None:
+        group_name, dataset_name, split, _, _ = self.get_context()
+        image_id = (group_name, dataset_name, f"split_{split}", metadata["method"])
+        self._image_cache[image_id] = (image, metadata)
+
+    def store_table_data(
+        self,
+        data: Dict[str, Any],
+        metadata: Dict[str, str]
+    ) -> None:
+        """Store table data using current context."""
+        group_name, dataset_name, split_index, _, _ = self.get_context()
+        split_id = f"split_{split_index}"
+        table_id = (group_name, dataset_name, split_id, metadata["method"])
+        self._table_cache[table_id] = data, metadata
+
     def _process_table_cache(self) -> List[report_data.TableData]:
         if self.registry is None:
             raise RuntimeError("Evaluator registry not set. Call set_evaluator_registry() first.")
@@ -330,11 +385,12 @@ class ReportingService(BaseService):
         tables = []
         _, _, split_index, _, _ = self.get_context()
 
-        for context, data in self._table_cache.items():
+        for context, (data, metadata) in self._table_cache.items():
             evaluator_name = context[3]
             evaluator = self.registry.get(evaluator_name)
 
-            description = evaluator.description + f"(Split {split_index}, DATA TYPE)"
+            data_type = self._get_data_type(metadata["is_test"])
+            description = evaluator.description + f"(Split {split_index}, {data_type})"
             columns, rows = evaluator.report(data)
 
             table = report_data.TableData(
@@ -344,6 +400,7 @@ class ReportingService(BaseService):
                 rows=rows
             )
             tables.append(table)
+            self._collect_test_scores(metadata, rows)
         return tables
 
     def _process_image_cache(self):
@@ -353,11 +410,12 @@ class ReportingService(BaseService):
         plots = []
         _, _, split_index, _, _ = self.get_context()
 
-        for context, image in self._image_cache.items():
+        for context, (image, metadata) in self._image_cache.items():
             evaluator_name = context[3]
             evaluator = self.registry.get(evaluator_name)
 
-            description = evaluator.description + f"(Split {split_index}, DATA TYPE)"
+            data_type = self._get_data_type(metadata["is_test"])
+            description = evaluator.description + f"(Split {split_index}, {data_type})"
 
             plot = report_data.PlotData(
                 name=evaluator.method_name,
@@ -378,3 +436,10 @@ class ReportingService(BaseService):
     def set_evaluator_registry(self, registry: "EvaluatorRegistry") -> None:
         """Set the evaluator registry for this reporting service."""
         self.registry = registry
+
+    def _get_data_type(self, is_test: str) -> str:
+        if is_test == "True":
+            return "Test Set"
+        elif is_test == "False":
+            return "Train Set"
+        return "Unknown split type"

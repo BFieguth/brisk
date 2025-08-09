@@ -85,6 +85,16 @@ class EvaluateModel(MeasureEvaluator):
             scores_log, output_path
         )
 
+    def report(self, results: Dict[str, Any]) -> Tuple[List[str], List[List[Any]]]:
+        columns = ["Metric","Score"]
+        metrics = [key for key in results.keys() if key != "_metadata"]
+        rows = []
+        for metric in metrics:
+            rows.append([
+                metric,
+                str(results[metric])
+            ])
+        return columns, rows
 
 class EvaluateModelCV(MeasureEvaluator):
     """Evaluate a model using cross-validation and save the scores."""

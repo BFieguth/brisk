@@ -80,6 +80,7 @@ class TrainingManager:
         self.logfile = config_manager.logfile
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
+        self.experiment_groups = config_manager.experiment_groups
         self.experiment_paths = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: collections.defaultdict(
@@ -131,6 +132,7 @@ class TrainingManager:
             progress_bar.update(1)
 
         self._print_experiment_summary()
+        self.services.reporting.add_experiment_groups(self.experiment_groups)
         self._cleanup(self.results_dir, progress_bar)
         if create_report:
             self._create_report(self.results_dir)
@@ -211,6 +213,7 @@ class TrainingManager:
                 start_time,
                 e
             )
+            self.services.reporting.add_experiment(current_experiment.algorithms)
             self.services.reporting.clear_context()
 
         if success:
