@@ -417,7 +417,7 @@ class ReportingService(BaseService):
             evaluator = self.registry.get(evaluator_name)
 
             data_type = self._get_data_type(metadata["is_test"])
-            description = evaluator.description + f"(Split {split_index}, {data_type})"
+            description = evaluator.description + f"({data_type})"
             columns, rows = evaluator.report(data)
 
             table = report_data.TableData(
@@ -442,7 +442,7 @@ class ReportingService(BaseService):
             evaluator = self.registry.get(evaluator_name)
 
             data_type = self._get_data_type(metadata["is_test"])
-            description = evaluator.description + f"(Split {split_index}, {data_type})"
+            description = evaluator.description + f"({data_type})"
 
             plot = report_data.PlotData(
                 name=evaluator.method_name,

@@ -104,8 +104,8 @@ class App {
 
             // Handle experiment navigation
             if (pageType === 'experiment' && pageData) {
-                this.showExperimentNavigation(pageData);
                 this.initializeExperimentPage(pageData);
+                this.showExperimentNavigation(pageData);
             } else {
                 this.hideExperimentNavigation();
             }
@@ -745,6 +745,13 @@ class App {
         this.updateExperimentSummary();
         this.updateExperimentTables();
         this.updateExperimentPlots();
+
+        const breadcrumb = document.getElementById('experiment-breadcrumb');
+        if (breadcrumb) {
+            const currentText = breadcrumb.textContent;
+            const updatedText = currentText.replace(/split_\d+/, `split_${splitIndex}`);
+            breadcrumb.textContent = updatedText;
+        }
     }
 
     selectTable(tableIndex) {
@@ -1140,7 +1147,7 @@ class App {
             ? experiment.algorithm.join('-').toLowerCase().replace(/\s+/g, '-')
             : experiment.ID.toLowerCase().replace(/\s+/g, '-');
         
-        breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split-0/${experimentDisplayName}`;
+        breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split_${this.selectedSplitIndex}/${experimentDisplayName}`;
     }
 
     setupExperimentNavigationButtons(datasetExperiments, currentIndex) {
