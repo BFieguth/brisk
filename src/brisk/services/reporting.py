@@ -196,10 +196,14 @@ class ReportingService(BaseService):
         plots = self._process_image_cache()
 
         self.group_to_experiment[group_name].append(experiment_id)
+        algorithm_display_names = [
+            self._other_services["utility"].get_algo_wrapper(name).display_name 
+            for name in algorithm_names
+        ]
         self.experiments[experiment_id] = report_data.Experiment(
             ID=experiment_id,
             dataset=f"{group_name}_{dataset_name}",
-            algorithm=algorithm_names,
+            algorithm=algorithm_display_names,
             tuned_params=tuned_params,
             hyperparam_grid=hyperparam_grid,
             tables=tables,
