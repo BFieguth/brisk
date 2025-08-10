@@ -159,12 +159,14 @@ class DatasetPageRenderer {
         if (currentFeatureDistributions && currentFeatureDistributions.length > 0) {
             const selectedDistribution = currentFeatureDistributions[this.selectedFeatureIndex] || currentFeatureDistributions[0];
             
-            tableTitle.textContent = selectedDistribution.table.name;
+            tableTitle.textContent = selectedDistribution.tables[0].name;
             
-            const tableRenderer = new TableRenderer(selectedDistribution.table);
-            const tableElement = tableRenderer.render();
-            tableContainer.appendChild(tableElement);
-            
+            for (const table of selectedDistribution.tables) {
+                const tableRenderer = new TableRenderer(table);
+                const tableElement = tableRenderer.render();
+                tableContainer.appendChild(tableElement);
+            }
+
             const plotRenderer = new PlotRenderer(selectedDistribution.plot);
             const plotElement = plotRenderer.render();
             plotContainer.appendChild(plotElement);

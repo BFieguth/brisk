@@ -27,7 +27,7 @@ class PlotData(BaseModel):
 class FeatureDistribution(BaseModel):
     """Distribution of a feature across train and test splits."""
     ID: str
-    table: TableData
+    tables: List[TableData]
     plot: PlotData
 
 

@@ -270,17 +270,25 @@ class ReportingService(BaseService):
             
         stats_method = f"brisk_continuous_statistics"
         cat_stats_method = f"brisk_categorical_statistics"
-        
-        table_data, metadata = (
-            self._table_cache.get((group_name, dataset_name, split_id, stats_method)) or
-            self._table_cache.get((group_name, dataset_name, split_id, cat_stats_method))
+
+        continuous_cache = self._table_cache.get(
+            (group_name, dataset_name, split_id, stats_method)
         )
-        
+        categorical_cache = self._table_cache.get(
+            (group_name, dataset_name, split_id, cat_stats_method)
+        )
+        table_data = None
+
+        if continuous_cache and feature_name in list(continuous_cache[0].keys()):
+            table_data = continuous_cache[0][feature_name]
+        elif categorical_cache and feature_name in list(categorical_cache[0].keys()):
+            table_data = categorical_cache[0][feature_name]
+
         # Create table from stored data or placeholder
         if table_data:
-            table = self._create_table_from_stats(feature_name, table_data)
+            tables = self._create_feature_stats_tables(feature_name, table_data)
         else:
-            table = self._create_placeholder_table(feature_name)
+            tables = self._create_placeholder_table(feature_name)
             
         # Create plot
         plot_name = f"{feature_name} Distribution"
@@ -290,7 +298,7 @@ class ReportingService(BaseService):
         distribution_id = f"{group_name}_{dataset_name}_{split_id}_{feature_name}"
         return report_data.FeatureDistribution(
             ID=distribution_id,
-            table=table,
+            tables=tables,
             plot=plot
         )
 
@@ -305,21 +313,30 @@ class ReportingService(BaseService):
 
 
 # Utilities
-    def _create_table_from_stats(self, feature_name: str, stats_data: Dict[str, Any]) -> report_data.TableData:
+    def _create_feature_stats_tables(self, feature_name: str, stats_data: Dict[str, Any]) -> report_data.TableData:
         """Convert stored statistics into TableData format."""
-        # Extract statistics from the stored data
-        # This depends on how your evaluators structure the statistics
-        rows = []
-        for stat_name, stat_value in stats_data.items():
-            if stat_name != "_metadata":  # Skip metadata
-                rows.append([stat_name, str(stat_value)])
-                
-        return report_data.TableData(
+        train_rows = []
+        test_rows = []
+        tables = []
+        train_data = stats_data["train"]
+        test_data = stats_data["test"]
+        for stat_name, stat_value in train_data.items():
+            train_rows.append([stat_name, str(stat_value)])
+        tables.append(report_data.TableData(
             name=f"{feature_name} Statistics",
-            description=f"Statistical summary for feature {feature_name}",
+            description=f"Statistical summary for feature {feature_name} in train set.",
             columns=["Statistic", "Value"],
-            rows=rows
-        )
+            rows=train_rows
+        ))
+        for stat_name, stat_value in test_data.items():
+            test_rows.append([stat_name, str(stat_value)])
+        tables.append(report_data.TableData(
+            name=f"{feature_name} Statistics",
+            description=f"Statistical summary for feature {feature_name} in test set.",
+            columns=["Statistic", "Value"],
+            rows=test_rows
+        ))
+        return tables
 
     def _create_placeholder_table(self, feature_name: str) -> report_data.TableData:
         """Create placeholder table when no statistics are available."""
