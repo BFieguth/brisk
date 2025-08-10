@@ -240,7 +240,7 @@ class ReportingService(BaseService):
                 name=group.name,
                 description=group.description,
                 datasets=datasets,
-                experiments=self.group_to_experiment[group.name],
+                experiments=set(self.group_to_experiment[group.name]),
                 data_split_scores=data_split_scores,
                 test_scores=test_scores
             )
