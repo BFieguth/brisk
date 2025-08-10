@@ -237,7 +237,12 @@ def run(
         algorithm_config = load_module_object(
             project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
         )
-        initialize_services(algorithm_config, results_dir, verbose=verbose)
+        metric_config = load_module_object(
+            project_root, "metrics.py", "METRIC_CONFIG"
+        )
+        initialize_services(
+            algorithm_config, metric_config, results_dir, verbose=verbose
+        )
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 

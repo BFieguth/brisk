@@ -55,12 +55,14 @@ class MetricWrapper:
         func: Callable,
         display_name: str,
         abbr: Optional[str] = None,
+        greater_is_better: Optional[bool] = None,
         **default_params: Any
     ):
         self.name = name
         self.func = self._ensure_split_metadata_param(func)
         self.display_name = display_name
         self.abbr = abbr if abbr else name
+        self.greater_is_better = True if greater_is_better is None else greater_is_better
         self.params = default_params
         self.params["split_metadata"] = {}
         self._apply_params()
@@ -72,7 +74,11 @@ class MetricWrapper:
         scikit-learn scorer.
         """
         self._func_with_params = functools.partial(self.func, **self.params)
-        self.scorer = metrics.make_scorer(self.func, **self.params)
+        self.scorer = metrics.make_scorer(
+            self.func,
+            greater_is_better=self.greater_is_better,
+            **self.params
+        )
 
     def set_params(self, **params: Any):
         """Update parameters for the metric function and scorer.

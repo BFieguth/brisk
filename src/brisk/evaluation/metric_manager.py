@@ -29,6 +29,7 @@ class MetricManager:
     def __init__(self, *metric_wrappers):
         self._metrics_by_name = {}
         self._abbreviations_to_name = {}
+        self._display_name_to_name = {}
         for wrapper in metric_wrappers:
             self._add_metric(wrapper)
 
@@ -47,10 +48,16 @@ class MetricManager:
                 and old_wrapper.abbr in self._abbreviations_to_name
                 ):
                 del self._abbreviations_to_name[old_wrapper.abbr]
+            if (old_wrapper.display_name
+                and old_wrapper.display_name in self._display_name_to_name
+                ):
+                del self._display_name_to_name[old_wrapper.display_name]
 
         self._metrics_by_name[wrapper.name] = wrapper
         if wrapper.abbr:
             self._abbreviations_to_name[wrapper.abbr] = wrapper.name
+        if wrapper.display_name:
+            self._display_name_to_name[wrapper.display_name] = wrapper.name
 
     def _resolve_identifier(self, identifier: str) -> str:
         """Resolve a metric identifier to its full name.
@@ -74,6 +81,8 @@ class MetricManager:
             return identifier
         if identifier in self._abbreviations_to_name:
             return self._abbreviations_to_name[identifier]
+        if identifier in self._display_name_to_name:
+            return self._display_name_to_name[identifier]
         raise ValueError(f"Metric '{identifier}' not found.")
 
     def get_metric(self, identifier: str) -> Callable:
@@ -159,3 +168,7 @@ class MetricManager:
         """
         for wrapper in self._metrics_by_name.values():
             wrapper.set_params(split_metadata=split_metadata)
+
+    def is_higher_better(self, identifier: str) -> bool:
+        name = self._resolve_identifier(identifier)
+        return self._metrics_by_name[name].greater_is_better

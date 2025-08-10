@@ -6,12 +6,14 @@ import numpy as np
 
 from brisk.services import bundle, logging, metadata, io, utility, reporting
 from brisk.configuration import algorithm_wrapper
+from brisk.evaluation import metric_manager
 
 class GlobalServiceManager:
     """Manages services that are available to the entire Brisk package."""
     def __init__(
         self,
         algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        metric_config: metric_manager.MetricManager,
         results_dir: Path,
         verbose: bool = False
     ):
@@ -26,7 +28,9 @@ class GlobalServiceManager:
         self.services["utility"] = utility.UtilityService(
             "utility", algorithm_config, None, None
         )
-        self.services["reporting"] = reporting.ReportingService("reporting")
+        self.services["reporting"] = reporting.ReportingService(
+            "reporting", metric_config
+        )
         self._register_services()
 
     def _register_services(self) -> None:
@@ -66,12 +70,14 @@ _global_service_manager = None
 
 def initialize_services(
     algorithm_config: algorithm_wrapper.AlgorithmCollection,
+    metric_config: metric_manager.MetricManager,
     results_dir: Path,
     verbose: bool = False
 ) -> None:
     global _global_service_manager
     _global_service_manager = GlobalServiceManager(
         algorithm_config=algorithm_config,
+        metric_config=metric_config,
         results_dir=results_dir,
         verbose=verbose
     )

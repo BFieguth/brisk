@@ -64,6 +64,7 @@ class HyperparameterTuning(MeasureEvaluator):
         """
         algo_wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
         param_grid = algo_wrapper.get_hyperparam_grid()
+        self.reporting.set_tuning_measure(scorer)
         search_result = self._calculate_measures(
             model, method, X_train, y_train, scorer, kf, num_rep, n_jobs,
             param_grid

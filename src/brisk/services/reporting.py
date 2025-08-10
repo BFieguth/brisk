@@ -12,13 +12,6 @@ if TYPE_CHECKING:
     from brisk.types import DataManager, DataSplits
     from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 
-# Report Generation
-# =================
-# Post-experiment Runnning (In TrainingManager)
-# NOTE: Get experiment IDs from internal dict using group name
-# 4. ExperimentGroup <- Collect values as each experiment is run, 
-#                       when all expected data is available create the pydantic model
-
 class ReportingContext:
     """Context for the reporting service."""
     def __init__(
@@ -37,7 +30,7 @@ class ReportingContext:
 
 class ReportingService(BaseService):
     """Reporting service handles creation of ReportData object."""
-    def __init__(self, name: str):
+    def __init__(self, name: str, metric_manager):
         super().__init__(name)
         self.navbar = report_data.Navbar(
             brisk_version=f"Version: {__version__}",
@@ -49,6 +42,8 @@ class ReportingService(BaseService):
         self.experiments = {}
         self.experiment_groups = []
         self.data_managers = {}
+
+        self.metric_manager = metric_manager
 
         self.registry: Optional["EvaluatorRegistry"] = None
 
@@ -65,6 +60,13 @@ class ReportingService(BaseService):
                 )
             )
         )
+        self.best_score_by_split = defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(None)
+            )
+        )
+        self.tuning_metric = None
+
 
 # Context Control
     def set_context(
@@ -212,6 +214,8 @@ class ReportingService(BaseService):
             ]
 
             test_scores = {}
+            data_split_scores=defaultdict(list)
+
             data_manager = self.data_managers[group.name]
             num_splits = int(data_manager.n_splits)
             for dataset in group.datasets:
@@ -224,13 +228,16 @@ class ReportingService(BaseService):
                         columns=self.test_scores[group.name][dataset_name][split]["columns"],
                         rows=self.test_scores[group.name][dataset_name][split]["rows"]
                     )
+                    data_split_scores[f"{group.name}_{dataset_name}"].append(
+                        self.best_score_by_split[group.name][dataset_name][split]
+                    )
 
             experiment_group = report_data.ExperimentGroup(
                 name=group.name,
                 description=group.description,
                 datasets=datasets,
                 experiments=self.group_to_experiment[group.name],
-                data_split_scores={},
+                data_split_scores=data_split_scores,
                 test_scores=test_scores
             )
             self.experiment_groups.append(experiment_group)
@@ -346,6 +353,8 @@ class ReportingService(BaseService):
             metadata["method"] == "brisk_evaluate_model" and 
             metadata["is_test"] == "True"
         ):
+            self._collect_best_score(rows, list(metadata["models"].values()))
+
             group_name, dataset_name, split_index, _, _ = self.get_context()
             columns = ["Algorithm"] + [row[0] for row in rows]  # Extract metric names
             test_row = list(metadata["models"].values()) + [row[1] for row in rows] # Extract scores
@@ -353,9 +362,6 @@ class ReportingService(BaseService):
             self.test_scores[group_name][dataset_name][split_index]["columns"] = columns
             self.test_scores[group_name][dataset_name][split_index]["rows"].append(test_row)
 
-# NOTE description and name created from keys of dicts
-# rows is nested lists
-# columns is list
 
 # Cache related
     def store_plot_svg(
@@ -443,3 +449,31 @@ class ReportingService(BaseService):
         elif is_test == "False":
             return "Train Set"
         return "Unknown split type"
+
+    def set_tuning_measure(self, measure: str) -> None:
+        name = self.metric_manager._resolve_identifier(measure)
+        wrapper = self.metric_manager._metrics_by_name[name]
+        self.tuning_metric = (wrapper.abbr, wrapper.display_name)
+
+    def _collect_best_score(self, rows, model_name) -> Tuple[str, str, str, str]:
+        group_name, dataset_name, split_index, _, _ = self.get_context()
+        
+        available_measures = [row[0] for row in rows]
+        tuning_metric = self.tuning_metric[1] if self.tuning_metric[1] in available_measures else available_measures[0]
+
+        tuning_score = None
+        for row in rows:
+            if row[0] == tuning_metric:
+                tuning_score = row[1]
+                break
+        
+        greater_is_better = self.metric_manager.is_higher_better(tuning_metric)
+
+        current_result = (f"Split {split_index}", model_name[0], tuning_score, tuning_metric)
+        best_result = self.best_score_by_split[group_name][dataset_name].get(split_index)
+        if best_result is None:
+            self.best_score_by_split[group_name][dataset_name][split_index] = current_result
+        elif greater_is_better and tuning_score > current_result[2]:
+            self.best_score_by_split[group_name][dataset_name][split_index] = current_result
+        elif not greater_is_better and tuning_score < current_result[2]:
+            self.best_score_by_split[group_name][dataset_name][split_index] = current_result
