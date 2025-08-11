@@ -19,6 +19,7 @@ from brisk.evaluation.evaluators import registry
 from brisk.evaluation import metric_manager
 from brisk.evaluation.evaluators import builtin
 from brisk.services import get_services, update_experiment_config
+from brisk.evaluation.evaluators.base import BaseEvaluator
 
 class EvaluationManager:
     """Coordinator for evaluation operations.
@@ -27,6 +28,17 @@ class EvaluationManager:
     Services implement functionality shared by all evaluators. Evaluators
     implement a specific evaluation method. EvaluationManager coordinates the
     use of services and evaluators.
+
+    Attributes
+    ----------
+    services : ServiceBundle
+        The global services bundle
+    metric_config : MetricManager
+        The metric configuration manager
+    output_dir : Path
+        The output directory for the evaluation results
+    registry : EvaluatorRegistry
+        The evaluator registry with evaluators for models
     """
     def __init__(
         self,
@@ -45,6 +57,24 @@ class EvaluationManager:
         group_index_train: Dict[str, np.array],
         group_index_test: Dict[str, np.array],
     ) -> None:
+        """Update services and metric_config with the values for the current
+        experiment.
+
+        Parameters
+        ----------
+        output_dir : str
+            The output directory for the evaluation results
+        split_metadata : Dict[str, Any]
+            The split metadata for the current experiment
+        group_index_train : Dict[str, np.array]
+            The group index for the training split
+        group_index_test : Dict[str, np.array]
+            The group index for the testing split
+
+        Returns
+        -------
+        None
+        """
         self.output_dir = Path(output_dir)
         update_experiment_config(
             self.output_dir, group_index_train, group_index_test
@@ -52,10 +82,29 @@ class EvaluationManager:
         self.update_metrics(split_metadata)
 
     def update_metrics(self, split_metadata: Dict[str, Any]) -> None:
+        """Update the metric configuration with the split metadata.
+
+        Parameters
+        ----------
+        split_metadata : Dict[str, Any]
+            The split metadata for the current experiment
+
+        Returns
+        -------
+        None
+        """
         self.metric_config.set_split_metadata(split_metadata)
 
     def _initialize_builtin_evaluators(self):
-        """Initalize all built-in evaluators with shared services."""
+        """Initalize all built-in evaluators with shared services.
+
+        This method registers all built-in evaluators with the evaluator 
+        registry and sets the services for each evaluator.
+
+        Returns
+        -------
+        None
+        """
         builtin.register_builtin_evaluators(self.registry)
 
         for evaluator in self.registry.evaluators.values():
@@ -63,8 +112,19 @@ class EvaluationManager:
 
         self.services.reporting.set_evaluator_registry(self.registry)
 
-    def get_evaluator(self, name: str):
-        """Return an evaluator instance."""
+    def get_evaluator(self, name: str) -> BaseEvaluator:
+        """Return an evaluator instance.
+
+        Parameters
+        ----------
+        name : str
+            The name of the evaluator
+
+        Returns
+        -------
+        BaseEvaluator
+            An evaluator instance
+        """
         evaluator = self.registry.get(name)
         evaluator.set_metric_config(self.metric_config)
         return evaluator
