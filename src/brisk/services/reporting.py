@@ -106,12 +106,12 @@ class ReportingService(BaseService):
         """Add a DataManager instance to the report."""
         manager = report_data.DataManager(
             ID=group_name,
-            test_size=str(data_manager.test_size),
-            n_splits=str(data_manager.n_splits),
+            test_size=data_manager.test_size,
+            n_splits=data_manager.n_splits,
             split_method=str(data_manager.split_method),
             group_column=str(data_manager.group_column),
             stratified=str(data_manager.stratified),
-            random_state=str(data_manager.random_state),
+            random_state=data_manager.random_state,
             scale_method=str(data_manager.scale_method)
         )
         self.data_managers[group_name] = manager
@@ -129,18 +129,18 @@ class ReportingService(BaseService):
         ]
         split_sizes = {
             split_ids[i]: {
-                "total_obs": f"{len(split.X_train) + len(split.X_test)}", 
-                "features": f"{len(split.features)}", 
-                "train_obs": f"{len(split.X_train)}", 
-                "test_obs": f"{len(split.X_test)}"
+                "total_obs": len(split.X_train) + len(split.X_test), 
+                "features": len(split.features), 
+                "train_obs": len(split.X_train), 
+                "test_obs": len(split.X_test)
             } for i, split in enumerate(data_splits._data_splits)
         }
         split_target_stats = {
             split_ids[i]: {
-                "mean": f"{split.y_train.mean()}",
-                "std": f"{split.y_train.std()}",
-                "min": f"{split.y_train.min()}",
-                "max": f"{split.y_train.max()}"
+                "mean": split.y_train.mean(),
+                "std": split.y_train.std(),
+                "min": split.y_train.min(),
+                "max": split.y_train.max()
             } for i, split in enumerate(data_splits._data_splits)
         }
         split_corr_matrices = {}

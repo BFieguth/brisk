@@ -1,9 +1,83 @@
 """Define Pydantic models to represent the results of model runs."""
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Any
+import re
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-class TableData(BaseModel):
+NUM_RE = re.compile(r'[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?')
+PURE_NUM_RE = re.compile(r'^[+\-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+\-]?\d+)?$')
+
+def _round_to(n: float, decimals: int = 3) -> float:
+    return round(float(n), decimals)
+
+
+def _round_mean_std_string(s: str, decimals: int = 3) -> str:
+    # Strings of format: "1.23456 (0.0000123)"
+    patt = re.compile(r'^\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\(\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\)\s*$')
+    if not patt.match(s):
+        return s
+    return NUM_RE.sub(lambda m: str(_round_to(float(m.group()), decimals)), s)
+
+
+def _round_numbers_in_bracketed_list_string(s: str, decimals: int = 3) -> str:
+    trimmed = s.strip()
+    if not (trimmed.startswith('[') and trimmed.endswith(']')):
+        return s
+    return NUM_RE.sub(lambda m: str(_round_to(float(m.group()), decimals)), s)
+
+
+def _round_dictionary_string(s: str, decimals: int = 3) -> str:
+    trimmed = s.strip()
+    if not (trimmed.startswith('{') and trimmed.endswith('}')):
+        return s
+        # Only round values (numbers after a colon)
+    return re.sub(r'(:\s*)([+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?)',
+                    lambda m: m.group(1) + str(_round_to(float(m.group(2)), decimals)),
+                    s)
+
+
+def _deep_round(value: Any, decimals: int = 3) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, float):
+        return _round_to(value, decimals)
+    if isinstance(value, (list, tuple)):
+        items = [_deep_round(v, decimals) for v in value]
+        return type(value)(items) if isinstance(value, tuple) else items
+    if isinstance(value, dict):
+        return {k: _deep_round(v, decimals) for k, v in value.items()}
+    if isinstance(value, str):
+        s = value.strip()
+        # Avoid any probable HTML/SVG strings
+        if "<" in s and ">" in s:
+            return value
+        if PURE_NUM_RE.fullmatch(s):
+            return str(_round_to(float(s), decimals))
+        
+        ms = _round_mean_std_string(value, decimals)
+        if ms != value:
+            return ms
+        
+        bl = _round_numbers_in_bracketed_list_string(value, decimals)
+        if bl != value:
+            return bl
+        
+        dc = _round_dictionary_string(value, decimals)
+        if dc != value:
+            return dc
+        
+        return value
+    return value
+
+
+class RoundedModel(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def _round_all_numbers(cls, values):
+        return _deep_round(values, 3)
+
+
+class TableData(RoundedModel):
     """Structure for all tables in the report."""
     name: str
     description: Optional[str] = Field(
@@ -17,39 +91,39 @@ class TableData(BaseModel):
     )
 
 
-class PlotData(BaseModel):
+class PlotData(RoundedModel):
     """Structure for all plots in the report."""
     name: str
     description: str
     image: str
 
 
-class FeatureDistribution(BaseModel):
+class FeatureDistribution(RoundedModel):
     """Distribution of a feature across train and test splits."""
     ID: str
     tables: List[TableData]
     plot: PlotData
 
 
-class DataManager(BaseModel):
+class DataManager(RoundedModel):
     """Represents a DataManager instance."""
     ID: str
-    test_size: str
-    n_splits: str
+    test_size: float
+    n_splits: int
     split_method: str
     group_column: str
     stratified: str
-    random_state: str
+    random_state: int | None
     scale_method: str
 
 
-class Navbar(BaseModel):
+class Navbar(RoundedModel):
     """Data for the navbar."""
     brisk_version: str
     timestamp: str
 
 
-class ExperimentGroup(BaseModel):
+class ExperimentGroup(RoundedModel):
     """Data for an ExperimentGroup card on the home page."""
     name: str
     description: str
@@ -69,7 +143,7 @@ class ExperimentGroup(BaseModel):
     )
 
 
-class Experiment(BaseModel):
+class Experiment(RoundedModel):
     """Results of a single experiment."""
     ID: str
     dataset: str
@@ -77,11 +151,11 @@ class Experiment(BaseModel):
         default_factory=list,
         description="Display names of algorithms in experiment"
     )
-    tuned_params: Dict[str, str] = Field(
+    tuned_params: Dict[str, Any] = Field(
         default_factory=dict,
         description="Tuned hyperparameter names and values"
     )
-    hyperparam_grid: Dict[str, str] = Field(
+    hyperparam_grid: Dict[str, Any] = Field(
         default_factory=dict, description="Hyperparameter grid used for tuning"
     )
     tables: List[TableData] = Field(
@@ -92,16 +166,16 @@ class Experiment(BaseModel):
     )
 
 
-class Dataset(BaseModel):
+class Dataset(RoundedModel):
     """Represents a dataset within an ExperimentGroup."""
     ID: str
     splits: List[str] = Field(
         default_factory=list, description="List of data split indexes"
     )
-    split_sizes: Dict[str, Dict[str, str]] = Field(
+    split_sizes: Dict[str, Dict[str, int]] = Field(
         default_factory=dict, description="Size of dataset and train/test split"
     )
-    split_target_stats: Dict[str, Dict[str, str]] = Field(
+    split_target_stats: Dict[str, Dict[str, float]] = Field(
         default_factory=dict, description="Target feature stats per split"
     )
     split_corr_matrices: Dict[str, PlotData] = Field(
@@ -116,7 +190,7 @@ class Dataset(BaseModel):
     )
 
 
-class ReportData(BaseModel):
+class ReportData(RoundedModel):
     """Represents the entire report."""
     navbar: Navbar
     datasets: Dict[str, Dataset] = Field(
