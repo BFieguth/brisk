@@ -42,8 +42,14 @@ class DataSplitInfo:
         The training labels
     y_test : pd.Series
         The testing labels
-    filename : str
-        The filename or table name of the dataset
+    group_index_train : dict
+        Index of the groups for the training split
+    group_index_test : dict
+        Index of the groups for the testing split
+    split_key : tuple
+        The split key (group_name, dataset_name, table_name)
+    split_index : int
+        The split index in DataSplits container
     scaler : object, optional
         The scaler used for this split
     features : list of str, optional
@@ -53,6 +59,18 @@ class DataSplitInfo:
 
     Attributes
     ----------
+    group_name : str
+        The name of the experiment group
+    dataset_name : str
+        The name of the dataset
+    table_name : str
+        The name of the table
+    features : list of str or None
+        The order of input features
+    split_index : int
+        The split index in DataSplits container
+    services : ServiceBundle
+        The global services bundle
     X_train : pd.DataFrame
         The training features
     X_test : pd.DataFrame
@@ -61,20 +79,18 @@ class DataSplitInfo:
         The training labels
     y_test : pd.Series
         The testing labels
-    filename : str
-        The filename or table name of the dataset
-    scaler : object or None
-        The scaler used for this split
-    features : list of str or None
-        The order of input features
+    group_index_train : dict
+        Index of the groups for the training split
+    group_index_test : dict
+        Index of the groups for the testing split
+    registry : EvaluatorRegistry
+        The evaluator registry with evaluators for datasets
     categorical_features : list of str
         List of categorical features present in the training dataset
     continuous_features : list of str
         List of continuous features derived from the training dataset
-    continuous_stats : dict
-        Descriptive statistics for continuous features
-    categorical_stats : dict
-        Statistics for categorical features
+    scaler : object or None
+        The scaler used for this split
 
     Notes
     -----
@@ -95,7 +111,7 @@ class DataSplitInfo:
         scaler: Optional[Any] = None,
         features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None,
-    ):       
+    ):
         self.group_name = split_key[0]
         self.dataset_name = split_key[1]
         self.table_name = split_key[2]
@@ -145,6 +161,20 @@ class DataSplitInfo:
         self.evaluate_data_split()
 
     def evaluate_data_split(self):
+        """Evaluate distribution of features in the train and test splits.
+
+        This method calculates descriptive statistics for both continuous and 
+        categorical features in the training and testing splits. It also 
+        generates plots including histograms, boxplots, pie plots, and 
+        correlation matrices
+
+        The method uses the evaluator registry to get the appropriate evaluators 
+        for the dataset and then calls the evaluate method for each evaluator.
+
+        Returns
+        -------
+        None
+        """
         self.services.reporting.set_context(
             self.group_name, self.dataset_name, self.split_index, self.features,
             None
@@ -173,20 +203,20 @@ class DataSplitInfo:
                 evaluator = self.registry.get("brisk_histogram_boxplot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
-                    feature, f"hist_box_plot/{feature}_hist_box_plot", 
+                    feature, f"hist_box_plot/{feature}_hist_box_plot",
                     self.dataset_name, self.group_name
                 )
             for feature in self.categorical_features:
                 evaluator = self.registry.get("brisk_pie_plot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
-                    feature, f"pie_plot/{feature}_pie_plot", 
+                    feature, f"pie_plot/{feature}_pie_plot",
                     self.dataset_name, self.group_name
                 )
             evaluator = self.registry.get("brisk_correlation_matrix")
             evaluator.plot(
                 self.X_train, self.continuous_features,
-                f"correlation_matrix", 
+                "correlation_matrix",
                 self.dataset_name, self.group_name
             )
         finally:
@@ -199,7 +229,7 @@ class DataSplitInfo:
 
         Returns
         -------
-        list of str
+        List[str]
             Names of detected categorical features
 
         Notes
@@ -238,9 +268,10 @@ class DataSplitInfo:
     def get_train(self) -> Tuple[pd.DataFrame, pd.Series]:
         """Returns the training features.
 
-        Returns:
-            Tuple[pd.DataFrame, pd.Series]: A tuple containing the training 
-            features and training labels.
+        Returns
+        -------
+        Tuple[pd.DataFrame, pd.Series]
+            A tuple containing the training features and training labels.
         """
         if self.scaler and self.continuous_features:
             categorical_data = (
@@ -265,9 +296,10 @@ class DataSplitInfo:
     def get_test(self) -> Tuple[pd.DataFrame, pd.Series]:
         """Returns the testing features.
 
-        Returns:
-            Tuple[pd.DataFrame, pd.Series]: A tuple containing the testing 
-            features and testing labels.
+        Returns
+        -------
+        Tuple[pd.DataFrame, pd.Series]
+            A tuple containing the testing features and testing labels.
         """
         if self.scaler and self.continuous_features:
             categorical_data = (
@@ -294,10 +326,11 @@ class DataSplitInfo:
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Returns both the training and testing split.
 
-        Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple 
-            containing the training features, testing features, training 
-            labels, and testing labels.
+        Returns
+        -------
+        Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]
+            A tuple containing the training features, testing features, 
+            training labels, and testing labels.
         """
         X_train, y_train = self.get_train() # pylint: disable=C0103
         X_test, y_test = self.get_test() # pylint: disable=C0103
@@ -306,8 +339,10 @@ class DataSplitInfo:
     def get_split_metadata(self) -> Dict[str, Any]:
         """Returns the split metadata used in certain metric calculations.
 
-        Returns:
-            Dict[str, Any]: A dictionary containing the split metadata.
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary containing the split metadata.
         """
         return {
             "num_features": len(self.X_train.columns),
