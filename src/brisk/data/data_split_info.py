@@ -138,7 +138,7 @@ class DataSplitInfo:
 
         self.registry = EvaluatorRegistry()
         register_dataset_evaluators(self.registry)
-        for evaluator in self.registry._evaluators.values():
+        for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
         if categorical_features is None:

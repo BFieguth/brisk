@@ -6,7 +6,7 @@ from brisk.evaluation.evaluators.base import BaseEvaluator
 class EvaluatorRegistry():
     """Registry for managing evaluator instances."""
     def __init__(self):
-        self._evaluators: Dict[str, Any] = {}
+        self.evaluators: Dict[str, Any] = {}
 
     def register(self, evaluator: BaseEvaluator):
         """Register an evaluator instance.
@@ -16,7 +16,7 @@ class EvaluatorRegistry():
         evaluator_instance : BaseEvaluator
             Instance of an evaluator class
         """
-        self._evaluators[evaluator.method_name] = evaluator
+        self.evaluators[evaluator.method_name] = evaluator
 
     def get(self, name: str):
         """Get an evaluator by name.
@@ -31,4 +31,4 @@ class EvaluatorRegistry():
         BaseEvaluator or None
             The evaluator instance if found, None otherwise
         """
-        return self._evaluators.get(name)
+        return self.evaluators.get(name)

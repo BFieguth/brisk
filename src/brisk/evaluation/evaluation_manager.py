@@ -7,8 +7,7 @@ and evaluators.
 """
 
 from pathlib import Path
-from typing import Dict, Any, Optional
-import logging
+from typing import Dict, Any
 import copy
 import os
 
@@ -16,10 +15,9 @@ import numpy as np
 from sklearn import base
 import joblib
 
-from .evaluators.registry import EvaluatorRegistry
-from ..evaluation.metric_manager import MetricManager
-from .evaluators.builtin import register_builtin_evaluators
-
+from brisk.evaluation.evaluators import registry
+from brisk.evaluation import metric_manager
+from brisk.evaluation.evaluators import builtin
 from brisk.services import get_services, update_experiment_config
 
 class EvaluationManager:
@@ -32,12 +30,12 @@ class EvaluationManager:
     """
     def __init__(
         self,
-        metric_config: MetricManager,
+        metric_config: metric_manager.MetricManager,
     ):
         self.services = get_services()
         self.metric_config = copy.deepcopy(metric_config)
         self.output_dir = None
-        self.registry = EvaluatorRegistry()
+        self.registry = registry.EvaluatorRegistry()
         self._initialize_builtin_evaluators()
 
     def set_experiment_values(
@@ -58,9 +56,9 @@ class EvaluationManager:
 
     def _initialize_builtin_evaluators(self):
         """Initalize all built-in evaluators with shared services."""
-        register_builtin_evaluators(self.registry)
+        builtin.register_builtin_evaluators(self.registry)
 
-        for evaluator in self.registry._evaluators.values():
+        for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
         self.services.reporting.set_evaluator_registry(self.registry)
