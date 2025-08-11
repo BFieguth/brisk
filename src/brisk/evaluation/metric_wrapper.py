@@ -62,7 +62,9 @@ class MetricWrapper:
         self.func = self._ensure_split_metadata_param(func)
         self.display_name = display_name
         self.abbr = abbr if abbr else name
-        self.greater_is_better = True if greater_is_better is None else greater_is_better
+        self.greater_is_better = (
+            True if greater_is_better is None else greater_is_better
+        )
         self.params = default_params
         self.params["split_metadata"] = {}
         self._apply_params()
