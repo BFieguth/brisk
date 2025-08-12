@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn import base
 
-from brisk.evaluation.evaluation_manager import EvaluationManager
+from brisk.evaluation import evaluation_manager as eval_manager
 
 class Workflow(abc.ABC):
     """Base class for machine learning workflows. Delegates EvaluationManager.
@@ -62,7 +62,7 @@ class Workflow(abc.ABC):
     """
     def __init__(
         self,
-        evaluation_manager: EvaluationManager,
+        evaluation_manager: eval_manager.EvaluationManager,
         X_train: pd.DataFrame, # pylint: disable=C0103
         X_test: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
@@ -136,7 +136,9 @@ class Workflow(abc.ABC):
         filename : strm
             Output filename (without extension)
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_evaluate_model")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_evaluate_model"
+        )
         return evaluator.evaluate(model, X, y, metrics, filename)
 
     def evaluate_model_cv( # pragma: no cover
@@ -165,7 +167,9 @@ class Workflow(abc.ABC):
         cv : int, optional
             Number of cross-validation folds, by default 5
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_evaluate_model_cv")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_evaluate_model_cv"
+        )
         return evaluator.evaluate(model, X, y, metrics, filename, cv)
 
     def compare_models( # pragma: no cover
@@ -199,7 +203,9 @@ class Workflow(abc.ABC):
         dict
             Nested dictionary containing metric results for each model
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_compare_models")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_compare_models"
+        )
         return evaluator.evaluate(
             *models, X=X, y=y, metrics=metrics, filename=filename,
             calculate_diff=calculate_diff
@@ -225,7 +231,9 @@ class Workflow(abc.ABC):
         filename (str): 
             The name of the output file (without extension).
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_plot_pred_vs_obs")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_pred_vs_obs"
+        )
         return evaluator.plot(model, X, y_true, filename)
 
     def plot_learning_curve( # pragma: no cover
@@ -260,7 +268,9 @@ class Workflow(abc.ABC):
         metric : str, optional
             Scoring metric to use, by default "neg_mean_absolute_error"
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_plot_learning_curve")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_learning_curve"
+        )
         return evaluator.plot(
             model, X_train, y_train, filename=filename, cv=cv,
             num_repeats=num_repeats, n_jobs=n_jobs, metric=metric
@@ -340,7 +350,9 @@ class Workflow(abc.ABC):
         add_fit_line (bool): 
             Whether to add a line of best fit to the plot.
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_plot_residuals")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_residuals"
+        )
         return evaluator.plot(model, X, y, filename, add_fit_line=add_fit_line)
 
     def plot_model_comparison( # pragma: no cover
@@ -448,7 +460,9 @@ class Workflow(abc.ABC):
         filename : str
             The name of the output file (without extension).
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_confusion_matrix")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_confusion_matrix"
+        )
         return evaluator.evaluate(model, X, y, filename)
 
     def plot_confusion_heatmap( # pragma: no cover
@@ -506,7 +520,9 @@ class Workflow(abc.ABC):
         pos_label (Optional[int]): 
             The label of the positive class.
         """
-        evaluator = self.evaluation_manager.get_evaluator("brisk_plot_roc_curve")
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_roc_curve"
+        )
         return evaluator.plot(model, X, y, filename, pos_label)
 
     def plot_precision_recall_curve( # pragma: no cover
