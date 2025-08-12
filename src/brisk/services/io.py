@@ -1,4 +1,4 @@
-"""IO related utilities for evaluators"""
+"""IO related utilities."""
 
 from pathlib import Path
 from typing import Optional, Any, Dict, Union
@@ -9,29 +9,46 @@ import io
 import matplotlib.pyplot as plt
 import plotnine as pn
 
-from brisk.services.base import BaseService
+from brisk.services import base
 
-class IOService(BaseService):
-    """IO service for saving and loading files."""
+class IOService(base.BaseService):
+    """IO service for saving and loading files.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the service
+
+    results_dir : Path
+        The root directory for all results, does not change at runtime.
+        
+    output_dir : Path
+        The current output directory, will be changed at runtime.
+
+    Attributes
+    ----------
+    results_dir : Path
+        The root directory for all results, does not change at runtime.
+    output_dir : Path
+        The current output directory, will be changed at runtime.
+    """
     def __init__(self, name: str, results_dir: Path, output_dir: Path):
-        """
-        Parameters
-        ----------
-        name : str
-            The name of the service
-
-        results_dir : Path
-            The root directory for all results, does not change at runtime.
-            
-        output_dir : Path
-            The current output directory, will be changed at runtime.
-        """
-
         super().__init__(name)
         self.results_dir = results_dir
         self.output_dir = output_dir
 
     def set_output_dir(self, output_dir: Path) -> None:
+        """Set the current output directory.
+
+        Parameters
+        ----------
+        output_dir : Path
+            The new output directory
+
+        Returns
+        -------
+        None
+        """
         self.output_dir = output_dir
 
     def save_to_json(
@@ -39,7 +56,7 @@ class IOService(BaseService):
         data: Dict[str, Any],
         output_path: Union[Path, str],
         metadata: Dict[str, Any]
-    ):
+    ) -> None:
         """Save dictionary to JSON file with metadata.
 
         Parameters
@@ -52,6 +69,10 @@ class IOService(BaseService):
 
         metadata : dict
             Metadata to include, by default None
+
+        Returns
+        -------
+        None
         """
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
@@ -67,7 +88,9 @@ class IOService(BaseService):
             )
 
         except IOError as e:
-            self._other_services["logging"].logger.info(f"Failed to save JSON to {output_path}: {e}")
+            self._other_services["logging"].logger.info(
+                f"Failed to save JSON to {output_path}: {e}"
+            )
 
     def save_plot(
         self,
@@ -95,10 +118,14 @@ class IOService(BaseService):
 
         width (int, optional): 
             The plot width in inches, by default 8
+
+        Returns
+        -------
+        None
         """
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
-        
+
         self._convert_to_svg(metadata, plot)
 
         try:
@@ -114,11 +141,11 @@ class IOService(BaseService):
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
                 plt.close()
-                # plt.close('all')
 
         except IOError as e:
-            self._other_services["logging"].logger.info(f"Failed to save plot to {output_path}: {e}")
-            # plt.close('all')
+            self._other_services["logging"].logger.info(
+                f"Failed to save plot to {output_path}: {e}"
+            )
 
     def _convert_to_svg(
         self,
@@ -126,14 +153,31 @@ class IOService(BaseService):
         plot: Optional[pn.ggplot] = None,
         height: int = 6,
         width: int = 8
-    ):
+    ) -> None:
+        """Convert plot to SVG format for the report.
+
+        Parameters
+        ----------
+        metadata : dict
+            Metadata to include
+        plot : ggplot
+            Plotnine plot object
+        height : int
+            The plot height in inches
+        width : int
+            The plot width in inches
+
+        Returns
+        -------
+        None
+        """
         try:
             svg_buffer = io.BytesIO()
-            if plot: 
+            if plot:
                 plot.save(svg_buffer, format="svg", height=height, width=width)
             else:
                 plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
-        
+
             svg_str = svg_buffer.getvalue().decode("utf-8")
             svg_buffer.close()
             self._other_services["reporting"].store_plot_svg(
