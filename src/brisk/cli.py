@@ -39,7 +39,7 @@ from sklearn import datasets
 
 from brisk.training.workflow import Workflow
 from brisk.configuration import project
-from brisk.services import initialize_services, shutdown_services
+from brisk.services import initialize_services
 
 @click.group()
 def cli():
@@ -269,8 +269,6 @@ def run(
             # results_name=results_name,
             create_report=create_report
         )
-
-        shutdown_services()
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
