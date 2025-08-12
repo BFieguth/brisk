@@ -5,15 +5,32 @@ import pandas as pd
 import numpy as np
 from scipy import stats as scipy_stats
 
-from brisk.evaluation.evaluators.dataset_measure_evaluator import DatasetMeasureEvaluator
+from brisk.evaluation.evaluators import dataset_measure_evaluator
 
-class ContinuousStatistics(DatasetMeasureEvaluator):
+class ContinuousStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
+    """Calculate continuous statistics for a dataset."""
     def _calculate_measures(
         self,
         train_data: pd.DataFrame | pd.Series,
         test_data: pd.DataFrame | pd.Series,
         feature_names: List[str]
     ) -> Dict[str, Dict[str, float]]:
+        """Calculate continuous statistics for a dataset.
+
+        Parameters
+        ----------
+        train_data (pd.DataFrame | pd.Series): 
+            The training data
+        test_data (pd.DataFrame | pd.Series): 
+            The test data
+        feature_names (List[str]): 
+            The names of the features to calculate statistics for
+
+        Returns
+        -------
+        Dict[str, Dict[str, float]]
+            A dictionary containing the statistics for each feature
+        """
         stats = {}
         for feature in feature_names:
             feature_train = train_data[feature]
@@ -58,15 +75,32 @@ class ContinuousStatistics(DatasetMeasureEvaluator):
             }
             stats[feature] = feature_stats
         return stats
-    
 
-class CategoricalStatistics(DatasetMeasureEvaluator):
+
+class CategoricalStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
+    """Calculate categorical statistics for a dataset."""
     def _calculate_measures(
         self,
         train_data: pd.DataFrame | pd.Series,
         test_data: pd.DataFrame | pd.Series,
         feature_names: List[str]
     ) -> Dict[str, Dict[str, float]]:
+        """Calculate categorical statistics for a dataset.
+
+        Parameters
+        ----------
+        train_data (pd.DataFrame | pd.Series): 
+            The training data
+        test_data (pd.DataFrame | pd.Series): 
+            The test data
+        feature_names (List[str]): 
+            The names of the features to calculate statistics for
+
+        Returns
+        -------
+        Dict[str, Dict[str, float]]
+            A dictionary containing the statistics for each feature
+        """
         stats = {}
         for feature in feature_names:
             feature_train = train_data[feature]
@@ -74,7 +108,9 @@ class CategoricalStatistics(DatasetMeasureEvaluator):
             feature_stats = {
                 "train": {
                     "frequency": feature_train.value_counts().to_dict(),
-                    "proportion": feature_train.value_counts(normalize=True).to_dict(),
+                    "proportion": feature_train.value_counts(
+                        normalize=True
+                    ).to_dict(),
                     "num_unique": feature_train.nunique(),
                     "entropy": -np.sum(np.fromiter(
                         (p * np.log2(p)
@@ -85,7 +121,9 @@ class CategoricalStatistics(DatasetMeasureEvaluator):
                 },
                 "test": {
                     "frequency": feature_test.value_counts().to_dict(),
-                    "proportion": feature_test.value_counts(normalize=True).to_dict(),
+                    "proportion": feature_test.value_counts(
+                        normalize=True
+                    ).to_dict(),
                     "num_unique": feature_test.nunique(),
                     "entropy": -np.sum(np.fromiter(
                         (p * np.log2(p)
