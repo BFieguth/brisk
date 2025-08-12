@@ -1,5 +1,5 @@
 """Tools for evaluating models that are not plots or measure calculations."""
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 import pandas as pd
 import numpy as np
@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from sklearn import base
 import sklearn.model_selection as model_select
 
-from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator
+from brisk.evaluation.evaluators import measure_evaluator
 
-class HyperparameterTuning(MeasureEvaluator):
+class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     """Perform hyperparameter tuning using grid or random search."""
     def evaluate(
         self,
@@ -159,13 +159,44 @@ class HyperparameterTuning(MeasureEvaluator):
         search_result = search.fit(X_train, y_train, groups=indices)
         return search_result
 
-    def _log_results(self, model: base.BaseEstimator):
+    def _log_results(self, model: base.BaseEstimator) -> None:
+        """Log the results of the hyperparameter tuning.
+
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model that was tuned.
+
+        Returns
+        -------
+        None
+        """
         self.services.logger.logger.info(
             "Hyperparameter optimization for %s complete.",
             model.__class__.__name__
         )
 
-    def _save_plot(self, filename: str, metadata: Dict[str, Any], plot: Any):
+    def _save_plot(
+        self,
+        filename: str,
+        metadata: Dict[str, Any],
+        plot: Any
+    ) -> None:
+        """Save the plot to the output directory.
+
+        Parameters
+        ----------
+        filename (str): 
+            The name of the file to save the plot to
+        metadata (Dict[str, Any]): 
+            The metadata for the plot
+        plot (Any): 
+            The plot to save
+
+        Returns
+        -------
+        None
+        """
         if isinstance(plot, plt.Figure):
             self.io.save_plot(filename, metadata)
         else:
@@ -176,7 +207,7 @@ class HyperparameterTuning(MeasureEvaluator):
         param_grid: Dict[str, Any],
         search_result: Any,
         display_name: str
-    ) -> None:
+    ) -> Optional[pn.ggplot | plt.Figure]:
         """Plot the performance of hyperparameter tuning.
 
         Parameters
@@ -189,11 +220,16 @@ class HyperparameterTuning(MeasureEvaluator):
 
         display_name (str): 
             The name of the algorithm to use in the plot labels.
+
+        Returns
+        -------
+        Optional[pn.ggplot | plt.Figure]
+            The plot object or None if the plot is not implemented
         """
         param_keys = list(param_grid.keys())
 
         if len(param_keys) == 0:
-            return
+            return None
 
         elif len(param_keys) == 1:
             return self._plot_1d_performance(
@@ -220,7 +256,7 @@ class HyperparameterTuning(MeasureEvaluator):
         mean_test_score: List[float],
         param_name: str,
         display_name: str
-    ) -> None:
+    ) -> pn.ggplot:
         """Plot the performance of a single hyperparameter vs mean test score.
 
         Parameters
@@ -236,6 +272,11 @@ class HyperparameterTuning(MeasureEvaluator):
 
         display_name (str): 
             The name of the algorithm to use in the plot labels.
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
         """
         plot_data = pd.DataFrame({
             "Hyperparameter": param_values,
@@ -263,7 +304,7 @@ class HyperparameterTuning(MeasureEvaluator):
         search_result: Any,
         param_names: List[str],
         display_name: str
-    ) -> None:
+    ) -> plt.Figure:
         """Plot the performance of two hyperparameters vs mean test score.
 
         Parameters
@@ -279,6 +320,11 @@ class HyperparameterTuning(MeasureEvaluator):
 
         display_name (str): 
             The name of the algorithm to use in the plot labels.
+        
+        Returns
+        -------
+        Figure
+            The figure object
         """
         X, Y, mean_test_score = self._calc_plot_3d_surface( # pylint: disable=C0103
             param_grid, search_result, param_names
