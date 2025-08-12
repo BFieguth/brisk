@@ -1,18 +1,32 @@
-"""Collect services and data requried by all evaluators."""
+"""Collect services available to all classes at runtime."""
 
 import dataclasses
 
-from brisk.services.logging import LoggingService
-from brisk.services.metadata import MetadataService
-from brisk.services.io import IOService
-from brisk.services.utility import UtilityService
-from brisk.services.reporting import ReportingService
+from brisk.services import logging, metadata, io, utility, reporting
 
 @dataclasses.dataclass
 class ServiceBundle:
-    """Bundle of services that evaluators need access to."""
-    logger: LoggingService
-    metadata: MetadataService
-    io: IOService
-    utility: UtilityService
-    reporting: ReportingService
+    """Bundle of services that classes can access at runtime.
+    
+    Parameters
+    ----------
+    logger (LoggingService): 
+        The logging service.
+    metadata (MetadataService): 
+        The metadata service.
+    io (IOService): 
+        The I/O service.
+    utility (UtilityService): 
+        The utility service.
+    reporting (ReportingService): 
+        The reporting service.
+
+    Returns
+    -------
+    None
+    """
+    logger: logging.LoggingService
+    metadata: metadata.MetadataService
+    io: io.IOService
+    utility: utility.UtilityService
+    reporting: reporting.ReportingService
