@@ -6,10 +6,10 @@ import numpy as np
 import plotnine as pn
 from sklearn import base
 
-from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.evaluation.evaluators import plot_evaluator
+from brisk.configuration import algorithm_wrapper
 
-class PlotPredVsObs(PlotEvaluator):
+class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     """Plot the predicted vs. observed values for a regression model."""
     def plot(
         self,
@@ -18,6 +18,23 @@ class PlotPredVsObs(PlotEvaluator):
         y: pd.Series,
         filename: str
     ) -> None:
+        """Plot the predicted vs. observed values for a regression model.
+        
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
+        X (pd.DataFrame): 
+            The input features.
+        y (pd.Series): 
+            The true target values.
+        filename (str): 
+            The name of the output file.
+
+        Returns
+        -------
+        None
+        """
         prediction = self._generate_prediction(model, X)
         plot_data, max_range = self._generate_plot_data(prediction, y)
         wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
@@ -55,9 +72,25 @@ class PlotPredVsObs(PlotEvaluator):
     def _create_plot(
         self,
         plot_data: pd.DataFrame,
-        wrapper: AlgorithmWrapper,
+        wrapper: algorithm_wrapper.AlgorithmWrapper,
         max_range: float
     ) -> pn.ggplot:
+        """Create a plot of the predicted vs. observed values.
+        
+        Parameters
+        ----------
+        plot_data (pd.DataFrame): 
+            The plot data.
+        wrapper (AlgorithmWrapper): 
+            The wrapper for the model.
+        max_range (float): 
+            The maximum range of the plot.
+
+        Returns
+        -------
+        pn.ggplot: 
+            The plot object.
+        """
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
             pn.geom_point(
@@ -81,7 +114,7 @@ class PlotPredVsObs(PlotEvaluator):
         return plot
 
 
-class PlotResiduals(PlotEvaluator):
+class PlotResiduals(plot_evaluator.PlotEvaluator):
     """Plot the residuals of a regression model."""
     def plot(
         self,
@@ -90,7 +123,26 @@ class PlotResiduals(PlotEvaluator):
         y: pd.Series,
         filename: str,
         add_fit_line: bool = False
-    ):
+    ) -> None:
+        """Plot the residuals of a regression model.
+        
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The trained model.
+        X (pd.DataFrame): 
+            The input features.
+        y (pd.Series): 
+            The true target values.
+        filename (str): 
+            The name of the output file.
+        add_fit_line (bool): 
+            Whether to add a line of best fit to the plot.
+
+        Returns
+        -------
+        None
+        """
         prediction = self._generate_prediction(model, X)
         plot_data = self._generate_plot_data(prediction, y)
         wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
@@ -128,25 +180,17 @@ class PlotResiduals(PlotEvaluator):
     def _create_plot(
         self,
         plot_data: pd.DataFrame,
-        wrapper: AlgorithmWrapper,
+        wrapper: algorithm_wrapper.AlgorithmWrapper,
         add_fit_line: bool
     ) -> pn.ggplot:
         """Plot the residuals of the model and save the plot.
 
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model.
-
-        X (pd.DataFrame): 
-            The input features.
-
-        y (pd.Series): 
-            The true target values.
-
-        filename (str): 
-            The name of the output file (without extension).
-
+        plot_data (pd.DataFrame): 
+            The plot data.
+        wrapper (AlgorithmWrapper): 
+            The wrapper for the model.
         add_fit_line (bool): 
             Whether to add a line of best fit to the plot.
         """
