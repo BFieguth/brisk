@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import sklearn.metrics as sk_metrics
 
-from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator
+from brisk.evaluation.evaluators import measure_evaluator
 
-class ConfusionMatrix(MeasureEvaluator):
+class ConfusionMatrix(measure_evaluator.MeasureEvaluator):
     """Calculate a confusion matrix for a classification model."""
     def evaluate(
         self,
@@ -62,8 +62,18 @@ class ConfusionMatrix(MeasureEvaluator):
             }
         return data
 
-    def _log_results(self, data: Dict[str, Any]
-    ):
+    def _log_results(self, data: Dict[str, Any]):
+        """Log the results of the confusion matrix to console.
+
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            The data to log
+
+        Returns
+        -------
+        None
+        """
         header = " " * 10 + " ".join(
             f"{label:>10}" for label in data["labels"]
         ) + "\n"
