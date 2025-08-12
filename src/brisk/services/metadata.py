@@ -5,15 +5,30 @@ import datetime
 
 from sklearn import base
 
-from brisk.services.base import BaseService
-from brisk.configuration.algorithm_wrapper import AlgorithmCollection
+from brisk.services import base as base_service
+from brisk.configuration import algorithm_wrapper
 
-class MetadataService(BaseService):
-    """Metadata generation."""
+class MetadataService(base_service.BaseService):
+    """Metadata generation.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the service
+    algorithm_config : AlgorithmCollection
+        The algorithm configuration
+
+    Attributes
+    ----------
+    name : str
+        The name of the service
+    algorithm_config : AlgorithmCollection
+        The algorithm configuration
+    """
     def __init__(
         self,
         name,
-        algorithm_config: AlgorithmCollection
+        algorithm_config: algorithm_wrapper.AlgorithmCollection
     ):
         super().__init__(name)
         self.algorithm_config = algorithm_config
@@ -65,7 +80,23 @@ class MetadataService(BaseService):
         dataset_name: str,
         group_name: str
     ) -> Dict[str, Any]:
-        """Generate metadata for a dataset evaluation."""
+        """Generate metadata for a dataset evaluation.
+
+        Parameters
+        ----------
+        method_name : str
+            The name of the calling method
+        dataset_name : str
+            The name of the dataset
+        group_name : str
+            The name of the group
+
+        Returns
+        -------
+        Dict[str, Any]
+            Metadata including timestamp, method name, dataset name, and group
+            name
+        """
         return {
             "type": "dataset",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
