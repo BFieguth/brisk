@@ -7,10 +7,22 @@ import pandas as pd
 import sklearn.model_selection as model_select
 
 from brisk.configuration import algorithm_wrapper
-from brisk.services.base import BaseService
+from brisk.services import base
 
-class UtilityService(BaseService):
-    """Utility service with helper functions for the EvaluationManager."""
+class UtilityService(base.BaseService):
+    """Utility service with helper functions for the EvaluationManager.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the service
+    algorithm_config : AlgorithmCollection
+        The algorithm configuration
+    group_index_train : Dict[str, np.array] | None
+        The group index for the training data
+    group_index_test : Dict[str, np.array] | None
+        The group index for the test data
+    """
     def __init__(
         self,
         name: str,
@@ -32,6 +44,19 @@ class UtilityService(BaseService):
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None,
     ) -> None:
+        """Set the split indices for grouped data.
+
+        Parameters
+        ----------
+        group_index_train : Dict[str, np.array] | None
+            The group index for the training data
+        group_index_test : Dict[str, np.array] | None
+            The group index for the test data
+
+        Returns
+        -------
+        None
+        """
         self.group_index_train = group_index_train
         self.group_index_test = group_index_test
         if group_index_train is not None and group_index_test is not None:
@@ -64,6 +89,11 @@ class UtilityService(BaseService):
         ----------
         is_test (bool): 
             Whether the data is test data.
+
+        Returns
+        -------
+        Dict[str, np.array] | None
+            The group index for the training or test data
         """
         if self.data_has_groups:
             if is_test:
@@ -77,6 +107,22 @@ class UtilityService(BaseService):
         cv: int = 5,
         num_repeats: Optional[int] = None
     ) -> Tuple[model_select.BaseCrossValidator, np.array]:
+        """Get the cross-validator splitter for the data.
+
+        Parameters
+        ----------
+        y : pd.Series
+            The target variable
+        cv : int
+            The number of folds or splits to create
+        num_repeats : Optional[int]
+            The number of repeats
+
+        Returns
+        -------
+        Tuple[model_select.BaseCrossValidator, np.array]
+            The cross-validator splitter and the group index
+        """
         group_index = self.get_group_index(y.attrs["is_test"])
 
         is_categorical = False
