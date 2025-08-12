@@ -6,24 +6,19 @@ if some fail.
 """
 
 import collections
-from datetime import datetime
 import logging
 import os
-import pathlib
 import time
-from typing import Dict, Tuple, Optional, Type
+import json
 import warnings
-import re
+from typing import Optional, Type
 
-import joblib
 import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
 
 from brisk.reporting import report_renderer
-
-from brisk.training import logging_util
-from brisk.configuration import algorithm_wrapper, configuration
+from brisk.configuration import configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
@@ -90,11 +85,10 @@ class TrainingManager:
         )
         self.experiment_results = None
         self._reset_experiment_results()
-        
+
     def run_experiments(
         self,
         workflow: workflow_module.Workflow,
-        # results_name: Optional[str] = None,
         create_report: bool = True
     ) -> None:
         """Runs the Workflow for each experiment and generates report.
@@ -103,13 +97,13 @@ class TrainingManager:
         ----------
         workflow : Workflow
             A subclass of the Workflow class that defines the training steps.
-
-        results_name : str
-            The name of the results directory.
-
         create_report : bool
             Whether to generate an HTML report after all experiments. 
             Defaults to True.
+
+        Returns
+        -------
+        None
         """
         self._reset_experiment_results()
         progress_bar = tqdm.tqdm(
@@ -118,9 +112,7 @@ class TrainingManager:
             unit="experiment"
         )
 
-        # results_dir = self._create_results_dir(results_name)
         self._save_config_log(self.results_dir, workflow, self.logfile)
-        # self._save_data_distributions(self.results_dir, self.output_structure)
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
@@ -158,6 +150,10 @@ class TrainingManager:
 
         results_dir : str
             Directory to store results.
+        
+        Returns
+        -------
+        None
         """
         success = False
         start_time = time.time()
@@ -213,7 +209,9 @@ class TrainingManager:
                 start_time,
                 e
             )
-            self.services.reporting.add_experiment(current_experiment.algorithms)
+            self.services.reporting.add_experiment(
+                current_experiment.algorithms
+            )
             self.services.reporting.clear_context()
 
         if success:
@@ -223,11 +221,18 @@ class TrainingManager:
                 dataset_name,
                 experiment_name
             )
-            self.services.reporting.add_experiment(current_experiment.algorithms)
+            self.services.reporting.add_experiment(
+                current_experiment.algorithms
+            )
             self.services.reporting.clear_context()
 
     def _reset_experiment_results(self) -> None:
-        """Set self.experiment_results to a defaultdict of lists."""
+        """Set self.experiment_results to a defaultdict of lists.
+
+        Returns
+        -------
+        None
+        """
         self.experiment_results = collections.defaultdict(
             lambda: collections.defaultdict(list)
         )
@@ -241,8 +246,7 @@ class TrainingManager:
             Directory where results are stored.
         """
         report_data = self.services.reporting.get_report_data()
-        import json
-        with open("./dev_report_data.json", "w") as f:
+        with open("./dev_report_data.json", "w", encoding="utf-8") as f:
             json.dump(report_data.model_dump(), f, indent=4)
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
@@ -264,6 +268,10 @@ class TrainingManager:
 
         logfile : str
             The logfile to save.
+
+        Returns
+        -------
+        None
         """
         config_log_path = os.path.join(results_dir, "config_log.md")
         config_content = logfile.split("\n")
@@ -335,7 +343,7 @@ class TrainingManager:
         )
 
         self.eval_manager.set_experiment_values(
-            experiment_dir, data_split.get_split_metadata(), 
+            experiment_dir, data_split.get_split_metadata(),
             data_split.group_index_train, data_split.group_index_test
         )
 
@@ -371,6 +379,10 @@ class TrainingManager:
             Name of dataset
         experiment_name : str
             Name of experiment
+
+        Returns
+        -------
+        None
         """
         elapsed_time = time.time() - start_time
         self.experiment_results[group_name][dataset_name].append({
@@ -452,6 +464,10 @@ class TrainingManager:
             Name of dataset, by default None
         experiment_name : str, optional
             Name of experiment, by default None
+
+        Returns
+        -------
+        None
         """
         log_message = (
             f"\n\nDataset Name: {dataset_name} \n"
@@ -521,7 +537,7 @@ class TrainingManager:
         """
         full_path = os.path.normpath(
             os.path.join(
-                results_dir, group_name, dataset_name, f"split_{split_index}", 
+                results_dir, group_name, dataset_name, f"split_{split_index}",
                 experiment_name
             )
         )
@@ -560,6 +576,10 @@ class TrainingManager:
 
         progress_bar : tqdm.tqdm
             Progress bar to close.
+
+        Returns
+        -------
+        None
         """
         progress_bar.close()
         logging.shutdown()
