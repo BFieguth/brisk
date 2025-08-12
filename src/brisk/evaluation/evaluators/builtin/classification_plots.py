@@ -1,4 +1,10 @@
-"""Evaluators to generate plots for classification problems."""
+"""Evaluators to generate plots for classification problems.
+
+Classes:
+    PlotConfusionHeatmap
+    PlotRocCurve
+    PlotPrecisionRecallCurve
+"""
 from typing import Any, Optional, Tuple
 
 import numpy as np
@@ -7,9 +13,9 @@ from sklearn import base
 import sklearn.metrics as sk_metrics
 import plotnine as pn
 
-from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
+from brisk.evaluation.evaluators import plot_evaluator
 
-class PlotConfusionHeatmap(PlotEvaluator):
+class PlotConfusionHeatmap(plot_evaluator.PlotEvaluator):
     """Plot a heatmap of the confusion matrix for a model."""
     def plot(
         self,
@@ -33,6 +39,10 @@ class PlotConfusionHeatmap(PlotEvaluator):
 
         filename (str): 
             The path to save the confusion matrix heatmap image.
+
+        Returns
+        -------
+        None
         """
         prediction = self._generate_prediction(model, X)
         plot_data = self._generate_plot_data(prediction, y)
@@ -82,7 +92,21 @@ class PlotConfusionHeatmap(PlotEvaluator):
         self,
         plot_data: pd.DataFrame,
         display_name: str
-    ):
+    ) -> pn.ggplot:
+        """Create a heatmap of the confusion matrix.
+
+        Parameters
+        ----------
+        plot_data : pd.DataFrame
+            The data for the plot
+        display_name : str
+            The name of the model
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
+        """
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="Predicted Label",
@@ -103,7 +127,7 @@ class PlotConfusionHeatmap(PlotEvaluator):
         return plot
 
 
-class PlotRocCurve(PlotEvaluator):
+class PlotRocCurve(plot_evaluator.PlotEvaluator):
     """Plot a reciever operator curve with area under the curve."""
     def plot(
         self,
@@ -127,6 +151,10 @@ class PlotRocCurve(PlotEvaluator):
             The path to save the ROC curve image.
         pos_label (Optional[int]): 
             The label of the positive class.
+
+        Returns
+        -------
+        None
         """
         plot_data, auc_data, auc = self._generate_plot_data(
             model, X, y, pos_label
@@ -201,7 +229,25 @@ class PlotRocCurve(PlotEvaluator):
         auc_data: pd.DataFrame,
         auc: float,
         wrapper: Any
-    ):
+    ) -> pn.ggplot:
+        """Create a ROC curve plot.
+
+        Parameters
+        ----------
+        plot_data : pd.DataFrame
+            The data for the plot
+        auc_data : pd.DataFrame
+            The data for the AUC
+        auc : float
+            The AUC score
+        wrapper : Any
+            The wrapper for the model
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
+        """
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="False Positive Rate",
@@ -238,14 +284,29 @@ class PlotRocCurve(PlotEvaluator):
         )
         return plot
 
-    def _log_results(self, plot_name: str, auc: float, filename: str):
+    def _log_results(self, plot_name: str, auc: float, filename: str) -> None:
+        """Log the results of the ROC curve to console.
+
+        Parameters
+        ----------
+        plot_name : str
+            The name of the plot
+        auc : float
+            The AUC score
+        filename : str
+            The name of the file to save the plot to
+
+        Returns
+        -------
+        None
+        """
         output_path = self.io.output_dir / f"{filename}.svg"
         self.services.logger.logger.info(
             "%s with AUC = %.2f saved to %s", plot_name, auc, output_path
         )
 
 
-class PlotPrecisionRecallCurve(PlotEvaluator):
+class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
     """Plot a precision-recall curve with area under the curve."""
     def plot(
         self,
@@ -255,9 +316,26 @@ class PlotPrecisionRecallCurve(PlotEvaluator):
         filename: str,
         pos_label: Optional[int] = 1
     ) -> None:
-        plot_data, ap_score = self._generate_plot_data(
-            model, X, y, pos_label
-        )
+        """Plot a precision-recall curve with area under the curve.
+
+        Parameters
+        ----------
+        model (base.BaseEstimator): 
+            The trained binary classification model.
+        X (np.ndarray): 
+            The input features.
+        y (np.ndarray): 
+            The true binary labels.
+        filename (str): 
+            The path to save the precision-recall curve image.
+        pos_label (Optional[int]): 
+            The label of the positive class.
+
+        Returns
+        -------
+        None
+        """
+        plot_data, ap_score = self._generate_plot_data(model, X, y, pos_label)
         wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
         plot = self._create_plot(plot_data, wrapper)
         metadata = self._generate_metadata(model, X.attrs["is_test"])
@@ -326,7 +404,21 @@ class PlotPrecisionRecallCurve(PlotEvaluator):
         self,
         plot_data: pd.DataFrame,
         wrapper: Any
-    ):
+    ) -> pn.ggplot:
+        """Create a precision-recall curve plot.
+
+        Parameters
+        ----------
+        plot_data : pd.DataFrame
+            The data for the plot
+        wrapper : Any
+            The wrapper for the model
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
+        """
         plot = (
             pn.ggplot(plot_data, pn.aes(
                 x="Recall",
@@ -352,7 +444,27 @@ class PlotPrecisionRecallCurve(PlotEvaluator):
         )
         return plot
 
-    def _log_results(self, plot_name: str, ap_score: float, filename: str):
+    def _log_results(
+        self,
+        plot_name: str,
+        ap_score: float,
+        filename: str
+    ) -> None:
+        """Log the results of the precision-recall curve to console.
+        
+        Parameters
+        ----------
+        plot_name : str
+            The name of the plot
+        ap_score : float
+            The AP score
+        filename : str
+            The name of the file to save the plot to
+
+        Returns
+        -------
+        None
+        """
         output_path = self.io.output_dir / f"{filename}.svg"
         self.services.logger.logger.info(
             "%s with AP Score = %.2f saved to %s", 
