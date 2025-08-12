@@ -1,5 +1,5 @@
 """Common plots for evaluating models."""
-from typing import Optional, Dict, Union, List, Tuple
+from typing import Optional, Dict, Union, List, Tuple, Any
 
 import pandas as pd
 import numpy as np
@@ -11,9 +11,9 @@ from sklearn import inspection
 from sklearn import tree
 from sklearn import ensemble
 
-from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
+from brisk.evaluation.evaluators import plot_evaluator
 
-class PlotLearningCurve(PlotEvaluator):
+class PlotLearningCurve(plot_evaluator.PlotEvaluator):
     """Plot learning curves showing model performance vs training size."""
     def plot(
         self,
@@ -46,6 +46,10 @@ class PlotLearningCurve(PlotEvaluator):
             Scoring metric to use, by default "neg_mean_absolute_error"
         filename : str, optional
             Name for output file, by default "learning_curve"
+        
+        Returns
+        -------
+        None
         """
         plot_data = self._generate_plot_data(
             model, X, y, cv, num_repeats, n_jobs, metric
@@ -94,8 +98,6 @@ class PlotLearningCurve(PlotEvaluator):
         )
         results = {}
         scorer = self.metric_config.get_scorer(metric)
-
-        # Generate learning curve data
         train_sizes, train_scores, test_scores, fit_times, _ = (
             model_select.learning_curve(
                 model, X, y, cv=splitter, groups=indices,
@@ -104,7 +106,6 @@ class PlotLearningCurve(PlotEvaluator):
             )
         )
         results["train_sizes"] = train_sizes
-        # Calculate means and standard deviations
         results["train_scores_mean"] = np.mean(train_scores, axis=1)
         results["train_scores_std"] = np.std(train_scores, axis=1)
         results["test_scores_mean"] = np.mean(test_scores, axis=1)
@@ -119,7 +120,24 @@ class PlotLearningCurve(PlotEvaluator):
         metric: str,
         model: base.BaseEstimator
     ) -> None:
-        # Create subplots
+        """Create a learning curve plot with three subplots.
+
+        First subplot is the learning curve, second is the scalability of the
+        model, and third is the performance of the model.
+
+        Parameters
+        ----------
+        results : Dict[str, float]
+            The data for the plot
+        metric : str
+            The metric to use for the plot
+        model : base.BaseEstimator
+            The model to use for the plot
+
+        Returns
+        -------
+        None
+        """
         _, axes = plt.subplots(1, 3, figsize=(16, 6))
         plt.rcParams.update({"font.size": 12})
 
@@ -185,7 +203,7 @@ class PlotLearningCurve(PlotEvaluator):
         plt.tight_layout()
 
 
-class PlotFeatureImportance(PlotEvaluator):
+class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
     """Plot the feature importance for the model."""
     def plot(
         self,
@@ -219,6 +237,10 @@ class PlotFeatureImportance(PlotEvaluator):
             The metric to use for evaluation.
         num_rep (int): 
             The number of repetitions for calculating importance.
+
+        Returns
+        -------
+        None
         """
         importance_data, plot_width, plot_height = self._generate_plot_data(
             model, X, y, threshold, feature_names, metric, num_rep
@@ -323,8 +345,24 @@ class PlotFeatureImportance(PlotEvaluator):
         self,
         importance_data: pd.DataFrame,
         display_name: str,
-        wrapper: str
-    ):
+        wrapper: Any
+    ) -> pn.ggplot:
+        """Create a feature importance plot.
+
+        Parameters
+        ----------
+        importance_data : pd.DataFrame
+            The data for the plot
+        display_name : str
+            The name of the metric
+        wrapper : Any
+            The wrapper for the model
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
+        """
         plot = (
             pn.ggplot(importance_data, pn.aes(x="Feature", y="Importance")) +
             pn.geom_bar(stat="identity", fill=self.primary_color) +
@@ -338,7 +376,7 @@ class PlotFeatureImportance(PlotEvaluator):
         return plot
 
 
-class PlotModelComparison(PlotEvaluator):
+class PlotModelComparison(plot_evaluator.PlotEvaluator):
     """Plot a comparison of multiple models based on the specified measure."""
     def plot(
         self,
@@ -366,6 +404,10 @@ class PlotModelComparison(PlotEvaluator):
 
         filename (str): 
             The name of the output file (without extension).
+        
+        Returns
+        -------
+        None
         """
         plot_data = self._generate_plot_data(*models, X=X, y=y, metric=metric)
         if plot_data is None:
@@ -419,7 +461,9 @@ class PlotModelComparison(PlotEvaluator):
                 score = scorer(y, predictions)
                 metric_values.append(round(score, 3))
             else:
-                self.services.logger.logger.info(f"Scorer for {metric} not found.")
+                self.services.logger.logger.info(
+                    f"Scorer for {metric} not found."
+                )
                 return None
 
         plot_data = pd.DataFrame({
@@ -432,7 +476,21 @@ class PlotModelComparison(PlotEvaluator):
         self,
         plot_data: pd.DataFrame,
         display_name: str
-    ):
+    ) -> pn.ggplot:
+        """Create a model comparison plot.
+
+        Parameters
+        ----------
+        plot_data : pd.DataFrame
+            The data for the plot
+        display_name : str
+            The name of the metric
+
+        Returns
+        -------
+        pn.ggplot
+            The plot object
+        """
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Model", y="Score")) +
             pn.geom_bar(stat="identity", fill=self.primary_color) +
