@@ -9,7 +9,28 @@ from brisk.services import base
 from brisk.training import logging_util
 
 class LoggingService(base.BaseService):
-    """Create logger instance and handle all log messages."""
+    """Create logger instance and handle all log messages.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the service
+    results_dir : Path
+        The root directory for all results, does not change at runtime
+    verbose : bool
+        Whether to print verbose output
+
+    Attributes
+    ----------
+    results_dir : Path
+        The root directory for all results, does not change at runtime
+    verbose : bool
+        Whether to print verbose output
+    logger : logging.Logger
+        The logger instance
+    _memory_handler : Optional[logging.MemoryHandler]
+        The memory handler instance
+    """
     def __init__(
         self,
         name: str,
@@ -24,9 +45,14 @@ class LoggingService(base.BaseService):
         self.setup_logger()
 
     def setup_logger(self) -> None:
-        """
-        Configures the logger, handling buffering to memory if results_dir is 
-        not set, and flushing to a file when results_dir becomes available.
+        """Configure the logger.
+        
+        Handles buffering to memory if results_dir is not set, and flushing to
+        a file when results_dir becomes available.
+
+        Returns
+        -------
+        None
         """
         logging.captureWarnings(True)
 
@@ -64,7 +90,7 @@ class LoggingService(base.BaseService):
             if self._memory_handler:
                 self._memory_handler.setTarget(file_handler)
                 self._memory_handler.flush()
-        
+
         elif self._memory_handler:
             self._memory_handler.setTarget(logging.NullHandler())
         else:
@@ -78,8 +104,15 @@ class LoggingService(base.BaseService):
             logger.addHandler(self._memory_handler)
 
         self.logger = logger
-    
+
     def set_results_dir(self, results_dir: pathlib.Path) -> None:
+        """Set the results directory.
+
+        Parameters
+        ----------
+        results_dir : Path
+            The new results directory
+        """
         if self.results_dir == results_dir:
             return
         self.results_dir = results_dir
