@@ -7,9 +7,9 @@ import numpy as np
 from sklearn import base
 import sklearn.model_selection as model_select
 
-from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator
+from brisk.evaluation.evaluators import measure_evaluator
 
-class EvaluateModel(MeasureEvaluator):
+class EvaluateModel(measure_evaluator.MeasureEvaluator):
     """Evaluate a model on the provided measures and save the results."""
     def evaluate(
         self,
@@ -33,6 +33,10 @@ class EvaluateModel(MeasureEvaluator):
             A list of metrics to calculate.
         filename (str): 
             The name of the output file without extension.
+
+        Returns
+        -------
+        None
         """
         return super().evaluate(model, X, y, metrics, filename)
 
@@ -66,11 +70,25 @@ class EvaluateModel(MeasureEvaluator):
                 score = scorer(y_true, predictions)
                 results[display_name] = score
             else:
-                self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
+                self.services.logger.logger.info(
+                    f"Scorer for {metric_name} not found."
+                )
         return results
 
-    def _log_results(self, results: Dict[str, float], filename: str):
-        """Overrides default logging."""
+    def _log_results(self, results: Dict[str, float], filename: str) -> None:
+        """Overrides default logging.
+
+        Parameters
+        ----------
+        results : Dict[str, float]
+            The results of the evaluation
+        filename : str
+            The name of the file to save the results to
+
+        Returns
+        -------
+        None
+        """
         scores_log = "\n".join([
             f"{metric}: {score:.4f}"
             if isinstance(score, (int, float))
@@ -85,7 +103,22 @@ class EvaluateModel(MeasureEvaluator):
             scores_log, output_path
         )
 
-    def report(self, results: Dict[str, Any]) -> Tuple[List[str], List[List[Any]]]:
+    def report(
+        self,
+        results: Dict[str, Any]
+    ) -> Tuple[List[str], List[List[Any]]]:
+        """Generate a report of the evaluation results.
+
+        Parameters
+        ----------
+        results : Dict[str, Any]
+            The results of the evaluation
+
+        Returns
+        -------
+        Tuple[List[str], List[List[Any]]]
+            The list of column headers and a nested list of rows
+        """
         columns = ["Metric","Score"]
         metrics = [key for key in results.keys() if key != "_metadata"]
         rows = []
@@ -96,7 +129,7 @@ class EvaluateModel(MeasureEvaluator):
             ])
         return columns, rows
 
-class EvaluateModelCV(MeasureEvaluator):
+class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
     """Evaluate a model using cross-validation and save the scores."""
     def evaluate(
         self,
@@ -123,20 +156,40 @@ class EvaluateModelCV(MeasureEvaluator):
             The name of the output file without extension.
         cv (int): 
             The number of cross-validation folds. Defaults to 5.
+
+        Returns
+        -------
+        None
         """
         results = self._calculate_measures(model, X, y, metrics, cv)
         metadata = self._generate_metadata(model, X.attrs["is_test"])
         self._save_json(results, filename, metadata)
         self._log_results(results, filename)
 
-    def report(self, results: Dict[str, Any]) -> Tuple[List[str], List[List[Any]]]:
+    def report(
+        self,
+        results: Dict[str, Any]
+    ) -> Tuple[List[str], List[List[Any]]]:
+        """Generate a report of the cross-validation results.
+
+        Parameters
+        ----------
+        results : Dict[str, Any]
+            The results of the cross-validation
+
+        Returns
+        -------
+        Tuple[List[str], List[List[Any]]]
+            The list of column headers and a nested list of rows
+        """
         columns = ["Metric","Mean Score", "All Scores"]
         metrics = [key for key in results.keys() if key != "_metadata"]
         rows = []
         for metric in metrics:
             rows.append([
                 metric,
-                f"{results[metric]['mean_score']} ({results[metric]['std_dev']})",
+                f"{results[metric]['mean_score']} " # pylint: disable=W1405
+                f"({results[metric]['std_dev']})", # pylint: disable=W1405
                 str(results[metric]["all_scores"])
             ])
         return columns, rows
@@ -155,7 +208,7 @@ class EvaluateModelCV(MeasureEvaluator):
         ----------
         model (BaseEstimator): 
             The model to evaluate.
-        X (pd.DataFrame): `
+        X (pd.DataFrame):
             The input features.
         y (pd.Series): 
             The target data.
@@ -163,6 +216,11 @@ class EvaluateModelCV(MeasureEvaluator):
             A list of metrics to calculate.
         cv (int): 
             The number of cross-validation folds. Defaults to 5.
+
+        Returns
+        -------
+        Dict[str, float]
+            A dictionary containing the cross-validation results for each metric
         """
         splitter, indices = self.utility.get_cv_splitter(y, cv)
         results = {}
@@ -179,11 +237,25 @@ class EvaluateModelCV(MeasureEvaluator):
                     "all_scores": scores.tolist()
                 }
             else:
-                self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
+                self.services.logger.logger.info(
+                    f"Scorer for {metric_name} not found."
+                )
         return results
 
-    def _log_results(self, results: Dict[str, float], filename: str):
-        """Overrides default logging."""
+    def _log_results(self, results: Dict[str, float], filename: str) -> None:
+        """Overrides default logging.
+
+        Parameters
+        ----------
+        results : Dict[str, float]
+            The results of the cross-validation
+        filename : str
+            The name of the file to save the results to
+
+        Returns
+        -------
+        None
+        """
         scores_log = "\n".join([
             f"{metric}: mean={res['mean_score']:.4f}, " # pylint: disable=W1405
             f"std_dev={res['std_dev']:.4f}" # pylint: disable=W1405
@@ -197,7 +269,7 @@ class EvaluateModelCV(MeasureEvaluator):
         )
 
 
-class CompareModels(MeasureEvaluator):
+class CompareModels(measure_evaluator.MeasureEvaluator):
     """Compare multiple models using specified measures."""
     def evaluate(
         self,
@@ -207,7 +279,7 @@ class CompareModels(MeasureEvaluator):
         metrics: List[str],
         filename: str,
         calculate_diff: bool = False,
-    ) -> Dict[str, Dict[str, float]]:
+    ) -> None:
         """Compare multiple models using specified metrics.
 
         Parameters
@@ -224,6 +296,10 @@ class CompareModels(MeasureEvaluator):
             Name for output file (without extension)
         calculate_diff : bool, optional
             Whether to calculate differences between models, by default False
+        
+        Returns
+        -------
+        None
         """
         results = self._calculate_measures(
             *models, X=X, y=y, metrics=metrics, calculate_diff=calculate_diff
@@ -257,7 +333,7 @@ class CompareModels(MeasureEvaluator):
 
         Returns
         -------
-        dict
+        Dict[str, Dict[str, float]]
             Nested dictionary containing metric scores for each model
         """
         comparison_results = {}
@@ -270,7 +346,6 @@ class CompareModels(MeasureEvaluator):
             wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
             model_names.append(wrapper.display_name)
 
-        # Evaluate the model and collect results
         for model_name, model in zip(model_names, models):
             predictions = model.predict(X)
             results = {}
@@ -282,11 +357,12 @@ class CompareModels(MeasureEvaluator):
                     score = scorer(y, predictions)
                     results[display_name] = score
                 else:
-                    self.services.logger.logger.info(f"Scorer for {metric_name} not found.")
+                    self.services.logger.logger.info(
+                        f"Scorer for {metric_name} not found."
+                    )
 
             comparison_results[model_name] = results
 
-        # Calculate the difference between models for each metric
         if calculate_diff and len(models) > 1:
             comparison_results["differences"] = {}
             model_pairs = list(itertools.combinations(model_names, 2))
@@ -304,8 +380,20 @@ class CompareModels(MeasureEvaluator):
                     ] = diff
         return comparison_results
 
-    def _log_results(self, results: Dict[str, float], filename: str):
-        """Overrides default logging."""
+    def _log_results(self, results: Dict[str, float], filename: str) -> None:
+        """Overrides default logging.
+
+        Parameters
+        ----------
+        results : Dict[str, float]
+            The results of the model comparison
+        filename : str
+            The name of the file to save the results to
+
+        Returns
+        -------
+        None
+        """
         comparison_log = "\n".join([
             f"{model}: " +
             ", ".join(
