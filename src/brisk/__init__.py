@@ -26,7 +26,6 @@ from brisk.data.data_manager import DataManager
 from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.metric_wrapper import MetricWrapper
 from brisk.evaluation.evaluation_manager import EvaluationManager
-# from brisk.reporting.report_manager import ReportManager
 from brisk.training.training_manager import TrainingManager
 from brisk.training.workflow import Workflow
 from brisk.training.logging_util import TqdmLoggingHandler, FileFormatter
