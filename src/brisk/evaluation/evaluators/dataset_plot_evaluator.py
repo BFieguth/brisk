@@ -30,10 +30,29 @@ class DatasetPlotEvaluator(BaseEvaluator):
         dataset_name: str,
         group_name: str
     ) -> None:
+        """Template for all plot methods to follow.
+
+        Parameters
+        ----------
+        train_data : pd.DataFrame | pd.Series
+            The training data
+        test_data : pd.DataFrame | pd.Series
+            The testing data
+        filename : str
+            The name of the file to save the plot to
+        dataset_name : str
+            The name of the dataset
+        group_name : str
+            The name of the experiment group
+
+        Returns
+        -------
+        None
+        """
         plot_data = self._generate_plot_data(train_data, test_data)
         plot = self._create_plot(plot_data)
         metadata = self._generate_metadata(dataset_name, group_name)
-        self._save_plot(filename, metadata, plot)
+        self._save_plot(filename, metadata, plot=plot)
         self._log_results(self.method_name, filename)
 
     @abstractmethod
@@ -43,12 +62,38 @@ class DatasetPlotEvaluator(BaseEvaluator):
         test_data: pd.DataFrame | pd.Series,
         **kwargs
     ) -> Any:
-        """MUST implement: Generate data for plotting."""
+        """MUST implement: Generate data for plotting.
+
+        Parameters
+        ----------
+        train_data : pd.DataFrame | pd.Series
+            The training data
+        test_data : pd.DataFrame | pd.Series
+            The testing data
+        **kwargs
+
+        Returns
+        -------
+        Any
+            The data for _create_plot
+        """
         pass
-    
+
     @abstractmethod
     def _create_plot(self, plot_data: Any, **kwargs) -> Any:
-        """MUST implement: Create the plot object."""
+        """MUST implement: Create the plot object.
+
+        Parameters
+        ----------
+        plot_data : Any
+            The data for the plot
+        **kwargs
+
+        Returns
+        -------
+        Any
+            The plot object
+        """
         pass
 
     def _save_plot(
@@ -57,7 +102,21 @@ class DatasetPlotEvaluator(BaseEvaluator):
         metadata: Dict[str, Any],
         **kwargs
     ) -> str:
-        """ENFORCED: Save plot with metadata."""
+        """ENFORCED: Save plot with metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to save the plot to
+        metadata : Dict[str, Any]
+            The metadata for the plot
+        **kwargs
+
+        Returns
+        -------
+        str
+            The path to the saved plot
+        """
         output_path = self.services.io.output_dir / f"{filename}.png"
         self.io.save_plot(output_path, metadata, **kwargs)
         return str(output_path)
@@ -67,13 +126,33 @@ class DatasetPlotEvaluator(BaseEvaluator):
         dataset_name: str,
         group_name: str
     ) -> Dict[str, Any]:
-        """Enforced: generate metadata for output."""
+        """Enforced: generate metadata for output.
+
+        Parameters
+        ----------
+        dataset_name : str
+            The name of the dataset
+        group_name : str
+            The name of the experiment group
+        """
         return self.metadata.get_dataset(
             self.method_name, dataset_name, group_name
         )
 
     def _log_results(self, plot_name: str, filename: str) -> None:
-        """Default logging - can be overridden."""
+        """Default logging - can be overridden.
+
+        Parameters
+        ----------
+        plot_name : str
+            The name of the plot
+        filename : str
+            The name of the file to save the plot to
+
+        Returns
+        -------
+        None
+        """
         output_path = self.io.output_dir / f"{filename}.svg"
         self.services.logger.logger.info(
             f"{plot_name} plot saved to {output_path}."
