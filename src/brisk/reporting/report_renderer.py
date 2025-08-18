@@ -1,5 +1,4 @@
-"""Generate report.html from a ReportData instance.
-"""
+"""Generate report.html from a ReportData instance."""
 import os
 from pathlib import Path
 from typing import Dict
@@ -9,6 +8,23 @@ from jinja2 import Environment, FileSystemLoader
 from brisk.reporting.report_data import ReportData
 
 class ReportRenderer():
+    """Render a ReportData instance to an HTML report.
+
+    Attributes
+    ----------
+    css_content : Dict[str, str]
+        A dictionary of CSS content.
+    page_templates : Dict[str, str]
+        A dictionary of HTML page templates.
+    component_templates : Dict[str, str]
+        A dictionary of HTML component templates.
+    javascript : str
+        A string of JavaScript code.
+    env : jinja2.Environment
+        A Jinja2 environment.
+    template : jinja2.Template
+        A Jinja2 template for the report.
+    """
     def __init__(self):
         report_dir = os.path.dirname(os.path.abspath(__file__))
         self.css_content = self._load_directory(
@@ -21,7 +37,7 @@ class ReportRenderer():
             Path(report_dir, "components"), ".html", "_component"
         )
         self.javascript = self._load_javascript(
-            Path(report_dir, "js/renderers"), Path(report_dir, "js/core/app.js") 
+            Path(report_dir, "js/renderers"), Path(report_dir, "js/core/app.js")
         )
         self.env = Environment(
             loader=FileSystemLoader(searchpath=report_dir)
@@ -34,8 +50,21 @@ class ReportRenderer():
         file_extension: str,
         name_extension: str
     ) -> Dict[str, str]:
-        """
-        Load all files in a directory and assign variable name to each file.
+        """Load all files in a directory and assign variable name to each file.
+
+        Parameters
+        ----------
+        dir_path : Path
+            The path to the directory to load.
+        file_extension : str
+            The extension of the files to load.
+        name_extension : str
+            String to replace file extension with.
+
+        Returns
+        -------
+        Dict[str, str]
+            A dictionary of variable names and file contents.
         """
         content = {}
         files = [
@@ -50,7 +79,20 @@ class ReportRenderer():
         return content
 
     def _load_javascript(self, renderer_path: Path, app_path: Path) -> str:
-        """Load JavaScript files, ensure app.js is loaded last."""
+        """Load JavaScript files, ensure app.js is loaded last.
+
+        Parameters
+        ----------
+        renderer_path : Path
+            The path to the directory containing the JavaScript rendering files.
+        app_path : Path
+            The path to the app.js file.
+
+        Returns
+        -------
+        str
+            A string of JavaScript code.
+        """
         js_content = ""
         files = [
             Path(renderer_path, file) for file in os.listdir(renderer_path)
@@ -65,7 +107,15 @@ class ReportRenderer():
         return js_content
 
     def render(self, data: ReportData, output_path: Path) -> None:
-        """Create an HTML report"""
+        """Create an HTML report file from a ReportData instance.
+
+        Parameters
+        ----------
+        data : ReportData
+            The data to render.
+        output_path : Path
+            The path to the directory to write the report to.
+        """
         html_output = self.template.render(
             report=data.model_dump(),
             report_json=data.model_dump_json(),
