@@ -258,7 +258,7 @@ class DataSplitInfo:
             if is_categorical:
                 categorical_features.append(column)
 
-        self.logger.info(
+        self.services.logger.logger.info(
             "Detected %d categorical features: %s",
             len(categorical_features),
             categorical_features

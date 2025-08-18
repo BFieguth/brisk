@@ -136,7 +136,7 @@ class GlobalServiceManager:
         -------
         None
         """
-        cls.is_initalized = None
+        cls.instance = None
         cls.is_initalized = False
 
 

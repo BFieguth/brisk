@@ -198,6 +198,8 @@ class ExperimentGroup:
                     f"Invalid DataManager parameters: {invalid_params}\n"
                     f"Valid parameters are: {valid_data_params}"
                 )
+        else:
+            self.data_config = {}
 
     def _validate_description(self):
         """Validate and format experiment group description.

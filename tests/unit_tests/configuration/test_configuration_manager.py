@@ -38,7 +38,7 @@ class TestConfigurationManager:
         assert isinstance(manager.data_managers, dict)
         assert [*manager.data_managers.keys()] == ["test_group", "test_group2"]
         assert isinstance(manager.experiment_queue, collections.deque)
-        assert len(manager.experiment_queue) == 2
+        assert len(manager.experiment_queue) == 10
 
     def test_missing_data_file(self, mock_brisk_project):
         """Test error handling for missing data file."""
@@ -419,7 +419,7 @@ class TestConfigurationManager:
         
         manager = ConfigurationManager(groups, {})
         
-        assert len(manager.experiment_queue) == 3
+        assert len(manager.experiment_queue) == 15
         assert isinstance(manager.experiment_queue, collections.deque)
         # Check experiment configurations
         single_exp = next(
@@ -433,7 +433,7 @@ class TestConfigurationManager:
             exp for exp in manager.experiment_queue 
             if len(exp.algorithms) == 2
         ]
-        assert len(multi_exps) == 2
+        assert len(multi_exps) == 10
         for exp in multi_exps:
             assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
             assert isinstance(exp.algorithms["model2"], AlgorithmWrapper)
@@ -460,7 +460,7 @@ class TestConfigurationManager:
             )
         ]
         manager = ConfigurationManager(groups, {})
-        assert len(manager.experiment_queue) == 10
+        assert len(manager.experiment_queue) == 50
 
     def test_create_logfile(self, mock_brisk_project):
         """Test the _create_logfile method of ConfigurationManager."""
