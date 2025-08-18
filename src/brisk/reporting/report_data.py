@@ -4,39 +4,102 @@ import re
 
 from pydantic import BaseModel, Field, model_validator
 
-NUM_RE = re.compile(r'[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?')
-PURE_NUM_RE = re.compile(r'^[+\-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+\-]?\d+)?$')
+NUM_RE = re.compile(r"[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?")
+PURE_NUM_RE = re.compile(r"^[+\-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+\-]?\d+)?$")
 
 def _round_to(n: float, decimals: int = 3) -> float:
     return round(float(n), decimals)
 
 
 def _round_mean_std_string(s: str, decimals: int = 3) -> str:
-    # Strings of format: "1.23456 (0.0000123)"
-    patt = re.compile(r'^\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\(\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\)\s*$')
-    if not patt.match(s):
+    """
+    Round mean and standard deviation values in a string of format: "1.23456
+    (0.0000123)".
+
+    Parameters
+    ----------
+    s : str
+        The string to round. Must be of format: "1.2 (0.0)"
+    decimals : int, optional
+        The number of decimal places to round to.
+
+    Returns
+    -------
+    str
+        The rounded string.
+    """
+    pattern = re.compile(
+        r"^\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\(\s*[+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?\s*\)\s*$" # pylint: disable=C0301
+    )
+    if not pattern.match(s):
         return s
     return NUM_RE.sub(lambda m: str(_round_to(float(m.group()), decimals)), s)
 
 
 def _round_numbers_in_bracketed_list_string(s: str, decimals: int = 3) -> str:
+    """
+    Round numbers in a string of format: "[1.2, 0.0, 3.4]"
+
+    Parameters
+    ----------
+    s : str
+        The string to round. Must be of format: "[1.2, 0.0, 3.4]"
+    decimals : int, optional
+        The number of decimal places to round to.
+
+    Returns
+    -------
+    str
+        The rounded string.
+    """
     trimmed = s.strip()
-    if not (trimmed.startswith('[') and trimmed.endswith(']')):
+    if not (trimmed.startswith("[") and trimmed.endswith("]")):
         return s
     return NUM_RE.sub(lambda m: str(_round_to(float(m.group()), decimals)), s)
 
 
 def _round_dictionary_string(s: str, decimals: int = 3) -> str:
+    """Round numbers in a string of format: "{'a': 1.2, 'b': 0.0, 'c': 3.4}".
+
+    Rounding is only performed on the values (numbers after a colon).
+
+    Parameters
+    ----------
+    s : str
+        The string to round. Must be of format: "{'a': 1.2, 'b': 0.0, 'c': 3.4}"
+    decimals : int, optional
+        The number of decimal places to round to.
+
+    Returns
+    -------
+    str
+        The rounded string.
+    """
     trimmed = s.strip()
-    if not (trimmed.startswith('{') and trimmed.endswith('}')):
+    if not (trimmed.startswith("{") and trimmed.endswith("}")):
         return s
-        # Only round values (numbers after a colon)
-    return re.sub(r'(:\s*)([+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?)',
-                    lambda m: m.group(1) + str(_round_to(float(m.group(2)), decimals)),
-                    s)
+    return re.sub(
+        r"(:\s*)([+\-]?(?:\d*\.?\d+)(?:[eE][+\-]?\d+)?)",
+        lambda m: m.group(1) + str(_round_to(float(m.group(2)), decimals)),
+        s
+    )
 
 
 def _deep_round(value: Any, decimals: int = 3) -> Any:
+    """Recursively round numbers in a nested data structure.
+
+    Parameters
+    ----------
+    value : Any
+        The value to round.
+    decimals : int, optional
+        The number of decimal places to round to.
+
+    Returns
+    -------
+    Any
+        The rounded value.
+    """
     if value is None:
         return value
     if isinstance(value, float):
@@ -53,24 +116,25 @@ def _deep_round(value: Any, decimals: int = 3) -> Any:
             return value
         if PURE_NUM_RE.fullmatch(s):
             return str(_round_to(float(s), decimals))
-        
+
         ms = _round_mean_std_string(value, decimals)
         if ms != value:
             return ms
-        
+
         bl = _round_numbers_in_bracketed_list_string(value, decimals)
         if bl != value:
             return bl
-        
+
         dc = _round_dictionary_string(value, decimals)
         if dc != value:
             return dc
-        
+
         return value
     return value
 
 
 class RoundedModel(BaseModel):
+    """Enforce rounding of all numbers in the model."""
     @model_validator(mode="before")
     @classmethod
     def _round_all_numbers(cls, values):
@@ -78,7 +142,6 @@ class RoundedModel(BaseModel):
 
 
 class TableData(RoundedModel):
-    """Structure for all tables in the report."""
     name: str
     description: Optional[str] = Field(
         None, description="Optional description text displayed below the table"
