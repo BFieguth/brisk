@@ -261,8 +261,8 @@ class DataManager:
         data_path: str,
         categorical_features: List[str],
         group_name: str,
+        filename: str,
         table_name: Optional[str] = None,
-        filename: Optional[str] = None,
     ) -> data_split_info.DataSplitInfo:
         """Splits the data based on the preconfigured splitter.
 
@@ -273,11 +273,11 @@ class DataManager:
         categorical_features : list of str
             List of categorical feature names
         group_name : str
-            Name of the group for split caching, by default None
+            Name of the group for split caching
+        filename : str
+            Filename for split caching
         table_name : str, optional
             Name of the table in SQL database, by default None
-        filename : str, optional
-            Filename for split caching, by default None
 
         Returns
         -------
@@ -289,12 +289,6 @@ class DataManager:
         ValueError
             If group_name is provided without filename or vice versa
         """
-        if bool(group_name) != bool(filename):
-            raise ValueError(
-                "Both group_name and filename must be provided together. "
-                f"Got: group_name={group_name}, filename={filename}"
-            )
-
         split_key = (group_name, filename, table_name)
 
         if split_key in self._splits:
