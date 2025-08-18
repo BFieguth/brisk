@@ -1,4 +1,28 @@
+/**
+ * Implements the logic to make page interactive.
+ * @class
+ * @property {Object} reportData - JSON object with the data to render.
+ * @property {string} currentPage - The current page type. Default is 'home'.
+ * @property {Object} pendingTableUpdate - The pending table update with the table data and timestamp. Default is null.
+ * @property {boolean} isProcessingAnimation - Whether the animation is processing. Default is false.
+ * @property {number} currentExperimentGroupCard - The current experiment group card index. Default is 0.
+ * @property {Dataset} selectedDataset - The selected dataset instance.
+ * @property {number} selectedSplit - The selected split index on home page. Default is 0.
+ * @property {string} currentExperimentId - The current experiment ID. Default is null.
+ * @property {number} selectedAlgorithmIndex - The selected algorithm index. Default is 0.
+ * @property {number} selectedSplitIndex - The selected data split index on experiment page. Default is 0.
+ * @property {number} selectedTableIndex - The selected table index on experiment page. Default is 0.
+ * @property {number} selectedPlotIndex - The selected plot index on experiment page. Default is 0.
+ * @property {Array} currentDatasetSplits - The splits of the selected dataset. Default is an empty array.
+ * @property {string} currentDatasetId - The current dataset ID. Default is null.
+ * @property {number} selectedDatasetSplitIndex - The selected data split index on dataset page. Default is 0.
+ * @property {number} selectedFeatureIndex - The selected feature index on dataset page. Default is 0.
+ */
 class App {
+    /**
+     * @param {Object} reportData - JSON object with the data to render.
+     * @constructor
+     */
     constructor(reportData) {
         this.reportData = reportData;
         this.currentPage = 'home';
@@ -7,7 +31,7 @@ class App {
 
         //  Home page state
         this.currentExperimentGroupCard = 0;
-        this.selectedDataset = null; // This must be as Dataset instance
+        this.selectedDataset = null;
         this.selectedSplit = 0;
         this.initalizeHomeSelections();
 
@@ -25,12 +49,18 @@ class App {
         this.selectedFeatureIndex = 0;
     }
 
+    /**
+     * Initialize the app, setup theme, navigation, and show the home page.
+     */
     init() {
         this.initializeTheme();
         this.showPage('home');
         this.setupNavigation();
     }
 
+    /**
+     * Set this.selectedDataset to the first dataset of the first experiment group.
+     */
     initalizeHomeSelections() {
         const experimentGroups = this.reportData.experiment_groups;
         if (experimentGroups.length > 0) {
@@ -39,7 +69,10 @@ class App {
             this.selectedDataset = this.reportData.datasets[datasetID];
         }
     }
-    // Theme Management
+
+    /**
+     * Toggle the theme between light and dark.
+     */
     toggleTheme() {
         const root = document.documentElement;
         const themeText = document.querySelector('.theme-text');
@@ -63,6 +96,9 @@ class App {
         }
     }
 
+    /**
+     * Initialize the theme based on the saved theme or the system preference.
+     */
     initializeTheme() {
         const savedTheme = localStorage.getItem('theme');
         const root = document.documentElement;
@@ -93,7 +129,11 @@ class App {
         }
     }
 
-    //  Client side page rendering
+    /**
+     * Display the page based on the page type and data.
+     * @param {string} pageType - The type of page to render.
+     * @param {Object} pageData - The data to render.
+     */
     showPage(pageType, pageData = null) {
         const mainContent = document.getElementById('main-content');
         this.currentPage = pageType;
@@ -125,6 +165,12 @@ class App {
         }
     }
 
+    /**
+     * Render the page based on the page type. Pass data to the appropriate renderer.
+     * @param {string} pageType - The type of page to render.
+     * @param {Object} pageData - The data to render.
+     * @returns {string} - The HTML content of the page.
+     */
     renderPage(pageType, pageData = null) {
         switch(pageType) {
             case 'home':
@@ -138,6 +184,10 @@ class App {
         }
     }
 
+    /**
+     * Render the home page using HomeRenderer.
+     * @returns {string} - The HTML content of the home page.
+     */
     renderHomePage() {
         const selectedTable = this.getCurrentSelectedTableData();
         const renderer = new HomeRenderer(
@@ -149,6 +199,11 @@ class App {
         return tempDiv.innerHTML;
     }
 
+    /**
+     * Render the experiment page using ExperimentPageRenderer.
+     * @param {string} experimentData - The experiment ID.
+     * @returns {string} - The HTML content of the experiment page.
+     */
     renderExperimentPage(experimentData) {
         const experimentInstance = this.reportData.experiments[experimentData]
         const renderer = new ExperimentPageRenderer(experimentInstance);
@@ -158,6 +213,10 @@ class App {
         return tempDiv.innerHTML;
     }
 
+    /**
+     * Render the dataset page using DatasetPageRenderer.
+     * @returns {string} - The HTML content of the dataset page.
+     */
     renderDatasetPage() {
         const renderer = new DatasetPageRenderer(this.selectedDataset);
         const renderedElement = renderer.render();
@@ -167,7 +226,9 @@ class App {
 
     }
 
-    //  Navigation
+    /**
+     * Setup event listener to detect clicks on navigation links.
+     */
     setupNavigation() {
         const self = this;
         document.addEventListener('click', function(event) {
@@ -180,7 +241,12 @@ class App {
         });
     }
 
-    //  Home Page Logic
+    /**
+     * Select a dataset on the home page. Changes the rendered card and table.
+     * @param {Element} clickedElement - The element that was clicked.
+     * @param {string} datasetName - The name of the dataset.
+     * @param {number} cardIndex - The index of the card.
+     */
     selectDataset(clickedElement, datasetName, cardIndex) {
         // Select Dataset (Home ExperimentGroup Cards)
         const card = clickedElement.closest('.experiment-group-card');
@@ -206,6 +272,12 @@ class App {
         return false;
     }
 
+    /**
+     * Update the experiment list on the home page card.
+     * @param {Element} card - The card element.
+     * @param {number} cardIndex - The index of the card.
+     * @param {string} datasetID - The ID of the dataset.
+     */
     updateExperimentList(card, cardIndex, datasetID) {
         const experimentList = card.querySelector('.experiment-list');
         if (!experimentList) return;
@@ -253,6 +325,10 @@ class App {
         });
     }
 
+    /**
+     * Get the current experiment group object.
+     * @returns {Object} - The current experiment group.
+     */
     getCurrentExperimentGroup() {
         const experimentGroups = this.reportData.experiment_groups;
         if (experimentGroups.length > this.currentExperimentGroupCard) {
@@ -261,6 +337,10 @@ class App {
         return null;
     }
 
+    /**
+     * Get the current selected table data.
+     * @returns {Object} - The current selected table data.
+     */
     getCurrentSelectedTableData() {
         const experimentGroup = this.getCurrentExperimentGroup();
         if (!experimentGroup || !this.selectDataset) {
@@ -270,6 +350,11 @@ class App {
         return experimentGroup.test_scores[tableKey] || null;
     }
 
+    /**
+     * Update the data splits table on the home page card.
+     * @param {number} cardIndex - The index of the card.
+     * @param {string} datasetID - The ID of the dataset.
+     */
     updateDataSplitsTable(cardIndex, datasetID) {
         const experimentGroup = this.getCurrentExperimentGroup();
         if (!experimentGroup) return;
@@ -321,6 +406,11 @@ class App {
         });
     }
 
+    /**
+     * Select a split on the home page card.
+     * @param {Element} clickedRow - The row that was clicked.
+     * @param {number} splitIndex - The index of the split.
+     */
     selectSplit(clickedRow, splitIndex) {
         const table = clickedRow.closest('table');
         const allRows = table.querySelectorAll('.split-row');
@@ -331,6 +421,9 @@ class App {
         this.updateHomeTables();
     }
 
+    /**
+     * Add a pending table update to the queue.
+     */
     updateHomeTables() {
         const selectedTable = this.getCurrentSelectedTableData();
         
@@ -344,6 +437,9 @@ class App {
         }
     }
 
+    /**
+     * Process the next table update in the queue if an animation is not already processing.
+     */
     async processNextTableUpdate() {
         if (this.isProcessingAnimation) return;
         
@@ -359,6 +455,11 @@ class App {
         this.isProcessingAnimation = false;
     }
 
+    /**
+     * Render the new table and animate the transition.
+     * @param {Object} selectedTable - The selected table data.
+     * @returns {Promise} - A promise that resolves when the table update is complete.
+     */
     executeTableUpdate(selectedTable) {
         return new Promise((resolve) => {
             const tablesContainer = document.querySelector('.tables-container');
@@ -390,6 +491,12 @@ class App {
         });
     }
 
+    /**
+     * Animate the table transition.
+     * @param {Element} container - The container element.
+     * @param {Element} newTableElement - The new table element.
+     * @param {Function} onComplete - The callback function to call when the transition is complete.
+     */
     animateTableTransition(container, newTableElement, onComplete) {
         if (this.pendingAnimationTimeout) {
             clearTimeout(this.pendingAnimationTimeout);
@@ -430,6 +537,10 @@ class App {
         this.performSmoothTableSwap(container, newTableElement, onComplete);
     }
 
+    /**
+     * Force the cleanup of the animation.
+     * @param {Element} container - The container element.
+     */
     forceCleanupAnimation(container) {
         const oldContents = container.querySelectorAll('.old-content');
         oldContents.forEach(content => {
@@ -451,6 +562,12 @@ class App {
         container.setAttribute('data-transition', 'idle');
     }
 
+    /**
+     * Perform smooth table swap animation.
+     * @param {Element} container - The container element.
+     * @param {Element} newTableElement - The new table element.
+     * @param {Function} onComplete - The callback function to call when the transition is complete.
+     */
     performSmoothTableSwap(container, newTableElement, onComplete) {
         const currentContent = container.firstElementChild;
         if (!newTableElement || !newTableElement.classList) {
@@ -521,6 +638,9 @@ class App {
         });
     }
 
+    /**
+     * Update the carousel to show the selected experiment group card.
+     */
     updateCarousel() {
         const cards = document.querySelectorAll(".experiment-card-wrapper");
 
@@ -540,6 +660,9 @@ class App {
         this.updateCarouselHeight();
     }
 
+    /**
+     * Initialize the carousel with the first experiment group card.
+     */
     initializeCarousel() {
         // ExperimentGroup Card Carousel Control
         const cards = document.querySelectorAll(".experiment-card-wrapper");
@@ -552,6 +675,10 @@ class App {
         setTimeout(() => this.updateHomeTables(), 100);
     }
 
+    /**
+     * Navigate the carousel to the next or previous card.
+     * @param {number} direction - The direction to navigate. 1 for next, -1 for previous.
+     */
     navigateCards(direction) {
         const cards = document.querySelectorAll(".experiment-card-wrapper");
         if (cards.length === 0) return;
@@ -562,6 +689,9 @@ class App {
         this.updateHomeTables();
     }
 
+    /**
+     * Update the dataset selection for the current card.
+     */
     updateDatasetSelectionForCurrentCard() {
         const experimentGroup = this.getCurrentExperimentGroup();
         if (!experimentGroup) return;
@@ -570,6 +700,9 @@ class App {
         this.selectedSplit = 0;
     }
 
+    /**
+     * Update the height of the carousel based on the active card.
+     */
     updateCarouselHeight() {
         const activeCard = document.querySelector('.experiment-card-wrapper.active');
         const viewport = document.querySelector('.cards-viewport');
@@ -588,7 +721,10 @@ class App {
         }
     }
 
-    // Experiment Page Logic
+    /**
+     * Initialize the experiment page.
+     * @param {string} experimentId - The ID of the experiment.
+     */
     initializeExperimentPage(experimentId) {
         const experiment = this.reportData.experiments[experimentId];
         if (!experiment) return;
@@ -610,6 +746,9 @@ class App {
         }, 50);
     }
 
+    /**
+     * Setup the interactivity for the experiment page.
+     */
     setupExperimentInteractivity() {
         this.setupAlgorithmSelector();
         this.setupSplitSelector();
@@ -622,6 +761,9 @@ class App {
         this.updatePlotSelection();
     }
 
+    /**
+     * Setup the expand/collapse buttons for the experiment page.
+     */
     setupExpandCollapseButtons() {
         const tablesExpandButton = document.querySelector('.experiment-tables .expand-container');
         const plotsExpandButton = document.querySelector('.experiment-plots .expand-container');
@@ -641,6 +783,9 @@ class App {
         }
     }
 
+    /**
+     * Toggle the table card expansion.
+     */
     toggleTableExpansion() {
         const experimentRight = document.querySelector('.experiment-right');
         const tablesCheckbox = document.querySelector('.experiment-tables .expand-checkbox');
@@ -662,6 +807,9 @@ class App {
         }
     }
 
+    /**
+     * Toggle the plot card expansion.
+     */
     togglePlotExpansion() {
         const experimentRight = document.querySelector('.experiment-right');
         const tablesCheckbox = document.querySelector('.experiment-tables .expand-checkbox');
@@ -683,6 +831,9 @@ class App {
         }
     }
 
+    /**
+     * Setup the algorithm selector for the experiment page if multiple algorithms are present.
+     */
     setupAlgorithmSelector() {
         const algorithmNav = document.querySelector('.algorithm-nav');
         if (!algorithmNav) return;
@@ -695,6 +846,9 @@ class App {
         });
     }
 
+    /**
+     * Setup the split selector for the experiment page.
+     */
     setupSplitSelector() {
         const splitsNav = document.querySelector('.splits-nav');
         if (!splitsNav) return;
@@ -707,6 +861,9 @@ class App {
         });
     }
 
+    /**
+     * Setup the table selector for the experiment page.
+     */
     setupTableSelector() {
         const tablesList = document.querySelector('.tables-list');
         if (!tablesList) return;
@@ -719,6 +876,9 @@ class App {
         });
     }
 
+    /**
+     * Setup the plot selector for the experiment page.
+     */
     setupPlotSelector() {
         const plotsList = document.querySelector('.plots-list');
         if (!plotsList) return;
@@ -731,6 +891,10 @@ class App {
         });
     }
 
+    /**
+     * Select an algorithm on the experiment page.
+     * @param {number} algorithmIndex - The index of the algorithm.
+     */
     selectAlgorithm(algorithmIndex) {
         this.selectedAlgorithmIndex = algorithmIndex;
         this.updateAlgorithmSelection();        
@@ -739,6 +903,10 @@ class App {
         this.updateExperimentPlots();
     }
 
+    /**
+     * Select a split on the experiment page.
+     * @param {number} splitIndex - The index of the split.
+     */
     selectExperimentSplit(splitIndex) {
         this.selectedSplitIndex = splitIndex;        
         this.updateSplitSelection();        
@@ -754,18 +922,29 @@ class App {
         }
     }
 
+    /**
+     * Select a table on the experiment page.
+     * @param {number} tableIndex - The index of the table.
+     */
     selectTable(tableIndex) {
         this.selectedTableIndex = tableIndex;
         this.updateTableSelection();        
         this.updateSelectedTable();
     }
 
+    /**
+     * Select a plot on the experiment page.
+     * @param {number} plotIndex - The index of the plot.
+     */
     selectPlot(plotIndex) {
         this.selectedPlotIndex = plotIndex;
         this.updatePlotSelection();        
         this.updateSelectedPlot();
     }
 
+    /**
+     * Update the algorithm selection on the experiment page.
+     */
     updateAlgorithmSelection() {
         const algorithmNav = document.querySelector('.algorithm-nav');
         if (!algorithmNav) return;
@@ -780,6 +959,9 @@ class App {
         });
     }
 
+    /**
+     * Update the split selection on the experiment page.
+     */
     updateSplitSelection() {
         const splitsNav = document.querySelector('.splits-nav');
         if (!splitsNav) return;
@@ -794,6 +976,9 @@ class App {
         });
     }
 
+    /**
+     * Update the table selection on the experiment page.
+     */
     updateTableSelection() {
         const tablesList = document.querySelector('.tables-list');
         if (!tablesList) return;
@@ -808,6 +993,9 @@ class App {
         });
     }
 
+    /**
+     * Update the plot selection on the experiment page.
+     */
     updatePlotSelection() {
         const plotsList = document.querySelector('.plots-list');
         if (!plotsList) return;
@@ -822,6 +1010,9 @@ class App {
         });
     }
 
+    /**
+     * Update the experiment summary on the experiment page.
+     */
     updateExperimentSummary() {
         const experiment = this.reportData.experiments[this.currentExperimentId];
         if (!experiment) return;
@@ -831,6 +1022,10 @@ class App {
         this.updateHyperparameterGrid(experiment);
     }
 
+    /**
+     * Update the experiment title on the experiment page.
+     * @param {Object} experiment - The experiment object.
+     */
     updateExperimentTitle(experiment) {
         const titleElement = document.querySelector('.experiment-title');
         if (!titleElement) return;
@@ -844,6 +1039,10 @@ class App {
         }
     }
 
+    /**
+     * Update the tuned hyperparameters on the experiment page.
+     * @param {Object} experiment - The experiment object.
+     */
     updateTunedHyperparameters(experiment) {
         const tbody = document.querySelector('.tuned-hyperparams-body');
         const message = document.querySelector('.tuned-hyperparams-message');
@@ -871,6 +1070,10 @@ class App {
         }
     }
 
+    /**
+     * Update the hyperparameter grid on the experiment page.
+     * @param {Object} experiment - The experiment object.
+     */
     updateHyperparameterGrid(experiment) {
         const tbody = document.querySelector('.hyperparam-grid-body');
         const message = document.querySelector('.hyperparam-grid-message');
@@ -898,6 +1101,9 @@ class App {
         }
     }
 
+    /**
+     * Update the tables on the experiment page.
+     */
     updateExperimentTables() {
         const experiment = this.reportData.experiments[this.currentExperimentId];
         if (!experiment) return;
@@ -913,6 +1119,9 @@ class App {
         this.updateSelectedTable();
     }
 
+    /**
+     * Update the plots on the experiment page.
+     */
     updateExperimentPlots() {
         const experiment = this.reportData.experiments[this.currentExperimentId];
         if (!experiment) return;
@@ -928,6 +1137,10 @@ class App {
         this.updateSelectedPlot();
     }
 
+    /**
+     * Render the filtered tables on the experiment page.
+     * @param {Object} experiment - The experiment object.
+     */
     renderFilteredTables(experiment) {
         const tablesList = document.querySelector('.tables-list');
         if (!tablesList) return;
@@ -950,6 +1163,10 @@ class App {
         });
     }
 
+    /**
+     * Render the filtered plots on the experiment page.
+     * @param {Object} experiment - The experiment object.
+     */
     renderFilteredPlots(experiment) {
         const plotsList = document.querySelector('.plots-list');
         if (!plotsList) return;
@@ -972,6 +1189,11 @@ class App {
         });
     }
 
+    /**
+     * Filter the table data for the current split and algorithm selection.
+     * @param {Object} originalTableData - The original table data.
+     * @returns {Object} - The filtered table data.
+     */
     filterTableDataForCurrentSelection(originalTableData) {
         if (!originalTableData) return originalTableData;
         
@@ -1010,6 +1232,9 @@ class App {
         };
     }
 
+    /**
+     * Update the selected table on the experiment page.
+     */
     updateSelectedTable() {
         const tablesContent = document.querySelector('.tables-content');
         if (!tablesContent) return;
@@ -1035,6 +1260,11 @@ class App {
         }
     }
 
+    /**
+     * Filter the plot data for the current selection.
+     * @param {Object} originalPlotData - The original plot data.
+     * @returns {Object} - The filtered plot data.
+     */
     filterPlotDataForCurrentSelection(originalPlotData) {
         if (!originalPlotData) return originalPlotData;
         
@@ -1055,6 +1285,9 @@ class App {
         };
     }
 
+    /**
+     * Update the selected plot on the experiment page.
+     */
     updateSelectedPlot() {
         const plotsContent = document.querySelector('.plots-content');
         if (!plotsContent) return;
@@ -1080,7 +1313,10 @@ class App {
         }
     }
 
-    // Experiment Navigation Logic
+    /**
+     * Show the experiment navigation when on the experiment page.
+     * @param {string} experimentId - The ID of the experiment.
+     */
     showExperimentNavigation(experimentId) {
         const navContainer = document.getElementById('experiment-navigation');
         if (!navContainer) return;
@@ -1094,11 +1330,14 @@ class App {
         const datasetExperiments = this.getDatasetExperiments(experimentGroup, experiment.dataset);
         const currentIndex = datasetExperiments.indexOf(experimentId);
 
-        this.populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex);
+        this.populateExperimentNavigation(experiment, experimentGroup);
         this.setupExperimentNavigationButtons(datasetExperiments, currentIndex);
         navContainer.style.display = 'block';
     }
 
+    /**
+     * Hide the experiment navigation when not on the experiment page.
+     */
     hideExperimentNavigation() {
         const navContainer = document.getElementById('experiment-navigation');
         if (navContainer) {
@@ -1106,12 +1345,23 @@ class App {
         }
     }
 
+    /**
+     * Find the experiment group for the given experiment ID.
+     * @param {string} experimentId - The ID of the experiment.
+     * @returns {Object} - The experiment group.
+     */
     findExperimentGroup(experimentId) {
         return this.reportData.experiment_groups.find(group => 
             group.experiments.includes(experimentId)
         );
     }
 
+    /**
+     * Get the experiments for the given dataset ID.
+     * @param {Object} experimentGroup - The experiment group.
+     * @param {string} datasetId - The ID of the dataset.
+     * @returns {Array} - The experiments.
+     */
     getDatasetExperiments(experimentGroup, datasetId) {
         return experimentGroup.experiments
             .filter(expId => {
@@ -1121,7 +1371,12 @@ class App {
             .sort((a, b) => a.localeCompare(b));
     }
 
-    populateExperimentNavigation(experiment, experimentGroup, datasetExperiments, currentIndex) {
+    /**
+     * Populate the experiment navigation.
+     * @param {Object} experiment - The experiment object.
+     * @param {Object} experimentGroup - The experiment group.
+     */
+    populateExperimentNavigation(experiment, experimentGroup) {
         document.getElementById('current-experiment-group').textContent = experimentGroup.name;        
         const dataset = this.reportData.datasets[experiment.dataset];
         
@@ -1150,6 +1405,11 @@ class App {
         breadcrumb.textContent = `${groupSlug}/${datasetSlug}/split_${this.selectedSplitIndex}/${experimentDisplayName}`;
     }
 
+    /**
+     * Setup the experiment navigation buttons.
+     * @param {Array} datasetExperiments - The experiments for the given dataset.
+     * @param {number} currentIndex - The current index of the experiment.
+     */
     setupExperimentNavigationButtons(datasetExperiments, currentIndex) {
         const prevBtn = document.getElementById('prev-experiment-btn');
         prevBtn.replaceWith(prevBtn.cloneNode(true));
@@ -1181,7 +1441,9 @@ class App {
         }
     }
 
-    // Dataset Page Logic
+    /**
+     * Initialize the dataset page.
+     */
     initializeDatasetPage() {
         if (!this.selectedDataset) return;
 
@@ -1196,6 +1458,9 @@ class App {
         }, 50);
     }
 
+    /**
+     * Setup the interactivity for the dataset page.
+     */
     setupDatasetInteractivity() {
         this.setupDatasetSplitSelector();
         this.setupDatasetFeatureSelector();
@@ -1205,6 +1470,9 @@ class App {
         this.updateDatasetFeatureSelection();
     }
 
+    /**
+     * Setup the collapsible sections for the dataset page.
+     */
     setupDatasetCollapsibleSections() {
         const dmHeader = document.querySelector('.collapsible-header');
         const dmContent = document.querySelector('.collapsible-content');
@@ -1219,6 +1487,9 @@ class App {
         }
     }
 
+    /**
+     * Setup the data split selector for the dataset page.
+     */
     setupDatasetSplitSelector() {
         const splitsNav = document.querySelector('.dataset-splits .splits-nav');
         if (!splitsNav) return;
@@ -1231,6 +1502,9 @@ class App {
         });
     }
 
+    /**
+     * Setup the feature selector for the dataset page.
+     */
     setupDatasetFeatureSelector() {
         const featuresNav = document.querySelector('.dataset-features .features-nav');
         if (!featuresNav) return;
@@ -1243,6 +1517,9 @@ class App {
         });
     }
 
+    /**
+     * Setup the correlation modal for the dataset page.
+     */
     setupCorrelationModal() {
         const correlationContent = document.querySelector('.correlation-content');
         const modal = document.getElementById('correlationModal');
@@ -1276,6 +1553,9 @@ class App {
         });
     }
 
+    /**
+     * Open the correlation modal.
+     */
     openCorrelationModal() {
         const modal = document.getElementById('correlationModal');
         const modalPlot = document.getElementById('correlationModalPlot');
@@ -1303,6 +1583,9 @@ class App {
         document.body.style.overflow = 'hidden';
     }
 
+    /**
+     * Close the correlation modal.
+     */
     closeCorrelationModal() {
         const modal = document.getElementById('correlationModal');
         
@@ -1326,6 +1609,10 @@ class App {
         }, 300);
     }
 
+    /**
+     * Select a data split on the dataset page.
+     * @param {number} splitIndex - The index of the split.
+     */
     selectDatasetSplit(splitIndex) {
         this.selectedDatasetSplitIndex = splitIndex;
         this.updateDatasetSplitSelection();        
@@ -1333,12 +1620,19 @@ class App {
         this.updateDatasetDistribution();
     }
 
+    /**
+     * Select a feature on the dataset page.
+     * @param {number} featureIndex - The index of the feature.
+     */
     selectDatasetFeature(featureIndex) {
         this.selectedFeatureIndex = featureIndex;        
         this.updateDatasetFeatureSelection();        
         this.updateDatasetDistribution();
     }
 
+    /**
+     * Update the split selection on the dataset page.
+     */
     updateDatasetSplitSelection() {
         const splitsNav = document.querySelector('.dataset-splits .splits-nav');
         if (!splitsNav) return;
@@ -1353,6 +1647,9 @@ class App {
         });
     }
 
+    /**
+     * Update the selected feature on the dataset page.
+     */
     updateDatasetFeatureSelection() {
         const featuresNav = document.querySelector('.dataset-features .features-nav');
         if (!featuresNav) return;
@@ -1367,12 +1664,18 @@ class App {
         });
     }
 
+    /**
+     * Update the dataset summary on the dataset page.
+     */
     updateDatasetSummary() {
         if (!this.selectedDataset) return;
         this.updateDatasetInfoTables();
         this.updateDatasetCorrelationMatrix();
     }
 
+    /**
+     * Update the dataset info tables on the dataset page.
+     */
     updateDatasetInfoTables() {
         const datasetInfoContent = document.querySelector('.dataset-info-content');
         datasetInfoContent.innerHTML = '';
@@ -1426,6 +1729,9 @@ class App {
         }
     }
 
+    /**
+     * Update the correlation matrix on the dataset page.
+     */
     updateDatasetCorrelationMatrix() {
         const corrPlot = document.querySelector('.correlation-plot');
         if (!corrPlot || !this.selectedDataset) return;
@@ -1454,6 +1760,9 @@ class App {
         }
     }
 
+    /**
+     * Update the dataset distribution on the dataset page.
+     */
     updateDatasetDistribution() {
         const tableContainer = document.querySelector('.distribution-table-content');
         tableContainer.innerHTML = '';

@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from typing import Dict
+import re
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -81,6 +82,8 @@ class ReportRenderer():
     def _load_javascript(self, renderer_path: Path, app_path: Path) -> str:
         """Load JavaScript files, ensure app.js is loaded last.
 
+        Strips any comments and JSdocs from the files.
+
         Parameters
         ----------
         renderer_path : Path
@@ -93,6 +96,10 @@ class ReportRenderer():
         str
             A string of JavaScript code.
         """
+        comment_pattern = re.compile(
+            r"/\*\*[\s\S]*?\*/|/\*[\s\S]*?\*/|//.*?\n", re.MULTILINE | re.DOTALL
+        )
+
         js_content = ""
         files = [
             Path(renderer_path, file) for file in os.listdir(renderer_path)
@@ -102,8 +109,9 @@ class ReportRenderer():
         for js_file in files:
             with open(js_file, "r", encoding="utf-8") as f:
                 content = f.read()
+            cleaned_content = comment_pattern.sub("", content)
             js_content += f"\n// === {os.path.basename(js_file)} ===\n"
-            js_content += content + "\n"
+            js_content += cleaned_content + "\n"
         return js_content
 
     def render(self, data: ReportData, output_path: Path) -> None:
