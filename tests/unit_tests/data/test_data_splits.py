@@ -76,6 +76,24 @@ class TestDataSplits:
         with pytest.raises(IndexError, match="Index out of bounds. Expected range: 0 to 3"):
             splits.get_split(5)
 
+    def test_add_too_many_splits(self, data_split_data, mock_brisk_project):
+        splits = DataSplits(2)
+        assert splits._current_index == 0
+
+        splits.add(DataSplitInfo(**data_split_data))
+        assert splits._current_index == 1
+
+        data_split_data["split_key"] = ("group", "test2", None)
+        splits.add(DataSplitInfo(**data_split_data))
+        assert splits._current_index == 2
+
+        data_split_data["split_key"] = ("group", "test3", None)
+        with pytest.raises(
+            IndexError,
+            match="Cannot add more DataSplitInfo instances than expected"
+        ):
+            splits.add(DataSplitInfo(**data_split_data))
+
     def test_get_split(self, data_split_data, mock_brisk_project):
         splits = DataSplits(2)
         splits.add(DataSplitInfo(**data_split_data))
