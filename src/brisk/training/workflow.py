@@ -86,15 +86,6 @@ class Workflow(abc.ABC):
         self.feature_names = feature_names
         self._unpack_attributes(workflow_attributes)
 
-    def __getattr__(self, name: str) -> None:
-        if hasattr(self.evaluation_manager, name):
-            return getattr(self.evaluation_manager, name)
-
-        available_attrs = ", ".join(self.__dict__.keys())
-        raise AttributeError(
-            f"'{name}' not found. Available attributes are: {available_attrs}"
-            )
-
     def _unpack_attributes(self, config: Dict[str, Any]) -> None:
         """Unpack configuration dictionary into instance attributes.
 
@@ -112,7 +103,7 @@ class Workflow(abc.ABC):
             "Subclass must implement the workflow method."
         )
 
-    # Delegate EvalutationManager
+    # Interface to call Evaluators registered to EvaluationManager
     def evaluate_model( # pragma: no cover
         self,
         model: base.BaseEstimator,
@@ -559,7 +550,7 @@ class Workflow(abc.ABC):
             model, X, y, filename, pos_label
         )
 
-    def save_model(self, model: base.BaseEstimator, filename: str) -> None:
+    def save_model(self, model: base.BaseEstimator, filename: str) -> None: #pragma: no cover
         """Save model to pickle file.
 
         Parameters
@@ -572,7 +563,7 @@ class Workflow(abc.ABC):
         """
         self.evaluation_manager.save_model(model, filename)
 
-    def load_model(self, filepath: str) -> base.BaseEstimator:
+    def load_model(self, filepath: str) -> base.BaseEstimator: #pragma: no cover
         """Load model from pickle file.
 
         Parameters
