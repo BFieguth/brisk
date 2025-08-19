@@ -20,13 +20,14 @@ class TestMetricManager:
         Test initialization of MetricManager with regression metrics included.
         """
         expected_metrics = [
-            (wrapper.name, wrapper.abbr) for wrapper in [
+            (wrapper.name, wrapper.abbr, wrapper.display_name) for wrapper in [
                 *REGRESSION_METRICS, *CLASSIFICATION_METRICS
             ]
         ]
-        for name, abbr in expected_metrics:
+        for name, abbr, display_name in expected_metrics:
             assert name in metric_manager._metrics_by_name
             assert abbr in metric_manager._abbreviations_to_name 
+            assert display_name in metric_manager._display_name_to_name
 
     def test_add_metric_removes_old_abbreviation(self):
         """Test that updating a metric properly removes its old abbreviation."""
@@ -53,8 +54,11 @@ class TestMetricManager:
         manager._add_metric(updated_metric)
         
         assert "TM" not in manager._abbreviations_to_name
+        assert "Test Metric" not in manager._display_name_to_name
         assert "TMU" in manager._abbreviations_to_name
+        assert "Test Metric Updated" in manager._display_name_to_name
         assert manager._abbreviations_to_name["TMU"] == "test_metric"
+        assert manager._display_name_to_name["Test Metric Updated"] == "test_metric"
 
     def test_resolve_identifier_by_name(self, metric_manager):
         """Test that the resolve_identifier method returns the correct name."""
@@ -66,6 +70,9 @@ class TestMetricManager:
 
         with pytest.raises(ValueError, match="Metric 'mse' not found"):
             metric_manager._resolve_identifier("mse")
+
+        name = metric_manager._resolve_identifier("Mean Squared Error")
+        assert name == "mean_squared_error"
 
     def test_get_metric_by_name(self, metric_manager):
         """
@@ -80,6 +87,11 @@ class TestMetricManager:
         Test get_metric method by abbreviation.
         """
         scorer = metric_manager.get_metric("MSE")
+        assert scorer is not None
+        assert callable(scorer)
+
+    def test_get_metric_by_display_name(self, metric_manager):
+        scorer = metric_manager.get_metric("Mean Squared Error")
         assert scorer is not None
         assert callable(scorer)
 
@@ -104,6 +116,11 @@ class TestMetricManager:
         Test get_scorer method by abbreviation.
         """
         scorer = metric_manager.get_scorer("MSE")
+        assert scorer is not None
+        assert callable(scorer)
+
+    def test_get_scorer_by_display_name(self, metric_manager):
+        scorer = metric_manager.get_metric("Mean Squared Error")
         assert scorer is not None
         assert callable(scorer)
 
@@ -190,3 +207,9 @@ class TestMetricManager:
             func = wrapper.get_func_with_params()
             paramaters = inspect.signature(func).parameters
             assert paramaters["split_metadata"].default == split_metadata_input
+
+    def test_is_higher_better(self, metric_manager):
+        assert metric_manager.is_higher_better("MSE") is False
+        assert metric_manager.is_higher_better("Mean Absolute Error") is False
+        assert metric_manager.is_higher_better("CCC") is True
+        assert metric_manager.is_higher_better("r2_score") is True
