@@ -35,7 +35,7 @@ class TestDataManager:
         assert data_manager.split_method == "shuffle"
         assert data_manager.group_column == None
         assert data_manager.stratified == False
-        assert data_manager.n_splits == 5
+        assert data_manager.n_splits == 2
         assert data_manager.random_state == 42
         assert data_manager.scale_method == None
         assert data_manager._splits == {}
@@ -370,7 +370,7 @@ class TestDataManager:
             assert key == ("group1", "regression", None)
             assert isinstance(value, DataSplits)
         assert len(data_manager._splits) == 1
-        assert len(data_manager._splits[("group1", "regression", None)]) == 5
+        assert len(data_manager._splits[("group1", "regression", None)]) == 2
 
     def test_kfold_split(self, data_manager, tmp_path):
         """
@@ -403,7 +403,7 @@ class TestDataManager:
             assert key == ("group", "regression", None)
             assert isinstance(value, DataSplits)
         assert len(data_manager._splits) == 1
-        assert len(data_manager._splits[("group", "regression", None)]) == 5
+        assert len(data_manager._splits[("group", "regression", None)]) == 2
 
     def test_shuffle_split_grouped(self, mock_brisk_project, tmp_path):
         """
@@ -477,7 +477,7 @@ class TestDataManager:
             assert key == ("group_category", "categorical", None)
             assert isinstance(value, DataSplits)
         assert len(data_manager._splits) == 1
-        assert len(data_manager._splits[("group_category", "categorical", None)]) == 5
+        assert len(data_manager._splits[("group_category", "categorical", None)]) == 2
 
     def test_shuffle_split_scaler(self, data_manager, tmp_path):
         """
@@ -511,7 +511,7 @@ class TestDataManager:
             assert key == ("group_standard", "regression", None)
             assert isinstance(value, DataSplits)
         assert len(data_manager._splits) == 1
-        assert len(data_manager._splits[("group_standard", "regression", None)]) == 5
+        assert len(data_manager._splits[("group_standard", "regression", None)]) == 2
 
     def test_split_caching(self, data_manager, tmp_path):
         """Test that splits are cached and reused correctly."""
@@ -576,7 +576,7 @@ class TestDataManager:
 ```python
 DataManager Configuration:
 test_size: 0.2
-n_splits: 5
+n_splits: 2
 split_method: shuffle
 stratified: False
 random_state: 42
