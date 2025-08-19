@@ -170,6 +170,7 @@ def initialize_services(
         verbose=verbose
     )
 
+
 def get_services() -> bundle.ServiceBundle:
     """Get global ServiceBundle instance.
 
@@ -182,7 +183,7 @@ def get_services() -> bundle.ServiceBundle:
         return GlobalServiceManager.instance.get_service_bundle()
 
     raise RuntimeError(
-        "Services not initalized. Call initalize_services() first."
+        "Services not initialized. Call initalize_services() first."
     )
 
 
