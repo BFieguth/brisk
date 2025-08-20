@@ -266,11 +266,11 @@ def mock_datasets(tmp_path):
 0.9,1.0,A""",
 
         'categorical.csv': """value,category,result
-10.0,A,positive
-20.0,B,negative
-30.0,A,positive
-40.0,B,negative
-60.0,B,negative""",
+10.0,A,1.0
+20.0,B,0.0
+30.0,A,1.0
+40.0,B,0.0
+60.0,B,0.0""",
 
         'group.csv': """group,x,y,target
 A,1.0,2.0,0.2
@@ -737,15 +737,15 @@ C,5.0,6.0,0.7""",
         CREATE TABLE categorical (
             value REAL,
             category TEXT,
-            result TEXT
+            result REAL
         )
     ''')
     cursor.executemany('INSERT INTO categorical VALUES (?, ?, ?)', [
-        (10.0, 'A', 'positive'),
-        (20.0, 'B', 'negative'),
-        (30.0, 'A', 'positive'),
-        (40.0, 'B', 'negative'),
-        (60.0, 'B', 'negative')
+        (10.0, 'A', 1),
+        (20.0, 'B', 0),
+        (30.0, 'A', 1),
+        (40.0, 'B', 0),
+        (60.0, 'B', 0)
     ])
     
     # Create group table

@@ -74,6 +74,7 @@ class TestGlobalServiceManager:
         assert utility_service.group_index_test is None
 
     def test_get_services(self, algo_config, metric_config, tmp_path):
+        GlobalServiceManager.reset()
         with pytest.raises(RuntimeError, match="Services not initialized"):
             services = get_services()
 
@@ -84,6 +85,7 @@ class TestGlobalServiceManager:
         assert isinstance(services, ServiceBundle)
 
     def test_get_service_manager(self, algo_config, metric_config, tmp_path):
+        GlobalServiceManager.reset()
         with pytest.raises(RuntimeError, match="Services not initialized."):
             service_manager = get_service_manager()
 
@@ -94,6 +96,7 @@ class TestGlobalServiceManager:
         assert manager == service_manager
 
     def test_is_initialized(self, algo_config, metric_config, tmp_path):
+        GlobalServiceManager.reset()
         assert is_initialized() is False
         manager = GlobalServiceManager(
             algo_config, metric_config, Path(tmp_path / "results"), False
