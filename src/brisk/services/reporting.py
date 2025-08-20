@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Tuple, List, Optional, Any
 from collections import defaultdict
 
+from scipy import stats
+
 from brisk.services import base
 from brisk.evaluation import metric_manager as metric_config
 from brisk.reporting import report_data
@@ -259,20 +261,40 @@ class ReportingService(base.BaseService):
                 "test_obs": len(split.X_test)
             } for i, split in enumerate(data_splits._data_splits)
         }
-        split_target_stats = {
-            split_ids[i]: {
-                "mean": split.y_train.mean(),
-                "std": split.y_train.std(),
-                "min": split.y_train.min(),
-                "max": split.y_train.max()
-            } for i, split in enumerate(data_splits._data_splits)
-        }
+
+        is_categorical = False
+        y = data_splits._data_splits[0].y_train
+        if y.nunique() / len(y) < 0.05:
+            is_categorical = True
+
+        if is_categorical:
+            split_target_stats = {
+                split_ids[i]: {
+                    "proportion": split.y_train.value_counts(
+                        normalize=True
+                    ).sort_index().to_dict(),
+                    "entropy": stats.entropy(
+                        split.y_train.value_counts(normalize=True).sort_index(),
+                        base=2
+                    )
+                } for i, split in enumerate(data_splits._data_splits)
+            }
+        else:
+            split_target_stats = {
+                split_ids[i]: {
+                    "mean": split.y_train.mean(),
+                    "std": split.y_train.std(),
+                    "min": split.y_train.min(),
+                    "max": split.y_train.max()
+                } for i, split in enumerate(data_splits._data_splits)
+            }
+
         split_corr_matrices = {}
         for split in split_ids:
             image_key = (
                 group_name, dataset_name, split, "brisk_correlation_matrix"
             )
-            image, _ = self._image_cache.get(image_key)
+            image, _ = self._image_cache.get(image_key, (None, None))
             split_corr_matrices[split] = self._create_plot_data(
                 f"{group_name}_{dataset_name}_{split}_correlation_matrix",
                 image
@@ -427,10 +449,12 @@ class ReportingService(base.BaseService):
 
         plot_image, _ = (
             self._image_cache.get(
-                (group_name, dataset_name, split_id, hist_method)
+                (group_name, dataset_name, split_id, hist_method),
+                (None, None)
             ) or
             self._image_cache.get(
-                (group_name, dataset_name, split_id, pie_method)
+                (group_name, dataset_name, split_id, pie_method),
+                (None, None)
             )
         )
 
@@ -855,7 +879,7 @@ class ReportingService(base.BaseService):
         )
         if best_result is None:
             self.best_score_by_split[group_name][dataset_name][split_index] = current_result
-        elif greater_is_better and tuning_score > current_result[2]:
+        elif greater_is_better and tuning_score > best_result[2]:
             self.best_score_by_split[group_name][dataset_name][split_index] = current_result
-        elif not greater_is_better and tuning_score < current_result[2]:
+        elif not greater_is_better and tuning_score < best_result[2]:
             self.best_score_by_split[group_name][dataset_name][split_index] = current_result

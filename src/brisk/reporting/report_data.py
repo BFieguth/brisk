@@ -1,5 +1,5 @@
 """Define Pydantic models to represent the results of model runs."""
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Union
 import re
 
 from pydantic import BaseModel, Field, model_validator
@@ -238,7 +238,7 @@ class Dataset(RoundedModel):
     split_sizes: Dict[str, Dict[str, int]] = Field(
         default_factory=dict, description="Size of dataset and train/test split"
     )
-    split_target_stats: Dict[str, Dict[str, float]] = Field(
+    split_target_stats: Dict[str, Dict[str, Union[float, dict]]] = Field(
         default_factory=dict, description="Target feature stats per split"
     )
     split_corr_matrices: Dict[str, PlotData] = Field(
