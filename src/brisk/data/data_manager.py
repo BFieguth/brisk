@@ -1,28 +1,31 @@
-"""Provides the DataManager class for creating train-test splits.
+"""Provides the DataManager class for creating train-test splits and applying preprocessing.
 
 This module contains the DataManager class, which handles creating train-test
-splits for machine learning models. It supports several splitting strategies
-such as shuffle, k-fold, and stratified splits, with optional grouping.
+splits for machine learning models and applies preprocessing pipelines. It supports
+several splitting strategies such as shuffle, k-fold, and stratified splits, with
+optional grouping, and can apply missing data handling, scaling, categorical encoding,
+and feature selection preprocessing.
 
 Exports:
-    DataManager: A class for configuring and generating train-test splits or
-    cross-validation folds.
+    DataManager: A class for configuring and generating train-test splits with
+    preprocessing pipelines.
 """
 
 import os
 import sqlite3
-from typing import Optional, List
+from typing import Optional, List, Any
 
 import pandas as pd
 from sklearn import model_selection
-from sklearn import preprocessing
-from sklearn.feature_selection import (
-    SelectKBest,
-    RFECV,
-    SequentialFeatureSelector,
-)
 
 from brisk.data import data_split_info
+from brisk.data.preprocessing import (
+    BasePreprocessor,
+    MissingDataPreprocessor,
+    ScalingPreprocessor,
+    CategoricalEncodingPreprocessor,
+    FeatureSelectionPreprocessor,
+)
 
 
 class DataManager:
@@ -31,7 +34,8 @@ class DataManager:
     This class allows users to configure different splitting strategies
     (e.g., shuffle, k-fold, stratified) and return train-test splits or
     cross-validation folds. It supports splitting based on groupings and
-    includes options for data scaling and feature selection.
+    includes a completed data preprocessing pipeline
+
 
     Parameters
     ----------
@@ -49,25 +53,14 @@ class DataManager:
         Whether to use stratified sampling or cross-validation, by default False
     random_state : int, optional
         The random seed for reproducibility, by default None
-    scale_method : str, optional
-        The method to use for scaling ("standard", "minmax", "robust", "maxabs",
-        "normalizer"), by default None
-    feature_selection_method : str, optional
-        The method to use for feature selection ("selectkbest", "rfe",
-        "sequential"), by default None
-    feature_selection_estimator : str, optional
-        The name of the estimator to use for feature selection.
-        If not specified, defaults to the first algorithm
-        in the relevant wrapper list.
     problem_type : str, optional
         The type of problem ("classification" or "regression").
         Defaults to "classification".
-    n_features_to_select : int, optional
-        Minimum number of features to select, by default 5.
-    feature_selection_cv : int, optional
-        Number of folds for cross-validation in feature selection, by default 3.
     algorithm_config : list or AlgorithmCollection of AlgorithmWrapper, optional
         User-provided collection of AlgorithmWrapper objects to use for feature selection.
+    preprocessors : List[BasePreprocessor], optional
+        List of preprocessor objects to apply to the data in sequence.
+
 
     Attributes
     ----------
@@ -83,20 +76,12 @@ class DataManager:
         Whether stratified sampling is used
     random_state : int or None
         Random seed for reproducibility
-    scale_method : str or None
-        Method used for scaling features
-    feature_selection_method : str
-        Method used for feature selection
-    feature_selection_estimator : str or None
-        Name of the estimator used for feature selection
-    problem_type : str or None
+    problem_type : str
         Type of problem (classification or regression)
-    n_features_to_select : int
-        Minimum number of features to select during feature selection
-    feature_selection_cv : int
-        Number of folds for cross-validation in feature selection
     algorithm_config : list of AlgorithmWrapper or None
         List of algorithms to use as feature selection estimators
+    preprocessors : List[BasePreprocessor]
+        List of preprocessors to apply to the data
     splitter : sklearn.model_selection._BaseKFold
         The initialized scikit-learn splitter object
     _splits : dict
@@ -111,13 +96,9 @@ class DataManager:
         group_column: Optional[str] = None,
         stratified: bool = False,
         random_state: Optional[int] = None,
-        scale_method: Optional[str] = None,
-        feature_selection_method: Optional[str] = None,
-        feature_selection_estimator: Optional[str] = None,
         problem_type: str = "classification",
-        n_features_to_select: int = 5,
-        feature_selection_cv: int = 3,
         algorithm_config=None,
+        preprocessors: Optional[List[BasePreprocessor]] = None,
     ):
 
         self.test_size = test_size
@@ -126,16 +107,14 @@ class DataManager:
         self.stratified = stratified
         self.n_splits = n_splits
         self.random_state = random_state
-        self.scale_method = scale_method
-        self.feature_selection_method = feature_selection_method
-        self.feature_selection_estimator = feature_selection_estimator
         self.problem_type = problem_type
-        self.n_features_to_select = n_features_to_select
-        self.feature_selection_cv = feature_selection_cv
         self.algorithm_config = algorithm_config
+        self.preprocessors = preprocessors or []
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
+
+
 
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
@@ -163,42 +142,6 @@ class DataManager:
                 "Use split_method='kfold' for grouped and stratified splits."
             )
 
-        valid_scale_methods = [
-            "standard",
-            "minmax",
-            "robust",
-            "maxabs",
-            "normalizer",
-            None,
-        ]
-
-        if self.scale_method not in valid_scale_methods:
-            raise ValueError(
-                f"Invalid scale_method: {self.scale_method}. "
-                "Choose from standard, minmax, robust, maxabs, normalizer"
-            )
-
-        valid_feature_selection_methods = [
-            "selectkbest",
-            "rfecv",
-            "sequential",
-            None,
-        ]
-
-        if self.feature_selection_method not in valid_feature_selection_methods:
-            raise ValueError(
-                f"Invalid feature_selection_method: "
-                f"{self.feature_selection_method}. "
-                "Choose from selectkbest, rfecv, sequential."
-            )
-
-        if (
-            self.feature_selection_method in ("rfecv", "sequential")
-            and self.algorithm_config is None
-        ):
-            raise ValueError(
-                "algorithm_config must be provided."
-            )
 
         valid_problem_types = ["classification", "regression"]
         if self.problem_type not in valid_problem_types:
@@ -206,16 +149,8 @@ class DataManager:
                 f"Invalid problem_type: {self.problem_type}. "
                 "Choose from 'classification' or 'regression'."
             )
-        if (
-            not isinstance(self.n_features_to_select, int)
-            or self.n_features_to_select < 1
-        ):
-            raise ValueError("n_features_to_select must be a larger than 1.")
-        if (
-            not isinstance(self.feature_selection_cv, int)
-            or self.feature_selection_cv < 2
-        ):
-            raise ValueError("feature_selection_cv must be larger than 2.")
+
+
 
     def _set_splitter(self):
         """Selects the appropriate splitter based on the configuration.
@@ -282,19 +217,36 @@ class DataManager:
             "the specified split method."
         )
 
-    def _set_scaler(self):
-        if self.scale_method == "standard":
-            return preprocessing.StandardScaler()
 
-        if self.scale_method == "minmax":
-            return preprocessing.MinMaxScaler()
 
-        if self.scale_method == "robust":
-            return preprocessing.RobustScaler()
+    def _apply_preprocessing(
+        self,
+        X_train: pd.DataFrame,  # pylint: disable=C0103
+        X_test: pd.DataFrame,  # pylint: disable=C0103
+        y_train: Optional[pd.Series] = None,
+        feature_names: Optional[List[str]] = None,
+        categorical_features: Optional[List[str]] = None
+    ) -> tuple[
+        pd.DataFrame, pd.DataFrame, List[str],
+        List[str], List[str], Optional[Any]
+    ]:
+        """Apply all configured preprocessors to the data in fixed order:
+        Missing Data → Scaling → Encoding → Feature Selection
 
-        if self.scale_method == "maxabs":
-            return preprocessing.MaxAbsScaler()
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            Training features
+        X_test : pd.DataFrame
+            Test features
+        y_train : pd.Series, optional
+            Training target values
+        feature_names : List[str], optional
+            Original feature names
+        categorical_features : List[str], optional
+            List of categorical feature names
 
+<<<<<<< Updated upstream
         if self.scale_method == "normalizer":
             return preprocessing.Normalizer()
 
@@ -353,8 +305,139 @@ class DataManager:
             selected_mask = selector.get_support()
             feature_names = [
                 name for name, keep in zip(feature_names, selected_mask) if keep
+=======
+        Returns
+        -------
+        tuple[
+            pd.DataFrame, pd.DataFrame, List[str],
+            List[str], List[str], Optional[Any]
+        ]
+            Transformed training data, transformed test data, updated feature names,
+            updated categorical features, updated continuous features,
+            and fitted scaler
+        """
+        if not self.preprocessors:
+            # Calculate continuous features (all features except categorical)
+            continuous_features = [
+                f for f in (feature_names or list(X_train.columns))
+                if f not in (categorical_features or [])
+>>>>>>> Stashed changes
             ]
-        return X_train, X_test, feature_names
+            return X_train, X_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
+
+        current_feature_names = feature_names or list(X_train.columns)
+
+        # Get preprocessors by type (fixed order: Missing → Scaling → Encoding → Feature Selection)
+        missing_preprocessor = next((p for p in self.preprocessors if isinstance(p, MissingDataPreprocessor)), None)
+        scaling_preprocessor = next((p for p in self.preprocessors if isinstance(p, ScalingPreprocessor)), None)
+        encoding_preprocessor = next((p for p in self.preprocessors if isinstance(p, CategoricalEncodingPreprocessor)), None)
+        feature_selection_preprocessor = next((p for p in self.preprocessors if isinstance(p, FeatureSelectionPreprocessor)), None)
+
+        # Step 1: Fit and transform missing data preprocessor (REQUIRED)
+        if missing_preprocessor:
+            missing_preprocessor.fit(X_train, y_train)
+            X_train = missing_preprocessor.transform(X_train)
+            X_test = missing_preprocessor.transform(X_test)
+            current_feature_names = missing_preprocessor.get_feature_names(current_feature_names)
+        else:
+            # Check if there are missing values and no missing data preprocessor
+            if X_train.isnull().any().any() or X_test.isnull().any().any():
+                raise ValueError(
+                    "Missing values detected in the data but no MissingDataPreprocessor provided. "
+                    "You must handle missing values before proceeding."
+                )
+
+        # Step 2: Fit and transform encoding preprocessor (REQUIRED if categorical features exist)
+        if categorical_features and encoding_preprocessor:
+            encoding_preprocessor.categorical_features = categorical_features
+            encoding_preprocessor.fit(X_train, y_train)
+            X_train = encoding_preprocessor.transform(X_train)
+            X_test = encoding_preprocessor.transform(X_test)
+            current_feature_names = encoding_preprocessor.get_feature_names(current_feature_names)
+        elif categorical_features and not encoding_preprocessor:
+            # Check if there are categorical features but no encoding preprocessor
+            raise ValueError(
+                f"Categorical features detected: {categorical_features} but no CategoricalEncodingPreprocessor provided. "
+                "You must encode categorical features before proceeding."
+            )
+
+        # Step 3: Fit scaling preprocessor (OPTIONAL, only on continuous features)
+        if scaling_preprocessor:
+            # Exclude both original categorical features and encoded categorical features from scaling
+            features_to_exclude = []
+
+            # Always exclude original categorical features
+            if categorical_features:
+                features_to_exclude.extend(categorical_features)
+
+            # If encoding was done, also exclude encoded categorical features
+            if categorical_features and encoding_preprocessor:
+                for original_cat_feature in categorical_features:
+                    # Find all features that start with the original categorical feature name
+                    encoded_features = [
+                        f for f in current_feature_names
+                        if f.startswith(f"{original_cat_feature}_")
+                    ]
+                    features_to_exclude.extend(encoded_features)
+
+            # Check if there are any continuous features to scale
+            all_features = set(current_feature_names)
+            features_to_scale = all_features - set(features_to_exclude)
+
+            if not features_to_scale:
+                raise ValueError(
+                    "ScalingPreprocessor provided but no continuous features found to scale. "
+                    "All features are categorical or encoded categorical features. "
+                    "Remove the ScalingPreprocessor or ensure there are continuous features in your data."
+                )
+
+            # Configure scaling preprocessor to exclude all categorical features (original + encoded)
+            if features_to_exclude:
+                scaling_preprocessor.categorical_features = features_to_exclude
+
+            scaling_preprocessor.fit(X_train, y_train)
+
+        # Step 4: Fit and transform feature selection preprocessor (on all features after encoding)
+        if feature_selection_preprocessor:
+            # Pass the scaler to feature selection if it exists
+            if scaling_preprocessor:
+                feature_selection_preprocessor.scaler = scaling_preprocessor.scaler
+            feature_selection_preprocessor.fit(X_train, y_train)
+            X_train = feature_selection_preprocessor.transform(X_train)
+            X_test = feature_selection_preprocessor.transform(X_test)
+            current_feature_names = feature_selection_preprocessor.get_feature_names(current_feature_names)
+
+        # Return fitted scaler only if scaling was applied
+        fitted_scaler = None
+        if scaling_preprocessor:
+            fitted_scaler = scaling_preprocessor.scaler
+
+        # Calculate updated categorical features after preprocessing
+        updated_categorical_features = []
+        if categorical_features is not None:
+            # Find all features that are derived from original categorical features
+            for original_cat_feature in categorical_features:
+                # Find all features that start with the original categorical feature name
+                encoded_features = [
+                    f for f in current_feature_names
+                    if f.startswith(f"{original_cat_feature}_")
+                ]
+                updated_categorical_features.extend(encoded_features)
+
+            # If no encoded features found, keep original features that still exist
+            if not updated_categorical_features:
+                updated_categorical_features = [
+                    f for f in categorical_features if f in current_feature_names
+                ]
+
+        # Calculate updated continuous features (all features except categorical)
+        updated_continuous_features = [
+            f for f in current_feature_names if f not in updated_categorical_features
+        ]
+
+        return X_train, X_test, current_feature_names, updated_categorical_features, updated_continuous_features, fitted_scaler
+
+
 
     def _load_data(
         self,
@@ -468,19 +551,17 @@ class DataManager:
 
         feature_names = list(X.columns)
 
+
         train_idx, test_idx = next(self.splitter.split(X, y, groups))
         X_train = X.iloc[train_idx]  # pylint: disable=C0103
         X_test = X.iloc[test_idx]  # pylint: disable=C0103
         y_train = y.iloc[train_idx]  # pylint: disable=C0103
         y_test = y.iloc[test_idx]  # pylint: disable=C0103
 
-        X_train, X_test, feature_names = self.get_selected_features( # pylint: disable=C0103
-            X_train, X_test, y_train, feature_names
-        )  # pylint: disable=C0103
-        if categorical_features is not None:
-            categorical_features = [
-                f for f in categorical_features if f in feature_names
-            ]
+        # Apply preprocessing
+        X_train, X_test, feature_names, categorical_features, continuous_features, fitted_scaler = self._apply_preprocessing(  # pylint: disable=C0103
+            X_train, X_test, y_train, feature_names, categorical_features
+        )
 
         if self.group_column:
             group_index_train = {
@@ -497,21 +578,18 @@ class DataManager:
             group_index_train = None
             group_index_test = None
 
-        scaler = None
-        if self.scale_method:
-            scaler = self._set_scaler()
-
         split = data_split_info.DataSplitInfo(
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
             y_test=y_test,
             filename=data_path,
-            scaler=scaler,
             features=feature_names,
             categorical_features=categorical_features,
+            continuous_features=continuous_features,
             group_index_train=group_index_train,
             group_index_test=group_index_test,
+            scaler=fitted_scaler,
         )
         self._splits[split_key] = split
         return split
@@ -530,12 +608,8 @@ class DataManager:
             "group_column": self.group_column,
             "stratified": self.stratified,
             "random_state": self.random_state,
-            "scale_method": self.scale_method,
-            "feature_selection_method": self.feature_selection_method,
-            "feature_selection_estimator": self.feature_selection_estimator,
             "problem_type": self.problem_type,
-            "n_features_to_select": self.n_features_to_select,
-            "feature_selection_cv": self.feature_selection_cv,
+            "preprocessors": [type(p).__name__ for p in self.preprocessors] if self.preprocessors else [],
         }
 
         md = [
@@ -544,9 +618,7 @@ class DataManager:
         ]
 
         for key, value in config.items():
-            if value is not None and (
-                isinstance(value, list) and value or not isinstance(value, list)
-            ):
+            if value is not None:
                 md.append(f"{key}: {value}")
 
         md.append("```")

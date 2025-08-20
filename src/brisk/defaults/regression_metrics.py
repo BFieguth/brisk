@@ -1,9 +1,9 @@
 """regression_metrics.py
 
-This module defines a collection of regression metrics wrapped in 
-MetricWrapper instances for use within the Brisk framework. These metrics 
-are sourced from the scikit-learn library and provide various ways to 
-evaluate the performance of regression models. Additionally, it includes 
+This module defines a collection of regression metrics wrapped in
+MetricWrapper instances for use within the Brisk framework. These metrics
+are sourced from the scikit-learn library and provide various ways to
+evaluate the performance of regression models. Additionally, it includes
 a custom implementation of Lin's Concordance Correlation Coefficient (CCC).
 """
 from typing import Dict, Any

@@ -3,7 +3,7 @@
 A framework that helps train machine learning models using scikit-learn.
 
 This package provides utilities and functionalities to streamline the
-process of training and evaluating machine learning models. It is designed to 
+process of training and evaluating machine learning models. It is designed to
 work seamlessly with scikit-learn while also allowing users to add their own
 custom algorithms, metrics and evaluation methods.
 
@@ -12,7 +12,7 @@ Attributes:
 
 Usage:
     You can access the version number of the package as follows:
-    
+
     >>> from brisk import __version__
     >>> print(__version__)
 

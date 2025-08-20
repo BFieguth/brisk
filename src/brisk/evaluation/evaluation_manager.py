@@ -1,7 +1,7 @@
 """Provides methods for model evaluation and visualization.
 
-This module defines the EvaluationManager class, which provides methods for 
-evaluating models, generating plots, and comparing models. These methods are 
+This module defines the EvaluationManager class, which provides methods for
+evaluating models, generating plots, and comparing models. These methods are
 used when building a training workflow.
 """
 
@@ -37,8 +37,8 @@ matplotlib.use("Agg")
 class EvaluationManager:
     """A class for evaluating machine learning models and plotting results.
 
-    This class provides methods for model evaluation, including calculating 
-    metrics, generating plots, comparing models, and hyperparameter tuning. It 
+    This class provides methods for model evaluation, including calculating
+    metrics, generating plots, comparing models, and hyperparameter tuning. It
     is designed to be used within a Workflow instance.
 
     Parameters
@@ -53,7 +53,7 @@ class EvaluationManager:
         Metadata to include in metric calculations.
     logger : Optional[logging.Logger]
         Logger instance to use.
-        
+
     Attributes
     ----------
     algorithm_config : AlgorithmCollection
@@ -118,15 +118,15 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model to evaluate.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
-        metrics (List[str]): 
+        metrics (List[str]):
             A list of metrics to calculate.
-        filename (str): 
+        filename (str):
             The name of the output file without extension.
         """
         predictions = model.predict(X)
@@ -145,7 +145,7 @@ class EvaluationManager:
             ]
         )
         self.logger.info(
-            "Model evaluation results:\n%s\nSaved to '%s'.", 
+            "Model evaluation results:\n%s\nSaved to '%s'.",
             scores_log, output_path
         )
 
@@ -159,16 +159,16 @@ class EvaluationManager:
 
         Parameters
         ----------
-        predictions (Dict[str, Any]): 
+        predictions (Dict[str, Any]):
             The predictions of the model.
-        y_true (pd.Series): 
+        y_true (pd.Series):
             The true target values.
-        metrics (List[str]): 
+        metrics (List[str]):
             A list of metrics to calculate.
 
         Returns:
         -------
-        Dict[str, float]: 
+        Dict[str, float]:
             A dictionary containing the evaluation results for each metric.
         """
         results = {}
@@ -195,17 +195,17 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
-        metrics (List[str]): 
+        metrics (List[str]):
             A list of metrics to calculate.
-        filename (str): 
+        filename (str):
             The name of the output file without extension.
-        cv (int): 
+        cv (int):
             The number of cross-validation folds. Defaults to 5.
         """
         results = self._calc_evaluate_model_cv(model, X, y, metrics, cv)
@@ -221,7 +221,7 @@ class EvaluationManager:
             if metric != "_metadata"
         ])
         self.logger.info(
-            "Cross-validation results:\n%s\nSaved to '%s'.", 
+            "Cross-validation results:\n%s\nSaved to '%s'.",
             scores_log, output_path
         )
 
@@ -237,15 +237,15 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
-        metrics (List[str]): 
+        metrics (List[str]):
             A list of metrics to calculate.
-        cv (int): 
+        cv (int):
             The number of cross-validation folds. Defaults to 5.
         """
         splitter, indices = self._get_cv_splitter(y, cv)
@@ -314,7 +314,7 @@ class EvaluationManager:
             if model not in ["differences", "_metadata"]
         ])
         self.logger.info(
-            "Model comparison results:\n%s\nSaved to '%s'.", 
+            "Model comparison results:\n%s\nSaved to '%s'.",
             comparison_log, output_path
         )
 
@@ -401,13 +401,13 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y_true (pd.Series): 
+        y_true (pd.Series):
             The true target values.
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
         prediction = model.predict(X)
@@ -451,14 +451,14 @@ class EvaluationManager:
 
         Parameters
         ----------
-        prediction (pd.Series): 
+        prediction (pd.Series):
             The predicted values.
-        y_true (pd.Series): 
+        y_true (pd.Series):
             The true target values.
 
         Returns
         -------
-        Tuple[pd.DataFrame, float]: 
+        Tuple[pd.DataFrame, float]:
             A tuple containing the plot data and the maximum range of the plot.
         """
         plot_data = pd.DataFrame({
@@ -605,7 +605,7 @@ class EvaluationManager:
 
         Returns
         -------
-        Dict[str, float]: 
+        Dict[str, float]:
             A dictionary containing the learning curve data.
         """
         splitter, indices = self._get_cv_splitter(y_train, cv, num_repeats)
@@ -645,22 +645,22 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y (pd.Series): 
+        y (pd.Series):
             The target data
-        threshold (Union[int, float]): 
-            The number of features or the threshold to filter features by 
+        threshold (Union[int, float]):
+            The number of features or the threshold to filter features by
             importance.
-        feature_names (List[str]): 
+        feature_names (List[str]):
             A list of feature names corresponding to the columns in X.
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
-        metric (str): 
+        metric (str):
             The metric to use for evaluation.
-        num_rep (int): 
+        num_rep (int):
             The number of repetitions for calculating importance.
         """
         importance_data, plot_width, plot_height = (
@@ -702,25 +702,25 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y (pd.Series): 
+        y (pd.Series):
             The target data
-        threshold (Union[int, float]): 
-            The number of features or the threshold to filter features by 
+        threshold (Union[int, float]):
+            The number of features or the threshold to filter features by
             importance.
-        feature_names (List[str]): 
+        feature_names (List[str]):
             A list of feature names corresponding to the columns in X.
-        metric (str): 
+        metric (str):
             The metric to use for evaluation.
-        num_rep (int): 
+        num_rep (int):
             The number of repetitions for calculating importance.
 
         Returns
         -------
-        Tuple[pd.DataFrame, float, float]: 
+        Tuple[pd.DataFrame, float, float]:
             A tuple containing the feature importance values, the width of the
             plot, and the height of the plot.
         """
@@ -768,9 +768,11 @@ class EvaluationManager:
             "Feature": feature_names,
             "Importance": importance
         })
+        sorted_df = importance_data.sort_values("Importance")  # type: pd.DataFrame
+        sorted_features = sorted_df["Feature"].tolist()  # pylint: disable=E1136
         importance_data["Feature"] = pd.Categorical(
             importance_data["Feature"],
-            categories=importance_data.sort_values("Importance")["Feature"],
+            categories=sorted_features,
             ordered=True
         )
         return importance_data, plot_width, plot_height
@@ -787,19 +789,19 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The true target values.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
 
-        add_fit_line (bool): 
+        add_fit_line (bool):
             Whether to add a line of best fit to the plot.
         """
         predictions = model.predict(X)
@@ -852,14 +854,14 @@ class EvaluationManager:
 
         Parameters
         ----------
-        predictions (pd.Series): 
+        predictions (pd.Series):
             The predicted values.
-        y (pd.Series): 
+        y (pd.Series):
             The true target values.
 
         Returns
         -------
-        pd.DataFrame: 
+        pd.DataFrame:
             A dataframe containing the observed and residual values.
         """
         residuals = y - predictions
@@ -881,19 +883,19 @@ class EvaluationManager:
 
         Parameters
         ----------
-        models: 
+        models:
             A variable number of model instances to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        metric (str): 
+        metric (str):
             The metric to evaluate and plot.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
         plot_data = self._calc_plot_model_comparison(
@@ -937,21 +939,21 @@ class EvaluationManager:
 
         Parameters
         ----------
-        models: 
+        models:
             A variable number of model instances to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        metric (str): 
+        metric (str):
             The metric to evaluate and plot.
 
         Returns
         -------
-        pd.DataFrame: 
+        pd.DataFrame:
             A dataframe containing the model names and their scores.
         """
         model_names = []
@@ -994,37 +996,37 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to be tuned.
 
-        method (str): 
+        method (str):
             The search method to use ("grid" or "random").
 
-        X_train (pd.DataFrame): 
+        X_train (pd.DataFrame):
             The training data.
 
-        y_train (pd.Series): 
+        y_train (pd.Series):
             The target values for training.
 
-        scorer (str): 
+        scorer (str):
             The scoring metric to use.
 
-        kf (int): 
+        kf (int):
             Number of splits for cross-validation.
 
-        num_rep (int): 
+        num_rep (int):
             Number of repetitions for cross-validation.
 
-        n_jobs (int): 
+        n_jobs (int):
             Number of parallel jobs to run.
 
-        plot_results (bool): 
-            Whether to plot the performance of hyperparameters. Defaults to 
+        plot_results (bool):
+            Whether to plot the performance of hyperparameters. Defaults to
             False.
 
         Returns
         -------
-        BaseEstimator: 
+        BaseEstimator:
             The tuned model.
         """
         algo_wrapper = self._get_algo_wrapper(model.wrapper_name)
@@ -1038,7 +1040,7 @@ class EvaluationManager:
         )
         tuned_model.fit(X_train, y_train)
         self.logger.info(
-            "Hyperparameter optimization for %s complete.", 
+            "Hyperparameter optimization for %s complete.",
             model.__class__.__name__
             )
 
@@ -1068,36 +1070,36 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to be tuned.
 
-        method (str): 
+        method (str):
             The search method to use ("grid" or "random").
 
-        X_train (pd.DataFrame): 
+        X_train (pd.DataFrame):
             The training data.
 
-        y_train (pd.Series): 
+        y_train (pd.Series):
             The target values for training.
 
-        scorer (str): 
+        scorer (str):
             The scoring metric to use.
 
-        kf (int): 
+        kf (int):
             Number of splits for cross-validation.
 
-        num_rep (int): 
+        num_rep (int):
             Number of repetitions for cross-validation.
 
-        n_jobs (int): 
+        n_jobs (int):
             Number of parallel jobs to run.
 
-        param_grid (Dict[str, Any]): 
+        param_grid (Dict[str, Any]):
             The hyperparameter grid used for tuning.
 
         Returns
         -------
-        BaseEstimator: 
+        BaseEstimator:
             The tuned model.
         """
         if method == "grid":
@@ -1110,7 +1112,7 @@ class EvaluationManager:
                 )
 
         self.logger.info(
-            "Starting hyperparameter optimization for %s", 
+            "Starting hyperparameter optimization for %s",
             model.__class__.__name__
             )
         score = self.metric_config.get_scorer(scorer)
@@ -1137,19 +1139,19 @@ class EvaluationManager:
 
         Parameters
         ----------
-        param_grid (Dict[str, Any]): 
+        param_grid (Dict[str, Any]):
             The hyperparameter grid used for tuning.
 
-        search_result (Any): 
+        search_result (Any):
             The result from cross-validation during tuning.
 
-        algorithm_name (str): 
+        algorithm_name (str):
             The name of the algorithm.
 
-        metadata (Dict[str, Any]): 
+        metadata (Dict[str, Any]):
             Metadata to be included with the plot.
 
-        display_name (str): 
+        display_name (str):
             The name of the algorithm to use in the plot labels.
         """
         param_keys = list(param_grid.keys())
@@ -1193,22 +1195,22 @@ class EvaluationManager:
 
         Parameters
         ----------
-        param_values (List[Any]): 
+        param_values (List[Any]):
             The values of the hyperparameter.
 
-        mean_test_score (List[float]): 
+        mean_test_score (List[float]):
             The mean test scores for each hyperparameter value.
 
-        param_name (str): 
+        param_name (str):
             The name of the hyperparameter.
 
-        algorithm_name (str): 
+        algorithm_name (str):
             The name of the algorithm.
 
-        metadata (Dict[str, Any]): 
+        metadata (Dict[str, Any]):
             Metadata to be included with the plot.
 
-        display_name (str): 
+        display_name (str):
             The name of the algorithm to use in the plot labels.
         """
         plot_data = pd.DataFrame({
@@ -1252,22 +1254,22 @@ class EvaluationManager:
 
         Parameters
         ----------
-        param_grid (Dict[str, List[Any]]): 
+        param_grid (Dict[str, List[Any]]):
             The hyperparameter grid used for tuning.
 
-        search_result (Any): 
+        search_result (Any):
             The result from cross-validation during tuning.
 
-        param_names (List[str]): 
+        param_names (List[str]):
             The names of the two hyperparameters.
 
-        algorithm_name (str): 
+        algorithm_name (str):
             The name of the algorithm.
 
-        metadata (Dict[str, Any]): 
+        metadata (Dict[str, Any]):
             Metadata to be included with the plot.
 
-        display_name (str): 
+        display_name (str):
             The name of the algorithm to use in the plot labels.
         """
         X, Y, mean_test_score = self._calc_plot_3d_surface( # pylint: disable=C0103
@@ -1301,18 +1303,18 @@ class EvaluationManager:
 
         Parameters
         ----------
-        param_grid (Dict[str, List[Any]]): 
+        param_grid (Dict[str, List[Any]]):
             The hyperparameter grid used for tuning.
 
-        search_result (Any): 
+        search_result (Any):
             The result from cross-validation during tuning.
 
-        param_names (List[str]): 
+        param_names (List[str]):
             The names of the two hyperparameters.
-        
+
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray]: 
+        Tuple[np.ndarray, np.ndarray, np.ndarray]:
             A tuple containing the X, Y ndarrays for the meshgrid, and mean test
             score values.
         """
@@ -1370,14 +1372,14 @@ class EvaluationManager:
 
         Parameters
         ----------
-        prediction (pd.Series): 
+        prediction (pd.Series):
             The predicted target values.
-        y (np.ndarray): 
+        y (np.ndarray):
             The true target values.
 
         Returns
         -------
-        Dict[str, Any]: 
+        Dict[str, Any]:
             A dictionary containing the confusion matrix and labels.
         """
         labels = np.unique(y).tolist()
@@ -1399,16 +1401,16 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained classification model with a `predict` method.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The target labels.
 
-        filename (str): 
+        filename (str):
             The path to save the confusion matrix heatmap image.
         """
         prediction = model.predict(X)
@@ -1447,14 +1449,14 @@ class EvaluationManager:
 
         Parameters
         ----------
-        prediction (pd.Series): 
+        prediction (pd.Series):
             The predicted target values.
-        y (np.ndarray): 
+        y (np.ndarray):
             The true target values.
 
         Returns
         -------
-        pd.DataFrame: 
+        pd.DataFrame:
             A dataframe containing the confusion matrix heatmap data.
         """
         labels = np.unique(y).tolist()
@@ -1487,15 +1489,15 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
-        filename (str): 
+        filename (str):
             The path to save the ROC curve image.
-        pos_label (Optional[int]): 
+        pos_label (Optional[int]):
             The label of the positive class.
         """
         if hasattr(model, "predict_proba"):
@@ -1565,16 +1567,16 @@ class EvaluationManager:
 
         Parameters
         ----------
-        y_score (pd.Series): 
+        y_score (pd.Series):
             The class probabilities.
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
-        pos_label (Optional[int]): 
+        pos_label (Optional[int]):
             The label of the positive class.
 
         Returns
         -------
-        Tuple[pd.DataFrame, pd.DataFrame, float]: 
+        Tuple[pd.DataFrame, pd.DataFrame, float]:
             A tuple containing the ROC curve data, the AUC data, and the AUC
             score.
         """
@@ -1613,19 +1615,19 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        filename (str): 
+        filename (str):
             The path to save the plot.
-        
-        pos_label (Optional[int]): 
+
+        pos_label (Optional[int]):
             The label of the positive class.
         """
         if hasattr(model, "predict_proba"):
@@ -1684,18 +1686,18 @@ class EvaluationManager:
 
         Parameters
         ----------
-        y_score (pd.Series): 
+        y_score (pd.Series):
             The class probabilities.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        pos_label (Optional[int]): 
+        pos_label (Optional[int]):
             The label of the positive class.
 
         Returns
         -------
-        pd.DataFrame: 
+        pd.DataFrame:
             A dataframe containing the precision-recall curve data.
         """
         precision, recall, _ = sk_metrics.precision_recall_curve(
@@ -1761,19 +1763,19 @@ class EvaluationManager:
 
         Parameters
         ----------
-        output_path (str): 
+        output_path (str):
             The path to the output file.
 
-        metadata (dict, optional): 
+        metadata (dict, optional):
             Metadata to include, by default None
 
-        plot (ggplot, optional): 
+        plot (ggplot, optional):
             Plotnine plot object, by default None
 
-        height (int, optional): 
+        height (int, optional):
             The plot height in inches, by default 6
 
-        width (int, optional): 
+        width (int, optional):
             The plot width in inches, by default 8
         """
         try:
@@ -1798,10 +1800,10 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to save.
 
-        filename (str): 
+        filename (str):
             The name for the output file (without extension).
         """
         os.makedirs(self.output_dir, exist_ok=True)
@@ -1851,10 +1853,10 @@ class EvaluationManager:
         models : BaseEstimator or list of BaseEstimator
             The models to include in metadata.
 
-        method_name (str, optional): 
+        method_name (str, optional):
             The name of the calling method, by default None
 
-        is_test (bool, optional): 
+        is_test (bool, optional):
             Whether the data is test data, by default False
 
         Returns
@@ -1901,7 +1903,7 @@ class EvaluationManager:
 
         Parameters
         ----------
-        is_test (bool): 
+        is_test (bool):
             Whether the data is test data.
         """
         if self.data_has_groups:

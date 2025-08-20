@@ -1,15 +1,15 @@
 """Store and analyze data splits created by DataManager.
 
-This module defines the DataSplitInfo class, which is responsible for storing 
+This module defines the DataSplitInfo class, which is responsible for storing
 and analyzing data related to the training and testing splits of datasets within
-the Brisk framework. The DataSplitInfo class provides methods for calculating 
-descriptive statistics for both continuous and categorical features, as well as 
+the Brisk framework. The DataSplitInfo class provides methods for calculating
+descriptive statistics for both continuous and categorical features, as well as
 visualizing the distributions of these features through various plots.
 
 Examples
 --------
 >>> from brisk.data.data_split_info import DataSplitInfo
->>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test, 
+>>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test,
 ...                          filename="dataset.csv", scaler=my_scaler)
 >>> data_info.save_distribution("output_directory")
 """
@@ -28,8 +28,8 @@ import seaborn as sns
 class DataSplitInfo:
     """Store and analyze features and labels of training and testing splits.
 
-    This class provides methods for calculating descriptive statistics for both 
-    continuous and categorical features, as well as visualizing the 
+    This class provides methods for calculating descriptive statistics for both
+    continuous and categorical features, as well as visualizing the
     distributions of these features through various plots.
 
     Parameters
@@ -44,12 +44,12 @@ class DataSplitInfo:
         The testing labels
     filename : str
         The filename or table name of the dataset
-    scaler : object, optional
-        The scaler used for this split
     features : list of str, optional
         The order of input features
     categorical_features : list of str, optional
         List of categorical feature names
+    scaler : object, optional
+        The fitted scaler used for this split
 
     Attributes
     ----------
@@ -78,8 +78,8 @@ class DataSplitInfo:
 
     Notes
     -----
-    The class automatically detects categorical features if not provided. 
-    Statistics are calculated for both continuous and categorical features 
+    The class automatically detects categorical features if not provided.
+    Statistics are calculated for both continuous and categorical features
     during initialization.
     """
     def __init__(
@@ -91,9 +91,10 @@ class DataSplitInfo:
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None,
         filename: str,
-        scaler: Optional[Any] = None,
         features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None,
+        continuous_features: Optional[List[str]] = None,
+        scaler: Optional[Any] = None,
     ):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -123,46 +124,53 @@ class DataSplitInfo:
             if feature in X_train.columns
         ]
 
-        self.continuous_features = [
-            col for col in X_train.columns
-            if col not in self.categorical_features
-        ]
+        if continuous_features is None:
+            self.continuous_features = []
+        else:
+            # Only include features that are in X_train and are NOT categorical
+            self.continuous_features = [
+                feature for feature in continuous_features
+                if feature in X_train.columns and feature not in self.categorical_features
+            ]
 
         self.scaler = scaler
-        if self.continuous_features and scaler:
-            self.scaler = scaler.fit(X_train[self.continuous_features])
+
+        # Calculate continuous features for stats (everything except categorical)
 
         self.logger.info(
-            "Calculating stats for continuous features in %s split.", 
+            "Calculating stats for continuous features in %s split.",
             self.filename
         )
 
         self.continuous_stats = {}
-        for feature in self.continuous_features:
-            self.continuous_stats[feature] = {
-                "train": self._calculate_continuous_stats(
-                    self.X_train[feature]
-                    ),
-                "test": self._calculate_continuous_stats(
-                    self.X_test[feature]
-                    )
-            }
+        if self.continuous_features:  # Only calculate if there are continuous features
+            for feature in self.continuous_features:
+                self.continuous_stats[feature] = {
+                    "train": self._calculate_continuous_stats(
+                        self.X_train[feature]
+                        ),
+                    "test": self._calculate_continuous_stats(
+                        self.X_test[feature]
+                        )
+                }
 
         self.logger.info(
-            "Calculating stats for categorical features in %s split.", 
+            "Calculating stats for categorical features in %s split.",
             self.filename
             )
 
         self.categorical_stats = {}
-        for feature in self.categorical_features:
-            self.categorical_stats[feature] = {
-                "train": self._calculate_categorical_stats(
-                    self.X_train[feature], feature
-                    ),
-                "test": self._calculate_categorical_stats(
-                    self.X_test[feature], feature
-                    )
-            }
+        if self.categorical_features:  # Only calculate if there are categorical features
+            for feature in self.categorical_features:
+                self.categorical_stats[feature] = {
+                    "train": self._calculate_categorical_stats(
+                        self.X_train[feature], feature
+                        ),
+                    "test": self._calculate_categorical_stats(
+                        self.X_test[feature], feature
+                        )
+                }
+
 
     def _detect_categorical_features(self) -> List[str]:
         """Detect possible categorical features in the dataset.
@@ -214,8 +222,8 @@ class DataSplitInfo:
             feature_series (pd.Series): The series of continuous feature values.
 
         Returns:
-            dict: A dictionary containing descriptive statistics such as mean, 
-            median, standard deviation, variance, min, max, range, percentiles, 
+            dict: A dictionary containing descriptive statistics such as mean,
+            median, standard deviation, variance, min, max, range, percentiles,
             skewness, kurtosis, and coefficient of variation.
         """
         stats = {
@@ -250,7 +258,7 @@ class DataSplitInfo:
             feature_name (str): The name of the categorical feature.
 
         Returns:
-            dict: A dictionary containing frequency counts, proportions, number 
+            dict: A dictionary containing frequency counts, proportions, number
             of unique values, entropy, and Chi-Square test results.
         """
         stats = {
@@ -292,7 +300,7 @@ class DataSplitInfo:
 
     def _get_bin_number(self, feature_series: pd.Series) -> int:
         """Get the number of bins for a given feature.
-        
+
         Args:
             feature_series (pd.Series): The series of feature values.
         """
@@ -357,7 +365,7 @@ class DataSplitInfo:
         """Plot and save the correlation matrix for continuous features.
 
         Args:
-            output_dir (str): The directory where the correlation matrix plot 
+            output_dir (str): The directory where the correlation matrix plot
             will be saved.
         """
         os.makedirs(output_dir, exist_ok=True)
@@ -387,7 +395,7 @@ class DataSplitInfo:
 
     def _plot_categorical_pie(self, feature_name: str, output_dir: str) -> None:
         """
-        Creates a pie chart to visualize the frequency distribution of a 
+        Creates a pie chart to visualize the frequency distribution of a
         categorical feature.
 
         Args:
@@ -425,7 +433,7 @@ class DataSplitInfo:
         """Returns the training features.
 
         Returns:
-            Tuple[pd.DataFrame, pd.Series]: A tuple containing the training 
+            Tuple[pd.DataFrame, pd.Series]: A tuple containing the training
             features and training labels.
         """
         if self.scaler and self.continuous_features:
@@ -433,26 +441,30 @@ class DataSplitInfo:
                 self.X_train[self.categorical_features].copy()
                 if self.categorical_features
                 else pd.DataFrame(index=self.X_train.index)
-                )
+            )
 
             continuous_scaled = pd.DataFrame(
                 self.scaler.transform(self.X_train[self.continuous_features]),
                 columns=self.continuous_features,
                 index=self.X_train.index
-                )
+            )
 
-            X_train_scaled = pd.concat( # pylint: disable=C0103
+            # Concatenate categorical and scaled features, preserving original order
+            X_train_scaled = pd.concat(  # pylint: disable=C0103
                 [categorical_data, continuous_scaled], axis=1
-                )
-            X_train_scaled = X_train_scaled[self.X_train.columns] # pylint: disable=C0103
+            )
+            # Reorder columns to match original order
+            original_order = list(self.X_train.columns)
+            X_train_scaled = X_train_scaled[original_order]  # pylint: disable=C0103
             return X_train_scaled, self.y_train
+
         return self.X_train, self.y_train
 
     def get_test(self) -> Tuple[pd.DataFrame, pd.Series]:
         """Returns the testing features.
 
         Returns:
-            Tuple[pd.DataFrame, pd.Series]: A tuple containing the testing 
+            Tuple[pd.DataFrame, pd.Series]: A tuple containing the testing
             features and testing labels.
         """
         if self.scaler and self.continuous_features:
@@ -460,19 +472,23 @@ class DataSplitInfo:
                 self.X_test[self.categorical_features].copy()
                 if self.categorical_features
                 else pd.DataFrame(index=self.X_test.index)
-                )
+            )
 
             continuous_scaled = pd.DataFrame(
                 self.scaler.transform(self.X_test[self.continuous_features]),
                 columns=self.continuous_features,
                 index=self.X_test.index
-                )
+            )
 
-            X_test_scaled = pd.concat( # pylint: disable=C0103
+            # Concatenate categorical and scaled features, preserving original order
+            X_test_scaled = pd.concat(  # pylint: disable=C0103
                 [categorical_data, continuous_scaled], axis=1
-                )
-            X_test_scaled = X_test_scaled[self.X_test.columns] # pylint: disable=C0103
+            )
+            # Reorder columns to match original order
+            original_order = list(self.X_test.columns)
+            X_test_scaled = X_test_scaled[original_order]  # pylint: disable=C0103
             return X_test_scaled, self.y_test
+
         return self.X_test, self.y_test
 
     def get_train_test(
@@ -481,19 +497,23 @@ class DataSplitInfo:
         """Returns both the training and testing split.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple 
-            containing the training features, testing features, training 
+            Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple
+            containing the training features, testing features, training
             labels, and testing labels.
         """
         X_train, y_train = self.get_train() # pylint: disable=C0103
         X_test, y_test = self.get_test() # pylint: disable=C0103
         return X_train, X_test, y_train, y_test
 
+
+
+
+
     def save_distribution(self, dataset_dir: str) -> None:
         """Save the continuous and categorical statistics to JSON files.
 
         Args:
-            dataset_dir (str): The directory where the statistics JSON files 
+            dataset_dir (str): The directory where the statistics JSON files
             and visualizations will be saved.
         """
         os.makedirs(dataset_dir, exist_ok=True)

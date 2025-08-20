@@ -134,7 +134,6 @@ class TestExperimentGroup:
     @pytest.mark.parametrize("data_config", [
         {"test_size": 0.2},
         {"split_method": "kfold", "n_splits": 5},
-        {"scale_method": "standard"},
         None
     ])
     def test_valid_data_configs(self, mock_brisk_project, data_config):

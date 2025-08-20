@@ -28,10 +28,12 @@ class TestConfigurationManager:
             algorithms=["ridge"]
         )
         experiment_groups = [group, group2]
-        manager = ConfigurationManager(experiment_groups, {})
+        manager = ConfigurationManager(experiment_groups, {
+            "categorical.csv": ["category"]
+        })
         
         assert manager.experiment_groups == experiment_groups
-        assert manager.categorical_features == {}
+        assert manager.categorical_features == {"categorical.csv": ["category"]}
         assert manager.project_root == mock_brisk_project
         assert isinstance(manager.algorithm_config, AlgorithmCollection)
         assert isinstance(manager.base_data_manager, DataManager)
@@ -342,13 +344,9 @@ class TestConfigurationManager:
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None,
-            'feature_selection_method': None,
-            'feature_selection_estimator': None,
             'problem_type': 'classification',
-            'n_features_to_select': 5,
-            'feature_selection_cv': 3,
-            'algorithm_config': None
+            'algorithm_config': None,
+            'preprocessors': []
         }
         assert base_params == expected_params
        
@@ -372,13 +370,9 @@ class TestConfigurationManager:
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None,
-            'feature_selection_method': None,
-            'feature_selection_estimator': None,
             'problem_type': 'classification',
-            'n_features_to_select': 5,
-            'feature_selection_cv': 3,
-            'algorithm_config': None
+            'algorithm_config': None,
+            'preprocessors': []
         }
         assert base_params == expected_params
 
@@ -402,7 +396,9 @@ class TestConfigurationManager:
                 algorithms=["elasticnet"]
             )
         ]
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         for data_manager in manager.data_managers.values():
             assert isinstance(data_manager, DataManager)
         assert len(manager.data_managers) == 3
@@ -429,7 +425,9 @@ class TestConfigurationManager:
             )
         ]
         
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         
         assert len(manager.experiment_queue) == 3
         assert isinstance(manager.experiment_queue, collections.deque)
@@ -471,7 +469,9 @@ class TestConfigurationManager:
                 algorithms=["linear", "ridge"]
             )
         ]
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         assert len(manager.experiment_queue) == 10
 
     def test_create_logfile(self, mock_brisk_project):
@@ -580,8 +580,7 @@ split_method: shuffle
 stratified: False
 random_state: 42
 problem_type: classification
-n_features_to_select: 5
-feature_selection_cv: 3
+preprocessors: []
 ```
 
 ### Datasets
@@ -609,8 +608,7 @@ split_method: shuffle
 stratified: False
 random_state: 42
 problem_type: classification
-n_features_to_select: 5
-feature_selection_cv: 3
+preprocessors: []
 ```
 
 ### Datasets
@@ -768,8 +766,7 @@ split_method: shuffle
 stratified: False
 random_state: 42
 problem_type: classification
-n_features_to_select: 5
-feature_selection_cv: 3
+preprocessors: []
 ```
 
 ### Datasets
@@ -805,8 +802,7 @@ group_column: group
 stratified: False
 random_state: 42
 problem_type: classification
-n_features_to_select: 5
-feature_selection_cv: 3
+preprocessors: []
 ```
 
 ### Datasets
@@ -886,7 +882,10 @@ Continuous: ['x', 'y']
             ],
             algorithms=["ridge"]
         )
-        manager = ConfigurationManager([group1, group2], {})
+        manager = ConfigurationManager([group1, group2], {
+            "categorical.csv": ["category"],
+            ("test_data.db", "categorical"): ["category", "result"]
+        })
         output_structure = manager._get_output_structure()
         expected_output_structure = {
             "group1": {

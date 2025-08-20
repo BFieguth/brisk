@@ -28,7 +28,7 @@ from brisk.configuration import experiment
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
 
-    Coordinates model training using various algorithms, evaluates them on 
+    Coordinates model training using various algorithms, evaluates them on
     different datasets, and generates reports. Integrates with EvaluationManager
     for model evaluation and ReportManager for generating HTML reports.
 
@@ -98,7 +98,7 @@ class TrainingManager:
             The name of the results directory.
 
         create_report : bool
-            Whether to generate an HTML report after all experiments. 
+            Whether to generate an HTML report after all experiments.
             Defaults to True.
         """
         self._reset_experiment_results()
@@ -135,7 +135,7 @@ class TrainingManager:
     ) -> None:
         """Runs a single Experiment and handles its outcome.
 
-        Sets up the experiment environment, runs the workflow, and handles 
+        Sets up the experiment environment, runs the workflow, and handles
         success or failure cases.
 
         Parameters

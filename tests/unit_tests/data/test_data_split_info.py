@@ -29,6 +29,7 @@ def sample_data():
     filename = 'sample_dataset.csv'
     features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
+    continuous_features = ['feature1', 'feature2']
     group_index_train = None
     group_index_test = None
     return {
@@ -39,6 +40,7 @@ def sample_data():
         'filename': filename,
         'features': features,
         'categorical_features': categorical_features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
     }
@@ -66,6 +68,7 @@ def sample_data_scaler():
     filename = 'sample_dataset.csv'
     features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
+    continuous_features = ['feature1', 'feature2']
     scaler = StandardScaler().fit(
         X_train[[feature for feature in features 
                 if feature not in categorical_features]]
@@ -82,6 +85,7 @@ def sample_data_scaler():
         'scaler': scaler,
         'features': features,
         'categorical_features': categorical_features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
     }
@@ -122,6 +126,7 @@ def categorical_data():
         'feature1', 'feature2', 'categorical_string', 'categorical_int',
         'categorical_bool', 'categorical_category'
     ]
+    continuous_features = []  # All features are categorical in this dataset
     group_index_train = None
     group_index_test = None
     return {
@@ -131,6 +136,7 @@ def categorical_data():
         'y_test': y_test,
         'filename': filename,
         'features': features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
     }

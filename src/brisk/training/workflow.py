@@ -2,7 +2,7 @@
 
 This module provides the base Workflow class that defines the interface for
 machine learning workflows. Specific workflows should inherit from this class
-and implement the abstract `workflow` method. This class delegates the 
+and implement the abstract `workflow` method. This class delegates the
 EvaluationManager for model evaluation and visualization.
 """
 
@@ -215,13 +215,13 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y_true (pd.Series): 
+        y_true (pd.Series):
             The true target values.
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
         return self.evaluator.plot_pred_vs_obs(model, X, y_true, filename)
@@ -278,29 +278,29 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        threshold (Union[int, float]): 
-            The number of features or the threshold to filter features by 
+        threshold (Union[int, float]):
+            The number of features or the threshold to filter features by
             importance.
 
-        feature_names (List[str]): 
+        feature_names (List[str]):
             A list of feature names corresponding to the columns in X.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
 
-        metric (str): 
+        metric (str):
             The metric to use for evaluation.
 
-        num_rep (int): 
+        num_rep (int):
             The number of repetitions for calculating importance.
         """
         return self.evaluator.plot_feature_importance(
@@ -319,19 +319,19 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The true target values.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
 
-        add_fit_line (bool): 
+        add_fit_line (bool):
             Whether to add a line of best fit to the plot.
         """
         return self.evaluator.plot_residuals(
@@ -350,19 +350,19 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        models: 
+        models:
             A variable number of model instances to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        metric (str): 
+        metric (str):
             The metric to evaluate and plot.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
         return self.evaluator.plot_model_comparison(
@@ -452,16 +452,16 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained classification model with a `predict` method.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The target labels.
 
-        filename (str): 
+        filename (str):
             The path to save the confusion matrix heatmap image.
         """
         return self.evaluator.plot_confusion_heatmap(
@@ -480,19 +480,19 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        filename (str): 
+        filename (str):
             The path to save the ROC curve image.
-        
-        pos_label (Optional[int]): 
+
+        pos_label (Optional[int]):
             The label of the positive class.
         """
         return self.evaluator.plot_roc_curve(
@@ -511,19 +511,19 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        filename (str): 
+        filename (str):
             The path to save the plot.
-        
-        pos_label (int): 
+
+        pos_label (int):
             The label of the positive class.
         """
         return self.evaluator.plot_precision_recall_curve(

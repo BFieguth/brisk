@@ -1,7 +1,7 @@
 """Generate HTML reports from evaluation results.
 
-This module provides the ReportManager class for creating HTML reports from 
-modelevaluation results. It generates structured reports with interactive 
+This module provides the ReportManager class for creating HTML reports from
+modelevaluation results. It generates structured reports with interactive
 navigation and visualization of model performance metrics.
 """
 
@@ -288,7 +288,7 @@ class ReportManager():
 
     def create_dataset_page(self, group_name: str, dataset_name: str) -> None:
         """Creates an HTML page showing data split distribution information.
-        
+
         Parameters
         ----------
         group_name : str
@@ -442,7 +442,7 @@ class ReportManager():
         -------
         Union[dict, str, Any]
             The loaded content, depending on file type:
-            
+
             * .json : dict
                 Parsed JSON content
             * .png : str
@@ -545,7 +545,7 @@ class ReportManager():
         return result_html
 
     def report_evaluate_model_cv(self, data: dict, metadata: dict) -> str:
-        """Generates an HTML block for displaying cross-validated evaluation 
+        """Generates an HTML block for displaying cross-validated evaluation
         results.
 
         Parameters
@@ -677,7 +677,7 @@ class ReportManager():
         <h2>{title}</h2>
         <p><strong>Model:</strong> {model_names}</p>
         <p><strong>Data:</strong> {self._get_data_type(is_test)}</p>
-        <img 
+        <img
             src="{rel_img_path}"
             alt="{title}"
             style="max-width:{max_width};
@@ -798,7 +798,7 @@ class ReportManager():
         return "\n".join(html)
 
     def generate_summary_tables(self) -> str:
-        """Generates sortable HTML summary tables for each dataset, displaying 
+        """Generates sortable HTML summary tables for each dataset, displaying
         model metrics.
 
         Returns
@@ -833,14 +833,14 @@ class ReportManager():
 
             # Add rows for each model
             for model, metrics in models.items():
-                summary_html += f"<tr><td>{model}</td>"
+                summary_html += f'<tr><td>{model}</td>'
                 for metric in all_metrics:
                     if metric in metrics:
                         test_score = round(metrics[metric]["test_score"], 3)
-                        summary_html += f"<td>{test_score}</td>"
+                        summary_html += f'<td>{test_score}</td>'
                     else:
-                        summary_html += "<td>N/A</td>"
-                summary_html += "</tr>"
+                        summary_html += '<td>N/A</td>'
+                summary_html += '</tr>'
 
             summary_html += "</tbody></table>"
 
@@ -904,8 +904,8 @@ class ReportManager():
 
             # List of statistics for the table rows
             stats_keys = [
-                "mean", "median", "std_dev", "variance", "min", "max", 
-                "range", "25_percentile", "75_percentile", "skewness", 
+                "mean", "median", "std_dev", "variance", "min", "max",
+                "range", "25_percentile", "75_percentile", "skewness",
                 "kurtosis", "coefficient_of_variation"
                 ]
 

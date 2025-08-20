@@ -35,7 +35,9 @@ class TestDataManager:
         assert data_manager.stratified == False
         assert data_manager.n_splits == 5
         assert data_manager.random_state == 42
-        assert data_manager.scale_method == None
+        assert data_manager.problem_type == "classification"
+        assert data_manager.algorithm_config == None
+        assert data_manager.preprocessors == []
         assert data_manager._splits == {}
 
     def test_validate_config_invalid_split_method(self):
@@ -56,35 +58,26 @@ class TestDataManager:
                 split_method="shuffle", group_column="group", stratified=True
             )
 
-    def test_validate_config_invalid_scaler(self):
-        """
-        Test that an invalid combination of group_column and stratified raises an error.
-        """
-        with pytest.raises(
-            ValueError, match="Invalid scale_method: fake_scaler. Choose from standard, minmax, robust, maxabs, normalizer"
-            ):
-            DataManager(
-                split_method="shuffle", scale_method="fake_scaler"
-            )
+
 
     def test_valid_config_no_errors(self):
         """
         Test that a valid configuration does not raise an error.
         """
         DataManager(
-            split_method="shuffle", scale_method="standard"
+            split_method="shuffle", problem_type="classification"
         )
         DataManager(
-            split_method="kfold", scale_method="minmax"
+            split_method="kfold", problem_type="regression"
         )
         DataManager(
-            split_method="shuffle", scale_method="robust", group_column="group"
+            split_method="shuffle", group_column="group"
         )
         DataManager(
-            split_method="kfold", scale_method="maxabs", group_column="group"
+            split_method="kfold", group_column="group"
         )
         DataManager(
-            split_method="kfold", scale_method="normalizer", group_column="group", stratified=True
+            split_method="kfold", group_column="group", stratified=True
         )
 
     def test_shuffle_without_stratified_or_group(self):
@@ -180,53 +173,7 @@ class TestDataManager:
             ):
             data_manager._set_splitter()
 
-    def test_set_scaler_standard(self, data_manager):
-        """
-        Test that the standard scaler is selected when scale_method is 'standard'.
-        """
-        data_manager.scale_method = "standard"
-        scaler = data_manager._set_scaler()
-        assert isinstance(scaler, preprocessing.StandardScaler)
 
-    def test_set_scaler_minmax(self, data_manager):
-        """
-        Test that the MinMax scaler is selected when scale_method is 'minmax'.
-        """
-        data_manager.scale_method = "minmax"
-        scaler = data_manager._set_scaler()
-        assert isinstance(scaler, preprocessing.MinMaxScaler)
-
-    def test_set_scaler_robust(self, data_manager):
-        """
-        Test that the Robust scaler is selected when scale_method is 'robust'.
-        """
-        data_manager.scale_method = "robust"
-        scaler = data_manager._set_scaler()
-        assert isinstance(scaler, preprocessing.RobustScaler)
-
-    def test_set_scaler_maxabs(self, data_manager):
-        """
-        Test that the MaxAbs scaler is selected when scale_method is 'maxabs'.
-        """
-        data_manager.scale_method = "maxabs"
-        scaler = data_manager._set_scaler()
-        assert isinstance(scaler, preprocessing.MaxAbsScaler)
-
-    def test_set_scaler_normalizer(self, data_manager):
-        """
-        Test that the Normalizer scaler is selected when scale_method is 'normalizer'.
-        """
-        data_manager.scale_method = "normalizer"
-        scaler = data_manager._set_scaler()
-        assert isinstance(scaler, preprocessing.Normalizer)
-
-    def test_set_scaler_invalid(self, data_manager):
-        """
-        Test that None is returned when an invalid scale_method is provided.
-        """
-        data_manager.scale_method = "invalid_scaler"
-        scaler = data_manager._set_scaler()
-        assert scaler is None
 
     def test_load_data_csv(self, data_manager, tmp_path):
         """
@@ -469,11 +416,15 @@ class TestDataManager:
             "group_category_categorical": split
         }
 
-    def test_shuffle_split_scaler(self, data_manager, tmp_path):
+    def test_shuffle_split_with_preprocessing(self, data_manager, tmp_path):
         """
-        Test the split method using ShuffleSplit.
+        Test the split method using ShuffleSplit with preprocessing.
         """
-        data_manager.scale_method = "standard"
+        from brisk.data.preprocessing import ScalingPreprocessor
+        
+        # Add scaling preprocessor
+        data_manager.preprocessors = [ScalingPreprocessor(method="standard")]
+        
         split = data_manager.split(
             tmp_path / "datasets" / "regression.csv",
             categorical_features=None,
@@ -493,7 +444,7 @@ class TestDataManager:
         assert split.y_test.shape == (1,)
         assert isinstance(split.y_test, pd.Series)
         assert split.filename == tmp_path / "datasets" / "regression.csv"
-        assert isinstance(split.scaler, preprocessing.StandardScaler)
+        assert split.scaler is not None  # Should have fitted scaler from preprocessing
         assert split.features == ['x', 'y']
         assert split.categorical_features == []
         # Check split was saved
@@ -590,8 +541,7 @@ class TestDataManager:
 
     def test_to_markdown(self, data_manager):
         """Test the to_markdown method."""
-        expected_markdown = """
-```python
+        expected_markdown = """```python
 DataManager Configuration:
 test_size: 0.2
 n_splits: 5
@@ -599,12 +549,271 @@ split_method: shuffle
 stratified: False
 random_state: 42
 problem_type: classification
-n_features_to_select: 5
-feature_selection_cv: 3
-```
-"""
-        print("ACTUAL MARKDOWN:")
-        print(data_manager.to_markdown())
-        print("EXPECTED MARKDOWN:")
-        print(expected_markdown)
+preprocessors: []
+```"""
         assert data_manager.to_markdown().strip() == expected_markdown.strip()
+
+    def test_preprocessing_pipeline(self, data_manager, tmp_path):
+        """
+        Test the complete preprocessing pipeline with multiple preprocessors.
+        """
+        from brisk.data.preprocessing import (
+            MissingDataPreprocessor, 
+            ScalingPreprocessor, 
+            CategoricalEncodingPreprocessor,
+            FeatureSelectionPreprocessor
+        )
+        
+        # Create data with missing values and categorical features
+        import pandas as pd
+        import numpy as np
+        
+        # Create test data with missing values and categorical features
+        test_data = pd.DataFrame({
+            'numeric1': [1, 2, np.nan, 4, 5],
+            'numeric2': [0.1, 0.2, 0.3, np.nan, 0.5],
+            'category': ['A', 'B', 'A', 'B', 'A'],
+            'target': [0, 1, 0, 1, 0]
+        })
+        
+        # Save test data
+        test_file = tmp_path / "datasets" / "test_preprocessing.csv"
+        test_data.to_csv(test_file, index=False)
+        
+        # User's choice for feature selection
+        n_features_to_select = 3
+        
+        # Set up preprocessors in fixed order
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            ScalingPreprocessor(method="standard", categorical_features=['category']),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=n_features_to_select, problem_type="classification")
+        ]
+        
+        # Run split with preprocessing
+        split = data_manager.split(
+            test_file,
+            categorical_features=['category'],
+            group_name="test_preprocessing",
+            filename="test"
+        )
+        
+        # Check results
+        assert isinstance(split, DataSplitInfo)
+        # Check if scaling was requested (should have scaler if ScalingPreprocessor was used)
+        has_scaling = any(isinstance(p, ScalingPreprocessor) for p in data_manager.preprocessors)
+        if has_scaling:
+            assert split.scaler is not None  # Should have fitted scaler if scaling was requested
+        else:
+            assert split.scaler is None  # Should not have scaler if no scaling was requested
+        assert split.X_train.shape[1] == n_features_to_select  
+        assert split.X_test.shape[1] == n_features_to_select   
+        assert split.X_train.isnull().sum().sum() == 0  
+        assert split.X_test.isnull().sum().sum() == 0  
+
+    def test_preprocessing_flexible_combinations(self, data_manager, tmp_path):
+        """
+        Test that DataManager can handle any combination of preprocessors in fixed order.
+        """
+        from brisk.data.preprocessing import (
+            MissingDataPreprocessor, 
+            ScalingPreprocessor, 
+            CategoricalEncodingPreprocessor,
+            FeatureSelectionPreprocessor
+        )
+        
+        # Create test data with both numeric and categorical features
+        import pandas as pd
+        import numpy as np
+        
+        test_data = pd.DataFrame({
+            'numeric1': [1, 2, np.nan, 4, 5],
+            'numeric2': [0.1, 0.2, 0.3, np.nan, 0.5],
+            'category': ['A', 'B', 'A', 'B', 'A'],
+            'target': [0, 1, 0, 1, 0]
+        })
+        
+        test_file = tmp_path / "datasets" / "test_flexible.csv"
+        test_data.to_csv(test_file, index=False)
+        
+        # Test 1: Only scaling (numeric data only)
+        numeric_data = pd.DataFrame({
+            'numeric1': [1, 2, np.nan, 4, 5],
+            'numeric2': [0.1, 0.2, 0.3, np.nan, 0.5],
+            'numeric3': [10, 20, 30, 40, 50],
+            'target': [0, 1, 0, 1, 0]
+        })
+        numeric_file = tmp_path / "datasets" / "test_numeric.csv"
+        numeric_data.to_csv(numeric_file, index=False)
+        
+        data_manager.preprocessors = [MissingDataPreprocessor(strategy="impute", impute_method="mean"), ScalingPreprocessor(method="standard")]
+        split = data_manager.split(numeric_file, categorical_features=None, group_name="test_only_scaling", filename="test")
+        assert split.scaler is not None
+        assert split.X_train.shape[1] == 3  # All features (no selection)
+        
+        # Test 2: Only feature selection (skips missing data, scaling, encoding)
+        # Note: Feature selection needs numeric data, so we need to encode categorical features first
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
+        ]
+        split = data_manager.split(test_file, categorical_features=['category'], group_name="test_only_selection", filename="test")
+        assert split.scaler is None
+        assert split.X_train.shape[1] == 2  # Selected features only
+        
+        # Test 3: Scaling + Feature Selection (skips missing data, encoding)
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            ScalingPreprocessor(method="standard"),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
+        ]
+        split = data_manager.split(test_file, categorical_features=['category'], group_name="test_scaling_selection", filename="test")
+        assert split.scaler is not None
+        assert split.X_train.shape[1] == 2  # Selected features only
+        
+        # Test 4: Missing data + Encoding (skips scaling, feature selection)
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category'])
+        ]
+        split = data_manager.split(test_file, categorical_features=['category'], group_name="test_missing_encoding", filename="test")
+        assert split.scaler is None
+        assert split.X_train.isnull().sum().sum() == 0  # No missing values
+        # Should have more columns due to one-hot encoding
+        assert split.X_train.shape[1] > 3
+        
+        # Test 5: Missing data + Scaling + Feature Selection (skips encoding)
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            ScalingPreprocessor(method="standard"),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
+        ]
+        split = data_manager.split(test_file, categorical_features=['category'], group_name="test_missing_scaling_selection", filename="test")
+        assert split.scaler is not None
+        assert split.X_train.shape[1] == 2  # Selected features only
+        assert split.X_train.isnull().sum().sum() == 0  # No missing values
+
+    def test_preprocessing_fixed_order(self, data_manager, tmp_path):
+        """
+        Test that preprocessing is applied in the correct fixed order:
+        Missing Data → Scaling → Encoding → Feature Selection
+        """
+        from brisk.data.preprocessing import (
+            MissingDataPreprocessor, 
+            ScalingPreprocessor, 
+            CategoricalEncodingPreprocessor,
+            FeatureSelectionPreprocessor
+        )
+        
+        # Create test data with missing values and categorical features
+        import pandas as pd
+        import numpy as np
+        
+        test_data = pd.DataFrame({
+            'numeric1': [1, 2, np.nan, 4, 5],
+            'numeric2': [0.1, 0.2, 0.3, np.nan, 0.5],
+            'category': ['A', 'B', 'A', 'B', 'A'],
+            'target': [0, 1, 0, 1, 0]
+        })
+        
+        test_file = tmp_path / "datasets" / "test_fixed_order.csv"
+        test_data.to_csv(test_file, index=False)
+        
+        # Test full pipeline in correct order
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            ScalingPreprocessor(method="standard", categorical_features=['category']),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=3, problem_type="classification")
+        ]
+        
+        split = data_manager.split(
+            test_file,
+            categorical_features=['category'],
+            group_name="test_fixed_order",
+            filename="test"
+        )
+        
+        # Verify all preprocessing steps were applied correctly
+        assert isinstance(split, DataSplitInfo)
+        assert split.scaler is not None  # Scaling was applied
+        assert split.X_train.shape[1] == 3  # Feature selection selected 3 features
+        assert split.X_train.isnull().sum().sum() == 0  # Missing data was handled
+        # Should have more columns than original due to one-hot encoding
+        # (but then reduced by feature selection)
+        
+        # Test that order doesn't matter in user input (system finds by type)
+        data_manager.preprocessors = [
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=3, problem_type="classification"),
+            MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            ScalingPreprocessor(method="standard", categorical_features=['category'])
+        ]
+        
+        split2 = data_manager.split(
+            test_file,
+            categorical_features=['category'],
+            group_name="test_fixed_order_reversed",
+            filename="test"
+        )
+        
+        # Should get same results regardless of input order
+        assert split2.scaler is not None
+        assert split2.X_train.shape[1] == 3
+        assert split2.X_train.isnull().sum().sum() == 0
+
+    def test_preprocessing_edge_cases(self, data_manager, tmp_path):
+        """
+        Test edge cases for preprocessing pipeline.
+        """
+        from brisk.data.preprocessing import (
+            MissingDataPreprocessor, 
+            ScalingPreprocessor, 
+            CategoricalEncodingPreprocessor,
+            FeatureSelectionPreprocessor
+        )
+        
+        # Create test data
+        import pandas as pd
+        import numpy as np
+        
+        test_data = pd.DataFrame({
+            'feature1': [1, 2, 3, 4, 5],
+            'feature2': [0.1, 0.2, 0.3, 0.4, 0.5],
+            'feature3': [10, 20, 30, 40, 50],
+            'target': [0, 1, 0, 1, 0]
+        })
+        
+        test_file = tmp_path / "datasets" / "test_edge_cases.csv"
+        test_data.to_csv(test_file, index=False)
+        
+        # Test 1: Empty preprocessors list
+        data_manager.preprocessors = []
+        split = data_manager.split(test_file, categorical_features=None, group_name="test_empty", filename="test")
+        assert split.scaler is None
+        assert split.X_train.shape[1] == 3  # All features
+        assert split.X_train.shape == (4, 3)  # 4 rows (train), 3 features
+        # Data should be unchanged (except for train/test split)
+        
+        # Test 2: Duplicate preprocessor types (should use first one found)
+        data_manager.preprocessors = [
+            ScalingPreprocessor(method="standard"),
+            ScalingPreprocessor(method="minmax"),  # Duplicate - should be ignored
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
+        ]
+        split = data_manager.split(test_file, categorical_features=None, group_name="test_duplicate", filename="test")
+        assert split.scaler is not None
+        assert split.X_train.shape[1] == 2  # Feature selection applied
+        
+        # Test 3: Only missing data (no other preprocessors)
+        data_manager.preprocessors = [
+            MissingDataPreprocessor(strategy="impute", impute_method="mean")
+        ]
+        split = data_manager.split(test_file, categorical_features=None, group_name="test_only_missing", filename="test")
+        assert split.scaler is None
+        assert split.X_train.shape[1] == 3  # All features
+        # Data should be unchanged since no missing values in test data

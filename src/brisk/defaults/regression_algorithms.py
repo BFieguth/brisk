@@ -1,8 +1,8 @@
 """Default configuration for regression algorithms.
 
-This module provides configuration settings for different regression algorithms. 
-Each algorithm is wrapped in a `AlgorithmWrapper` which includes the 
-algorithms"s display_name, its class, default parameters, and hyperparameter 
+This module provides configuration settings for different regression algorithms.
+Each algorithm is wrapped in a `AlgorithmWrapper` which includes the
+algorithms"s display_name, its class, default parameters, and hyperparameter
 space for optimization.
 """
 
@@ -66,7 +66,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         algorithm_class=tree.DecisionTreeRegressor,
         default_params={"min_samples_split": 10},
         hyperparam_grid={
-            "criterion": ["friedman_mse", "absolute_error", 
+            "criterion": ["friedman_mse", "absolute_error",
                           "poisson", "squared_error"],
             "max_depth": list(range(5, 25, 5)) + [None]
         }
@@ -78,7 +78,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             "n_estimators": list(range(20, 160, 20)),
-            "criterion": ["friedman_mse", "absolute_error", 
+            "criterion": ["friedman_mse", "absolute_error",
                           "poisson", "squared_error"],
             "max_depth": list(range(5, 25, 5)) + [None]
         }
@@ -90,7 +90,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         default_params={"max_iter": 10000},
         hyperparam_grid={
             "kernel": ["linear", "rbf", "sigmoid"],
-            "C": list(np.arange(1, 30, 0.5)), 
+            "C": list(np.arange(1, 30, 0.5)),
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1]
         }
     ),
@@ -103,9 +103,9 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "hidden_layer_sizes": [
                 (100,), (50, 25), (25, 10), (100, 50, 25), (50, 25, 10)
                 ],
-            "activation": ["identity", "logistic", "tanh", "relu"],    
-            "alpha": [0.0001, 0.001, 0.01],              
-            "learning_rate": ["constant", "invscaling", "adaptive"]   
+            "activation": ["identity", "logistic", "tanh", "relu"],
+            "alpha": [0.0001, 0.001, 0.01],
+            "learning_rate": ["constant", "invscaling", "adaptive"]
         }
     ),
     algorithm_wrapper.AlgorithmWrapper(

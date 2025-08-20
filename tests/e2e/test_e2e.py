@@ -1,4 +1,10 @@
 from brisk.configuration.configuration import Configuration
+from brisk.data.preprocessing import (
+    ScalingPreprocessor, 
+    CategoricalEncodingPreprocessor, 
+    FeatureSelectionPreprocessor,
+    MissingDataPreprocessor
+)
 
 from tests.e2e import e2e_setup
 
@@ -56,18 +62,31 @@ class TestEndToEnd:
             config.add_experiment_group(
                 name="group1",
                 datasets=["continuous_features_regression.csv"],
-                data_config={"scale_method": "minmax"}
+                data_config={
+                    "preprocessors": [ScalingPreprocessor(method="standard")]
+                }
             )
             config.add_experiment_group(
                 name="group2",
                 datasets=[("mixed_features.db", "mixed_features_regression")],
-                data_config={"scale_method": "standard"},
+                data_config={
+                    "preprocessors": [
+                        ScalingPreprocessor(method="minmax"),
+                        CategoricalEncodingPreprocessor(method="onehot")
+                    ]
+                },
                 algorithms=["linear", "elasticnet"]
             )
             config.add_experiment_group(
                 name="group3",
                 datasets=["categorical_features_regression.xlsx"],
-                data_config={"scale_method": "normalizer"},
+                data_config={
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        CategoricalEncodingPreprocessor(method="label"),
+                        FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=5, problem_type="regression")
+                    ]
+                },
                 algorithms=["linear", "ridge", "elasticnet", "knn"]
             )
             return config.build()
@@ -112,22 +131,44 @@ class TestEndToEnd:
                 name="trees",
                 datasets=[("mixed_features.db", "mixed_features_regression")],
                 algorithms=[["dtr", "xtree"], ["dtr", "rf"]],
-                data_config={"scale_method": "standard"}
+                data_config={
+                    "preprocessors": [
+                        CategoricalEncodingPreprocessor(method="onehot"),
+                        ScalingPreprocessor(method="standard")
+                    ]
+                }
             )
             config.add_experiment_group(
-                name="linear",
-                datasets=[
-                    "continuous_features_regression.csv",
-                    "categorical_features_regression.xlsx"
-                ],
+                name="linear_continuous",
+                datasets=["continuous_features_regression.csv"],
                 algorithms=[["linear", "lasso"], ["linear", "ridge"]],
-                data_config={"scale_method": "robust"}
+                data_config={
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        ScalingPreprocessor(method="robust")
+                    ]
+                }
+            )
+            config.add_experiment_group(
+                name="linear_categorical",
+                datasets=["categorical_features_regression.xlsx"],
+                algorithms=[["linear", "lasso"], ["linear", "ridge"]],
+                data_config={
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        CategoricalEncodingPreprocessor(method="onehot")
+                    ]
+                }
             )
             config.add_experiment_group(
                 name="other_algorithms",
                 datasets=["categorical_features_regression.xlsx"],
                 algorithms=[["knn", "svr"]],
-                data_config={"scale_method": "maxabs"}
+                data_config={
+                    "preprocessors": [
+                        CategoricalEncodingPreprocessor(method="onehot")
+                    ]
+                }
             )
             return config.build()
 
@@ -203,13 +244,21 @@ class TestEndToEnd:
             )
             config.add_experiment_group(
                 name="group1",
-                datasets=["categorical_features_binary.xlsx"]
+                datasets=["categorical_features_binary.xlsx"],
+                data_config={
+                    "preprocessors": [CategoricalEncodingPreprocessor(method="onehot")]
+                }
             )
             config.add_experiment_group(
                 name="group2",
                 algorithms=["ridge_classifier", "knn_classifier", "logistic"],
                 datasets=[("mixed_features.db", "mixed_features_binary")],
-                data_config={"scale_method": "minmax"}
+                data_config={
+                    "preprocessors": [
+                        CategoricalEncodingPreprocessor(method="onehot"),
+                        ScalingPreprocessor(method="minmax")
+                    ]
+                }
             )
             config.add_experiment_group(
                 name="group3",
@@ -258,7 +307,12 @@ class TestEndToEnd:
                 name="group1",
                 algorithms=[["logistic", "linear_svc"]],
                 datasets=[("mixed_features.db", "mixed_features_binary")],
-                data_config={"scale_method": "robust"}
+                data_config={
+                    "preprocessors": [
+                        CategoricalEncodingPreprocessor(method="onehot"),
+                        ScalingPreprocessor(method="robust")
+                    ]
+                }
             )
             config.add_experiment_group(
                 name="group2",
@@ -267,13 +321,20 @@ class TestEndToEnd:
                     ["knn_classifier", "ridge_classifier"]
                 ],
                 datasets=["categorical_features_binary.xlsx"],
-                data_config={"scale_method": "robust"}
+                data_config={
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        CategoricalEncodingPreprocessor(method="onehot")
+                    ]
+                }
             )
             config.add_experiment_group(
                 name="group3",
                 algorithms=[["knn_classifier", "ridge_classifier"]],
                 datasets=["continuous_features_binary.csv"],
-                data_config={"scale_method": "maxabs"}
+                data_config={
+                    "preprocessors": [ScalingPreprocessor(method="maxabs")]
+                }
             )
             return config.build()
 
@@ -347,17 +408,31 @@ class TestEndToEnd:
             )
             config.add_experiment_group(
                 name="group1",
-                datasets=[("mixed_features.db", "mixed_features_categorical")]
+                datasets=[("mixed_features.db", "mixed_features_categorical")],
+                data_config={
+                    "preprocessors": [CategoricalEncodingPreprocessor(method="onehot")]
+                }
             )
             config.add_experiment_group(
-                name="group2",
-                datasets=[
-                    "categorical_features_categorical.xlsx",
-                    "continuous_features_categorical.csv"
-                ],
+                name="group2_categorical",
+                datasets=["categorical_features_categorical.xlsx"],
                 algorithms=["svc", "linear_svc", "gaussian_nb"],
                 data_config={
-                    "scale_method": "normalizer"
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        CategoricalEncodingPreprocessor(method="onehot")
+                    ]
+                }
+            )
+            config.add_experiment_group(
+                name="group2_continuous",
+                datasets=["continuous_features_categorical.csv"],
+                algorithms=["svc", "linear_svc", "gaussian_nb"],
+                data_config={
+                    "preprocessors": [
+                        MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+                        ScalingPreprocessor(method="normalizer")
+                    ]
                 }
             )
             return config.build()
@@ -399,12 +474,18 @@ class TestEndToEnd:
             )
             config.add_experiment_group(
                 name="group1",
-                datasets=[("mixed_features.db", "mixed_features_categorical")]
+                datasets=[("mixed_features.db", "mixed_features_categorical")],
+                data_config={
+                    "preprocessors": [CategoricalEncodingPreprocessor(method="onehot")]
+                }
             )
             config.add_experiment_group(
                 name="group2",
                 datasets=["categorical_features_categorical.xlsx"],
-                algorithms=[["svc", "linear_svc"]]
+                algorithms=[["svc", "linear_svc"]],
+                data_config={
+                    "preprocessors": [CategoricalEncodingPreprocessor(method="onehot")]
+                }
             )
             config.add_experiment_group(
                 name="group3",
