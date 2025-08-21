@@ -2,6 +2,7 @@ import importlib
 
 from numpy import int64, float64
 import pandas as pd
+import numpy as np
 import pytest
 from sklearn.model_selection import (
     GroupShuffleSplit, StratifiedShuffleSplit, ShuffleSplit, 
@@ -12,6 +13,12 @@ from sklearn import preprocessing
 from brisk.data.data_manager import DataManager
 from brisk.data.data_split_info import DataSplitInfo
 from brisk.data.data_splits import DataSplits
+from brisk.data.preprocessing import (
+    MissingDataPreprocessor, 
+    ScalingPreprocessor, 
+    CategoricalEncodingPreprocessor,
+    FeatureSelectionPreprocessor
+)
 
 @pytest.fixture
 def data_manager(mock_brisk_project):
@@ -172,8 +179,6 @@ class TestDataManager:
             match="Invalid combination of stratified and group_column for the specified split method."
             ):
             data_manager._set_splitter()
-
-
 
     def test_load_data_csv(self, data_manager, tmp_path):
         """
@@ -428,7 +433,7 @@ class TestDataManager:
         """
         Test the split method using ShuffleSplit with preprocessing.
         """
-        # data_manager.scale_method = "standard"
+        data_manager.preprocessors = [ScalingPreprocessor()]
         data_splits = data_manager.split(
             tmp_path / "datasets" / "regression.csv",
             categorical_features=None,
@@ -532,18 +537,7 @@ preprocessors: []
     def test_preprocessing_pipeline(self, data_manager, tmp_path):
         """
         Test the complete preprocessing pipeline with multiple preprocessors.
-        """
-        from brisk.data.preprocessing import (
-            MissingDataPreprocessor, 
-            ScalingPreprocessor, 
-            CategoricalEncodingPreprocessor,
-            FeatureSelectionPreprocessor
-        )
-        
-        # Create data with missing values and categorical features
-        import pandas as pd
-        import numpy as np
-        
+        """       
         # Create test data with missing values and categorical features
         test_data = pd.DataFrame({
             'numeric1': [1, 2, np.nan, 4, 5],

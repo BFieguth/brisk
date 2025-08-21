@@ -14,7 +14,8 @@ def data_split_data():
         "group_index_train": None,
         "group_index_test": None,
         "split_key": ("group", "test", None),
-        "split_index": 0
+        "split_index": 0,
+        "continuous_features": ["a", "b"]
     }
 
 

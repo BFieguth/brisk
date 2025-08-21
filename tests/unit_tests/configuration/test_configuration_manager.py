@@ -469,7 +469,9 @@ class TestConfigurationManager:
                 algorithms=["linear", "ridge"]
             )
         ]
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         assert len(manager.experiment_queue) == 20
 
     def test_create_logfile(self, mock_brisk_project):
