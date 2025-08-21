@@ -27,7 +27,7 @@ from brisk.services import get_services
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
 
-    Coordinates model training using various algorithms, evaluates them on 
+    Coordinates model training using various algorithms, evaluates them on
     different datasets, and generates reports. Integrates with EvaluationManager
     for model evaluation and ReportManager for generating HTML reports.
 
@@ -98,7 +98,7 @@ class TrainingManager:
         workflow : Workflow
             A subclass of the Workflow class that defines the training steps.
         create_report : bool
-            Whether to generate an HTML report after all experiments. 
+            Whether to generate an HTML report after all experiments.
             Defaults to True.
 
         Returns
@@ -137,7 +137,7 @@ class TrainingManager:
     ) -> None:
         """Runs a single Experiment and handles its outcome.
 
-        Sets up the experiment environment, runs the workflow, and handles 
+        Sets up the experiment environment, runs the workflow, and handles
         success or failure cases.
 
         Parameters

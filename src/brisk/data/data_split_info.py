@@ -1,15 +1,15 @@
 """Store and analyze data splits created by DataManager.
 
-This module defines the DataSplitInfo class, which is responsible for storing 
+This module defines the DataSplitInfo class, which is responsible for storing
 and analyzing data related to the training and testing splits of datasets within
-the Brisk framework. The DataSplitInfo class provides methods for calculating 
-descriptive statistics for both continuous and categorical features, as well as 
+the Brisk framework. The DataSplitInfo class provides methods for calculating
+descriptive statistics for both continuous and categorical features, as well as
 visualizing the distributions of these features through various plots.
 
 Examples
 --------
 >>> from brisk.data.data_split_info import DataSplitInfo
->>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test, 
+>>> data_info = DataSplitInfo(X_train, X_test, y_train, y_test,
 ...                          filename="dataset.csv", scaler=my_scaler)
 >>> data_info.save_distribution("output_directory")
 """
@@ -28,8 +28,8 @@ from brisk.services import get_services
 class DataSplitInfo:
     """Store and analyze features and labels of training and testing splits.
 
-    This class provides methods for calculating descriptive statistics for both 
-    continuous and categorical features, as well as visualizing the 
+    This class provides methods for calculating descriptive statistics for both
+    continuous and categorical features, as well as visualizing the
     distributions of these features through various plots.
 
     Parameters
@@ -56,6 +56,8 @@ class DataSplitInfo:
         The order of input features
     categorical_features : list of str, optional
         List of categorical feature names
+    scaler : object, optional
+        The fitted scaler used for this split
 
     Attributes
     ----------
@@ -94,8 +96,8 @@ class DataSplitInfo:
 
     Notes
     -----
-    The class automatically detects categorical features if not provided. 
-    Statistics are calculated for both continuous and categorical features 
+    The class automatically detects categorical features if not provided.
+    Statistics are calculated for both continuous and categorical features
     during initialization.
     """
     def __init__(
@@ -111,6 +113,8 @@ class DataSplitInfo:
         scaler: Optional[Any] = None,
         features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None,
+        continuous_features: Optional[List[str]] = None,
+        scaler: Optional[Any] = None,
     ):
         self.group_name = split_key[0]
         self.dataset_name = split_key[1]
@@ -149,14 +153,18 @@ class DataSplitInfo:
             if feature in X_train.columns
         ]
 
-        self.continuous_features = [
-            col for col in X_train.columns
-            if col not in self.categorical_features
-        ]
+        if continuous_features is None:
+            self.continuous_features = []
+        else:
+            # Only include features that are in X_train and are NOT categorical
+            self.continuous_features = [
+                feature for feature in continuous_features
+                if feature in X_train.columns and feature not in self.categorical_features
+            ]
 
         self.scaler = scaler
-        if self.continuous_features and scaler:
-            self.scaler = scaler.fit(X_train[self.continuous_features])
+
+        # Calculate continuous features for stats (everything except categorical)
 
         self.evaluate_data_split()
 
@@ -222,6 +230,7 @@ class DataSplitInfo:
         finally:
             self.services.reporting.clear_context()
 
+
     def _detect_categorical_features(self) -> List[str]:
         """Detect possible categorical features in the dataset.
 
@@ -278,19 +287,23 @@ class DataSplitInfo:
                 self.X_train[self.categorical_features].copy()
                 if self.categorical_features
                 else pd.DataFrame(index=self.X_train.index)
-                )
+            )
 
             continuous_scaled = pd.DataFrame(
                 self.scaler.transform(self.X_train[self.continuous_features]),
                 columns=self.continuous_features,
                 index=self.X_train.index
-                )
+            )
 
-            X_train_scaled = pd.concat( # pylint: disable=C0103
+            # Concatenate categorical and scaled features, preserving original order
+            X_train_scaled = pd.concat(  # pylint: disable=C0103
                 [categorical_data, continuous_scaled], axis=1
-                )
-            X_train_scaled = X_train_scaled[self.X_train.columns] # pylint: disable=C0103
+            )
+            # Reorder columns to match original order
+            original_order = list(self.X_train.columns)
+            X_train_scaled = X_train_scaled[original_order]  # pylint: disable=C0103
             return X_train_scaled, self.y_train
+
         return self.X_train, self.y_train
 
     def get_test(self) -> Tuple[pd.DataFrame, pd.Series]:
@@ -306,19 +319,23 @@ class DataSplitInfo:
                 self.X_test[self.categorical_features].copy()
                 if self.categorical_features
                 else pd.DataFrame(index=self.X_test.index)
-                )
+            )
 
             continuous_scaled = pd.DataFrame(
                 self.scaler.transform(self.X_test[self.continuous_features]),
                 columns=self.continuous_features,
                 index=self.X_test.index
-                )
+            )
 
-            X_test_scaled = pd.concat( # pylint: disable=C0103
+            # Concatenate categorical and scaled features, preserving original order
+            X_test_scaled = pd.concat(  # pylint: disable=C0103
                 [categorical_data, continuous_scaled], axis=1
-                )
-            X_test_scaled = X_test_scaled[self.X_test.columns] # pylint: disable=C0103
+            )
+            # Reorder columns to match original order
+            original_order = list(self.X_test.columns)
+            X_test_scaled = X_test_scaled[original_order]  # pylint: disable=C0103
             return X_test_scaled, self.y_test
+
         return self.X_test, self.y_test
 
     def get_train_test(

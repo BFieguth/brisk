@@ -1,7 +1,7 @@
 """Provides the MetricManager class for managing evaluation metrics.
 
-This module defines the MetricManager class, which manages metrics used for 
-model evaluation. It supports both accessing metric functions and their 
+This module defines the MetricManager class, which manages metrics used for
+model evaluation. It supports both accessing metric functions and their
 corresponding scoring callables.
 """
 from typing import Callable, List, Dict, Any
@@ -11,7 +11,7 @@ from brisk.evaluation import metric_wrapper
 class MetricManager:
     """A class to manage scoring metrics.
 
-    Provides access to various scoring metrics, allowing retrieval by either 
+    Provides access to various scoring metrics, allowing retrieval by either
     their full names or common abbreviations.
 
     Parameters

@@ -180,7 +180,8 @@ BASE_DATA_MANAGER = DataManager(
     test_size=0.2, 
     n_splits=2,
     split_method="shuffle",
-    random_state=42
+    random_state=42,
+    problem_type="classification"
 )
 """
     data_path.write_text(data_py)

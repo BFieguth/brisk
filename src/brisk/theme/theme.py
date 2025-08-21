@@ -19,7 +19,7 @@ def register_fonts():
 
 def brisk_theme():
     """Create a custom theme for brisk package plots.
-    
+
     Returns:
         theme: A plotnine theme object with custom styling
     """

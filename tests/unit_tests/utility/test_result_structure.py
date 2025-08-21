@@ -13,6 +13,7 @@ import pytest
 
 import tests.result_structure as rs
 from brisk.configuration import experiment_group, configuration
+from brisk.data.preprocessing import ScalingPreprocessor, CategoricalEncodingPreprocessor
 
 @pytest.fixture
 def one_experiment_group():
@@ -52,7 +53,7 @@ def one_experiment_group():
                             plot_precision_recall_curve=False,
                         )
                     },
-                    scaler_exists=True,
+                                            scaler_exists=False,
                     split_distribution_exists=True,
                     hist_box_plot_exists=True,
                     pie_plot_exists=True,
@@ -294,9 +295,7 @@ def experiment_groups():
                     name="group2",
                     datasets=["dataset1.csv", "dataset2.csv"],
                     algorithms=["linear"],
-                    data_config={
-                        "scale_method": "minmax"
-                    },
+                    data_config={},
                 ),
                 experiment_group.ExperimentGroup(
                     name="group3",
@@ -307,7 +306,7 @@ def experiment_groups():
                     name="group4",
                     datasets=["dataset2.csv"],
                     algorithms=["knn"],
-                    data_config={"scale_method": "minmax"},
+                    data_config={},
                 )
             ]
 
@@ -523,7 +522,13 @@ def mixed_data_config():
     config.add_experiment_group(
         name="test_group_1",
         datasets=["mixed_features_regression.csv"],
-        algorithms=["linear", "lasso", "mlp"]
+        algorithms=["linear", "lasso", "mlp"],
+        data_config={
+            "preprocessors": [
+                CategoricalEncodingPreprocessor(method="onehot"),
+                ScalingPreprocessor(method="minmax")
+            ]
+        }
     )
     return config.build()
 
@@ -602,7 +607,10 @@ def categorical_data_config(request):
     config.add_experiment_group(
         name="categorical_group",
         datasets=["categorical_features_regression.csv"],
-        algorithms=["knn", "svc", "dtr"]
+        algorithms=["knn", "svc", "dtr"],
+        data_config={
+            "preprocessors": [CategoricalEncodingPreprocessor(method="onehot")]
+        }
     )
     return config.build()
 

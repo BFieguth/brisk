@@ -1,8 +1,8 @@
 """classification_metrics.py
 
-This module defines a collection of classification metrics wrapped in 
-MetricWrapper instances for use within the Brisk framework. These metrics 
-are sourced from the scikit-learn library and provide various ways to 
+This module defines a collection of classification metrics wrapped in
+MetricWrapper instances for use within the Brisk framework. These metrics
+are sourced from the scikit-learn library and provide various ways to
 evaluate the performance of classification models.
 """
 

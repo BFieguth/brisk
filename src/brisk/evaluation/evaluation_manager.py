@@ -134,10 +134,10 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to save.
 
-        filename (str): 
+        filename (str):
             The name for the output file (without extension).
         """
         os.makedirs(self.output_dir, exist_ok=True)

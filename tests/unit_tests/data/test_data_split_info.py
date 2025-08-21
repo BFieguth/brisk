@@ -28,6 +28,7 @@ def sample_data(mock_brisk_project):
 
     features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
+    continuous_features = ['feature1', 'feature2']
     group_index_train = None
     group_index_test = None
     split_key = ("group", "sample_dataset", None)
@@ -40,6 +41,7 @@ def sample_data(mock_brisk_project):
         'y_test': y_test,
         'features': features,
         'categorical_features': categorical_features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
         'split_key': split_key,
@@ -68,6 +70,7 @@ def sample_data_scaler(mock_brisk_project):
 
     features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
+    continuous_features = ['feature1', 'feature2']
     scaler = StandardScaler().fit(
         X_train[[feature for feature in features 
                 if feature not in categorical_features]]
@@ -85,6 +88,7 @@ def sample_data_scaler(mock_brisk_project):
         'scaler': scaler,
         'features': features,
         'categorical_features': categorical_features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
         'split_key': split_key,
@@ -126,6 +130,7 @@ def categorical_data(mock_brisk_project):
         'feature1', 'feature2', 'categorical_string', 'categorical_int',
         'categorical_bool', 'categorical_category'
     ]
+    continuous_features = []  # All features are categorical in this dataset
     group_index_train = None
     group_index_test = None
     split_key = ("group", "categorical_dataset", None)
@@ -137,6 +142,7 @@ def categorical_data(mock_brisk_project):
         'y_train': y_train,
         'y_test': y_test,
         'features': features,
+        'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
         'split_key': split_key,
