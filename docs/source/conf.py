@@ -11,8 +11,6 @@ import inspect
 import sys
 import pathlib
 
-import logging
-
 import brisk
 
 project = 'Brisk'
