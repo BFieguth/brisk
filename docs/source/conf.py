@@ -103,6 +103,8 @@ html_theme_options = {
 }
 
 # -- Linkcode settings ------------------------------------------------------
+sys.path.insert(0, os.path.abspath("../../src"))
+
 def linkcode_resolve(domain, info):
     """Determine the URL corresponding to a Python object in Brisk.
     
@@ -113,16 +115,31 @@ def linkcode_resolve(domain, info):
 
     module_name = info['module']
     fullname = info['fullname']
+    
+    if on_rtd:
+        print(f"[LINKCODE DEBUG] Processing: {module_name}.{fullname}")
 
+    # Get the module
     sub_module = sys.modules.get(module_name)
     if sub_module is None:
-        return None
+        if on_rtd:
+            print(f"[LINKCODE DEBUG] Module {module_name} not found in sys.modules")
+        try:
+            import importlib
+            sub_module = importlib.import_module(module_name)
+        except ImportError as e:
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Failed to import {module_name}: {e}")
+            return None
 
+    # Get the object
     obj = sub_module
     for part in fullname.split('.'):
         try:
             obj = getattr(obj, part)
         except AttributeError:
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Could not find attribute {part} in {obj}")
             return None
 
     if inspect.isfunction(obj):
@@ -130,35 +147,84 @@ def linkcode_resolve(domain, info):
 
     try:
         source_file = inspect.getsourcefile(obj)
-    except TypeError:
+    except (TypeError, OSError) as e:
+        if on_rtd:
+            print(f"[LINKCODE DEBUG] Could not get source file for {obj}: {e}")
         source_file = None
 
     if not source_file or source_file.endswith('__init__.py'):
         try:
             source_file = inspect.getsourcefile(sys.modules[obj.__module__])
-        except (TypeError, AttributeError, KeyError):
+        except (TypeError, AttributeError, KeyError) as e:
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Fallback source file lookup failed: {e}")
             source_file = None
+    
     if not source_file:
+        if on_rtd:
+            print(f"[LINKCODE DEBUG] No source file found for {module_name}.{fullname}")
         return None
 
+    # Get line numbers
     try:
         source, lineno = inspect.getsourcelines(obj)
         linespec = f"#L{lineno}"
         if len(source) > 1:
             linespec = f"#L{lineno:d}-L{lineno + len(source) - 1:d}"
     except (OSError, TypeError) as e:
+        if on_rtd:
+            print(f"[LINKCODE DEBUG] Could not get source lines: {e}")
         linespec = ""
 
-    startdir = pathlib.Path(brisk.__file__).parent.parent.parent
-    source_file = os.path.relpath(source_file, start=startdir).replace(os.path.sep, '/')
+    if on_rtd:
+        print(f"[LINKCODE DEBUG] Raw source file path: {source_file}")
+    
+    if 'site-packages' in source_file and 'brisk' in source_file:
+        brisk_index = source_file.rfind('/brisk/')
+        if brisk_index != -1:
+            relative_path = source_file[brisk_index + 1:]
+            source_file = f"src/{relative_path}"
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Mapped site-packages path to: {source_file}")
+        else:
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Could not find '/brisk/' in site-packages path")
+            return None
+    else:
+        try:
+            startdir = pathlib.Path(brisk.__file__).parent.parent.parent
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Start directory (brisk): {startdir}")
+            
+            source_file_rel = os.path.relpath(source_file, start=startdir).replace(os.path.sep, '/')
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Relative path (method 1): {source_file_rel}")
+            
+            # Check if path is valid
+            if source_file_rel.startswith('src/brisk/'):
+                source_file = source_file_rel
+            else:
+                return None
+
+        except Exception as e:
+            if on_rtd:
+                print(f"[LINKCODE DEBUG] Path resolution failed: {e}")
+            return None
 
     if not source_file.startswith('src/brisk/'):
+        if on_rtd:
+            print(f"[LINKCODE DEBUG] Final path validation failed: {source_file}")
         return None
 
+    # Build GitHub URL
     github_user = "BFieguth"
-    github_repo = "brisk"
+    github_repo = "brisk" 
     github_branch = "main"
 
     url = (f"https://github.com/{github_user}/{github_repo}/blob/"
            f"{github_branch}/{source_file}{linespec}")
+    
+    if on_rtd:
+        print(f"[LINKCODE DEBUG] Generated URL: {url}")
+    
     return url
