@@ -246,66 +246,6 @@ class DataManager:
         categorical_features : List[str], optional
             List of categorical feature names
 
-<<<<<<< Updated upstream
-        if self.scale_method == "normalizer":
-            return preprocessing.Normalizer()
-
-        else:
-            return None
-
-    def _get_feature_selection_estimator(self):
-        if self.feature_selection_method in ("rfecv", "sequential"):
-            if self.algorithm_config is None:
-                raise ValueError("algorithm_config must be provided.")
-            if self.feature_selection_estimator:
-                wrapper = self.algorithm_config[self.feature_selection_estimator]
-                return wrapper.instantiate()
-            # return wrapper_list[0].instantiate()
-            # NOTE: I would throw an error instead of defaulting to a unkown algorithm
-        return None
-
-    def _set_feature_selector(self):
-        if self.feature_selection_method == "selectkbest":
-            return SelectKBest(k=self.n_features_to_select)
-        elif self.feature_selection_method == "rfecv":
-            estimator = self._get_feature_selection_estimator()
-            return RFECV(
-                estimator=estimator,
-                min_features_to_select=self.n_features_to_select,
-                step=1,
-                cv=self.feature_selection_cv,
-            )
-        elif self.feature_selection_method == "sequential":
-            estimator = self._get_feature_selection_estimator()
-            return SequentialFeatureSelector(
-                estimator,
-                n_features_to_select=self.n_features_to_select,
-                direction="forward",
-                cv=self.feature_selection_cv,
-            )
-        else:
-            return None
-
-    def get_selected_features(
-        self,
-        X_train, # pylint: disable=C0103
-        X_test,
-        y_train,
-        feature_names
-    ):
-        selector = self._set_feature_selector()
-        if selector is not None:
-            selector.fit(X_train, y_train)
-            X_train = pd.DataFrame(
-                selector.transform(X_train), index=X_train.index
-            )
-            X_test = pd.DataFrame(
-                selector.transform(X_test), index=X_test.index
-            )
-            selected_mask = selector.get_support()
-            feature_names = [
-                name for name, keep in zip(feature_names, selected_mask) if keep
-=======
         Returns
         -------
         tuple[
@@ -321,7 +261,6 @@ class DataManager:
             continuous_features = [
                 f for f in (feature_names or list(X_train.columns))
                 if f not in (categorical_features or [])
->>>>>>> Stashed changes
             ]
             return X_train, X_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
 
