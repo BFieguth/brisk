@@ -192,9 +192,10 @@ def linkcode_resolve(domain, info):
         # From: /path/to/site-packages/brisk/configuration/algorithm_wrapper.py
         # To: src/brisk/configuration/algorithm_wrapper.py
         
-        brisk_index = source_file.find('/brisk/')
+        # Find the last occurrence of '/brisk/' to get the actual package directory
+        brisk_index = source_file.rfind('/brisk/')
         if brisk_index != -1:
-            # Get everything after '/brisk/'
+            # Get everything from '/brisk/' onwards, then prepend 'src'
             relative_path = source_file[brisk_index + 1:]  # Remove the leading '/'
             source_file = f"src/{relative_path}"
             if on_rtd:
