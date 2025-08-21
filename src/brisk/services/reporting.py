@@ -385,7 +385,7 @@ class ReportingService(base.BaseService):
         """
         for group in groups:
             datasets = [
-                f"{group.name}_{dataset.split(".")[0]}"
+                f"{group.name}_{dataset.split('.')[0]}"
                 for dataset in group.datasets
             ]
 
