@@ -60,17 +60,6 @@ class TestDataManager:
                 split_method="shuffle", group_column="group", stratified=True
             )
 
-    def test_validate_config_invalid_scaler(self, mock_brisk_project):
-        """
-        Test that an invalid combination of group_column and stratified raises an error.
-        """
-        with pytest.raises(
-            ValueError, match="Invalid scale_method: fake_scaler. Choose from standard, minmax, robust, maxabs, normalizer"
-            ):
-            DataManager(
-                split_method="shuffle", scale_method="fake_scaler"
-            )
-
     def test_valid_config_no_errors(self, mock_brisk_project):
         """
         Test that a valid configuration does not raise an error.
@@ -439,7 +428,7 @@ class TestDataManager:
         """
         Test the split method using ShuffleSplit with preprocessing.
         """
-        data_manager.scale_method = "standard"
+        # data_manager.scale_method = "standard"
         data_splits = data_manager.split(
             tmp_path / "datasets" / "regression.csv",
             categorical_features=None,

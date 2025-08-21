@@ -444,7 +444,6 @@ test_size: 0.2
 n_splits: 5
 split_method: shuffle
 stratified: False
-scale_method: minmax
 categorical_features: ['categorical_0', 'categorical_1', 'categorical_2']
 ```
 

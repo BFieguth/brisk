@@ -223,8 +223,7 @@ class ReportingService(base.BaseService):
             split_method=str(data_manager.split_method),
             group_column=str(data_manager.group_column),
             stratified=str(data_manager.stratified),
-            random_state=data_manager.random_state,
-            scale_method=str(data_manager.scale_method)
+            random_state=data_manager.random_state
         )
         self.data_managers[group_name] = manager
         self._clear_cache()

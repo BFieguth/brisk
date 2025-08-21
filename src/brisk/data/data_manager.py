@@ -502,24 +502,21 @@ class DataManager:
                 group_index_train = None
                 group_index_test = None
 
-                scaler = None
-                if self.scale_method:
-                    scaler = self._set_scaler()
-
-                split = data_split_info.DataSplitInfo(
-                    X_train=X_train,
-                    X_test=X_test,
-                    y_train=y_train,
-                    y_test=y_test,
-                    split_key=split_key,
-                    split_index=split_index,
-                    scaler=scaler,
-                    features=feature_names,
-                    categorical_features=categorical_features,
-                    group_index_train=group_index_train,
-                    group_index_test=group_index_test
-                )
-                split_container.add(split)
+            split = data_split_info.DataSplitInfo(
+                X_train=X_train,
+                X_test=X_test,
+                y_train=y_train,
+                y_test=y_test,
+                group_index_train=group_index_train,
+                group_index_test=group_index_test,
+                split_key=split_key,
+                split_index=split_index,
+                scaler=fitted_scaler,
+                features=feature_names,
+                categorical_features=categorical_features,
+                continuous_features=continuous_features
+            )
+            split_container.add(split)
 
         self._splits[split_key] = split_container
         self.services.reporting.add_dataset(group_name, split_container)

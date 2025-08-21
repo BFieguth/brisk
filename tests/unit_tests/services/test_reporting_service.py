@@ -347,8 +347,7 @@ class TestReportingService:
             split_method="shuffle",
             group_column="None",
             stratified="False",
-            random_state=42,
-            scale_method="standard"
+            random_state=42
         )
         
         report_service.datasets = {"test_dataset": mock_dataset}
