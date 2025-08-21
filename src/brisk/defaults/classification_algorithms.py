@@ -1,8 +1,8 @@
 """Default configuration for classification algorithms.
 
-This module provides configuration settings for different classification 
+This module provides configuration settings for different classification
 algorithms. Each algorithm is wrapped in a `AlgorithmWrapper` which includes the
-algorithms's display_name, its class, default parameters, and hyperparameter 
+algorithms's display_name, its class, default parameters, and hyperparameter
 space for optimization.
 """
 from typing import List
@@ -36,7 +36,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         default_params={"max_iter": 10000},
         hyperparam_grid={
             "kernel": ["linear", "rbf", "sigmoid"],
-            "C": list(np.arange(1, 30, 0.5)), 
+            "C": list(np.arange(1, 30, 0.5)),
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1],
         }
     ),
@@ -58,7 +58,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             "criterion": ["gini", "entropy", "log_loss"],
-            "max_depth": list(range(5, 25, 5)) + [None],           
+            "max_depth": list(range(5, 25, 5)) + [None],
         }
     ),
     algorithm_wrapper.AlgorithmWrapper(
@@ -68,7 +68,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
         default_params={"min_samples_split": 10},
         hyperparam_grid={
             "n_estimators": list(range(20, 160, 20)),
-            "criterion": ["friedman_mse", "absolute_error", 
+            "criterion": ["friedman_mse", "absolute_error",
                           "poisson", "squared_error"],
             "max_depth": list(range(5, 25, 5)) + [None],
         }

@@ -1,8 +1,8 @@
 """User interface for defining experiment configurations.
 
-This module defines the Configuration class, which serves as a user interface 
-for defining experiment configurations within the Brisk framework. It allows 
-users to create and manage experiment groups, specify the datasets to use, 
+This module defines the Configuration class, which serves as a user interface
+for defining experiment configurations within the Brisk framework. It allows
+users to create and manage experiment groups, specify the datasets to use,
 algorithms, as well as modify starting values and hyperparameters.
 
 Examples
@@ -22,11 +22,11 @@ from brisk.configuration.experiment_group import ExperimentGroup
 
 class Configuration:
     """User interface for defining experiment configurations.
-    
+
     This class provides a simple interface for users to define experiment groups
     and their configurations. It handles default values and ensures unique
     group names.
-    
+
     Parameters
     ----------
     default_algorithms : list of str
@@ -70,7 +70,7 @@ class Configuration:
         workflow_args: Optional[Dict[str, Any]] = None
     ) -> None:
         """Add a new ExperimentGroup.
-        
+
         Parameters
         ----------
         name : str
@@ -82,7 +82,7 @@ class Configuration:
         algorithms : list of str, optional
             List of algorithms (uses defaults if None)
         algorithm_config : dict, optional
-            Algorithm-specific configurations, overides values set in 
+            Algorithm-specific configurations, overides values set in
             algorithms.py
         description : str, optional
             Description for the experiment group
@@ -123,7 +123,7 @@ class Configuration:
 
     def build(self) -> ConfigurationManager:
         """Build and return a ConfigurationManager instance.
-        
+
         Returns
         -------
         ConfigurationManager
@@ -135,12 +135,12 @@ class Configuration:
 
     def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
-        
+
         Parameters
         ----------
         name : str
             Group name to check
-            
+
         Raises
         ------
         ValueError
@@ -153,12 +153,12 @@ class Configuration:
 
     def _check_datasets_type(self, datasets) -> None:
         """Validate the type of datasets parameter.
-        
+
         Parameters
         ----------
         datasets : list
             List of dataset specifications
-            
+
         Raises
         ------
         TypeError

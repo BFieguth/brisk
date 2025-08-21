@@ -15,6 +15,7 @@ import PIL
 
 from brisk.configuration import configuration_manager, experiment_group
 from brisk.data import data_manager
+from brisk.data.preprocessing import ScalingPreprocessor
 
 class MethodCallVisitor(ast.NodeVisitor):
     """AST visitor that extracts self method calls from Python code.
@@ -326,10 +327,12 @@ class ResultStructure:
         workflow_methods = MethodCallVisitor.extract_workflow_methods(
             workflow_path
         )
-        base_scale_method = (
-            False if config_manager.base_data_manager.scale_method is None
-            else True
-        )
+        # Check if any DataManager has scaling preprocessors
+        base_scale_method = False
+        for data_mgr in config_manager.data_managers.values():
+            if any(isinstance(p, ScalingPreprocessor) for p in data_mgr.preprocessors):
+                base_scale_method = True
+                break
         experiment_groups = cls.get_experiment_groups(
             config_manager.experiment_groups, workflow_methods,
             base_scale_method, config_manager.categorical_features,
@@ -601,15 +604,8 @@ class ResultStructure:
                     group_name=group.name,
                     filename=dataset_path.stem
                 )
-                total_features = len(split.X_train.columns)
-                categorical_count = (
-                    len(categorical_feat_names) 
-                    if categorical_feat_names 
-                    else 0
-                )
-                continuous_exists = bool(
-                    total_features - categorical_count > 0
-                )
+                # Check if there were original continuous features
+                continuous_exists = len(split.continuous_features) > 0
 
                 experiments = {}
                 for algorithm in group.algorithms:
@@ -634,12 +630,14 @@ class ResultStructure:
                     )
 
                 if group.data_config:
-                    scaler = group.data_config.get(
-                        "scale_method", base_scale_method
-                    )
-                    scaler_exists = True if scaler else False
+                    # Check if ScalingPreprocessor is in the preprocessors list AND there are continuous features
+                    preprocessors = group.data_config.get("preprocessors", [])
+                    has_scaling_preprocessor = any(isinstance(p, ScalingPreprocessor) for p in preprocessors)
+                    # Force no scaling if all features are categorical (no continuous features)
+                    scaler_exists = has_scaling_preprocessor and continuous_exists
                 else:
-                    scaler_exists = base_scale_method
+                    # If no data_config, no scaler should exist
+                    scaler_exists = False
 
                 dataset_name = dataset_path.stem
                 if table_name:

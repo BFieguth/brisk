@@ -2,7 +2,7 @@
 
 This module provides the base Workflow class that defines the interface for
 machine learning workflows. Specific workflows should inherit from this class
-and implement the abstract `workflow` method. This class delegates the 
+and implement the abstract `workflow` method. This class delegates the
 EvaluationManager for model evaluation and visualization.
 """
 
@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn import base
 
-from brisk.evaluation.evaluation_manager import EvaluationManager
+from brisk.evaluation import evaluation_manager as eval_manager
 
 class Workflow(abc.ABC):
     """Base class for machine learning workflows. Delegates EvaluationManager.
@@ -62,7 +62,7 @@ class Workflow(abc.ABC):
     """
     def __init__(
         self,
-        evaluator: EvaluationManager,
+        evaluation_manager: eval_manager.EvaluationManager,
         X_train: pd.DataFrame, # pylint: disable=C0103
         X_test: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
@@ -72,7 +72,7 @@ class Workflow(abc.ABC):
         feature_names: List[str],
         workflow_attributes: Dict[str, Any]
     ):
-        self.evaluator = evaluator
+        self.evaluation_manager = evaluation_manager
         self.X_train = X_train # pylint: disable=C0103
         self.X_train.attrs["is_test"] = False
         self.X_test = X_test # pylint: disable=C0103
@@ -85,15 +85,6 @@ class Workflow(abc.ABC):
         self.algorithm_names = algorithm_names
         self.feature_names = feature_names
         self._unpack_attributes(workflow_attributes)
-
-    def __getattr__(self, name: str) -> None:
-        if hasattr(self.evaluator, name):
-            return getattr(self.evaluator, name)
-
-        available_attrs = ", ".join(self.__dict__.keys())
-        raise AttributeError(
-            f"'{name}' not found. Available attributes are: {available_attrs}"
-            )
 
     def _unpack_attributes(self, config: Dict[str, Any]) -> None:
         """Unpack configuration dictionary into instance attributes.
@@ -112,7 +103,7 @@ class Workflow(abc.ABC):
             "Subclass must implement the workflow method."
         )
 
-    # Delegate EvalutationManager
+    # Interface to call Evaluators registered to EvaluationManager
     def evaluate_model( # pragma: no cover
         self,
         model: base.BaseEstimator,
@@ -133,10 +124,13 @@ class Workflow(abc.ABC):
             Target data
         metrics : list of str
             Names of metrics to calculate
-        filename : str
+        filename : strm
             Output filename (without extension)
         """
-        return self.evaluator.evaluate_model(model, X, y, metrics, filename)
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_evaluate_model"
+        )
+        return evaluator.evaluate(model, X, y, metrics, filename)
 
     def evaluate_model_cv( # pragma: no cover
         self,
@@ -164,9 +158,10 @@ class Workflow(abc.ABC):
         cv : int, optional
             Number of cross-validation folds, by default 5
         """
-        return self.evaluator.evaluate_model_cv(
-            model, X, y, metrics, filename, cv=cv
-            )
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_evaluate_model_cv"
+        )
+        return evaluator.evaluate(model, X, y, metrics, filename, cv)
 
     def compare_models( # pragma: no cover
         self,
@@ -199,7 +194,10 @@ class Workflow(abc.ABC):
         dict
             Nested dictionary containing metric results for each model
         """
-        return self.evaluator.compare_models(
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_compare_models"
+        )
+        return evaluator.evaluate(
             *models, X=X, y=y, metrics=metrics, filename=filename,
             calculate_diff=calculate_diff
         )
@@ -215,27 +213,30 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
-        y_true (pd.Series): 
+        y_true (pd.Series):
             The true target values.
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
-        return self.evaluator.plot_pred_vs_obs(model, X, y_true, filename)
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_pred_vs_obs"
+        )
+        return evaluator.plot(model, X, y_true, filename)
 
     def plot_learning_curve( # pragma: no cover
         self,
         model: base.BaseEstimator,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
+        filename: str = "learning_curve",
         cv: int = 5,
         num_repeats: int = 1,
         n_jobs: int = -1,
-        metric: str = "neg_mean_absolute_error",
-        filename: str = "learning_curve"
+        metric: str = "neg_mean_absolute_error"
     ) -> None:
         """Plot learning curves showing model performance vs training size.
 
@@ -247,6 +248,8 @@ class Workflow(abc.ABC):
             Training features
         y_train : Series
             Training target values
+        filename : str, optional
+            Name for output file, by default "learning_curve"
         cv : int, optional
             Number of cross-validation folds, by default 5
         num_repeats : int, optional
@@ -255,12 +258,13 @@ class Workflow(abc.ABC):
             Number of parallel jobs, by default -1
         metric : str, optional
             Scoring metric to use, by default "neg_mean_absolute_error"
-        filename : str, optional
-            Name for output file, by default "learning_curve"
         """
-        return self.evaluator.plot_learning_curve(
-            model, X_train, y_train, cv=cv, num_repeats=num_repeats,
-            n_jobs=n_jobs, metric=metric, filename=filename
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_learning_curve"
+        )
+        return evaluator.plot(
+            model, X_train, y_train, filename=filename, cv=cv,
+            num_repeats=num_repeats, n_jobs=n_jobs, metric=metric
         )
 
     def plot_feature_importance( # pragma: no cover
@@ -278,32 +282,35 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The model to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        threshold (Union[int, float]): 
-            The number of features or the threshold to filter features by 
+        threshold (Union[int, float]):
+            The number of features or the threshold to filter features by
             importance.
 
-        feature_names (List[str]): 
+        feature_names (List[str]):
             A list of feature names corresponding to the columns in X.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
 
-        metric (str): 
+        metric (str):
             The metric to use for evaluation.
 
-        num_rep (int): 
+        num_rep (int):
             The number of repetitions for calculating importance.
         """
-        return self.evaluator.plot_feature_importance(
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_feature_importance"
+        )
+        return evaluator.plot(
             model, X, y, threshold, feature_names, filename, metric, num_rep
         )
 
@@ -319,24 +326,25 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (BaseEstimator): 
+        model (BaseEstimator):
             The trained model.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The true target values.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
 
-        add_fit_line (bool): 
+        add_fit_line (bool):
             Whether to add a line of best fit to the plot.
         """
-        return self.evaluator.plot_residuals(
-            model, X, y, filename, add_fit_line=add_fit_line
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_residuals"
         )
+        return evaluator.plot(model, X, y, filename, add_fit_line=add_fit_line)
 
     def plot_model_comparison( # pragma: no cover
         self,
@@ -350,22 +358,25 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        models: 
+        models:
             A variable number of model instances to evaluate.
 
-        X (pd.DataFrame): 
+        X (pd.DataFrame):
             The input features.
 
-        y (pd.Series): 
+        y (pd.Series):
             The target data.
 
-        metric (str): 
+        metric (str):
             The metric to evaluate and plot.
 
-        filename (str): 
+        filename (str):
             The name of the output file (without extension).
         """
-        return self.evaluator.plot_model_comparison(
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_model_comparison"
+        )
+        return evaluator.plot(
             *models, X=X, y=y, metric=metric, filename=filename
         )
 
@@ -409,7 +420,10 @@ class Workflow(abc.ABC):
         BaseEstimator
             Tuned model
         """
-        return self.evaluator.hyperparameter_tuning(
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_hyperparameter_tuning"
+        )
+        return evaluator.evaluate(
             model, method, X_train, y_train, scorer,
             kf, num_rep, n_jobs, plot_results=plot_results
         )
@@ -437,9 +451,10 @@ class Workflow(abc.ABC):
         filename : str
             The name of the output file (without extension).
         """
-        return self.evaluator.confusion_matrix(
-            model, X, y, filename
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_confusion_matrix"
         )
+        return evaluator.evaluate(model, X, y, filename)
 
     def plot_confusion_heatmap( # pragma: no cover
         self,
@@ -452,21 +467,22 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained classification model with a `predict` method.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The target labels.
 
-        filename (str): 
+        filename (str):
             The path to save the confusion matrix heatmap image.
         """
-        return self.evaluator.plot_confusion_heatmap(
-            model, X, y, filename
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_confusion_heatmap"
         )
+        return evaluator.plot(model, X, y, filename)
 
     def plot_roc_curve( # pragma: no cover
         self,
@@ -480,24 +496,25 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        filename (str): 
+        filename (str):
             The path to save the ROC curve image.
-        
-        pos_label (Optional[int]): 
+
+        pos_label (Optional[int]):
             The label of the positive class.
         """
-        return self.evaluator.plot_roc_curve(
-            model, X, y, filename, pos_label
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_roc_curve"
         )
+        return evaluator.plot(model, X, y, filename, pos_label)
 
     def plot_precision_recall_curve( # pragma: no cover
         self,
@@ -511,21 +528,57 @@ class Workflow(abc.ABC):
 
         Parameters
         ----------
-        model (Any): 
+        model (Any):
             The trained binary classification model.
 
-        X (np.ndarray): 
+        X (np.ndarray):
             The input features.
 
-        y (np.ndarray): 
+        y (np.ndarray):
             The true binary labels.
 
-        filename (str): 
+        filename (str):
             The path to save the plot.
-        
-        pos_label (int): 
+
+        pos_label (int):
             The label of the positive class.
         """
-        return self.evaluator.plot_precision_recall_curve(
+        evaluator = self.evaluation_manager.get_evaluator(
+            "brisk_plot_precision_recall_curve"
+        )
+        return evaluator.plot(
             model, X, y, filename, pos_label
         )
+
+    def save_model(self, model: base.BaseEstimator, filename: str) -> None: #pragma: no cover
+        """Save model to pickle file.
+
+        Parameters
+        ----------
+        model (BaseEstimator): 
+            The model to save.
+
+        filename (str): 
+            The name for the output file (without extension).
+        """
+        self.evaluation_manager.save_model(model, filename)
+
+    def load_model(self, filepath: str) -> base.BaseEstimator: #pragma: no cover
+        """Load model from pickle file.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to saved model file
+
+        Returns
+        -------
+        BaseEstimator
+            Loaded model
+
+        Raises
+        ------
+        FileNotFoundError
+            If model file does not exist
+        """
+        self.evaluation_manager.load_model(filepath)

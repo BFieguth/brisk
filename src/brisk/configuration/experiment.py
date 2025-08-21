@@ -1,6 +1,6 @@
 """Data for individual experiment runs.
 
-This module defines the Experiment class, which represents a single experiment 
+This module defines the Experiment class, which represents a single experiment
 within the Brisk framework. Each Experiment instance contains the information
 needed for one model training run.
 
@@ -9,7 +9,7 @@ Examples
 >>> from pathlib import Path
 >>> from sklearn.linear_model import LinearRegression
 >>> from brisk.utility.algorithm_wrapper import AlgorithmWrapper
->>> 
+>>>
 >>> experiment = Experiment(
 ...     group_name="baseline",
 ...     algorithms={"model": AlgorithmWrapper("linear", LinearRegression)},
@@ -35,7 +35,7 @@ class Experiment:
         Name of the experiment group for organization
     algorithms : dict
         Dictionary of AlgorithmWrapper instances with standardized keys:
-        
+
         * Single model : dict
             {"model": wrapper}
         * Multiple models : dict
@@ -44,6 +44,8 @@ class Experiment:
         Path to the dataset file
     workflow_args : dict
         Arguments to pass to the workflow
+    split_index: int
+        Index value used to select a DataSplitInfo instance from DataSplits
     table_name : str, optional
         Name of table for database files
     categorical_features : list of str, optional
@@ -66,6 +68,7 @@ class Experiment:
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
     workflow_args: Dict[str, Any]
+    split_index: int
     table_name: Optional[str | None]
     categorical_features: Optional[List[str] | None]
 
@@ -178,7 +181,7 @@ class Experiment:
                 raise ValueError('Single model must use key "model"')
         else:
             expected_keys = [
-                "model" if i == 0 else f"model{i+1}" 
+                "model" if i == 0 else f"model{i+1}"
                 for i in range(len(self.algorithms))
             ]
             if list(self.algorithms.keys()) != expected_keys:

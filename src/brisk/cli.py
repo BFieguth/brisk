@@ -31,6 +31,7 @@ import inspect
 import os
 import sys
 from typing import Optional, Union
+from datetime import datetime
 
 import click
 import pandas as pd
@@ -38,6 +39,7 @@ from sklearn import datasets
 
 from brisk.training.workflow import Workflow
 from brisk.configuration import project
+from brisk.services import initialize_services
 
 @click.group()
 def cli():
@@ -77,7 +79,7 @@ def create(project_name: str) -> None:
 
     with open(
         os.path.join(project_dir, '.briskconfig'), 'w', encoding='utf-8') as f:
-        f.write(f"project_name={project_name}\n")
+        f.write(f'project_name={project_name}\n')
 
     with open(
         os.path.join(project_dir, 'settings.py'), 'w', encoding='utf-8') as f:
@@ -92,7 +94,7 @@ def create_configuration() -> ConfigurationManager:
     config.add_experiment_group(
         name="group_name",
     )
-                
+
     return config.build()
 """)
 
@@ -100,30 +102,30 @@ def create_configuration() -> ConfigurationManager:
         os.path.join(project_dir, 'algorithms.py'), 'w', encoding='utf-8') as f:
         f.write("""# algorithms.py
 import brisk
-                
+
 ALGORITHM_CONFIG = brisk.AlgorithmCollection(
     brisk.AlgorithmWrapper(),
-)        
+)
 """)
 
     with open(
         os.path.join(project_dir, 'metrics.py'), 'w', encoding='utf-8') as f:
         f.write("""# metrics.py
 import brisk
-                
+
 METRIC_CONFIG = brisk.MetricManager(
     brisk.MetricWrapper()
-)                   
+)
 """)
 
     with open(
         os.path.join(project_dir, 'data.py'), 'w', encoding='utf-8') as f:
         f.write("""# data.py
-from brisk.data.data_manager import DataManager                
+from brisk.data.data_manager import DataManager
 
 BASE_DATA_MANAGER = DataManager(
     test_size = 0.2
-)              
+)
 """)
 
     with open(
@@ -132,7 +134,7 @@ BASE_DATA_MANAGER = DataManager(
 from brisk.training.training_manager import TrainingManager
 from metrics import METRIC_CONFIG
 from settings import create_configuration
-                                
+
 config = create_configuration()
 
 # Define the TrainingManager for experiments
@@ -157,10 +159,10 @@ from brisk.training.workflow import Workflow
 
 class MyWorkflow(Workflow):
     def workflow(self):
-        pass           
+        pass
 """)
 
-    print(f"A new project was created in: {project_dir}")
+    print(f'A new project was created in: {project_dir}')
 
 
 @cli.command()
@@ -182,10 +184,17 @@ class MyWorkflow(Workflow):
     default=False,
     help='Disable the creation of an HTML report.'
 )
+@click.option(
+    '--verbose',
+    is_flag=True,
+    default=False,
+    help='Change the verbosity of the logger.'
+)
 def run(
     workflow: str,
     results_name: Optional[str],
-    disable_report: bool
+    disable_report: bool,
+    verbose: bool
 ) -> None:
     """Run experiments using the specified workflow.
 
@@ -197,6 +206,8 @@ def run(
         Custom name for results directory
     disable_report : bool, default=False
         Whether to disable HTML report generation
+    verbose : bool, default=False
+        Whether to enable verbose logging
 
     Raises
     ------
@@ -211,6 +222,27 @@ def run(
 
         if project_root not in sys.path:
             sys.path.insert(0, str(project_root))
+
+        if not results_name:
+            results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            results_dir = os.path.join("results", results_name)
+        else:
+            results_dir = os.path.join("results", results_name)
+        if os.path.exists(results_dir):
+            raise FileExistsError(
+                f"Results directory '{results_dir}' already exists."
+            )
+        os.makedirs(results_dir, exist_ok=False)
+
+        algorithm_config = load_module_object(
+            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
+        )
+        metric_config = load_module_object(
+            project_root, "metrics.py", "METRIC_CONFIG"
+        )
+        initialize_services(
+            algorithm_config, metric_config, results_dir, verbose=verbose
+        )
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -234,21 +266,21 @@ def run(
 
         manager.run_experiments(
             workflow=workflow_class,
-            results_name=results_name,
+            # results_name=results_name,
             create_report=create_report
         )
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
 
     except (ImportError, AttributeError) as e:
-        print(f"Error loading workflow: {workflow}. Error: {str(e)}")
+        print(f'Error loading workflow: {workflow}. Error: {str(e)}')
         return
 
 
 @cli.command()
 @click.option(
-    '--dataset', 
+    '--dataset',
     type=click.Choice(
         ['iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud']
         ),
@@ -286,9 +318,9 @@ def load_data(dataset: str, dataset_name: Optional[str] = None) -> None:
         data = load_sklearn_dataset(dataset)
         if data is None:
             print(
-                f"Dataset '{dataset}' not found in sklearn. Options are iris, "
+                f'Dataset \'{dataset}\' not found in sklearn. Options are iris, '
                 'wine, breast_cancer, diabetes or linnerud.'
-                )
+            )
             return
         X = data.data # pylint: disable=C0103
         y = data.target
@@ -301,12 +333,12 @@ def load_data(dataset: str, dataset_name: Optional[str] = None) -> None:
         df = pd.DataFrame(X, columns=feature_names)
         df['target'] = y
         dataset_filename = dataset_name if dataset_name else dataset
-        csv_path = os.path.join(datasets_dir, f"{dataset_filename}.csv")
+        csv_path = os.path.join(datasets_dir, f'{dataset_filename}.csv')
         df.to_csv(csv_path, index=False)
-        print(f"Dataset saved to {csv_path}")
+        print(f'Dataset saved to {csv_path}')
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
 
 
 @cli.command()
@@ -406,16 +438,16 @@ def create_data(
                 random_state=random_state
             )
         else:
-            raise ValueError(f"Invalid data type: {data_type}")
+            raise ValueError(f'Invalid data type: {data_type}')
 
         df = pd.DataFrame(X)
         df['target'] = y
-        csv_path = os.path.join(datasets_dir, f"{dataset_name}.csv")
+        csv_path = os.path.join(datasets_dir, f'{dataset_name}.csv')
         df.to_csv(csv_path, index=False)
-        print(f"Synthetic dataset saved to {csv_path}")
+        print(f'Synthetic dataset saved to {csv_path}')
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        print(f'Error: {e}')
 
 
 def load_sklearn_dataset(name: str) -> Union[dict, None]:
@@ -480,8 +512,8 @@ def load_module_object(
 
     if not os.path.exists(module_path):
         raise FileNotFoundError(
-            f"{module_filename} not found in {project_root}"
-            )
+            f'{module_filename} not found in {project_root}'
+        )
 
     module_name = os.path.splitext(module_filename)[0]
     spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -494,8 +526,8 @@ def load_module_object(
         return getattr(module, object_name)
     elif required:
         raise AttributeError(
-            f"The object '{object_name}' is not defined in {module_filename}"
-            )
+            f'The object \'{object_name}\' is not defined in {module_filename}'
+        )
     else:
         return None
 

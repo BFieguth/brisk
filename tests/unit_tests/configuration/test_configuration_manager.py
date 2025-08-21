@@ -28,17 +28,19 @@ class TestConfigurationManager:
             algorithms=["ridge"]
         )
         experiment_groups = [group, group2]
-        manager = ConfigurationManager(experiment_groups, {})
+        manager = ConfigurationManager(experiment_groups, {
+            "categorical.csv": ["category"]
+        })
         
         assert manager.experiment_groups == experiment_groups
-        assert manager.categorical_features == {}
+        assert manager.categorical_features == {"categorical.csv": ["category"]}
         assert manager.project_root == mock_brisk_project
         assert isinstance(manager.algorithm_config, AlgorithmCollection)
         assert isinstance(manager.base_data_manager, DataManager)
         assert isinstance(manager.data_managers, dict)
         assert [*manager.data_managers.keys()] == ["test_group", "test_group2"]
         assert isinstance(manager.experiment_queue, collections.deque)
-        assert len(manager.experiment_queue) == 2
+        assert len(manager.experiment_queue) == 4
 
     def test_missing_data_file(self, mock_brisk_project):
         """Test error handling for missing data file."""
@@ -337,15 +339,17 @@ class TestConfigurationManager:
         base_params = manager._get_base_params()
         expected_params = {
             'test_size': 0.2,
-            'n_splits': 5,
+            'n_splits': 2,
             'split_method': 'shuffle',
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None
+            'problem_type': 'classification',
+            'algorithm_config': None,
+            'preprocessors': []
         }
         assert base_params == expected_params
-
+       
     def test_data_config_does_not_change_base(self, mock_brisk_project):
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
@@ -361,12 +365,14 @@ class TestConfigurationManager:
         base_params = manager._get_base_params()
         expected_params = {
             'test_size': 0.2,
-            'n_splits': 5,
+            'n_splits': 2,
             'split_method': 'shuffle',
             'group_column': None, 
             'stratified': False,
             'random_state': 42,
-            'scale_method': None
+            'problem_type': 'classification',
+            'algorithm_config': None,
+            'preprocessors': []
         }
         assert base_params == expected_params
 
@@ -390,7 +396,9 @@ class TestConfigurationManager:
                 algorithms=["elasticnet"]
             )
         ]
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         for data_manager in manager.data_managers.values():
             assert isinstance(data_manager, DataManager)
         assert len(manager.data_managers) == 3
@@ -417,9 +425,11 @@ class TestConfigurationManager:
             )
         ]
         
-        manager = ConfigurationManager(groups, {})
+        manager = ConfigurationManager(groups, {
+            "categorical.csv": ["category"]
+        })
         
-        assert len(manager.experiment_queue) == 3
+        assert len(manager.experiment_queue) == 6
         assert isinstance(manager.experiment_queue, collections.deque)
         # Check experiment configurations
         single_exp = next(
@@ -433,7 +443,7 @@ class TestConfigurationManager:
             exp for exp in manager.experiment_queue 
             if len(exp.algorithms) == 2
         ]
-        assert len(multi_exps) == 2
+        assert len(multi_exps) == 4
         for exp in multi_exps:
             assert isinstance(exp.algorithms["model"], AlgorithmWrapper)
             assert isinstance(exp.algorithms["model2"], AlgorithmWrapper)
@@ -460,7 +470,7 @@ class TestConfigurationManager:
             )
         ]
         manager = ConfigurationManager(groups, {})
-        assert len(manager.experiment_queue) == 10
+        assert len(manager.experiment_queue) == 20
 
     def test_create_logfile(self, mock_brisk_project):
         """Test the _create_logfile method of ConfigurationManager."""
@@ -563,10 +573,12 @@ class TestConfigurationManager:
 ```python
 DataManager Configuration:
 test_size: 0.2
-n_splits: 5
+n_splits: 2
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+preprocessors: []
 ```
 
 ### Datasets
@@ -589,10 +601,12 @@ Continuous: ['x', 'y']
 ```python
 DataManager Configuration:
 test_size: 0.2
-n_splits: 5
+n_splits: 2
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+preprocessors: []
 ```
 
 ### Datasets
@@ -604,6 +618,10 @@ Continuous: ['x', 'y']
 ```
 """
         # Strip whitespace from both files
+        print("ACTUAL LOGFILE CONTENT:")
+        print(manager.logfile)
+        print("EXPECTED LOGFILE CONTENT:")
+        print(expected_logfile_content)
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
     def test_create_logfile_with_all_args(self, mock_brisk_project):
@@ -745,6 +763,8 @@ n_splits: 3
 split_method: shuffle
 stratified: False
 random_state: 42
+problem_type: classification
+preprocessors: []
 ```
 
 ### Datasets
@@ -774,11 +794,13 @@ Continuous: ['value']
 ```python
 DataManager Configuration:
 test_size: 0.1
-n_splits: 5
+n_splits: 2
 split_method: shuffle
 group_column: group
 stratified: False
 random_state: 42
+problem_type: classification
+preprocessors: []
 ```
 
 ### Datasets
@@ -790,6 +812,10 @@ Continuous: ['x', 'y']
 ```
 """
         # Strip whitespace from both files
+        print("ACTUAL LOGFILE CONTENT:")
+        print(manager.logfile)
+        print("EXPECTED LOGFILE CONTENT:")
+        print(expected_logfile_content)
         assert manager.logfile.strip() == expected_logfile_content.strip()
 
     def test_get_output_structure(self, mock_brisk_project, tmp_path):
@@ -854,7 +880,10 @@ Continuous: ['x', 'y']
             ],
             algorithms=["ridge"]
         )
-        manager = ConfigurationManager([group1, group2], {})
+        manager = ConfigurationManager([group1, group2], {
+            "categorical.csv": ["category"],
+            ("test_data.db", "categorical"): ["category", "result"]
+        })
         output_structure = manager._get_output_structure()
         expected_output_structure = {
             "group1": {

@@ -9,10 +9,97 @@ root directory.
 import pytest
 import sqlite3
 from io import StringIO
+import sys
 
 import pandas as pd
+import sklearn.linear_model as linear
+import sklearn.ensemble as ensemble
 
 from brisk.configuration import project
+from brisk.services import initialize_services
+import brisk
+
+_CACHED_ALGORITHM_CONFIG = None
+_CACHED_METRIC_CONFIG = None
+
+
+def get_algorithm_config():
+    """Get cached algorithm configuration."""
+    global _CACHED_ALGORITHM_CONFIG
+    if _CACHED_ALGORITHM_CONFIG is None:
+        _CACHED_ALGORITHM_CONFIG = brisk.AlgorithmCollection(
+            brisk.AlgorithmWrapper(
+                name="linear",
+                display_name="Linear Regression",
+                algorithm_class=linear.LinearRegression
+            ),
+            brisk.AlgorithmWrapper(
+                name="ridge",
+                display_name="Ridge Regression",
+                algorithm_class=linear.Ridge,
+                default_params={"max_iter": 10000},
+                hyperparam_grid={"alpha": [0.1, 0.5, 1.0]}
+            ),
+            brisk.AlgorithmWrapper(
+                name="elasticnet",
+                display_name="Elastic Net Regression",
+                algorithm_class=linear.ElasticNet,
+                default_params={"alpha": 0.1, "max_iter": 10000},
+                hyperparam_grid={
+                    "alpha": [0.1, 0.2, 0.5],
+                    "l1_ratio": [0.1, 0.5, 1.0]
+                }
+            ),
+            brisk.AlgorithmWrapper(
+                name="rf",
+                display_name="Random Forest",
+                algorithm_class=ensemble.RandomForestRegressor,
+                default_params={'n_jobs': 1},
+                hyperparam_grid={
+                    'n_estimators': list(range(20, 160, 20))
+                }
+            ),
+            brisk.AlgorithmWrapper(
+                name="rf_classifier",
+                display_name="Random Forest Classifier",
+                algorithm_class=ensemble.RandomForestClassifier,
+                default_params={"min_samples_split": 10},
+                hyperparam_grid={
+                    "n_estimators": list(range(20, 160, 20)),
+                    "criterion": ["friedman_mse", "absolute_error", 
+                                  "poisson", "squared_error"],
+                    "max_depth": list(range(5, 25, 5)) + [None],
+                }
+            ),
+        )
+    return _CACHED_ALGORITHM_CONFIG
+
+
+def get_metric_config():
+    """Get cached metric configuration."""
+    global _CACHED_METRIC_CONFIG
+    if _CACHED_METRIC_CONFIG is None:
+        _CACHED_METRIC_CONFIG = brisk.MetricManager(
+            *brisk.REGRESSION_METRICS,
+            *brisk.CLASSIFICATION_METRICS
+        )
+    return _CACHED_METRIC_CONFIG
+
+
+def setup_services(tmp_path):
+    algorithm_config = get_algorithm_config()
+    metric_config = get_metric_config()
+    
+    results_dir = tmp_path / 'test_results'
+    results_dir.mkdir(exist_ok=True)
+    
+    initialize_services(
+        algorithm_config=algorithm_config,
+        metric_config=metric_config,
+        results_dir=results_dir,
+        verbose=False
+    )
+
 
 @pytest.fixture
 def mock_briskconfig_file(tmp_path):
@@ -91,9 +178,10 @@ from brisk.data.data_manager import DataManager
 
 BASE_DATA_MANAGER = DataManager(
     test_size=0.2, 
-    n_splits=5,
+    n_splits=2,
     split_method="shuffle",
-    random_state=42
+    random_state=42,
+    problem_type="classification"
 )
 """
     data_path.write_text(data_py)
@@ -101,8 +189,8 @@ BASE_DATA_MANAGER = DataManager(
 
 
 @pytest.fixture
-def mock_metric_py(tmp_path):
-    metric_path = tmp_path / 'metric.py'
+def mock_metrics_py(tmp_path):
+    metric_path = tmp_path / 'metrics.py'
     metric_py = """
 import brisk
 
@@ -179,11 +267,11 @@ def mock_datasets(tmp_path):
 0.9,1.0,A""",
 
         'categorical.csv': """value,category,result
-10.0,A,positive
-20.0,B,negative
-30.0,A,positive
-40.0,B,negative
-60.0,B,negative""",
+10.0,A,1.0
+20.0,B,0.0
+30.0,A,1.0
+40.0,B,0.0
+60.0,B,0.0""",
 
         'group.csv': """group,x,y,target
 A,1.0,2.0,0.2
@@ -650,15 +738,15 @@ C,5.0,6.0,0.7""",
         CREATE TABLE categorical (
             value REAL,
             category TEXT,
-            result TEXT
+            result REAL
         )
     ''')
     cursor.executemany('INSERT INTO categorical VALUES (?, ?, ?)', [
-        (10.0, 'A', 'positive'),
-        (20.0, 'B', 'negative'),
-        (30.0, 'A', 'positive'),
-        (40.0, 'B', 'negative'),
-        (60.0, 'B', 'negative')
+        (10.0, 'A', 1),
+        (20.0, 'B', 0),
+        (30.0, 'A', 1),
+        (40.0, 'B', 0),
+        (60.0, 'B', 0)
     ])
     
     # Create group table
@@ -709,7 +797,7 @@ def mock_brisk_project(
     mock_briskconfig_file, # pylint: disable=unused-argument, redefined-outer-name
     mock_algorithms_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_data_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_metric_py, # pylint: disable=unused-argument, redefined-outer-name
+    mock_metrics_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_training_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_settings_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
@@ -718,8 +806,18 @@ def mock_brisk_project(
     monkeypatch
 ):
     """Create a standardized temporary project structure for testing."""    
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
+    monkeypatch.chdir(tmp_path)    
+    try:
+        setup_services(tmp_path)
+        yield tmp_path
+        
+    except Exception as e:
+        print(f"Warning: Failed to initialize services: {e}")
+        yield tmp_path
+
+    finally:        
+        if str(tmp_path) in sys.path:
+            sys.path.remove(str(tmp_path))
 
 
 @pytest.fixture(autouse=True)

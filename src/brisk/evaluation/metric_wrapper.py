@@ -1,8 +1,8 @@
 """Provides the MetricWrapper class for wrapping metric functions.
 
-This module provides the MetricWrapper class, which wraps metric functions from 
-scikit-learn or defined by the user. It allows for easy application of default 
-parameters to metrics and provides additional metadata for use in the Brisk 
+This module provides the MetricWrapper class, which wraps metric functions from
+scikit-learn or defined by the user. It allows for easy application of default
+parameters to metrics and provides additional metadata for use in the Brisk
 framework.
 """
 import copy
@@ -15,7 +15,7 @@ from typing import Callable, Any, Optional
 class MetricWrapper:
     """A wrapper for metric functions with default parameters and metadata.
 
-    Wraps metric functions and provides methods to update parameters and 
+    Wraps metric functions and provides methods to update parameters and
     retrieve the metric function with applied parameters. Also handles display
     names and abbreviations for reporting.
 
@@ -54,6 +54,7 @@ class MetricWrapper:
         name: str,
         func: Callable,
         display_name: str,
+        greater_is_better: bool,
         abbr: Optional[str] = None,
         **default_params: Any
     ):
@@ -61,6 +62,7 @@ class MetricWrapper:
         self.func = self._ensure_split_metadata_param(func)
         self.display_name = display_name
         self.abbr = abbr if abbr else name
+        self.greater_is_better = greater_is_better
         self.params = default_params
         self.params["split_metadata"] = {}
         self._apply_params()
@@ -68,11 +70,15 @@ class MetricWrapper:
     def _apply_params(self):
         """Apply current parameters to function and scorer.
 
-        Creates a partial function with the current parameters and updates the 
+        Creates a partial function with the current parameters and updates the
         scikit-learn scorer.
         """
         self._func_with_params = functools.partial(self.func, **self.params)
-        self.scorer = metrics.make_scorer(self.func, **self.params)
+        self.scorer = metrics.make_scorer(
+            self.func,
+            greater_is_better=self.greater_is_better,
+            **self.params
+        )
 
     def set_params(self, **params: Any):
         """Update parameters for the metric function and scorer.

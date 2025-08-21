@@ -51,7 +51,8 @@ def single_model(linear_wrapper):
         algorithms={"model": linear_wrapper},
         workflow_args={"metrics": ["MAE", "MSE"]},
         table_name=None,
-        categorical_features=None
+        categorical_features=None,
+        split_index=0
     )
 
 
@@ -67,7 +68,8 @@ def multiple_models(linear_wrapper, rf_wrapper):
         },
         workflow_args={},
         table_name=None,
-        categorical_features=None
+        categorical_features=None,
+        split_index=0
     )
 
 
@@ -80,7 +82,8 @@ def sql_table(ridge_wrapper):
         algorithms={"model": ridge_wrapper},
         workflow_args={},
         table_name="categorical",
-        categorical_features=["category"]
+        categorical_features=["category"],
+        split_index=0
     )
 
 
@@ -193,7 +196,8 @@ class TestExperiment:
                 algorithms={"wrong_key": linear_wrapper},
                 workflow_args={},
                 table_name=None,
-                categorical_features=None
+                categorical_features=None,
+                split_index=0
             )
 
         with pytest.raises(ValueError, match="Multiple models must use keys"):
@@ -206,7 +210,8 @@ class TestExperiment:
                 },
                 workflow_args={},
                 table_name=None,
-                categorical_features=None
+                categorical_features=None,
+                split_index=0
             )
 
     def test_invalid_group_name(self, linear_wrapper):
@@ -218,7 +223,8 @@ class TestExperiment:
                 algorithms={"model": linear_wrapper},
                 workflow_args={},
                 table_name=None,
-                categorical_features=None
+                categorical_features=None,
+                split_index=0
             )
 
     def test_invalid_algorithms(self, linear_wrapper):
@@ -230,7 +236,8 @@ class TestExperiment:
                 algorithms=[linear_wrapper],
                 workflow_args={},
                 table_name=None,
-                categorical_features=None
+                categorical_features=None,
+                split_index=0
             )
         
     def test_missing_algorithms(self, linear_wrapper):
@@ -242,5 +249,6 @@ class TestExperiment:
                 algorithms={},
                 workflow_args={},
                 table_name=None,
-                categorical_features=None
+                categorical_features=None,
+                split_index=0
             )

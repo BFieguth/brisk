@@ -54,13 +54,13 @@ class AlgorithmWrapper:
         Args:
             name (str): The name of the algorithm.
 
-            algorithm_class (Type): The class of the algorithm to be 
+            algorithm_class (Type): The class of the algorithm to be
             instantiated.
-            
-            default_params (Optional[Dict[str, Any]]): The default parameters to 
+
+            default_params (Optional[Dict[str, Any]]): The default parameters to
             pass to the algorithm during instantiation.
-            
-            hyperparam_grid (Optional[Dict[str, Any]]): The hyperparameter grid 
+
+            hyperparam_grid (Optional[Dict[str, Any]]): The hyperparameter grid
             for model tuning.
         """
         if not isinstance(name, str):

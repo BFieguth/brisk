@@ -201,6 +201,9 @@ class BaseE2ETest:
             shell=use_shell
         )
 
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
+        
         if result.returncode != 0:
             raise RuntimeError(
                 f"Workflow failed with error:\n"
@@ -241,6 +244,12 @@ class BaseE2ETest:
         formatted_source = "\n".join(function_body)
         settings_content = f"""
 from brisk.configuration.configuration import Configuration
+from brisk.data.preprocessing import (
+    ScalingPreprocessor, 
+    CategoricalEncodingPreprocessor, 
+    FeatureSelectionPreprocessor,
+    MissingDataPreprocessor
+)
 
 def create_configuration():
 {formatted_source}"""
