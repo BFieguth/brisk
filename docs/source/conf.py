@@ -103,6 +103,7 @@ html_theme_options = {
 }
 
 # -- Linkcode settings ------------------------------------------------------
+sys.path.insert(0, os.path.abspath("../../src"))
 def linkcode_resolve(domain, info):
     """Determine the URL corresponding to a Python object in Brisk.
     
