@@ -6,24 +6,23 @@ if some fail.
 """
 
 import collections
-from datetime import datetime
 import logging
 import os
-import pathlib
 import time
-from typing import Dict, Tuple, Optional, Type
+import json
 import warnings
+from typing import Optional, Type
 
-import joblib
 import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
-from brisk.reporting import report_manager as report
-from brisk.training import logging_util
-from brisk.configuration import algorithm_wrapper, configuration
+
+from brisk.reporting import report_renderer
+from brisk.configuration import configuration
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
+from brisk.services import get_services
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
@@ -38,15 +37,11 @@ class TrainingManager:
         Configuration for evaluation metrics
     config_manager : ConfigurationManager
         Instance containing data needed to run experiments
-    verbose : bool, optional
-        Controls logging verbosity level, by default False
 
     Attributes
     ----------
     metric_config : MetricManager
         Configuration for evaluation metrics
-    verbose : bool
-        Controls logging verbosity level
     data_managers : dict
         Maps group names to their data managers
     experiments : collections.deque
@@ -66,15 +61,21 @@ class TrainingManager:
         self,
         metric_config: metric_manager.MetricManager,
         config_manager: configuration.ConfigurationManager,
-        verbose=False
     ):
+        self.services = get_services()
+        self.results_dir = self.services.io.results_dir
+
         self.metric_config = metric_config
-        self.verbose = verbose
+        self.eval_manager = evaluation_manager.EvaluationManager(
+            self.metric_config
+        )
+
         self.data_managers = config_manager.data_managers
         self.experiments = config_manager.experiment_queue
         self.logfile = config_manager.logfile
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
+        self.experiment_groups = config_manager.experiment_groups
         self.experiment_paths = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: collections.defaultdict(
@@ -88,7 +89,6 @@ class TrainingManager:
     def run_experiments(
         self,
         workflow: workflow_module.Workflow,
-        results_name: Optional[str] = None,
         create_report: bool = True
     ) -> None:
         """Runs the Workflow for each experiment and generates report.
@@ -97,13 +97,13 @@ class TrainingManager:
         ----------
         workflow : Workflow
             A subclass of the Workflow class that defines the training steps.
-
-        results_name : str
-            The name of the results directory.
-
         create_report : bool
             Whether to generate an HTML report after all experiments. 
             Defaults to True.
+
+        Returns
+        -------
+        None
         """
         self._reset_experiment_results()
         progress_bar = tqdm.tqdm(
@@ -112,24 +112,22 @@ class TrainingManager:
             unit="experiment"
         )
 
-        results_dir = self._create_results_dir(results_name)
-        self._save_config_log(results_dir, workflow, self.logfile)
-        self._save_data_distributions(results_dir, self.output_structure)
-        self.logger = self._setup_logger(results_dir)
+        self._save_config_log(self.results_dir, workflow, self.logfile)
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
             self._run_single_experiment(
                 current_experiment,
                 workflow,
-                results_dir
+                self.results_dir
             )
             progress_bar.update(1)
 
         self._print_experiment_summary()
-        self._cleanup(results_dir, progress_bar)
+        self.services.reporting.add_experiment_groups(self.experiment_groups)
+        self._cleanup(self.results_dir, progress_bar)
         if create_report:
-            self._create_report(results_dir)
+            self._create_report(self.results_dir)
 
     def _run_single_experiment(
         self,
@@ -152,6 +150,10 @@ class TrainingManager:
 
         results_dir : str
             Directory to store results.
+        
+        Returns
+        -------
+        None
         """
         success = False
         start_time = time.time()
@@ -159,6 +161,11 @@ class TrainingManager:
         group_name = current_experiment.group_name
         dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
+
+        self.services.reporting.set_context(
+            group_name, dataset_name, current_experiment.split_index, None,
+            current_experiment.algorithm_names
+        )
 
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
         tqdm.tqdm.write(
@@ -202,6 +209,10 @@ class TrainingManager:
                 start_time,
                 e
             )
+            self.services.reporting.add_experiment(
+                current_experiment.algorithms
+            )
+            self.services.reporting.clear_context()
 
         if success:
             self._handle_success(
@@ -210,43 +221,21 @@ class TrainingManager:
                 dataset_name,
                 experiment_name
             )
+            self.services.reporting.add_experiment(
+                current_experiment.algorithms
+            )
+            self.services.reporting.clear_context()
 
     def _reset_experiment_results(self) -> None:
-        """Set self.experiment_results to a defaultdict of lists."""
-        self.experiment_results = collections.defaultdict(
-            lambda: collections.defaultdict(list)
-        )
-
-    def _create_results_dir(self, results_name: str) -> str:
-        """Set up the results directory.
-
-        Parameters
-        ----------
-        results_name : str
-            Name of the results directory
+        """Set self.experiment_results to a defaultdict of lists.
 
         Returns
         -------
-        str
-            Path to created results directory
-
-        Raises
-        ------
-        FileExistsError
-            If results directory already exists
+        None
         """
-        if not results_name:
-            timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-            results_dir = os.path.join("results", timestamp)
-        else:
-            results_dir = os.path.join("results", results_name)
-
-        if os.path.exists(results_dir):
-            raise FileExistsError(
-                f"Results directory '{results_dir}' already exists."
-            )
-        os.makedirs(results_dir, exist_ok=False)
-        return results_dir
+        self.experiment_results = collections.defaultdict(
+            lambda: collections.defaultdict(list)
+        )
 
     def _create_report(self, results_dir: str) -> None:
         """Create an HTML report from the experiment results.
@@ -256,11 +245,10 @@ class TrainingManager:
         results_dir : str
             Directory where results are stored.
         """
-        report_manager = report.ReportManager(
-            results_dir, self.experiment_paths, self.output_structure,
-            self.description_map
-            )
-        report_manager.create_report()
+        report_data = self.services.reporting.get_report_data()
+        with open("./dev_report_data.json", "w", encoding="utf-8") as f:
+            json.dump(report_data.model_dump(), f, indent=4)
+        report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _save_config_log(
         self,
@@ -280,6 +268,10 @@ class TrainingManager:
 
         logfile : str
             The logfile to save.
+
+        Returns
+        -------
+        None
         """
         config_log_path = os.path.join(results_dir, "config_log.md")
         config_content = logfile.split("\n")
@@ -296,98 +288,6 @@ class TrainingManager:
 
         with open(config_log_path, "w", encoding="utf-8") as f:
             f.write(full_content)
-
-    def _save_data_distributions(
-        self,
-        result_dir: str,
-        output_structure: Dict[str, Dict[str, Tuple[str, str]]]
-    ) -> None:
-        """Save data distribution information for each dataset.
-
-        Parameters
-        ----------
-        result_dir : str
-            Base directory for results
-        output_structure : dict
-            Mapping of groups to their datasets and split info
-        """
-        for group_name, datasets in output_structure.items():
-            group_dir = os.path.join(result_dir, group_name)
-            os.makedirs(group_dir, exist_ok=True)
-            group_data_manager = self.data_managers[group_name]
-            n_splits = group_data_manager.n_splits
-
-            for dataset_name, (data_path, table_name) in datasets.items():
-                for index in range(n_splits):
-                    split_info = group_data_manager.split(
-                        data_path=data_path,
-                        categorical_features=None,
-                        table_name=table_name,
-                        group_name=group_name,
-                        filename=pathlib.Path(data_path).stem
-                    ).get_split(index)
-    
-                    dataset_dir = os.path.join(group_dir, dataset_name)
-                    os.makedirs(dataset_dir, exist_ok=True)
-                    split_dir = os.path.join(dataset_dir, f"split_{index}")
-                    os.makedirs(split_dir, exist_ok=True)
-
-                    split_info.save_distribution(
-                        os.path.join(split_dir, "split_distribution")
-                        )
-
-                    if hasattr(split_info, "scaler") and split_info.scaler:
-                        split_name = split_info.scaler.__class__.__name__
-                        scaler_path = os.path.join(
-                            split_dir,
-                            f"{dataset_name}_{split_name}.joblib"
-                        )
-                        joblib.dump(split_info.scaler, scaler_path)
-
-    def _setup_logger(self, results_dir: str) -> logging.Logger:
-        """Set up logging for the TrainingManager.
-
-        Configures file and console handlers with different logging levels.
-
-        Parameters
-        ----------
-        results_dir : str
-            Directory to store log files
-
-        Returns
-        -------
-        logging.Logger
-            Configured logger instance
-        """
-        logging.captureWarnings(True)
-
-        logger = logging.getLogger("TrainingManager")
-        logger.setLevel(logging.DEBUG)
-
-        file_handler = logging.FileHandler(
-            os.path.join(results_dir, "error_log.txt")
-        )
-        file_handler.setLevel(logging.WARNING)
-
-        console_handler = logging_util.TqdmLoggingHandler()
-        if self.verbose:
-            console_handler.setLevel(logging.INFO)
-        else:
-            console_handler.setLevel(logging.ERROR)
-
-        formatter = logging.Formatter(
-            "\n%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_formatter = logging_util.FileFormatter(
-            "%(asctime)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-        console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
-
-        return logger
 
     def _setup_workflow(
         self,
@@ -442,20 +342,13 @@ class TrainingManager:
             current_experiment.split_index, experiment_name
         )
 
-        eval_manager = evaluation_manager.EvaluationManager(
-            algorithm_wrapper.AlgorithmCollection(
-                *current_experiment.algorithms.values()
-            ),
-            self.metric_config,
-            experiment_dir,
-            data_split.get_split_metadata(),
-            data_split.group_index_train,
-            data_split.group_index_test,
-            self.logger
+        self.eval_manager.set_experiment_values(
+            experiment_dir, data_split.get_split_metadata(),
+            data_split.group_index_train, data_split.group_index_test
         )
 
         workflow_instance = workflow(
-            evaluator=eval_manager,
+            evaluation_manager=self.eval_manager,
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
@@ -486,6 +379,10 @@ class TrainingManager:
             Name of dataset
         experiment_name : str
             Name of experiment
+
+        Returns
+        -------
+        None
         """
         elapsed_time = time.time() - start_time
         self.experiment_results[group_name][dataset_name].append({
@@ -528,7 +425,7 @@ class TrainingManager:
             f"Experiment Name: {experiment_name}\n\n"
             f"Error: {error}"
         )
-        self.logger.exception(error_message)
+        self.services.logger.logger.exception(error_message)
 
         self.experiment_results[group_name][dataset_name].append({
             "experiment": experiment_name,
@@ -567,6 +464,10 @@ class TrainingManager:
             Name of dataset, by default None
         experiment_name : str, optional
             Name of experiment, by default None
+
+        Returns
+        -------
+        None
         """
         log_message = (
             f"\n\nDataset Name: {dataset_name} \n"
@@ -636,7 +537,7 @@ class TrainingManager:
         """
         full_path = os.path.normpath(
             os.path.join(
-                results_dir, group_name, dataset_name, f"split_{split_index}", 
+                results_dir, group_name, dataset_name, f"split_{split_index}",
                 experiment_name
             )
         )
@@ -675,6 +576,10 @@ class TrainingManager:
 
         progress_bar : tqdm.tqdm
             Progress bar to close.
+
+        Returns
+        -------
+        None
         """
         progress_bar.close()
         logging.shutdown()

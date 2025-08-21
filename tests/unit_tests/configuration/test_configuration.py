@@ -13,19 +13,27 @@ def configuration():
 @pytest.fixture
 def configuration_with_categorical_features():
     """Create a configuration with categorical features."""
-    return Configuration(default_algorithms=["linear", "ridge"], categorical_features={"categorical": ["category"]})
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        categorical_features={"categorical": ["category"]}
+    )
 
 
 @pytest.fixture
 def configuration_with_workflow_args():
     """Create a configuration with workflow args."""
-    return Configuration(default_algorithms=["linear", "ridge"], default_workflow_args={"kfold": 5})
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow_args={"kfold": 5}
+    )
 
 
 @pytest.fixture
 def configuration_algorithm_groups():
     """Create a configuration with algorithm groups."""
-    return Configuration(default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]])
+    return Configuration(
+        default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]]
+    )
 
 
 class TestConfiguration:
@@ -71,7 +79,7 @@ class TestConfiguration:
         assert group.name == "test_group"
         assert group.datasets == ["regression.csv"]
         assert group.algorithms == ["linear", "ridge"]
-        assert group.data_config is None
+        assert group.data_config == {}
         assert group.algorithm_config is None
         assert group.description == ""
         assert group.workflow_args == {}
@@ -143,7 +151,7 @@ class TestConfiguration:
         assert group.name == "test_group"
         assert group.datasets == ["regression.csv"]
         assert group.algorithms == ["linear", "ridge"]
-        assert group.data_config is None
+        assert group.data_config == {}
         assert group.algorithm_config is None
         assert group.description == ""
         assert group.workflow_args == {"kfold": 10}

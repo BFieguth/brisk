@@ -18,6 +18,7 @@ from sklearn import preprocessing
 
 from brisk.data import data_split_info
 from brisk.data import data_splits
+from brisk.services import get_services
 
 class DataManager:
     """A class that handles data splitting logic for creating train-test splits.
@@ -78,6 +79,7 @@ class DataManager:
         random_state: Optional[int] = None,
         scale_method: Optional[str] = None,
     ):
+        self.services = get_services()
         self.test_size = test_size
         self.split_method = split_method
         self.group_column = group_column
@@ -258,9 +260,9 @@ class DataManager:
         self,
         data_path: str,
         categorical_features: List[str],
+        group_name: str,
+        filename: str,
         table_name: Optional[str] = None,
-        group_name: Optional[str] = None,
-        filename: Optional[str] = None,
     ) -> data_split_info.DataSplitInfo:
         """Splits the data based on the preconfigured splitter.
 
@@ -270,12 +272,12 @@ class DataManager:
             Path to the dataset file
         categorical_features : list of str
             List of categorical feature names
+        group_name : str
+            Name of the group for split caching
+        filename : str
+            Filename for split caching
         table_name : str, optional
             Name of the table in SQL database, by default None
-        group_name : str, optional
-            Name of the group for split caching, by default None
-        filename : str, optional
-            Filename for split caching, by default None
 
         Returns
         -------
@@ -287,16 +289,7 @@ class DataManager:
         ValueError
             If group_name is provided without filename or vice versa
         """
-        if bool(group_name) != bool(filename):
-            raise ValueError(
-                "Both group_name and filename must be provided together. "
-                f"Got: group_name={group_name}, filename={filename}"
-            )
-
-        split_key = (
-            f"{group_name}_{filename}_{table_name}" if table_name
-            else f"{group_name}_{filename}"
-        ) if group_name else data_path
+        split_key = (group_name, filename, table_name)
 
         if split_key in self._splits:
             return self._splits[split_key]
@@ -312,7 +305,7 @@ class DataManager:
         feature_names = list(X.columns)
 
         split_container = data_splits.DataSplits(self.n_splits)
-        for _, (train_idx, test_idx) in enumerate(
+        for split_index, (train_idx, test_idx) in enumerate(
             self.splitter.split(X, y, groups)
             ):
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx] # pylint: disable=C0103
@@ -341,7 +334,8 @@ class DataManager:
                 X_test=X_test,
                 y_train=y_train,
                 y_test=y_test,
-                filename=data_path,
+                split_key=split_key,
+                split_index=split_index,
                 scaler=scaler,
                 features=feature_names,
                 categorical_features=categorical_features,
@@ -351,6 +345,7 @@ class DataManager:
             split_container.add(split)
 
         self._splits[split_key] = split_container
+        self.services.reporting.add_dataset(group_name, split_container)
         return split_container
 
     def to_markdown(self) -> str:

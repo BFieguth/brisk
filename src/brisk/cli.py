@@ -31,6 +31,7 @@ import inspect
 import os
 import sys
 from typing import Optional, Union
+from datetime import datetime
 
 import click
 import pandas as pd
@@ -38,6 +39,7 @@ from sklearn import datasets
 
 from brisk.training.workflow import Workflow
 from brisk.configuration import project
+from brisk.services import initialize_services
 
 @click.group()
 def cli():
@@ -182,10 +184,17 @@ class MyWorkflow(Workflow):
     default=False,
     help='Disable the creation of an HTML report.'
 )
+@click.option(
+    '--verbose',
+    is_flag=True,
+    default=False,
+    help='Change the verbosity of the logger.'
+)
 def run(
     workflow: str,
     results_name: Optional[str],
-    disable_report: bool
+    disable_report: bool,
+    verbose: bool
 ) -> None:
     """Run experiments using the specified workflow.
 
@@ -197,6 +206,8 @@ def run(
         Custom name for results directory
     disable_report : bool, default=False
         Whether to disable HTML report generation
+    verbose : bool, default=False
+        Whether to enable verbose logging
 
     Raises
     ------
@@ -211,6 +222,27 @@ def run(
 
         if project_root not in sys.path:
             sys.path.insert(0, str(project_root))
+
+        if not results_name:
+            results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            results_dir = os.path.join("results", results_name)
+        else:
+            results_dir = os.path.join("results", results_name)
+        if os.path.exists(results_dir):
+            raise FileExistsError(
+                f"Results directory '{results_dir}' already exists."
+            )
+        os.makedirs(results_dir, exist_ok=False)
+
+        algorithm_config = load_module_object(
+            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
+        )
+        metric_config = load_module_object(
+            project_root, "metrics.py", "METRIC_CONFIG"
+        )
+        initialize_services(
+            algorithm_config, metric_config, results_dir, verbose=verbose
+        )
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
@@ -234,7 +266,7 @@ def run(
 
         manager.run_experiments(
             workflow=workflow_class,
-            results_name=results_name,
+            # results_name=results_name,
             create_report=create_report
         )
 

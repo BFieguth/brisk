@@ -54,68 +54,80 @@ REGRESSION_METRICS = [
     metric_wrapper.MetricWrapper(
         name="explained_variance_score",
         func=_regression.explained_variance_score,
-        display_name="Explained Variance Score"
+        display_name="Explained Variance Score",
+        greater_is_better=True
     ),
     metric_wrapper.MetricWrapper(
         name="max_error",
         func=_regression.max_error,
-        display_name="Max Error"
+        display_name="Max Error",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="mean_absolute_error",
         func=_regression.mean_absolute_error,
         display_name="Mean Absolute Error",
-        abbr="MAE"
+        abbr="MAE",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="mean_absolute_percentage_error",
         func=_regression.mean_absolute_percentage_error,
         display_name="Mean Absolute Percentage Error",
-        abbr="MAPE"
+        abbr="MAPE",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="mean_pinball_loss",
         func=_regression.mean_pinball_loss,
-        display_name="Mean Pinball Loss"
+        display_name="Mean Pinball Loss",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="mean_squared_error",
         func=_regression.mean_squared_error,
         display_name="Mean Squared Error",
-        abbr="MSE"
+        abbr="MSE",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="mean_squared_log_error",
         func=_regression.mean_squared_log_error,
-        display_name="Mean Squared Log Error"
+        display_name="Mean Squared Log Error",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="median_absolute_error",
         func=_regression.median_absolute_error,
-        display_name="Median Absolute Error"
+        display_name="Median Absolute Error",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="r2_score",
         func=_regression.r2_score,
         display_name="R2 Score",
-        abbr="R2"
+        abbr="R2",
+        greater_is_better=True
     ),
     metric_wrapper.MetricWrapper(
         name="root_mean_squared_error",
         func=_regression.root_mean_squared_error,
         display_name="Root Mean Squared Error",
-        abbr="RMSE"
+        abbr="RMSE",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="root_mean_squared_log_error",
         func=_regression.mean_squared_log_error,
-        display_name="Root Mean Squared Log Error"
+        display_name="Root Mean Squared Log Error",
+        greater_is_better=False
     ),
     metric_wrapper.MetricWrapper(
         name="concordance_correlation_coefficient",
         func=concordance_correlation_coefficient,
         display_name="Concordance Correlation Coefficient",
-        abbr="CCC"
+        abbr="CCC",
+        greater_is_better=True
     ),
     metric_wrapper.MetricWrapper(
         name="neg_mean_absolute_error",
@@ -128,6 +140,7 @@ REGRESSION_METRICS = [
         name="adjusted_r2_score",
         func=adjusted_r2_score,
         display_name="Adjusted R2 Score",
-        abbr="AdjR2"
+        abbr="AdjR2",
+        greater_is_better=True
     )
 ]

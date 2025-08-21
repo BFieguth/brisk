@@ -1,0 +1,77 @@
+<header class="navbar">
+    <div class="navbar-left">
+        <h1 class="navbar-title">
+            <a href="#" page-type="home" page-data="">Brisk Report</a>
+        </h1>
+        <p class="navbar-version">{{ navbar.brisk_version }}</p>
+        <p class="navbar-timestamp">{{ navbar.timestamp }}</p>
+    </div>
+    
+    <!-- Experiment navigation section - middle of navbar -->
+    <div id="experiment-navigation" class="navbar-middle" style="display: none;">
+        <div class="experiment-nav-content">
+            <button id="prev-experiment-btn" class="nav-button nav-button-prev" disabled>
+                <span>Previous</span>
+            </button>
+            
+            <div class="experiment-nav-info">
+                <div class="experiment-nav-group">
+                    <span>Experiment Group: </span>
+                    <span id="current-experiment-group"></span>
+                </div>
+                <div class="experiment-nav-dataset">
+                    <span>Dataset: </span>
+                    <span id="current-dataset-name"></span>
+                </div>
+                <div class="experiment-nav-breadcrumb">
+                    <span id="experiment-breadcrumb"></span>
+                </div>
+            </div>
+            
+            <button id="next-experiment-btn" class="nav-button nav-button-next" disabled>
+                <span>Next</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="navbar-right">
+        <div class="theme-container">
+            <button class="theme-button" onclick="window.app.toggleTheme()">
+                <svg class="theme-svg light-mode-icon" width="48px" height="48px" viewBox="0 0 24 24" fill="none">
+                    <g clip-path="url(#a)" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10">
+                        <path d="M5 12H1M23 12h-4M7.05 7.05 4.222 4.222M19.778 19.778 16.95 16.95M7.05 16.95l-2.828 2.828M19.778 4.222 16.95 7.05" stroke-linecap="round"/>
+                        <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+                        <path d="M12 19v4M12 1v4" stroke-linecap="round"/>
+                    </g>
+                    <defs>
+                        <clipPath id="a">
+                            <path fill="#ffffff" d="M0 0h24v24H0z"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+                <svg class="theme-svg dark-mode-icon" width="48px" height="48px" viewBox="0 0 35 35" fill="currentColor" style="display: none;">
+                    <path d="M18.44,34.68a18.22,18.22,0,0,1-2.94-.24,18.18,18.18,0,0,1-15-20.86A18.06,18.06,0,0,1,9.59.63A2.42,2.42,0,0,1,12.2.79a2.39,2.39,0,0,1,1,2.41L11.9,3.1l1.23.22A15.66,15.66,0,0,0,23.34,21h0a15.82,15.82,0,0,0,8.47.53A2.44,2.44,0,0,1,34.47,25A18.18,18.18,0,0,1,18.44,34.68ZM10.67,2.89a15.67,15.67,0,0,0-5,22.77A15.66,15.66,0,0,0,32.18,24a18.49,18.49,0,0,1-9.65-.64A18.18,18.18,0,0,1,10.67,2.89Z"/>
+                </svg>
+            </button>
+            <span class="theme-text">Light Mode</span>
+        </div>
+
+        <div class="github-container">
+            <button class="github-button" onclick="window.open('https://github.com/BFieguth/brisk', '_blank')">
+                <svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor" fill="none" viewBox="0 0 24 24" class="github-svg">
+                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+            </button>
+            <span class="github-text">GitHub</span>
+        </div>
+
+        <div class="docs-container">
+            <button class="docs-button" onclick="window.open('https://brisk.readthedocs.io/en/latest/index.html', '_blank')">
+                <svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" stroke="currentColor" fill="none" viewBox="0 0 50 50" width="50px" height="50px" class="docs-svg">
+                    <path d="M 7 2 L 7 48 L 43 48 L 43 14.59375 L 42.71875 14.28125 L 30.71875 2.28125 L 30.40625 2 Z M 9 4 L 29 4 L 29 16 L 41 16 L 41 46 L 9 46 Z M 31 5.4375 L 39.5625 14 L 31 14 Z M 15 22 L 15 24 L 35 24 L 35 22 Z M 15 28 L 15 30 L 31 30 L 31 28 Z M 15 34 L 15 36 L 35 36 L 35 34 Z"/>
+                </svg>                  
+            </button>
+            <span class="docs-text">Documentation</span>
+        </div>
+    </div>
+</header>

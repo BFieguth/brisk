@@ -73,7 +73,7 @@ class TestExperimentFactory:
             algorithms=["linear"]
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 1
         exp = experiments[0]
         assert exp.group_name == "test"
@@ -94,7 +94,7 @@ class TestExperimentFactory:
             algorithms=["linear", "ridge"]
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 2
 
         # Linear Experiment
@@ -129,7 +129,7 @@ class TestExperimentFactory:
             algorithms=[["linear", "ridge"]]
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 1
         exp = experiments[0]
         assert len(exp.algorithms) == 2
@@ -152,7 +152,7 @@ class TestExperimentFactory:
             algorithms=["linear"]
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 2
         # Linear Experiment
         exp = experiments[0]
@@ -179,7 +179,7 @@ class TestExperimentFactory:
             }
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         exp = experiments[0]
         
         # Check hyperparameter grid was updated
@@ -199,7 +199,7 @@ class TestExperimentFactory:
         )
         
         with pytest.raises(KeyError, match="No algorithm found with name: "):
-            factory.create_experiments(group)
+            factory.create_experiments(group, 1)
 
     def test_mixed_algorithm_groups(self, factory, mock_brisk_project, tmp_path):
         """Test handling of mixed single and grouped algorithms."""
@@ -209,7 +209,7 @@ class TestExperimentFactory:
             algorithms=["linear", ["ridge", "elasticnet"]]
         )
         
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 2
         
         # Check single algorithm experiment
@@ -241,7 +241,7 @@ class TestExperimentFactory:
             datasets=["categorical.csv"],
             algorithms=["linear"]
         )
-        experiments = factory_categorical.create_experiments(group)
+        experiments = factory_categorical.create_experiments(group, 1)
         assert len(experiments) == 1
         exp = experiments[0]
         assert exp.group_name == "test"
@@ -260,7 +260,7 @@ class TestExperimentFactory:
             datasets=[("test_data.db", "regression")],
             algorithms=["linear"]
         )
-        experiments = factory.create_experiments(group)
+        experiments = factory.create_experiments(group, 1)
         assert len(experiments) == 1
         exp = experiments[0]
         assert exp.group_name == "test"
