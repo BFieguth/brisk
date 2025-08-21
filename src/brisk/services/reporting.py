@@ -100,11 +100,10 @@ class ReportingService(base.BaseService):
         metric_manager: metric_config.MetricManager
     ):
         super().__init__(name)
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.navbar = report_data.Navbar(
             brisk_version=f"Version: {__version__}",
-            timestamp=f"Created on: {
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }"
+            timestamp=f"Created on: {time}"
         )
         self.datasets = {}
         self.experiments = {}
