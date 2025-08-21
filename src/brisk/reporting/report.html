@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<!-- Embed all data as JSON -->
+<script type="application/json" id="report-data">
+    {{ report_json }}
+</script>
+{% raw %}
+<script>
+    // Initalize the app
+    document.addEventListener('DOMContentLoaded', function() {
+        const dataElement = document.getElementById('report-data')
+        if (!dataElement) {
+            console.error('report-data element not found!');
+            return;
+        }
+        try {
+            reportData = JSON.parse(dataElement.textContent);
+        } catch (e) {
+            console.error('Failed to parse report data:', e)
+            return;
+        }
+
+        window.app = new App(reportData);
+        window.app.init();
+    });
+</script>
+{% endraw %}
+
+{% block page_renderers %}
+<script>
+    {{ javascript|safe }}
+</script>
+{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brisk Report</title>
+    <style>
+        {{ base_css }}
+        {{ navbar_css }}
+        {{ table_css }}
+        {{ experiment_group_card_css }}
+        {{ home_css }}
+        {{ experiment_css }}
+        {{ dataset_css }}
+    </style>
+    <template id="home-template">
+        {{ home_template|safe }}
+    </template>
+    <template id="table-template">
+        {{ table_component|safe }}
+    </template>
+    <template id="plot-template">
+        {{ plot_component|safe }}
+    </template>
+    <template id="experiment-group-card-template">
+        {{ experiment_group_card_component|safe }}
+    </template>
+    <template id="experiment-template">
+        {{ experiment_template|safe }}
+    </template>
+    <template id="dataset-template">
+        {{ dataset_template|safe }}
+    </template>
+</head>
+<body>
+    {% with navbar = report.navbar %}
+        {% include 'components/navbar.html' %}
+    {% endwith %}
+
+    <main id="main-content">
+        <!-- Content will be dynamically inserted here by showPage-->
+    </main>
+</body>
+</html>

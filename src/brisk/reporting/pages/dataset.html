@@ -1,0 +1,92 @@
+<div class="dataset-container">
+    <div class="dataset-summary">
+        <div class="dataset-splits">
+            <div class="splits-nav">
+                <!-- Split navigation will be populated dynamically -->
+            </div>
+        </div>
+        <hr>
+        <h2 class="dataset-title"></h2>
+        <hr>
+        
+        <!-- Combined info section for side-by-side layout -->
+        <div class="combined-info-section">
+            <div class="info-container">
+                <!-- Left side - Dataset Information -->
+                <div class="info-card">
+                    <h3 class="info-card-title">Dataset Information</h3>
+                    <div class="info-card-content dataset-info-content">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Right side - Target Feature -->
+                <div class="info-card">
+                    <h3 class="info-card-title">Target Feature</h3>
+                    <div class="info-card-content target-info-content">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DataManager Settings (collapsible) -->
+        <div class="collapsible-section">
+            <div class="collapsible-header">
+                <span>DataManager Settings</span>
+                <span class="collapse-icon">▲</span>
+            </div>
+            <div class="collapsible-content" style="display: none;">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Correlation matrix section -->
+        <div class="correlation-section">
+            <div class="correlation-content">
+                <div class="correlation-plot">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dataset-right">
+        <div class="dataset-features">
+            <div class="features-nav">
+                <!-- Features navigation will be populated by JavaScript -->
+            </div>
+        </div>
+        <div class="dataset-distribution">
+            <div class="distribution-layout">
+                <!-- Left side - feature distribution table -->
+                <div class="distribution-table-container">
+                    <h3 class="dataset-title distribution-table-title">Feature Distribution</h3>
+                    <div class="distribution-table-content">
+                        <!-- Table content will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Right side - feature distribution plot -->
+                <div class="distribution-plot-container">
+                    <div class="distribution-plot-content">
+                        <!-- Plot content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Correlation Matrix Modal -->
+<div class="correlation-modal" id="correlationModal">
+    <div class="correlation-modal-content">
+        <div class="correlation-modal-header">
+            <h3 class="correlation-modal-title">Correlation Matrix</h3>
+            <button class="correlation-modal-close" id="correlationModalClose">×</button>
+        </div>
+        <div class="correlation-modal-plot" id="correlationModalPlot">
+            <!-- Full-size correlation matrix will be displayed here -->
+        </div>
+    </div>
+</div>

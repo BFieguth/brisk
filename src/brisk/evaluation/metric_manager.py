@@ -25,10 +25,13 @@ class MetricManager:
         Dictionary mapping metric names to MetricWrapper instances
     _abbreviations_to_name : dict
         Dictionary mapping metric abbreviations to full names
+    _display_name_to_name : dict
+        Dictionary mapping metric display names to full names
     """
     def __init__(self, *metric_wrappers):
         self._metrics_by_name = {}
         self._abbreviations_to_name = {}
+        self._display_name_to_name = {}
         for wrapper in metric_wrappers:
             self._add_metric(wrapper)
 
@@ -47,10 +50,16 @@ class MetricManager:
                 and old_wrapper.abbr in self._abbreviations_to_name
                 ):
                 del self._abbreviations_to_name[old_wrapper.abbr]
+            if (old_wrapper.display_name
+                and old_wrapper.display_name in self._display_name_to_name
+                ):
+                del self._display_name_to_name[old_wrapper.display_name]
 
         self._metrics_by_name[wrapper.name] = wrapper
         if wrapper.abbr:
             self._abbreviations_to_name[wrapper.abbr] = wrapper.name
+        if wrapper.display_name:
+            self._display_name_to_name[wrapper.display_name] = wrapper.name
 
     def _resolve_identifier(self, identifier: str) -> str:
         """Resolve a metric identifier to its full name.
@@ -74,6 +83,8 @@ class MetricManager:
             return identifier
         if identifier in self._abbreviations_to_name:
             return self._abbreviations_to_name[identifier]
+        if identifier in self._display_name_to_name:
+            return self._display_name_to_name[identifier]
         raise ValueError(f"Metric '{identifier}' not found.")
 
     def get_metric(self, identifier: str) -> Callable:
@@ -144,7 +155,7 @@ class MetricManager:
 
         Returns
         -------
-        list of str
+        List[str]
             List of available metric names
         """
         return list(self._metrics_by_name.keys())
@@ -159,3 +170,19 @@ class MetricManager:
         """
         for wrapper in self._metrics_by_name.values():
             wrapper.set_params(split_metadata=split_metadata)
+
+    def is_higher_better(self, identifier: str) -> bool:
+        """Determine if a higher value is better for this metric.
+
+        Parameters
+        ----------
+        identifier : str
+            Full name or abbreviation of the metric
+
+        Returns
+        -------
+        bool
+            True if a higher value is better for this metric, False otherwise
+        """
+        name = self._resolve_identifier(identifier)
+        return self._metrics_by_name[name].greater_is_better

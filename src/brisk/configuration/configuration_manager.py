@@ -17,6 +17,7 @@ from brisk.data import data_manager
 from brisk.configuration import experiment_group, experiment_factory, project
 from brisk.configuration import algorithm_wrapper
 from brisk.reporting import formatting
+from brisk.services import get_services
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.
@@ -63,6 +64,7 @@ class ConfigurationManager:
             experiment_groups: List of experiment group configurations
             categorical_features: Dict mapping categorical features to dataset
         """
+        self.services = get_services()
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
         self.project_root = project.find_project_root()
@@ -281,6 +283,7 @@ class ConfigurationManager:
                 manager = data_manager.DataManager(**base_params)
 
             for name in group_names:
+                self.services.reporting.add_data_manager(name, manager)
                 managers[name] = manager
 
         return managers
@@ -302,7 +305,10 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            experiments = factory.create_experiments(group)
+            n_splits = group.data_config.get(
+                "n_splits", self.base_data_manager.n_splits
+            )
+            experiments = factory.create_experiments(group, n_splits)
             all_experiments.extend(experiments)
 
         return all_experiments
@@ -327,8 +333,8 @@ class ConfigurationManager:
                 group_data_manager.split(
                     data_path=str(dataset_path),
                     categorical_features=categorical_features,
-                    table_name=table_name,
                     group_name=group.name,
+                    table_name=table_name,
                     filename=dataset_path.stem
                 )
 
@@ -393,7 +399,7 @@ class ConfigurationManager:
                     table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
-                )
+                ).get_split(0)
 
                 md_content.extend([
                     f"#### {dataset_path.name}",

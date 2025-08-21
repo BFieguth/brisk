@@ -12,5 +12,4 @@ Module Contents
    :maxdepth: 1
    :hidden:
 
-   reporting/report_manager
    reporting/formatting

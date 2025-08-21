@@ -75,7 +75,8 @@ class ExperimentFactory:
 
     def create_experiments(
         self,
-        group: experiment_group.ExperimentGroup
+        group: experiment_group.ExperimentGroup,
+        n_splits: int
     ) -> Deque[experiment.Experiment]:
         """Create queue of experiments from an experiment group.
         
@@ -83,6 +84,9 @@ class ExperimentFactory:
         ----------
         group : ExperimentGroup
             Configuration for the experiment group
+        
+        n_splits: int
+            The number of data splits to create for this ExperimentGroup
             
         Returns
         -------
@@ -156,15 +160,16 @@ class ExperimentFactory:
                 categorical_feature_names = self.categorical_features.get(
                     lookup_key, None
                 )
-                exp = experiment.Experiment(
-                    group_name=group.name,
-                    algorithms=models,
-                    dataset_path=dataset_path,
-                    table_name=table_name,
-                    categorical_features=categorical_feature_names,
-                    workflow_args=group.workflow_args
-                )
-                experiments.append(exp)
+                for index in range(0, n_splits):
+                    experiments.append(experiment.Experiment(
+                        group_name=group.name,
+                        algorithms=models,
+                        dataset_path=dataset_path,
+                        workflow_args=group.workflow_args,
+                        split_index=index,
+                        table_name=table_name,
+                        categorical_features=categorical_feature_names
+                    ))
 
         return experiments
 

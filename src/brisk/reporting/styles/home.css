@@ -1,0 +1,188 @@
+.home-container {
+    display: flex;
+    height: 100%;
+}
+
+.home-left, .home-right {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    min-height: 0;
+}
+
+.home-left {
+    overflow: auto;
+}
+
+/* Test Data Table States */
+.tables-container {
+    position: relative;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tables-container[data-transition="idle"] {
+    overflow: visible;
+}
+
+.tables-container[data-transition="measuring"],
+.tables-container[data-transition="swapping"] {
+    overflow: hidden;
+}
+
+.table-container {
+    transition: opacity 0.5s ease;
+    opacity: 1;
+}
+
+.tables-container[data-transition="fade-out"] .table-container {
+    opacity: 0;
+}
+
+.tables-container[data-transition="fade-in"] .table-container {
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.tables-container[data-transition="crossfade"] {
+    position: relative;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.old-content {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.new-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease 0.2s;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.old-content.fade-out {
+    opacity: 0;
+}
+
+.tables-container[data-transition="crossfade"] .table-container.new-content.fade-in {
+    opacity: 1;
+}
+
+/* ExperimentGroup Card Carousel */
+.experiment-group-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.card-carousel {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 0;
+}
+
+.nav-arrow svg {
+    width: 24px;
+    height: 24px;
+}
+
+.nav-arrow-up,
+.nav-arrow-down {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text);
+    padding: 8px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.nav-arrow-up:hover,
+.nav-arrow-down:hover {
+    background: var(--secondary);
+    color: var(--text);
+}
+
+/* Carousel viewport */
+.cards-viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+    max-height: 800px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cards-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Carousel States */
+.experiment-card-wrapper {
+    position: absolute;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 90%;
+    max-width: 700px;
+    left: 50%;
+    top: 50%;
+    transform-origin: center center;
+    /* Default transform and opacity to start in correct position */
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.experiment-card-wrapper.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    z-index: 3;
+    pointer-events: auto;
+}
+
+.experiment-card-wrapper.above {
+    opacity: 0.2;
+    transform: translate(-50%, -120%) scale(0.7);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.experiment-card-wrapper.below {
+    opacity: 0.2;
+    transform: translate(-50%, 20%) scale(0.7);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.experiment-card-wrapper.hidden {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+    z-index: 1;
+    pointer-events: none;
+}
