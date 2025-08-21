@@ -117,7 +117,6 @@ def linkcode_resolve(domain, info):
     module_name = info['module']
     fullname = info['fullname']
     
-    # Debug logging - this will help us understand what's happening
     if on_rtd:
         print(f"[LINKCODE DEBUG] Processing: {module_name}.{fullname}")
 
@@ -127,7 +126,6 @@ def linkcode_resolve(domain, info):
         if on_rtd:
             print(f"[LINKCODE DEBUG] Module {module_name} not found in sys.modules")
         try:
-            # Try to import the module
             import importlib
             sub_module = importlib.import_module(module_name)
         except ImportError as e:
@@ -145,11 +143,9 @@ def linkcode_resolve(domain, info):
                 print(f"[LINKCODE DEBUG] Could not find attribute {part} in {obj}")
             return None
 
-    # Unwrap functions
     if inspect.isfunction(obj):
         obj = inspect.unwrap(obj)
 
-    # Get source file
     try:
         source_file = inspect.getsourcefile(obj)
     except (TypeError, OSError) as e:
@@ -157,7 +153,6 @@ def linkcode_resolve(domain, info):
             print(f"[LINKCODE DEBUG] Could not get source file for {obj}: {e}")
         source_file = None
 
-    # Fallback for __init__.py files
     if not source_file or source_file.endswith('__init__.py'):
         try:
             source_file = inspect.getsourcefile(sys.modules[obj.__module__])
@@ -182,21 +177,13 @@ def linkcode_resolve(domain, info):
             print(f"[LINKCODE DEBUG] Could not get source lines: {e}")
         linespec = ""
 
-    # Path resolution - handle both development and installed package scenarios
     if on_rtd:
         print(f"[LINKCODE DEBUG] Raw source file path: {source_file}")
     
-    # Check if this is coming from site-packages (installed package)
     if 'site-packages' in source_file and 'brisk' in source_file:
-        # Extract the path relative to the brisk package
-        # From: /path/to/site-packages/brisk/configuration/algorithm_wrapper.py
-        # To: src/brisk/configuration/algorithm_wrapper.py
-        
-        # Find the last occurrence of '/brisk/' to get the actual package directory
         brisk_index = source_file.rfind('/brisk/')
         if brisk_index != -1:
-            # Get everything from '/brisk/' onwards, then prepend 'src'
-            relative_path = source_file[brisk_index + 1:]  # Remove the leading '/'
+            relative_path = source_file[brisk_index + 1:]
             source_file = f"src/{relative_path}"
             if on_rtd:
                 print(f"[LINKCODE DEBUG] Mapped site-packages path to: {source_file}")
@@ -205,9 +192,7 @@ def linkcode_resolve(domain, info):
                 print(f"[LINKCODE DEBUG] Could not find '/brisk/' in site-packages path")
             return None
     else:
-        # This is the original logic for development builds
         try:
-            # Method 1: Use brisk module location
             startdir = pathlib.Path(brisk.__file__).parent.parent.parent
             if on_rtd:
                 print(f"[LINKCODE DEBUG] Start directory (brisk): {startdir}")
@@ -220,36 +205,13 @@ def linkcode_resolve(domain, info):
             if source_file_rel.startswith('src/brisk/'):
                 source_file = source_file_rel
             else:
-                # Method 2: Try from current working directory
-                cwd = pathlib.Path.cwd()
-                if on_rtd:
-                    print(f"[LINKCODE DEBUG] Current working directory: {cwd}")
-                
-                source_file_rel2 = os.path.relpath(source_file, start=cwd).replace(os.path.sep, '/')
-                if on_rtd:
-                    print(f"[LINKCODE DEBUG] Relative path (method 2): {source_file_rel2}")
-                
-                if source_file_rel2.startswith('src/brisk/'):
-                    source_file = source_file_rel2
-                else:
-                    # Method 3: Extract from absolute path
-                    if 'src/brisk/' in source_file:
-                        # Find the src/brisk/ part and use everything from there
-                        src_index = source_file.find('src/brisk/')
-                        source_file = source_file[src_index:]
-                        if on_rtd:
-                            print(f"[LINKCODE DEBUG] Extracted path (method 3): {source_file}")
-                    else:
-                        if on_rtd:
-                            print(f"[LINKCODE DEBUG] Could not resolve path for {source_file}")
-                        return None
-        
+                return None
+
         except Exception as e:
             if on_rtd:
                 print(f"[LINKCODE DEBUG] Path resolution failed: {e}")
             return None
 
-    # Final validation
     if not source_file.startswith('src/brisk/'):
         if on_rtd:
             print(f"[LINKCODE DEBUG] Final path validation failed: {source_file}")
