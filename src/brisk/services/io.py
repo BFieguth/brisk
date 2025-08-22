@@ -9,8 +9,20 @@ import io
 import matplotlib.pyplot as plt
 import plotnine as pn
 import plotly.graph_objects as go
+import numpy as np
 
 from brisk.services import base
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return list(obj)
+        return super(NumpyEncoder, self).default(obj)
+
 
 class IOService(base.BaseService):
     """IO service for saving and loading files.
@@ -82,7 +94,7 @@ class IOService(base.BaseService):
                 data["_metadata"] = metadata
 
             with open(output_path, "w", encoding="utf-8") as file:
-                json.dump(data, file, indent=4)
+                json.dump(data, file, indent=4, cls=NumpyEncoder)
 
             self._other_services["reporting"].store_table_data(
                 data, metadata
