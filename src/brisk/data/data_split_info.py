@@ -229,7 +229,6 @@ class DataSplitInfo:
         finally:
             self.services.reporting.clear_context()
 
-
     def _detect_categorical_features(self) -> List[str]:
         """Detect possible categorical features in the dataset.
 

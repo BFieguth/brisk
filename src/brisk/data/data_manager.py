@@ -116,8 +116,6 @@ class DataManager:
         self.splitter = self._set_splitter()
         self._splits = {}
 
-
-
     def _validate_config(self) -> None:
         """Validates the provided configuration for splitting.
 
@@ -151,8 +149,6 @@ class DataManager:
                 f"Invalid problem_type: {self.problem_type}. "
                 "Choose from 'classification' or 'regression'."
             )
-
-
 
     def _set_splitter(self):
         """Selects the appropriate splitter based on the configuration.
@@ -215,8 +211,6 @@ class DataManager:
             "Invalid combination of stratified and group_column for "
             "the specified split method."
         )
-
-
 
     def _apply_preprocessing(
         self,
