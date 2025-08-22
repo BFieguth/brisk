@@ -21,6 +21,8 @@ toml="^0.10.2"
 plotnine="^0.14.4"
 openpyxl="^3.1.5"
 pydantic="^2.11.7"
+plotly="^6.1.0"
+kaleido="^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

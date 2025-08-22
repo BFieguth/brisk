@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Dict, Any
 
 import pandas as pd
+import matplotlib
 
 from brisk.theme import theme
 from brisk.evaluation.evaluators.base import BaseEvaluator
@@ -15,6 +16,9 @@ class DatasetPlotEvaluator(BaseEvaluator):
         description: str
     ):
         super().__init__(method_name, description)
+        # Ensure non-interactive backend for thread safety
+        matplotlib.use("Agg", force=True)
+
         self.theme = theme
         self.primary_color = "#0074D9" # Celtic Blue
         self.secondary_color = "#07004D" # Federal Blue

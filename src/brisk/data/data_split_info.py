@@ -113,8 +113,7 @@ class DataSplitInfo:
         scaler: Optional[Any] = None,
         features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None,
-        continuous_features: Optional[List[str]] = None,
-        scaler: Optional[Any] = None,
+        continuous_features: Optional[List[str]] = None
     ):
         self.group_name = split_key[0]
         self.dataset_name = split_key[1]
@@ -229,7 +228,6 @@ class DataSplitInfo:
             )
         finally:
             self.services.reporting.clear_context()
-
 
     def _detect_categorical_features(self) -> List[str]:
         """Detect possible categorical features in the dataset.

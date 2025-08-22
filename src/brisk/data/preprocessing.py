@@ -129,6 +129,13 @@ class MissingDataPreprocessor(BasePreprocessor):
         Imputation method when strategy="impute": "mean", "median", "mode", "constant"
     constant_value : Any, optional
         Constant value to use when impute_method="constant"
+
+    Attributes
+    ----------
+    constant_values : dict
+        Dictionary mapping column names to their fitted imputation values
+    is_fitted : bool
+        Whether the preprocessor has been fitted
     """
 
     def __init__(
@@ -263,18 +270,23 @@ class ScalingPreprocessor(BasePreprocessor):
     method : str or dict
         Scaling method: "standard", "minmax", "robust", "maxabs", "normalizer"
         Or dict mapping column names to methods: {"col1": "standard", "col2": "minmax"}
-    categorical_features : List[str], optional
-        List of categorical feature names used for finding continous features to scale
+
+    Attributes
+    ----------
+    scaler : sklearn.preprocessing scaler
+        The fitted scaler object
+    _scaled_features : list
+        List of feature names that were scaled during fit
+    is_fitted : bool
+        Whether the preprocessor has been fitted
     """
 
-    def __init__(self, method: str = "standard", categorical_features: Optional[List[str]] = None, **kwargs):
+    def __init__(self, method: str = "standard", **kwargs):
         super().__init__(
             method=method,
-            categorical_features=categorical_features,
             **kwargs
         )
-        self.scaler = None
-
+        self.scaler = None  
     def _validate_params(self, **kwargs) -> None:
         """Validate the scaling method."""
         method = kwargs.get("method", "standard")
@@ -303,7 +315,8 @@ class ScalingPreprocessor(BasePreprocessor):
             raise ValueError(f"Unknown scaling method: {method}")
 
     def fit(self, X: pd.DataFrame,
-            y: Optional[pd.Series] = None) -> "ScalingPreprocessor":
+            y: Optional[pd.Series] = None,
+            categorical_features: Optional[List[str]] = None) -> "ScalingPreprocessor":
         """Fit the scaler to the data.
 
         Parameters
@@ -312,14 +325,18 @@ class ScalingPreprocessor(BasePreprocessor):
             Training data
         y : pd.Series, optional
             Target values (not used for scaling)
+        categorical_features : List[str], optional
+            List of categorical feature names to exclude from scaling
 
         Returns
         -------
         self : ScalingPreprocessor
             Fitted preprocessor
         """
+        # Don't store categorical_features as state - just use the parameter directly
+        categorical_features = categorical_features or []
+        
         # Get features to scale (exclude categorical features)
-        categorical_features = self.categorical_features or []
         features_to_scale = [
             col for col in X.columns
             if col not in categorical_features
@@ -329,9 +346,30 @@ class ScalingPreprocessor(BasePreprocessor):
             # Create single scaler for all features
             self.scaler = self._create_scaler(self.method)
             self.scaler.fit(X[features_to_scale])
+            # Store which features were scaled for transform
+            self._scaled_features = features_to_scale
 
         self.is_fitted = True
         return self
+
+    def fit_transform(self, X: pd.DataFrame, y: Optional[pd.Series] = None, categorical_features: Optional[List[str]] = None) -> pd.DataFrame:
+        """Fit the scaler and transform the data.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Data to fit and transform
+        y : pd.Series, optional
+            Target values (not used for scaling)
+        categorical_features : List[str], optional
+            List of categorical feature names to exclude from scaling
+
+        Returns
+        -------
+        pd.DataFrame
+            Transformed data with scaled continuous features
+        """
+        return self.fit(X, y, categorical_features).transform(X)
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # pylint: disable=C0103
         """Transform the data using the fitted scaler.
@@ -351,9 +389,8 @@ class ScalingPreprocessor(BasePreprocessor):
 
         X_transformed = X.copy()  # pylint: disable=C0103
 
-        # Get features to scale
-        categorical_features = self.categorical_features or []
-        features_to_scale = [col for col in X.columns if col not in categorical_features]
+        # Get features to scale - use the features that were actually scaled during fit
+        features_to_scale = getattr(self, '_scaled_features', [])
 
         if features_to_scale:
             # Scale all features with one single scaler
@@ -390,19 +427,22 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
     method : str or dict
         Encoding method: "ordinal", "onehot", "label", "cyclic"
         Or dict mapping column names to methods: {"col1": "ordinal", "col2": "onehot"}
-    categorical_features : List[str], optional
-        List of categorical feature names to encode
+
+    Attributes
+    ----------
+    encoders : dict
+        Dictionary mapping feature names to their fitted encoder objects
+    is_fitted : bool
+        Whether the preprocessor has been fitted
     """
 
     def __init__(
         self,
         method: str = "label",
-        categorical_features: Optional[List[str]] = None,
         **kwargs
     ):
         super().__init__(
             method=method,
-            categorical_features=categorical_features,
             **kwargs
         )
         self.encoders = {}
@@ -439,16 +479,33 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         else:
             raise ValueError(f"Unknown encoding method: {method}")
 
-    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "CategoricalEncodingPreprocessor":
-        """Fit the encoders to the data."""
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None, categorical_features: Optional[List[str]] = None) -> "CategoricalEncodingPreprocessor":
+        """Fit the encoders to the data.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Training data
+        y : pd.Series, optional
+            Target values (not used for encoding)
+        categorical_features : List[str], optional
+            List of categorical feature names to encode
+
+        Returns
+        -------
+        self : CategoricalEncodingPreprocessor
+            Fitted preprocessor
+        """
+        # Don't store categorical_features as state - just use the parameter directly
+        categorical_features = categorical_features or []
 
         # Check if categorical_features is provided
-        if self.categorical_features is None:
+        if not categorical_features:
             self.is_fitted = True
             return self
 
         # Determine which features to encode and their methods
-        for feature in self.categorical_features:
+        for feature in categorical_features:
             if feature not in X.columns:
                 continue
 
@@ -476,6 +533,25 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         self.is_fitted = True
         return self
 
+    def fit_transform(self, X: pd.DataFrame, y: Optional[pd.Series] = None, categorical_features: Optional[List[str]] = None) -> pd.DataFrame:
+        """Fit the encoders and transform the data.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Data to fit and transform
+        y : pd.Series, optional
+            Target values (not used for encoding)
+        categorical_features : List[str], optional
+            List of categorical feature names to encode
+
+        Returns
+        -------
+        pd.DataFrame
+            Transformed data with encoded categorical features
+        """
+        return self.fit(X, y, categorical_features).transform(X)
+
     def _get_method_for_feature(self, feature: str) -> str:
         """Get the encoding method for a specific feature."""
         if isinstance(self.method, str):
@@ -488,13 +564,13 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         if not self.is_fitted:
             raise ValueError("Preprocessor must be fitted before transform")
 
-        # If no categorical features, return original data
-        if self.categorical_features is None:
+        # If no encoders were fitted, return original data
+        if not hasattr(self, 'encoders') or not self.encoders:
             return X
 
         X_transformed = X.copy()  # pylint: disable=C0103
 
-        for feature in self.categorical_features:
+        for feature in self.encoders:
             if feature not in X.columns or feature not in self.encoders:
                 continue
 
@@ -547,13 +623,13 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         if not self.is_fitted:
             return feature_names
 
-        # If no categorical features, return original feature names
-        if self.categorical_features is None:
+        # If no encoders were fitted, return original feature names
+        if not hasattr(self, 'encoders') or not self.encoders:
             return feature_names
 
         new_feature_names = []
         for feature in feature_names:
-            if feature in self.categorical_features and feature in self.encoders:
+            if feature in self.encoders:
                 method = self._get_method_for_feature(feature)
                 if method == "onehot":
                     encoder = self.encoders[feature]
@@ -593,6 +669,15 @@ class FeatureSelectionPreprocessor(BasePreprocessor):
     problem_type : str, optional
         The type of problem ("classification" or "regression").
         Used to determine appropriate scoring function for SelectKBest.
+
+    Attributes
+    ----------
+    selector : sklearn.feature_selection selector
+        The fitted feature selector object
+    scaler : sklearn.preprocessing scaler, optional
+        Fitted scaler for internal use (if provided)
+    is_fitted : bool
+        Whether the preprocessor has been fitted
     """
 
     def __init__(
@@ -666,7 +751,6 @@ class FeatureSelectionPreprocessor(BasePreprocessor):
                 return SelectKBest(score_func=f_regression, k=self.n_features_to_select)
 
         elif self.method in ["rfecv", "sequential"]:
-            # Use the original pattern to get the estimator
             estimator = self.estimator if self.estimator is not None else self._get_feature_selection_estimator()
             if estimator is None:
                 raise ValueError(
@@ -693,8 +777,6 @@ class FeatureSelectionPreprocessor(BasePreprocessor):
         if self.method in ["rfecv", "sequential"] and y is None:
             raise ValueError(f"y must be provided for {self.method} method")
 
-        # If we have a scaler, use scaled data for feature selection (better performance)
-        # But only scale the continuous features that the scaler was fitted on
         if self.scaler is not None:
             # Get the features that the scaler was fitted on (continuous features only)
             scaler_features = self.scaler.feature_names_in_

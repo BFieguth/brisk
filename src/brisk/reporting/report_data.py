@@ -177,7 +177,6 @@ class DataManager(RoundedModel):
     group_column: str
     stratified: str
     random_state: int | None
-    scale_method: str
 
 
 class Navbar(RoundedModel):

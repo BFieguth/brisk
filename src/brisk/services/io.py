@@ -8,8 +8,21 @@ import io
 
 import matplotlib.pyplot as plt
 import plotnine as pn
+import plotly.graph_objects as go
+import numpy as np
 
 from brisk.services import base
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return list(obj)
+        return super(NumpyEncoder, self).default(obj)
+
 
 class IOService(base.BaseService):
     """IO service for saving and loading files.
@@ -81,7 +94,7 @@ class IOService(base.BaseService):
                 data["_metadata"] = metadata
 
             with open(output_path, "w", encoding="utf-8") as file:
-                json.dump(data, file, indent=4)
+                json.dump(data, file, indent=4, cls=NumpyEncoder)
 
             self._other_services["reporting"].store_table_data(
                 data, metadata
@@ -96,7 +109,7 @@ class IOService(base.BaseService):
         self,
         output_path: Path,
         metadata: Optional[Dict[str, Any]] = None,
-        plot: Optional[pn.ggplot] = None,
+        plot: Optional[pn.ggplot | go.Figure] = None,
         height: int = 6,
         width: int = 8
     ) -> None:
@@ -133,10 +146,14 @@ class IOService(base.BaseService):
                 for key, value in metadata.items():
                     if isinstance(value, dict):
                         metadata[key] = json.dumps(value)
-            if plot:
+            if plot and isinstance(plot, pn.ggplot):
                 plot.save(
                     filename=output_path, format="png", metadata=metadata,
                     height=height, width=width, dpi=100
+                )
+            elif plot and isinstance(plot, go.Figure):
+                plot.write_image(
+                    file=output_path, format="png", width=width, height=height
                 )
             else:
                 plt.savefig(output_path, format="png", metadata=metadata)
@@ -150,7 +167,7 @@ class IOService(base.BaseService):
     def _convert_to_svg(
         self,
         metadata: Dict[str, Any],
-        plot: Optional[pn.ggplot] = None,
+        plot: Optional[pn.ggplot | go.Figure] = None,
         height: int = 6,
         width: int = 8
     ) -> None:
@@ -173,8 +190,12 @@ class IOService(base.BaseService):
         """
         try:
             svg_buffer = io.BytesIO()
-            if plot:
+            if plot and isinstance(plot, pn.ggplot):
                 plot.save(svg_buffer, format="svg", height=height, width=width)
+            elif plot and isinstance(plot, go.Figure):
+                plot.write_image(
+                    file=svg_buffer, format="svg", width=width, height=height
+                )
             else:
                 plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
 
