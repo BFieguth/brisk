@@ -230,7 +230,7 @@ class DataManager:
         List[str], List[str], Optional[Any]
     ]:
         """Apply all configured preprocessors to the data in fixed order:
-        Missing Data → Scaling → Encoding → Feature Selection
+        Missing Data → Encoding → Scaling → Feature Selection
 
         Parameters
         ----------
@@ -264,14 +264,72 @@ class DataManager:
             return X_train, X_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
 
         current_feature_names = feature_names or list(X_train.columns)
+        current_categorical_features = categorical_features or []
 
-        # Get preprocessors by type (fixed order: Missing → Scaling → Encoding → Feature Selection)
+        # Get preprocessors by type (fixed order: Missing → Encoding → Scaling → Feature Selection)
         missing_preprocessor = next((p for p in self.preprocessors if isinstance(p, MissingDataPreprocessor)), None)
-        scaling_preprocessor = next((p for p in self.preprocessors if isinstance(p, ScalingPreprocessor)), None)
         encoding_preprocessor = next((p for p in self.preprocessors if isinstance(p, CategoricalEncodingPreprocessor)), None)
+        scaling_preprocessor = next((p for p in self.preprocessors if isinstance(p, ScalingPreprocessor)), None)
         feature_selection_preprocessor = next((p for p in self.preprocessors if isinstance(p, FeatureSelectionPreprocessor)), None)
 
-        # Step 1: Fit and transform missing data preprocessor (REQUIRED)
+        # Step 1: Apply missing data preprocessing
+        X_train, X_test, current_feature_names = self._apply_missing_data_preprocessing(
+            X_train, X_test, y_train, current_feature_names, missing_preprocessor
+        )
+
+        # Step 2: Apply categorical encoding
+        X_train, X_test, current_feature_names, current_categorical_features = self._apply_categorical_encoding(
+            X_train, X_test, y_train, current_feature_names, current_categorical_features, encoding_preprocessor
+        )
+
+        # Step 3: Apply scaling
+        X_train, X_test, fitted_scaler = self._apply_scaling(
+            X_train, X_test, y_train, current_feature_names, current_categorical_features, scaling_preprocessor
+        )
+
+        # Step 4: Apply feature selection
+        X_train, X_test, current_feature_names, current_categorical_features = self._apply_feature_selection(
+            X_train, X_test, y_train, current_feature_names, current_categorical_features, feature_selection_preprocessor, fitted_scaler
+        )
+
+        # Calculate updated continuous features (all features except categorical)
+        updated_continuous_features = [
+            f for f in current_feature_names if f not in current_categorical_features
+        ]
+
+        return X_train, X_test, current_feature_names, current_categorical_features, updated_continuous_features, fitted_scaler
+
+    def _apply_missing_data_preprocessing(
+        self,
+        X_train: pd.DataFrame,  # pylint: disable=C0103
+        X_test: pd.DataFrame,  # pylint: disable=C0103
+        y_train: Optional[pd.Series],
+        current_feature_names: List[str],
+        missing_preprocessor: Optional[MissingDataPreprocessor]
+    ) -> tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+        """Apply missing data preprocessing.
+        
+        Handles missing values in the dataset using the configured missing data
+        preprocessor. This is the first step in the preprocessing pipeline.
+        
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            Training features
+        X_test : pd.DataFrame
+            Test features
+        y_train : pd.Series
+            Training target values
+        current_feature_names : List[str]
+            Current feature names
+        missing_preprocessor : Optional[MissingDataPreprocessor]
+            Missing data preprocessor instance
+            
+        Returns
+        -------
+        tuple[pd.DataFrame, pd.DataFrame, List[str]]
+            Transformed training data, transformed test data, updated feature names
+        """
         if missing_preprocessor:
             missing_preprocessor.fit(X_train, y_train)
             X_train = missing_preprocessor.transform(X_train)
@@ -284,40 +342,110 @@ class DataManager:
                     "Missing values detected in the data but no MissingDataPreprocessor provided. "
                     "You must handle missing values before proceeding."
                 )
+        return X_train, X_test, current_feature_names
 
-        # Step 2: Fit and transform encoding preprocessor (REQUIRED if categorical features exist)
-        if categorical_features and encoding_preprocessor:
-            encoding_preprocessor.categorical_features = categorical_features
-            encoding_preprocessor.fit(X_train, y_train)
+    def _apply_categorical_encoding(
+        self,
+        X_train: pd.DataFrame,  # pylint: disable=C0103
+        X_test: pd.DataFrame,  # pylint: disable=C0103
+        y_train: Optional[pd.Series],
+        current_feature_names: List[str],
+        current_categorical_features: List[str],
+        encoding_preprocessor: Optional[CategoricalEncodingPreprocessor]
+    ) -> tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]:
+        """Apply categorical encoding preprocessing.
+        
+        Encodes categorical features using the configured encoding preprocessor.
+        Updates categorical features list to include encoded feature names.
+        This step must be completed before scaling to ensure categorical
+        features are properly identified and excluded from scaling.
+        
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            Training features
+        X_test : pd.DataFrame
+            Test features
+        y_train : pd.Series
+            Training target values
+        current_feature_names : List[str]
+            Current feature names
+        current_categorical_features : List[str]
+            Current categorical feature names (will be updated with encoded features)
+        encoding_preprocessor : Optional[CategoricalEncodingPreprocessor]
+            Categorical encoding preprocessor instance
+            
+        Returns
+        -------
+        tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]
+            Transformed training data, transformed test data, updated feature names,
+            updated categorical features (including encoded features)
+        """
+        if current_categorical_features and encoding_preprocessor:
+            encoding_preprocessor.fit(X_train, y_train, categorical_features=current_categorical_features)
             X_train = encoding_preprocessor.transform(X_train)
             X_test = encoding_preprocessor.transform(X_test)
             current_feature_names = encoding_preprocessor.get_feature_names(current_feature_names)
-        elif categorical_features and not encoding_preprocessor:
+            
+            # Update categorical features to include encoded features
+            updated_categorical_features = []
+            for original_cat_feature in current_categorical_features:
+                # Find all features that start with the original categorical feature name
+                encoded_features = [
+                    f for f in current_feature_names
+                    if f.startswith(f"{original_cat_feature}_")
+                ]
+                updated_categorical_features.extend(encoded_features)
+            current_categorical_features = updated_categorical_features
+        elif current_categorical_features and not encoding_preprocessor:
             # Check if there are categorical features but no encoding preprocessor
             raise ValueError(
-                f"Categorical features detected: {categorical_features} but no CategoricalEncodingPreprocessor provided. "
+                f"Categorical features detected: {current_categorical_features} but no CategoricalEncodingPreprocessor provided. "
                 "You must encode categorical features before proceeding."
             )
+        return X_train, X_test, current_feature_names, current_categorical_features
 
-        # Step 3: Fit scaling preprocessor (OPTIONAL, only on continuous features)
+    def _apply_scaling(
+        self,
+        X_train: pd.DataFrame,  # pylint: disable=C0103
+        X_test: pd.DataFrame,  # pylint: disable=C0103
+        y_train: Optional[pd.Series],
+        current_feature_names: List[str],
+        current_categorical_features: List[str],
+        scaling_preprocessor: Optional[ScalingPreprocessor]
+    ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]:
+        """Apply scaling preprocessing (only to continuous features).
+        
+        Scales continuous features while excluding categorical features (both original
+        and encoded). This step occurs after categorical encoding to ensure
+        categorical features are properly identified and excluded from scaling.
+        The actual transformation is applied later in DataSplitInfo.
+        
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            Training features
+        X_test : pd.DataFrame
+            Test features
+        y_train : pd.Series
+            Training target values
+        current_feature_names : List[str]
+            Current feature names
+        current_categorical_features : List[str]
+            Categorical features to exclude from scaling (original + encoded)
+        scaling_preprocessor : Optional[ScalingPreprocessor]
+            Scaling preprocessor instance
+            
+        Returns
+        -------
+        tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]
+            Training data, test data (unchanged), fitted scaler
+        """
+        fitted_scaler = None
         if scaling_preprocessor:
-            # Exclude both original categorical features and encoded categorical features from scaling
-            features_to_exclude = []
-
-            # Always exclude original categorical features
-            if categorical_features:
-                features_to_exclude.extend(categorical_features)
-
-            # If encoding was done, also exclude encoded categorical features
-            if categorical_features and encoding_preprocessor:
-                for original_cat_feature in categorical_features:
-                    # Find all features that start with the original categorical feature name
-                    encoded_features = [
-                        f for f in current_feature_names
-                        if f.startswith(f"{original_cat_feature}_")
-                    ]
-                    features_to_exclude.extend(encoded_features)
-
+            # Exclude categorical features from scaling
+            features_to_exclude = current_categorical_features.copy()
+            
             # Check if there are any continuous features to scale
             all_features = set(current_feature_names)
             features_to_scale = all_features - set(features_to_exclude)
@@ -329,53 +457,64 @@ class DataManager:
                     "Remove the ScalingPreprocessor or ensure there are continuous features in your data."
                 )
 
-            # Configure scaling preprocessor to exclude all categorical features (original + encoded)
-            if features_to_exclude:
-                scaling_preprocessor.categorical_features = features_to_exclude
+            # Apply scaling (only to continuous features)
+            scaling_preprocessor.fit(X_train, y_train, categorical_features=features_to_exclude)
+            fitted_scaler = scaling_preprocessor.scaler
+        return X_train, X_test, fitted_scaler
 
-            scaling_preprocessor.fit(X_train, y_train)
-
-        # Step 4: Fit and transform feature selection preprocessor (on all features after encoding)
+    def _apply_feature_selection(
+        self,
+        X_train: pd.DataFrame,  # pylint: disable=C0103
+        X_test: pd.DataFrame,  # pylint: disable=C0103
+        y_train: Optional[pd.Series],
+        current_feature_names: List[str],
+        current_categorical_features: List[str],
+        feature_selection_preprocessor: Optional[FeatureSelectionPreprocessor],
+        fitted_scaler: Optional[Any]
+    ) -> tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]:
+        """Apply feature selection preprocessing.
+        
+        Selects features using the configured feature selection preprocessor.
+        Updates both feature names and categorical features to only include
+        selected features. This is the final step in the preprocessing pipeline.
+        
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            Training features
+        X_test : pd.DataFrame
+            Test features
+        y_train : pd.Series
+            Training target values
+        current_feature_names : List[str]
+            Current feature names
+        current_categorical_features : List[str]
+            Current categorical features (will be filtered to only selected ones)
+        feature_selection_preprocessor : Optional[FeatureSelectionPreprocessor]
+            Feature selection preprocessor instance
+        fitted_scaler : Optional[Any]
+            Fitted scaler from previous step (if any)
+            
+        Returns
+        -------
+        tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]
+            Transformed training data, transformed test data, updated feature names,
+            updated categorical features (only selected ones)
+        """
         if feature_selection_preprocessor:
             # Pass the scaler to feature selection if it exists
-            if scaling_preprocessor:
-                feature_selection_preprocessor.scaler = scaling_preprocessor.scaler
+            if fitted_scaler:
+                feature_selection_preprocessor.scaler = fitted_scaler
             feature_selection_preprocessor.fit(X_train, y_train)
             X_train = feature_selection_preprocessor.transform(X_train)
             X_test = feature_selection_preprocessor.transform(X_test)
             current_feature_names = feature_selection_preprocessor.get_feature_names(current_feature_names)
-
-        # Return fitted scaler only if scaling was applied
-        fitted_scaler = None
-        if scaling_preprocessor:
-            fitted_scaler = scaling_preprocessor.scaler
-
-        # Calculate updated categorical features after preprocessing
-        updated_categorical_features = []
-        if categorical_features is not None:
-            # Find all features that are derived from original categorical features
-            for original_cat_feature in categorical_features:
-                # Find all features that start with the original categorical feature name
-                encoded_features = [
-                    f for f in current_feature_names
-                    if f.startswith(f"{original_cat_feature}_")
-                ]
-                updated_categorical_features.extend(encoded_features)
-
-            # If no encoded features found, keep original features that still exist
-            if not updated_categorical_features:
-                updated_categorical_features = [
-                    f for f in categorical_features if f in current_feature_names
-                ]
-
-        # Calculate updated continuous features (all features except categorical)
-        updated_continuous_features = [
-            f for f in current_feature_names if f not in updated_categorical_features
-        ]
-
-        return X_train, X_test, current_feature_names, updated_categorical_features, updated_continuous_features, fitted_scaler
-
-
+            
+            # Update categorical features to only include those that were selected
+            current_categorical_features = [
+                f for f in current_categorical_features if f in current_feature_names
+            ]
+        return X_train, X_test, current_feature_names, current_categorical_features
 
     def _load_data(
         self,

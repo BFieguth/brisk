@@ -296,9 +296,9 @@ class TestDataManager:
         data_splits = data_manager.split(
             tmp_path / "datasets" / "regression.csv",
             categorical_features=None,
-            table_name=None,
             group_name="group1",
-            filename="regression"
+            filename="regression",
+            table_name=None
         )
         split = data_splits.get_split(0)
 
@@ -329,9 +329,9 @@ class TestDataManager:
         data_splits = data_manager.split(
             tmp_path / "datasets" / "regression.csv",
             categorical_features=None,
-            table_name=None,
             group_name="group",
-            filename="regression"
+            filename="regression",
+            table_name=None
         )
         split = data_splits.get_split(0)
 
@@ -556,8 +556,8 @@ preprocessors: []
         # Set up preprocessors in fixed order
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
-            ScalingPreprocessor(method="standard", categorical_features=['category']),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
+            ScalingPreprocessor(method="standard"),
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=n_features_to_select, problem_type="classification")
         ]
         
@@ -570,7 +570,8 @@ preprocessors: []
         )
         
         # Check results
-        assert isinstance(split, DataSplitInfo)
+        assert isinstance(split, DataSplits)
+        split = split.get_split(0)  # Get the first split
         # Check if scaling was requested (should have scaler if ScalingPreprocessor was used)
         has_scaling = any(isinstance(p, ScalingPreprocessor) for p in data_manager.preprocessors)
         if has_scaling:
@@ -619,6 +620,7 @@ preprocessors: []
         
         data_manager.preprocessors = [MissingDataPreprocessor(strategy="impute", impute_method="mean"), ScalingPreprocessor(method="standard")]
         split = data_manager.split(numeric_file, categorical_features=None, group_name="test_only_scaling", filename="test")
+        split = split.get_split(0)  # Get the first split
         assert split.scaler is not None
         assert split.X_train.shape[1] == 3  # All features (no selection)
         
@@ -626,7 +628,7 @@ preprocessors: []
         # Note: Feature selection needs numeric data, so we need to encode categorical features first
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
         ]
         split = data_manager.split(test_file, categorical_features=['category'], group_name="test_only_selection", filename="test")
@@ -636,8 +638,8 @@ preprocessors: []
         # Test 3: Scaling + Feature Selection (skips missing data, encoding)
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
             ScalingPreprocessor(method="standard"),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
         ]
         split = data_manager.split(test_file, categorical_features=['category'], group_name="test_scaling_selection", filename="test")
@@ -647,7 +649,7 @@ preprocessors: []
         # Test 4: Missing data + Encoding (skips scaling, feature selection)
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category'])
+            CategoricalEncodingPreprocessor(method="onehot")  # Remove categorical_features from constructor
         ]
         split = data_manager.split(test_file, categorical_features=['category'], group_name="test_missing_encoding", filename="test")
         assert split.scaler is None
@@ -658,8 +660,8 @@ preprocessors: []
         # Test 5: Missing data + Scaling + Feature Selection (skips encoding)
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
             ScalingPreprocessor(method="standard"),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=2, problem_type="classification")
         ]
         split = data_manager.split(test_file, categorical_features=['category'], group_name="test_missing_scaling_selection", filename="test")
@@ -696,8 +698,8 @@ preprocessors: []
         # Test full pipeline in correct order
         data_manager.preprocessors = [
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
-            ScalingPreprocessor(method="standard", categorical_features=['category']),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
+            ScalingPreprocessor(method="standard"),
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=3, problem_type="classification")
         ]
         
@@ -720,8 +722,8 @@ preprocessors: []
         data_manager.preprocessors = [
             FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=3, problem_type="classification"),
             MissingDataPreprocessor(strategy="impute", impute_method="mean"),
-            CategoricalEncodingPreprocessor(method="onehot", categorical_features=['category']),
-            ScalingPreprocessor(method="standard", categorical_features=['category'])
+            CategoricalEncodingPreprocessor(method="onehot"),  # Remove categorical_features from constructor
+            ScalingPreprocessor(method="standard")
         ]
         
         split2 = data_manager.split(

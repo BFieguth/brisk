@@ -159,19 +159,16 @@ class TestScalingPreprocessor:
     
     def test_initialization(self):
         """Test that ScalingPreprocessor initializes correctly."""
-        preprocessor = ScalingPreprocessor(method="standard", categorical_features=['cat'])
+        preprocessor = ScalingPreprocessor(method="standard")
         assert preprocessor.method == "standard"
-        assert preprocessor.categorical_features == ['cat']
         assert preprocessor.scaler is None
     
     def test_standard_scaling(self, categorical_data):
         """Test standard scaling."""
         X, y = categorical_data
-        preprocessor = ScalingPreprocessor(
-            method="standard",
-            categorical_features=['category1', 'category2', 'binary_category']
-        )
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor = ScalingPreprocessor(method="standard")
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2', 'binary_category'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that numeric columns are scaled
         assert np.isclose(X_transformed['numeric1'].mean(), 0, atol=1e-10)
@@ -187,11 +184,9 @@ class TestScalingPreprocessor:
     def test_minmax_scaling(self, categorical_data):
         """Test minmax scaling."""
         X, y = categorical_data
-        preprocessor = ScalingPreprocessor(
-            method="minmax",
-            categorical_features=['category1', 'category2', 'binary_category']
-        )
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor = ScalingPreprocessor(method="minmax")
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2', 'binary_category'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that numeric columns are scaled to [0, 1]
         assert np.isclose(X_transformed['numeric1'].min(), 0, atol=1e-10)
@@ -205,11 +200,9 @@ class TestScalingPreprocessor:
     def test_robust_scaling(self, categorical_data):
         """Test robust scaling."""
         X, y = categorical_data
-        preprocessor = ScalingPreprocessor(
-            method="robust",
-            categorical_features=['category1', 'category2', 'binary_category']
-        )
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor = ScalingPreprocessor(method="robust")
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2', 'binary_category'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that categorical columns are unchanged
         assert (X_transformed['category1'] == X['category1']).all()
@@ -217,11 +210,9 @@ class TestScalingPreprocessor:
     def test_no_numeric_features(self, categorical_data):
         """Test scaling when no numeric features are present."""
         X, y = categorical_data
-        preprocessor = ScalingPreprocessor(
-            method="standard",
-            categorical_features=['numeric1', 'numeric2', 'category1', 'category2', 'binary_category']
-        )
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor = ScalingPreprocessor(method="standard")
+        preprocessor.fit(X, y, categorical_features=['numeric1', 'numeric2', 'category1', 'category2', 'binary_category'])
+        X_transformed = preprocessor.transform(X)
         
         # Should return unchanged data
         assert X_transformed.equals(X)
@@ -253,11 +244,9 @@ class TestFeatureSelectionPreprocessor:
         X, y = sample_data
         
         # First encode categorical features (real flow)
-        encoder = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['categorical_feature']
-        )
-        X_encoded = encoder.fit_transform(X, y)
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
+        encoder.fit(X, y, categorical_features=['categorical_feature'])
+        X_encoded = encoder.transform(X)
         
         # Now feature selection can work on encoded data
         preprocessor = FeatureSelectionPreprocessor(
@@ -266,7 +255,8 @@ class TestFeatureSelectionPreprocessor:
             problem_type="classification"
         )
         
-        X_transformed = preprocessor.fit_transform(X_encoded, y)
+        preprocessor.fit(X_encoded, y)
+        X_transformed = preprocessor.transform(X_encoded)
         
         assert X_transformed.shape[1] >= 1
         assert len(preprocessor.get_feature_names(list(X_encoded.columns))) >= 1
@@ -276,11 +266,9 @@ class TestFeatureSelectionPreprocessor:
         X, y = sample_data
         
         # First encode categorical features (real flow)
-        encoder = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['categorical_feature']
-        )
-        X_encoded = encoder.fit_transform(X, y)
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
+        encoder.fit(X, y, categorical_features=['categorical_feature'])
+        X_encoded = encoder.transform(X)
         
         # Now feature selection can work on encoded data
         preprocessor = FeatureSelectionPreprocessor(
@@ -289,7 +277,8 @@ class TestFeatureSelectionPreprocessor:
             problem_type="regression"
         )
         
-        X_transformed = preprocessor.fit_transform(X_encoded, y)
+        preprocessor.fit(X_encoded, y)
+        X_transformed = preprocessor.transform(X_encoded)
         
         assert X_transformed.shape[1] >= 1
         assert len(preprocessor.get_feature_names(list(X_encoded.columns))) >= 1
@@ -299,11 +288,9 @@ class TestFeatureSelectionPreprocessor:
         X, y = sample_data
         
         # First encode categorical features (real flow)
-        encoder = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['categorical_feature']
-        )
-        X_encoded = encoder.fit_transform(X, y)
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
+        encoder.fit(X, y, categorical_features=['categorical_feature'])
+        X_encoded = encoder.transform(X)
         
         estimator = LogisticRegression(random_state=42)
         preprocessor = FeatureSelectionPreprocessor(
@@ -312,7 +299,8 @@ class TestFeatureSelectionPreprocessor:
             n_features_to_select=2
         )
         
-        X_transformed = preprocessor.fit_transform(X_encoded, y)
+        preprocessor.fit(X_encoded, y)
+        X_transformed = preprocessor.transform(X_encoded)
         assert X_transformed.shape[1] >= 2
     
     def test_sequential_with_estimator(self, sample_data):
@@ -320,11 +308,9 @@ class TestFeatureSelectionPreprocessor:
         X, y = sample_data
         
         # First encode categorical features (real flow)
-        encoder = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['categorical_feature']
-        )
-        X_encoded = encoder.fit_transform(X, y)
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
+        encoder.fit(X, y, categorical_features=['categorical_feature'])
+        X_encoded = encoder.transform(X)
         
         estimator = LogisticRegression(random_state=42)
         preprocessor = FeatureSelectionPreprocessor(
@@ -333,7 +319,8 @@ class TestFeatureSelectionPreprocessor:
             n_features_to_select=2
         )
         
-        X_transformed = preprocessor.fit_transform(X_encoded, y)
+        preprocessor.fit(X_encoded, y)
+        X_transformed = preprocessor.transform(X_encoded)
         assert X_transformed.shape[1] == 2
     
     def test_invalid_method(self):
@@ -407,24 +394,18 @@ class TestCategoricalEncodingPreprocessor:
     
     def test_initialization(self):
         """Test that CategoricalEncodingPreprocessor initializes correctly."""
-        preprocessor = CategoricalEncodingPreprocessor(
-            method="label",
-            categorical_features=['cat1', 'cat2']
-        )
+        preprocessor = CategoricalEncodingPreprocessor(method="label")
         assert preprocessor.method == "label"
-        assert preprocessor.categorical_features == ['cat1', 'cat2']
         assert preprocessor.encoders == {}
         assert not preprocessor.is_fitted
     
     def test_label_encoding(self, categorical_data):
         """Test label encoding."""
         X, y = categorical_data
-        preprocessor = CategoricalEncodingPreprocessor(
-            method="label",
-            categorical_features=['category1', 'category2', 'binary_category']
-        )
+        preprocessor = CategoricalEncodingPreprocessor(method="label")
         
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2', 'binary_category'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that categorical columns are now numeric
         assert X_transformed['category1'].dtype in ['int64', 'int32']
@@ -435,12 +416,10 @@ class TestCategoricalEncodingPreprocessor:
     def test_onehot_encoding(self, categorical_data):
         """Test one-hot encoding."""
         X, y = categorical_data
-        preprocessor = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['category1', 'category2']
-        )
+        preprocessor = CategoricalEncodingPreprocessor(method="onehot")
         
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that we have more columns after one-hot encoding
         assert X_transformed.shape[1] > X.shape[1]
@@ -454,12 +433,10 @@ class TestCategoricalEncodingPreprocessor:
     def test_ordinal_encoding(self, categorical_data):
         """Test ordinal encoding."""
         X, y = categorical_data
-        preprocessor = CategoricalEncodingPreprocessor(
-            method="ordinal",
-            categorical_features=['category1', 'category2']
-        )
+        preprocessor = CategoricalEncodingPreprocessor(method="ordinal")
         
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that categorical columns are now numeric
         assert X_transformed['category1'].dtype in ['float64', 'float32']
@@ -471,12 +448,10 @@ class TestCategoricalEncodingPreprocessor:
     def test_cyclic_encoding(self, categorical_data):
         """Test cyclic encoding."""
         X, y = categorical_data
-        preprocessor = CategoricalEncodingPreprocessor(
-            method="cyclic",
-            categorical_features=['category1']
-        )
+        preprocessor = CategoricalEncodingPreprocessor(method="cyclic")
         
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor.fit(X, y, categorical_features=['category1'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that original column is gone and sin/cos columns are created
         assert 'category1' not in X_transformed.columns
@@ -491,11 +466,11 @@ class TestCategoricalEncodingPreprocessor:
             method={
                 'category1': 'onehot',
                 'category2': 'label'
-            },
-            categorical_features=['category1', 'category2']
+            }
         )
         
-        X_transformed = preprocessor.fit_transform(X, y)
+        preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
+        X_transformed = preprocessor.transform(X)
         
         # Check that category1 is one-hot encoded
         assert 'category1' not in X_transformed.columns
@@ -537,22 +512,21 @@ class TestPreprocessorPipeline:
     def test_encoding_then_feature_selection(self, categorical_data):
         """Test encoding followed by feature selection."""
         X, y = categorical_data
-        # Create preprocessors
-        encoder = CategoricalEncodingPreprocessor(
-            method="onehot",
-            categorical_features=['category1', 'category2']
-        )
+                # Create preprocessors
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
         selector = FeatureSelectionPreprocessor(
             method="selectkbest",
             n_features_to_select=3,
             problem_type="classification"
         )
-        
-        # Apply encoding first
-        X_encoded = encoder.fit_transform(X, y)
+    
+                # Apply encoding first
+        encoder.fit(X, y, categorical_features=['category1', 'category2'])
+        X_encoded = encoder.transform(X)
         
         # Then apply feature selection
-        X_selected = selector.fit_transform(X_encoded, y)
+        selector.fit(X_encoded, y)
+        X_selected = selector.transform(X_encoded)
         
         # Check that we have the expected number of features
         assert X_selected.shape[1] == 3
@@ -562,13 +536,15 @@ class TestPreprocessorPipeline:
         X, y = missing_data
         # Create preprocessors
         missing_processor = MissingDataPreprocessor(strategy="impute", impute_method="mean")
-        scaler = ScalingPreprocessor(method="standard", categorical_features=['categorical_feature'])
+        scaler = ScalingPreprocessor(method="standard")
         
         # Apply missing data handling first
-        X_imputed = missing_processor.fit_transform(X, y)
+        missing_processor.fit(X, y)
+        X_imputed = missing_processor.transform(X)
         
         # Then apply scaling
-        X_scaled = scaler.fit_transform(X_imputed, y)
+        scaler.fit(X_imputed, y, categorical_features=['categorical_feature'])
+        X_scaled = scaler.transform(X_imputed)
         
         # Check that no missing values remain
         assert X_scaled.isnull().sum().sum() == 0
@@ -581,21 +557,25 @@ class TestPreprocessorPipeline:
         # Add categorical features to missing data
         X['category'] = ['A', 'B', 'A', 'B', 'A', 'B', 'A', 'B', 'A', 'B']
         
-        # Create preprocessors
+                # Create preprocessors
         missing_processor = MissingDataPreprocessor(strategy="impute", impute_method="mean")
-        scaler = ScalingPreprocessor(method="standard", categorical_features=['categorical_feature', 'category'])
-        encoder = CategoricalEncodingPreprocessor(method="onehot", categorical_features=['categorical_feature', 'category'])
+        scaler = ScalingPreprocessor(method="standard")
+        encoder = CategoricalEncodingPreprocessor(method="onehot")
         selector = FeatureSelectionPreprocessor(
-            method="selectkbest", 
+            method="selectkbest",
             n_features_to_select=3,
             problem_type="classification"
         )
-        
+    
         # Apply pipeline
-        X_imputed = missing_processor.fit_transform(X, y)
-        X_scaled = scaler.fit_transform(X_imputed, y)
-        X_encoded = encoder.fit_transform(X_scaled, y)
-        X_selected = selector.fit_transform(X_encoded, y)
+        missing_processor.fit(X, y)
+        X_imputed = missing_processor.transform(X)
+        scaler.fit(X_imputed, y, categorical_features=['categorical_feature', 'category'])
+        X_scaled = scaler.transform(X_imputed)
+        encoder.fit(X_scaled, y, categorical_features=['categorical_feature', 'category'])
+        X_encoded = encoder.transform(X_scaled)
+        selector.fit(X_encoded, y)
+        X_selected = selector.transform(X_encoded)
         
         # Check final result
         assert X_selected.shape[1] == 3
