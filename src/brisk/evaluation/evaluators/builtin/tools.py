@@ -1,16 +1,29 @@
 """Tools for evaluating models that are not plots or measure calculations."""
 from typing import Dict, Any, List, Tuple, Optional
+import pathlib
 
 import pandas as pd
 import numpy as np
 import plotnine as pn
+import matplotlib
 import matplotlib.pyplot as plt
 from sklearn import base
 import sklearn.model_selection as model_select
 
-from brisk.evaluation.evaluators import measure_evaluator
+from brisk.evaluation.evaluators import measure_evaluator, plot_evaluator
+from brisk.theme import theme
 
 class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
+    def __init__(self, method_name: str, description: str):
+        super().__init__(method_name, description)
+        matplotlib.use("Agg", force=True)
+        self.theme = theme
+        self.primary_color = "#0074D9" # Celtic Blue
+        self.secondary_color = "#07004D" # Federal Blue
+        self.background_color = "#C4E0F9" # Columbia Blue
+        self.accent_color = "#00A878" # Jade
+        self.important_color = "#B95F89" # Mulberry
+
     """Perform hyperparameter tuning using grid or random search."""
     def evaluate(
         self,
@@ -198,9 +211,9 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         None
         """
         if isinstance(plot, plt.Figure):
-            self.io.save_plot(filename, metadata)
+            self.io.save_plot(pathlib.Path(filename), metadata)
         else:
-            self.io.save_plot(filename, metadata, plot=plot)
+            self.io.save_plot(pathlib.Path(filename), metadata, plot=plot)
 
     def _plot_hyperparameter_performance(
         self,
@@ -249,6 +262,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
             self.services.logger.logger.info(
                 "Higher dimensional visualization not implemented yet"
                 )
+            return None
 
     def _plot_1d_performance(
         self,
