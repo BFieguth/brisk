@@ -6,7 +6,6 @@ if some fail.
 """
 
 import collections
-import logging
 import os
 import time
 import json
@@ -476,8 +475,7 @@ class TrainingManager:
             f"Category: {category.__name__}\n\n"
             f"Message: {message}\n"
         )
-        logger = logging.getLogger("TrainingManager")
-        logger.warning(log_message)
+        self.services.logger.logger.warning(log_message)
 
     def _print_experiment_summary(self) -> None:
         """Print experiment summary organized by group and dataset.
@@ -582,7 +580,6 @@ class TrainingManager:
         None
         """
         progress_bar.close()
-        logging.shutdown()
         error_log_path = os.path.join(results_dir, "error_log.txt")
         if (os.path.exists(error_log_path)
             and os.path.getsize(error_log_path) == 0
