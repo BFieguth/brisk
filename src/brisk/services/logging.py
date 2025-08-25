@@ -121,7 +121,6 @@ class LoggingService(base.BaseService):
         logging.captureWarnings(True)
 
         logger = logging.getLogger("LoggingService")
-        logger.setLevel(logging.DEBUG)
 
         # Remove all existing handlers to prevent duplicates
         for handler in logger.handlers[:]:
