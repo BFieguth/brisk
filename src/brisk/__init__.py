@@ -28,6 +28,5 @@ from brisk.evaluation.metric_wrapper import MetricWrapper
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.training.training_manager import TrainingManager
 from brisk.training.workflow import Workflow
-from brisk.training.logging_util import TqdmLoggingHandler, FileFormatter
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
 from brisk.version import __version__
