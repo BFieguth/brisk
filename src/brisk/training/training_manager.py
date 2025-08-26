@@ -185,8 +185,7 @@ class TrainingManager:
 
         try:
             workflow_instance = self._setup_workflow(
-                current_experiment, workflow, results_dir, group_name,
-                dataset_name, experiment_name
+                current_experiment, workflow, results_dir
             )
             workflow_instance.workflow()
             success = True
@@ -292,10 +291,7 @@ class TrainingManager:
         self,
         current_experiment: experiment.Experiment,
         workflow: Type[workflow_module.Workflow],
-        results_dir: str,
-        group_name: str,
-        dataset_name: str,
-        experiment_name: str
+        results_dir: str
     ) -> workflow_module.Workflow:
         """Prepares a workflow instance for experiment execution.
 
@@ -326,6 +322,10 @@ class TrainingManager:
         Workflow
             Configured workflow instance.
         """
+        group_name = current_experiment.group_name
+        dataset_name = current_experiment.dataset_name
+        experiment_name = current_experiment.name
+
         data_split = self.data_managers[group_name].split(
             data_path=current_experiment.dataset_path,
             categorical_features=current_experiment.categorical_features,
