@@ -329,9 +329,9 @@ class TrainingManager:
         data_split = self.data_managers[group_name].split(
             data_path=current_experiment.dataset_path,
             categorical_features=current_experiment.categorical_features,
-            table_name=current_experiment.table_name,
+            table_name=current_experiment.dataset_name[1],
             group_name=group_name,
-            filename=dataset_name
+            filename=current_experiment.dataset_name[0]
         ).get_split(current_experiment.split_index)
 
         X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
@@ -533,9 +533,14 @@ class TrainingManager:
         str
             Path to the experiment directory.
         """
+        if dataset_name[1] is None:
+            dataset_dir_name = dataset_name[0]
+        else:
+            dataset_dir_name = f"{dataset_name[0]}_{dataset_name[1]}"
+
         full_path = os.path.normpath(
             os.path.join(
-                results_dir, group_name, dataset_name, f"split_{split_index}",
+                results_dir, group_name, dataset_dir_name, f"split_{split_index}",
                 experiment_name
             )
         )

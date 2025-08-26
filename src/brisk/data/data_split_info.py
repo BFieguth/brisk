@@ -116,8 +116,12 @@ class DataSplitInfo:
         continuous_features: Optional[List[str]] = None
     ):
         self.group_name = split_key[0]
-        self.dataset_name = split_key[1]
+        self.file_name = split_key[1]
         self.table_name = split_key[2]
+        if self.table_name is not None:
+            self.dataset_name = f"{self.file_name}_{self.table_name}"
+        else:
+            self.dataset_name = self.file_name
         self.features = features
         self.split_index = split_index
 
