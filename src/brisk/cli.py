@@ -93,6 +93,7 @@ def create_configuration() -> ConfigurationManager:
 
     config.add_experiment_group(
         name="group_name",
+        datasets=[]
     )
 
     return config.build()
@@ -104,7 +105,8 @@ def create_configuration() -> ConfigurationManager:
 import brisk
 
 ALGORITHM_CONFIG = brisk.AlgorithmCollection(
-    brisk.AlgorithmWrapper(),
+    *brisk.REGRESSION_ALGORITHMS,
+    *brisk.CLASSIFICATION_ALGORITHMS
 )
 """)
 
@@ -114,7 +116,8 @@ ALGORITHM_CONFIG = brisk.AlgorithmCollection(
 import brisk
 
 METRIC_CONFIG = brisk.MetricManager(
-    brisk.MetricWrapper()
+    *brisk.REGRESSION_METRICS,
+    *brisk.CLASSIFICATION_METRICS
 )
 """)
 
@@ -165,7 +168,19 @@ from brisk.training.workflow import Workflow
 
 class MyWorkflow(Workflow):
     def workflow(self):
-        pass
+        self.model.fit(self.X_train, self.y_train)
+        self.evaluate_model(
+            self.model, self.X_train, self.y_train, ["MAE"], "pre_tune_score"
+        )
+        tuned_model = self.hyperparameter_tuning(
+            self.model, "grid", self.X_train, self.y_train, "MAE",
+            kf=5, num_rep=3, n_jobs=-1
+        )
+        self.evaluate_model(
+            tuned_model, self.X_test, self.y_test, ["MAE"], "post_tune_score"
+        )
+        self.plot_learning_curve(tuned_model, self.X_train, self.y_train)
+        self.save_model(tuned_model, "tuned_model")
 """)
 
     print(f'A new project was created in: {project_dir}')
