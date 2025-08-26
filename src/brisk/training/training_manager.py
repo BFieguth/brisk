@@ -11,7 +11,7 @@ import os
 import time
 import json
 import warnings
-from typing import Optional, Type
+from typing import Optional, Type, Dict
 
 import tqdm
 
@@ -20,7 +20,7 @@ from brisk.evaluation import evaluation_manager, metric_manager
 from brisk.reporting import report_renderer
 from brisk.configuration import configuration
 from brisk.version import __version__
-from brisk.training import workflow as workflow_module
+from brisk.training import workflow
 from brisk.configuration import experiment
 from brisk.services import get_services
 
@@ -30,6 +30,8 @@ class TrainingManager:
     Coordinates model training using various algorithms, evaluates them on
     different datasets, and generates reports. Integrates with EvaluationManager
     for model evaluation and ReportManager for generating HTML reports.
+    Supports multiple workflows where different experiment groups can use
+    different workflow classes.
 
     Parameters
     ----------
@@ -37,6 +39,11 @@ class TrainingManager:
         Configuration for evaluation metrics
     config_manager : ConfigurationManager
         Instance containing data needed to run experiments
+    workflow_mapping : dict, optional
+        Mapping of experiment group names to workflow classes.
+        Each experiment group must have an explicit workflow assigned.
+        Format: {"group_name": WorkflowClass}
+        Defaults to empty dict.
 
     Attributes
     ----------
@@ -52,6 +59,8 @@ class TrainingManager:
         Structure of output data organization
     description_map : dict
         Mapping of names to descriptions
+    workflow_mapping : dict
+        Mapping of experiment group names to workflow classes
     experiment_paths : defaultdict
         Nested structure tracking experiment output paths
     experiment_results : defaultdict
@@ -61,6 +70,7 @@ class TrainingManager:
         self,
         metric_config: metric_manager.MetricManager,
         config_manager: configuration.ConfigurationManager,
+        workflow_mapping: Optional[Dict[str, Type[workflow.Workflow]]] = None,
     ):
         self.services = get_services()
         self.results_dir = self.services.io.results_dir
@@ -76,6 +86,7 @@ class TrainingManager:
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
         self.experiment_groups = config_manager.experiment_groups
+        self.workflow_mapping = workflow_mapping or {}
         self.experiment_paths = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: collections.defaultdict(
@@ -88,18 +99,24 @@ class TrainingManager:
 
     def run_experiments(
         self,
-        workflow: workflow_module.Workflow,
         create_report: bool = True
     ) -> None:
-        """Runs the Workflow for each experiment and generates report.
+        """Runs the specified Workflow for each experiment and generates report.
+
+        Uses the workflow_mapping to determine which workflow class to use for
+        each experiment group. All experiment groups must have explicit workflow
+        assigned.
 
         Parameters
         ----------
-        workflow : Workflow
-            A subclass of the Workflow class that defines the training steps.
         create_report : bool
             Whether to generate an HTML report after all experiments.
             Defaults to True.
+
+        Raises
+        ------
+        ValueError
+            If any experiment group does not have a workflow assigned.
 
         Returns
         -------
@@ -112,13 +129,20 @@ class TrainingManager:
             unit="experiment"
         )
 
-        self._save_config_log(self.results_dir, workflow, self.logfile)
+        # Validate that all experiment groups have workflow mappings
+        experiment_groups = {exp.group_name for exp in self.experiments}
+        missing_groups = experiment_groups - set(self.workflow_mapping.keys())
+        if missing_groups:
+            raise ValueError(
+                f"The following experiment groups have no workflow mapping: {missing_groups}. "
+                f"All experiment groups must have explicit workflow mappings. "
+                f"Available mappings: {list(self.workflow_mapping.keys())}"
+            )
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
             self._run_single_experiment(
                 current_experiment,
-                workflow,
                 self.results_dir
             )
             progress_bar.update(1)
@@ -132,24 +156,24 @@ class TrainingManager:
     def _run_single_experiment(
         self,
         current_experiment: experiment.Experiment,
-        workflow: workflow_module.Workflow,
         results_dir: str
     ) -> None:
         """Runs a single Experiment and handles its outcome.
 
-        Sets up the experiment environment, runs the workflow, and handles
-        success or failure cases.
+        Sets up the experiment environment, determines the appropriate workflow
+        from the workflow_mapping based on the experiment's group name.
 
         Parameters
         ----------
         current_experiment : Experiment
             The experiment to run.
-
-        workflow : Workflow
-            The workflow to use.
-
         results_dir : str
             Directory to store results.
+        
+        Raises
+        ------
+        KeyError
+            If the experiment's group name is not found in workflow_mapping.
         
         Returns
         -------
@@ -162,6 +186,9 @@ class TrainingManager:
         dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
 
+        # Get the workflow class for this experiment group
+        workflow_class = self.workflow_mapping[group_name]
+
         self.services.reporting.set_context(
             group_name, dataset_name, current_experiment.split_index, None,
             current_experiment.algorithm_names
@@ -170,7 +197,7 @@ class TrainingManager:
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
         tqdm.tqdm.write(
             f"\nStarting experiment '{experiment_name}' on dataset "
-            f"'{dataset_name}'."
+            f"'{dataset_name}' using workflow '{workflow_class.__name__}'."
         )
 
         warnings.showwarning = (
@@ -186,7 +213,7 @@ class TrainingManager:
 
         try:
             workflow_instance = self._setup_workflow(
-                current_experiment, workflow, results_dir, group_name,
+                current_experiment, workflow_class, results_dir, group_name,
                 dataset_name, experiment_name
             )
             workflow_instance.workflow()
@@ -253,10 +280,13 @@ class TrainingManager:
     def _save_config_log(
         self,
         results_dir: str,
-        workflow: workflow_module.Workflow,
+        workflow: workflow.Workflow,
         logfile: str
     ) -> None:
         """Saves the workflow configuration and class name to a config log file.
+
+        Records which workflow class was used for the experiment, along with
+        the configuration details.
 
         Parameters
         ----------
@@ -264,7 +294,7 @@ class TrainingManager:
             Directory where results are stored.
 
         workflow : Workflow
-            The workflow to save.
+            The workflow that was executed.
 
         logfile : str
             The logfile to save.
@@ -292,40 +322,37 @@ class TrainingManager:
     def _setup_workflow(
         self,
         current_experiment: experiment.Experiment,
-        workflow: Type[workflow_module.Workflow],
+        workflow_class: Type[workflow.Workflow],
         results_dir: str,
         group_name: str,
         dataset_name: str,
         experiment_name: str
-    ) -> workflow_module.Workflow:
+    ) -> workflow.Workflow:
         """Prepares a workflow instance for experiment execution.
 
         Sets up data, algorithms, and evaluation manager for the workflow.
+        Creates a workflow instance with all necessary data and configuration
+        for the specific experiment.
 
         Parameters
         ----------
         current_experiment : Experiment
             The experiment to set up.
-
-        workflow : Workflow
-            The workflow to instantiate.
-
+        workflow_class : Type[workflow.Workflow]
+            The workflow class to instantiate (determined from workflow_mapping).
         results_dir : str
             Directory for results.
-
         group_name : str
             Name of the experiment group.
-
         dataset_name : str
             Name of the dataset.
-
         experiment_name : str
             Name of the experiment.
 
         Returns
         -------
         Workflow
-            Configured workflow instance.
+            Configured workflow instance ready for execution.
         """
         data_split = self.data_managers[group_name].split(
             data_path=current_experiment.dataset_path,
@@ -347,7 +374,7 @@ class TrainingManager:
             data_split.group_index_train, data_split.group_index_test
         )
 
-        workflow_instance = workflow(
+        workflow_instance = workflow_class(
             evaluation_manager=self.eval_manager,
             X_train=X_train,
             X_test=X_test,

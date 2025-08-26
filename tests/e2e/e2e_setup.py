@@ -201,9 +201,7 @@ class BaseE2ETest:
             shell=use_shell
         )
 
-        print(f"STDOUT: {result.stdout}")
-        print(f"STDERR: {result.stderr}")
-        
+      
         if result.returncode != 0:
             raise RuntimeError(
                 f"Workflow failed with error:\n"
