@@ -137,10 +137,16 @@ from settings import create_configuration
 
 config = create_configuration()
 
-# Define the TrainingManager for experiments
+# Define the TrainingManager for experiments with workflow mappings
+# Each experiment group must have an explicit workflow assigned
 manager = TrainingManager(
     metric_config=METRIC_CONFIG,
-    config_manager=config
+    config_manager=config,
+    workflow_mapping={
+        # Example: "group_name": WorkflowClass
+        # "group1": RegressionSingle,
+        # "group2": RegressionSingleFull,
+    }
 )
 """)
 
@@ -167,12 +173,6 @@ class MyWorkflow(Workflow):
 
 @cli.command()
 @click.option(
-    '-w',
-    '--workflow',
-    required=True,
-    help='Specify the workflow file (without .py) in workflows/'
-)
-@click.option(
     '-n',
     '--results_name',
     default=None,
@@ -191,17 +191,14 @@ class MyWorkflow(Workflow):
     help='Change the verbosity of the logger.'
 )
 def run(
-    workflow: str,
     results_name: Optional[str],
     disable_report: bool,
     verbose: bool
 ) -> None:
-    """Run experiments using the specified workflow.
+    """Run experiments using workflow mappings defined in training.py.
 
     Parameters
     ----------
-    workflow : str
-        Name of the workflow file (without .py extension)
     results_name : str, optional
         Custom name for results directory
     disable_report : bool, default=False
@@ -212,9 +209,9 @@ def run(
     Raises
     ------
     FileNotFoundError
-        If project root or workflow file not found
-    AttributeError
-        If workflow class not found or multiple workflows defined
+        If project root not found
+    ValueError
+        If experiment groups are missing workflow mappings
     """
     create_report = not disable_report
     try:
@@ -246,35 +243,15 @@ def run(
 
         manager = load_module_object(project_root, 'training.py', 'manager')
 
-        workflow_module = importlib.import_module(f'workflows.{workflow}')
-        workflow_classes = [
-            obj for name, obj in inspect.getmembers(workflow_module)
-            if inspect.isclass(obj)
-            and issubclass(obj, Workflow)
-            and obj is not Workflow
-        ]
-
-        if len(workflow_classes) == 0:
-            raise AttributeError(f'No Workflow subclass found in {workflow}.py')
-        elif len(workflow_classes) > 1:
-            raise AttributeError(
-                f'Multiple Workflow subclasses found in {workflow}.py. '
-                'There can only be one Workflow per file.'
-                )
-
-        workflow_class = workflow_classes[0]
-
         manager.run_experiments(
-            workflow=workflow_class,
-            # results_name=results_name,
             create_report=create_report
         )
 
     except FileNotFoundError as e:
         print(f'Error: {e}')
 
-    except (ImportError, AttributeError) as e:
-        print(f'Error loading workflow: {workflow}. Error: {str(e)}')
+    except (ImportError, AttributeError, ValueError) as e:
+        print(f'Error: {str(e)}')
         return
 
 
