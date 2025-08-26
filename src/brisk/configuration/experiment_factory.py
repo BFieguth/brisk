@@ -163,6 +163,7 @@ class ExperimentFactory:
                 for index in range(0, n_splits):
                     experiments.append(experiment.Experiment(
                         group_name=group.name,
+                        workflow=group.workflow,
                         algorithms=models,
                         dataset_path=dataset_path,
                         workflow_args=group.workflow_args,

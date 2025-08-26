@@ -44,11 +44,14 @@ class ExperimentGroup:
         Arguments to apply to AlgorithmWrappers
     description : str, optional
         Description for the experiment group
+    workflow : str
+        Name of the workflow file to use (without .py extension)
     workflow_args : dict, optional
         Arguments to pass to workflow as attributes
     """
     name: str
     datasets: List[str | Tuple[str, str]]
+    workflow: str
     data_config: Optional[Dict[str, Any]] = None
     algorithms: Optional[List[str]] = None
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None

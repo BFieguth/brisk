@@ -11,16 +11,15 @@ import os
 import time
 import json
 import warnings
-from typing import Optional, Type, Dict
+from typing import Optional, Type
 
 import tqdm
 
 from brisk.evaluation import evaluation_manager, metric_manager
-
 from brisk.reporting import report_renderer
 from brisk.configuration import configuration
 from brisk.version import __version__
-from brisk.training import workflow
+from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
 from brisk.services import get_services
 
@@ -37,9 +36,6 @@ class TrainingManager:
         Configuration for evaluation metrics
     config_manager : ConfigurationManager
         Instance containing data needed to run experiments
-    workflow_mapping : dict, optional
-        Dictionary mapping experiment group names to workflow classes.
-        Each experiment group must have an explicit workflow assigned.
 
     Attributes
     ----------
@@ -65,8 +61,7 @@ class TrainingManager:
     def __init__(
         self,
         metric_config: metric_manager.MetricManager,
-        config_manager: configuration.ConfigurationManager,
-        workflow_mapping: Optional[Dict[str, Type[workflow.Workflow]]] = None,
+        config_manager: configuration.ConfigurationManager
     ):
         self.services = get_services()
         self.results_dir = self.services.io.results_dir
@@ -82,7 +77,7 @@ class TrainingManager:
         self.output_structure = config_manager.output_structure
         self.description_map = config_manager.description_map
         self.experiment_groups = config_manager.experiment_groups
-        self.workflow_mapping = workflow_mapping or {}
+        self.workflow_mapping = config_manager.workflow_map
         self.experiment_paths = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: collections.defaultdict(
@@ -124,16 +119,6 @@ class TrainingManager:
             desc="Running Experiments",
             unit="experiment"
         )
-
-        # Validate that all experiment groups have workflow mappings
-        experiment_groups = {exp.group_name for exp in self.experiments}
-        missing_groups = experiment_groups - set(self.workflow_mapping.keys())
-        if missing_groups:
-            raise ValueError(
-                f"The following experiment groups have no workflow mapping: {missing_groups}. "
-                f"All experiment groups must have explicit workflow mappings. "
-                f"Available mappings: {list(self.workflow_mapping.keys())}"
-            )
 
         while self.experiments:
             current_experiment = self.experiments.popleft()
@@ -181,9 +166,7 @@ class TrainingManager:
         group_name = current_experiment.group_name
         dataset_name = current_experiment.dataset_name
         experiment_name = current_experiment.name
-
-        # Get the workflow class for this experiment group
-        workflow_class = self.workflow_mapping[group_name]
+        workflow_class = self.workflow_mapping[current_experiment.workflow]
 
         self.services.reporting.set_context(
             group_name, dataset_name, current_experiment.split_index, None,
@@ -273,17 +256,15 @@ class TrainingManager:
             json.dump(report_data.model_dump(), f, indent=4)
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
-
-
     def _setup_workflow(
         self,
         current_experiment: experiment.Experiment,
-        workflow: Type[workflow.Workflow],
+        workflow: Type[workflow_module.Workflow],
         results_dir: str,
         group_name: str,
         dataset_name: str,
         experiment_name: str
-    ) -> workflow.Workflow:
+    ) -> workflow_module.Workflow:
         """Prepares a workflow instance for experiment execution.
 
         Sets up data, algorithms, and evaluation manager for the workflow.

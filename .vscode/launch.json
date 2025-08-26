@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/brisk/cli.py",
             "args": [
-                "run", "-w", "${input:workflowName}"
+                "run"
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/${input:projectDir}",

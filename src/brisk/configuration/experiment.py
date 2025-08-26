@@ -55,6 +55,8 @@ class Experiment:
     ----------
     name : str
         Full descriptive name combining group and algorithms
+    workflow: str
+        Name of the workflow file to use (without .py extension)
     dataset_name : str
         Name of the dataset with optional table name
     algorithm_kwargs : dict
@@ -65,6 +67,7 @@ class Experiment:
         Combined workflow and algorithm arguments
     """
     group_name: str
+    workflow: str
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
     workflow_args: Dict[str, Any]
