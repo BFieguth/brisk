@@ -24,7 +24,6 @@ def sample_data(mock_brisk_project):
     y_train = pd.Series(rng.choice([0, 1], 100))
     y_test = pd.Series(rng.choice([0, 1], 50))
 
-    features = ['feature1', 'feature2', 'categorical_feature']
     categorical_features = ['categorical_feature']
     continuous_features = ['feature1', 'feature2']
     group_index_train = None
@@ -37,7 +36,6 @@ def sample_data(mock_brisk_project):
         'X_test': X_test,
         'y_train': y_train,
         'y_test': y_test,
-        'features': features,
         'categorical_features': categorical_features,
         'continuous_features': continuous_features,
         'group_index_train': group_index_train,
@@ -84,7 +82,6 @@ def sample_data_scaler(mock_brisk_project):
         'y_train': y_train,
         'y_test': y_test,
         'scaler': scaler,
-        'features': features,
         'categorical_features': categorical_features,
         'continuous_features': continuous_features,
         'group_index_train': group_index_train,
@@ -124,9 +121,9 @@ def categorical_data(mock_brisk_project):
     y_train = pd.Series(rng.normal(0, 1, 100))
     y_test = pd.Series(rng.normal(0, 1, 50))
 
-    features = [
-        'feature1', 'feature2', 'categorical_string', 'categorical_int',
-        'categorical_bool', 'categorical_category'
+    categorical_features = [
+        'categorical_string', 'categorical_int', 'categorical_bool',
+        'categorical_category', 'categorical_multi_int'
     ]
     continuous_features = ["feature1", "feature2"]
     group_index_train = None
@@ -139,7 +136,6 @@ def categorical_data(mock_brisk_project):
         'X_test': X_test,
         'y_train': y_train,
         'y_test': y_test,
-        'features': features,
         'continuous_features': continuous_features,
         'group_index_train': group_index_train,
         'group_index_test': group_index_test,
@@ -165,8 +161,6 @@ class TestDataSplitInfo:
         assert isinstance(data_info.y_test, pd.Series)
         assert data_info.scaler == sample_data_scaler['scaler']
         assert isinstance(data_info.scaler, StandardScaler)
-        assert data_info.features == sample_data_scaler['features']
-        assert isinstance(data_info.features, list)
         assert data_info.categorical_features == ['categorical_feature']
         assert data_info.continuous_features == ['feature1', 'feature2']
 
@@ -174,7 +168,7 @@ class TestDataSplitInfo:
         """Test categorical feature detection when names not specified."""
         data_info = DataSplitInfo(**categorical_data)
         assert data_info.categorical_features == [
-            'categorical_string', 'categorical_int', 'categorical_multi_int', 
+            'categorical_string', 'categorical_int', 'categorical_multi_int',
             'categorical_bool', 'categorical_category'
         ]
 
