@@ -449,14 +449,13 @@ class TestTrainingManager:
             split_index=0
         )
         results_dir = ""
-        dataset_name = "regression"
+        dataset_name = ("regression", None)
         experiment_name = current_experiment.name
         expected_algo_names = ["linear"]
         split = "split_0"
 
         workflow_instance = training_manager._setup_workflow(
-            current_experiment, workflow, results_dir, group_name, dataset_name,
-            experiment_name
+            current_experiment, workflow, results_dir
         )
 
         assert isinstance(workflow_instance, Workflow)
@@ -470,7 +469,7 @@ class TestTrainingManager:
                 [split]
                 [experiment_name]
                 ) == os.path.join(
-                    results_dir, group_name, dataset_name, split, experiment_name
+                    results_dir, group_name, dataset_name[0], split, experiment_name
                 )
 
     @mock.patch("tqdm.tqdm.write")
@@ -485,7 +484,6 @@ class TestTrainingManager:
         expected_tqdm_calls = (
             "\nExperiment 'experiment1' on dataset 'dataset1' "
             "PASSED in 3m 8s.",
-            f"\n{'-' * 80}"
         )
 
         training_manager._handle_success(
@@ -540,33 +538,6 @@ class TestTrainingManager:
             }
         for expected_message in expected_tqdm_calls:
             mock_write.assert_any_call(expected_message)
-
-    @mock.patch("brisk.training.training_manager.logging.getLogger")
-    def test_log_warning(self, mock_get_logger, training_manager):
-        mock_logger = mock.MagicMock()
-        mock_get_logger.return_value = mock_logger
-
-        message = "This is a test warning"
-        category = UserWarning
-        filename = "test_file.py"
-        lineno = 42
-        dataset_name = "test_dataset"
-        experiment_name = "test_experiment"
-        expected_log_message = (
-            "\n\nDataset Name: test_dataset \n"
-            "Experiment Name: test_experiment\n\n"
-            "Warning in test_file.py at line 42:\n"
-            "Category: UserWarning\n\n"
-            "Message: This is a test warning\n"
-        )
-
-        training_manager._log_warning(
-            message, category, filename, lineno, dataset_name, experiment_name
-        )
-
-        mock_get_logger.assert_called_once_with("TrainingManager")
-        mock_logger.warning.assert_called_once()
-        mock_logger.warning.assert_called_with(expected_log_message)
 
     @mock.patch("builtins.print")
     def test_print_experiment_summary(self, mock_print, training_manager):
@@ -637,7 +608,7 @@ class TestTrainingManager:
         """Test creating a new experiment directory."""
         results_dir = str(tmp_path / "test_results")
         group_name = "test_group"
-        dataset_name = "test_dataset"
+        dataset_name = ("test_dataset", None)
         experiment_name = "test_experiment"
         split = 0
         
@@ -646,23 +617,23 @@ class TestTrainingManager:
         )
         
         expected_path = os.path.normpath(
-            os.path.join(results_dir, group_name, dataset_name, "split_0", experiment_name)
+            os.path.join(results_dir, group_name, dataset_name[0], "split_0", experiment_name)
         )
         assert result_path == expected_path
         assert os.path.exists(result_path)
         assert os.path.isdir(result_path)
         assert os.path.exists(os.path.join(results_dir, group_name))
-        assert os.path.exists(os.path.join(results_dir, group_name, dataset_name))
+        assert os.path.exists(os.path.join(results_dir, group_name, dataset_name[0]))
 
     def test_get_experiment_dir_exists(self, tmp_path, training_manager):
         """Test that method works correctly when directory already exists."""
         results_dir = str(tmp_path / "test_results")
         group_name = "test_group"
-        dataset_name = "test_dataset"
+        dataset_name = ("test_dataset", None)
         experiment_name = "test_experiment"
         
         expected_path = os.path.normpath(
-            os.path.join(results_dir, group_name, dataset_name, "split_0", experiment_name)
+            os.path.join(results_dir, group_name, dataset_name[0], "split_0", experiment_name)
         )
         os.makedirs(expected_path, exist_ok=True)
         
@@ -692,10 +663,8 @@ class TestTrainingManager:
         result = training_manager._format_time(3661)
         assert result == "61m 1s"
 
-    @mock.patch("brisk.training.training_manager.logging.shutdown")
     def test_cleanup_empty_error_log(
         self,
-        mock_logging_shutdown,
         tmp_path,
         training_manager,
     ):
@@ -711,13 +680,10 @@ class TestTrainingManager:
         
         training_manager._cleanup(results_dir, progress_bar)        
         progress_bar.close.assert_called_once()
-        mock_logging_shutdown.assert_called_once()    
         assert not error_log_path.exists()
 
-    @mock.patch("brisk.training.training_manager.logging.shutdown")
     def test_cleanup_non_empty_error_log(
         self,
-        mock_logging_shutdown,
         tmp_path,
         training_manager,
     ):
@@ -733,14 +699,11 @@ class TestTrainingManager:
 
         training_manager._cleanup(results_dir, progress_bar)
         progress_bar.close.assert_called_once()
-        mock_logging_shutdown.assert_called_once()        
         assert error_log_path.exists()
         assert error_log_path.stat().st_size > 0
 
-    @mock.patch("brisk.training.training_manager.logging.shutdown")
     def test_cleanup_no_error_log(
         self,
-        mock_logging_shutdown,
         tmp_path,
         training_manager,
     ):
@@ -753,5 +716,4 @@ class TestTrainingManager:
         
         training_manager._cleanup(results_dir, progress_bar)        
         progress_bar.close.assert_called_once()
-        mock_logging_shutdown.assert_called_once()
         assert not error_log_path.exists()

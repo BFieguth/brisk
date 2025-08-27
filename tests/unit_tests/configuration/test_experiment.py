@@ -112,7 +112,7 @@ class TestExperiment:
         # name
         assert single_model.name == "test_group_linear"
         # dataset_name
-        assert single_model.dataset_name == "regression"
+        assert single_model.dataset_name == ("regression", None)
         # algorithm_kwargs
         assert type(single_model.algorithm_kwargs["model"]) == type(expected_model)
         # algorithm_names
@@ -147,7 +147,7 @@ class TestExperiment:
         # name
         assert multiple_models.name == "test_group_linear_rf"
         # dataset_name
-        assert multiple_models.dataset_name == "regression"
+        assert multiple_models.dataset_name == ("regression", None)
         # algorithm_kwargs
         assert type(multiple_models.algorithm_kwargs["model"]) == type(expected_model_linear)
         assert type(multiple_models.algorithm_kwargs["model2"]) == type(expected_model_rf)
@@ -180,7 +180,7 @@ class TestExperiment:
         # name
         assert sql_table.name == "sql_table_ridge"
         # dataset_name
-        assert sql_table.dataset_name == "test_data_categorical"
+        assert sql_table.dataset_name == ("test_data", "categorical")
         # algorithm_kwargs
         assert type(sql_table.algorithm_kwargs["model"]) == type(expected_model)
         # algorithm_names

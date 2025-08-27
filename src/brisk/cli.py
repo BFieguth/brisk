@@ -179,6 +179,21 @@ class MyWorkflow(Workflow):
         self.plot_learning_curve(tuned_model, self.X_train, self.y_train)
         self.save_model(tuned_model, "tuned_model")
 """)
+    with open(
+        os.path.join(project_dir, "evaluators.py"), "w", encoding="utf-8"
+    ) as f:
+        f.write("""# evaluators.py
+# Define custom evaluation methods here to integrate with Brisk's builtin tools
+from brisk.evaluation.evaluators.registry import EvaluatorRegistry
+from brisk import PlotEvaluator, MeasureEvaluator
+
+def register_custom_evaluators(registry: EvaluatorRegistry) -> None:
+    # registry.register(
+    # Initalize an evaluator instance here to register
+    # )
+    pass
+
+""")
 
     print(f'A new project was created in: {project_dir}')
 
@@ -242,6 +257,11 @@ def run(
                 f"Results directory '{results_dir}' already exists."
             )
         os.makedirs(results_dir, exist_ok=False)
+
+        print(
+            "Begining experiment creation. "
+            f"The results will be saved to {results_dir}"
+        )
 
         algorithm_config = load_module_object(
             project_root, 'algorithms.py', 'ALGORITHM_CONFIG'

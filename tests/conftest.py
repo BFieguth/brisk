@@ -813,8 +813,52 @@ class Categorical(Workflow):
     return workflow_path
 
 
+@pytest.fixture
+def mock_categorical_workflow(tmp_path):
+    workflow_dir = tmp_path / 'workflows'
+    workflow_dir.mkdir(exist_ok=True)  # Safe pattern from real CLI
+    workflow_path = workflow_dir / 'categorical_workflow.py'
+
+    workflow_py = """
+from brisk.training.workflow import Workflow
+
+class Categorical(Workflow):
+    def workflow(self):
+        self.model.fit(self.X_train, self.y_train)
+        self.evaluate_model(
+            self.model, self.X_test, self.y_test, ["accuracy"], "test_metrics"
+        )
+"""
+    workflow_path.write_text(workflow_py)
+    return workflow_path
 
 
+@pytest.fixture
+def mock_evaluators_py(tmp_path):
+    evaluators_path = tmp_path / "evaluators.py"
+    evaluators_py = """
+from brisk.evaluation.evaluators.registry import EvaluatorRegistry
+from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
+from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator
+
+class RegisteredClass(PlotEvaluator):
+    def _generate_plot_data(self):
+        pass
+
+    def _create_plot(self):
+        pass
+
+
+def register_custom_evaluators(registry: EvaluatorRegistry) -> None:
+    registry.register(
+        RegisteredClass(
+            "registered_class",
+            "Test registered evaluators can be accessed"
+        )
+    )
+"""
+    evaluators_path.write_text(evaluators_py)
+    return evaluators_path
 
 @pytest.fixture
 def mock_brisk_project(
@@ -826,6 +870,7 @@ def mock_brisk_project(
     mock_settings_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
     mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
+    mock_evaluators_py, # pylint: disable=unused-argument, redefined-outer-name
     tmp_path,
     monkeypatch
 ):

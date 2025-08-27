@@ -65,7 +65,8 @@ class App {
         const experimentGroups = this.reportData.experiment_groups;
         if (experimentGroups.length > 0) {
             const firstGroup = experimentGroups[0];
-            const datasetID = firstGroup.datasets[0];
+            // const datasetID = firstGroup.datasets[0];
+            const datasetID = firstGroup.name + "_" + firstGroup.datasets[0];
             this.selectedDataset = this.reportData.datasets[datasetID];
         }
     }
@@ -695,7 +696,7 @@ class App {
     updateDatasetSelectionForCurrentCard() {
         const experimentGroup = this.getCurrentExperimentGroup();
         if (!experimentGroup) return;
-        const datasetID = experimentGroup.datasets[0];
+        const datasetID = experimentGroup.name + "_" + experimentGroup.datasets[0];
         this.selectedDataset = this.reportData.datasets[datasetID];
         this.selectedSplit = 0;
     }

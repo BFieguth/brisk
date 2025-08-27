@@ -68,7 +68,7 @@ class TestReportingService:
             context = report_service.get_context()
         
         group_name="test_group"
-        dataset_name="regression"
+        dataset_name=("regression", None)
         split_index=0.
         feature_names=["feature_1", "feature_2", "feature_3"]
         algorithm_names="ridge"
@@ -211,9 +211,10 @@ class TestReportingService:
         algorithms = {
             "model": algo_config["ridge"] 
         }
-        report_service.set_context("test_group", "data", 0, None, ["ridge"])
+        report_service.set_context("test_group", ("data", None), 0, None, ["ridge"])
         report_service.add_experiment(algorithms)
-        experiment = report_service.experiments["ridge_test_group_data"]
+        print(report_service.experiments)
+        experiment = report_service.experiments[f"ridge_test_group_data"]
         assert isinstance(experiment, report_data.Experiment)
         assert experiment.ID == "ridge_test_group_data"
         assert experiment.dataset == "test_group_data"
@@ -224,12 +225,12 @@ class TestReportingService:
         mock_group1 = mock.MagicMock()
         mock_group1.name = "group1"
         mock_group1.description = "Test group 1"
-        mock_group1.datasets = ["dataset1.csv", "dataset2.csv"]
+        mock_group1.datasets = [("dataset1.csv", None), ("dataset2.csv", None)]
         
         mock_group2 = mock.MagicMock()
         mock_group2.name = "group2"
         mock_group2.description = "Test group 2"
-        mock_group2.datasets = ["dataset3.csv"]
+        mock_group2.datasets = [("dataset3.csv", None)]
         
         mock_data_manager1 = mock.MagicMock()
         mock_data_manager1.n_splits = 2
@@ -243,21 +244,21 @@ class TestReportingService:
         
         report_service.test_scores = {
             "group1": {
-                "dataset1": {0: {"columns": ["Metric1"], "rows": [["value1"]]}, 1: {"columns": ["Metric2"], "rows": [["value2"]]}},
-                "dataset2": {0: {"columns": ["Metric3"], "rows": [["value3"]]}, 1: {"columns": ["Metric4"], "rows": [["value4"]]}}
+                ("dataset1", None): {0: {"columns": ["Metric1"], "rows": [["value1"]]}, 1: {"columns": ["Metric2"], "rows": [["value2"]]}},
+                ("dataset2", None): {0: {"columns": ["Metric3"], "rows": [["value3"]]}, 1: {"columns": ["Metric4"], "rows": [["value4"]]}}
             },
             "group2": {
-                "dataset3": {0: {"columns": ["Metric5"], "rows": [["value5"]]}, 1: {"columns": ["Metric6"], "rows": [["value6"]]}, 2: {"columns": ["Metric7"], "rows": [["value7"]]}}
+                ("dataset3", None): {0: {"columns": ["Metric5"], "rows": [["value5"]]}, 1: {"columns": ["Metric6"], "rows": [["value6"]]}, 2: {"columns": ["Metric7"], "rows": [["value7"]]}}
             }
         }
         
         report_service.best_score_by_split = {
             "group1": {
-                "dataset1": {0: ("Split 0", "model1", "0.85", "accuracy"), 1: ("Split 1", "model2", "0.87", "accuracy")},
-                "dataset2": {0: ("Split 0", "model3", "0.90", "f1"), 1: ("Split 1", "model4", "0.92", "f1")}
+                ("dataset1", None): {0: ("Split 0", "model1", "0.85", "accuracy"), 1: ("Split 1", "model2", "0.87", "accuracy")},
+                ("dataset2", None): {0: ("Split 0", "model3", "0.90", "f1"), 1: ("Split 1", "model4", "0.92", "f1")}
             },
             "group2": {
-                "dataset3": {0: ("Split 0", "model5", "0.88", "precision"), 1: ("Split 1", "model6", "0.89", "precision"), 2: ("Split 2", "model7", "0.91", "precision")}
+                ("dataset3", None): {0: ("Split 0", "model5", "0.88", "precision"), 1: ("Split 1", "model6", "0.89", "precision"), 2: ("Split 2", "model7", "0.91", "precision")}
             }
         }
         
@@ -276,7 +277,7 @@ class TestReportingService:
         assert isinstance(group1_report, report_data.ExperimentGroup)
         assert group1_report.name == "group1"
         assert group1_report.description == "Test group 1"
-        assert group1_report.datasets == ["group1_dataset1", "group1_dataset2"]
+        assert group1_report.datasets == ["dataset1", "dataset2"]
         assert group1_report.experiments.sort() == ["exp1", "exp2"].sort()
         
         # Test second group
@@ -284,7 +285,7 @@ class TestReportingService:
         assert isinstance(group2_report, report_data.ExperimentGroup)
         assert group2_report.name == "group2"
         assert group2_report.description == "Test group 2"
-        assert group2_report.datasets == ["group2_dataset3"]
+        assert group2_report.datasets == ["dataset3"]
         assert group2_report.experiments == ["exp3"]
 
     def test_create_feature_distribution(self, report_service):
@@ -406,8 +407,8 @@ class TestReportingService:
         assert ["Max", "N/A"] in table.rows
 
     def test_collect_test_scores(self, report_service):
-        report_service.set_context("test_group", "test_dataset", 0, None, ["test_algo"])        
-        report_service.test_scores = {"test_group": {"test_dataset": {0: {"columns": [], "rows": []}}}}
+        report_service.set_context("test_group", ("test_dataset", None), 0, None, ["test_algo"])        
+        report_service.test_scores = {"test_group": {("test_dataset", None): {0: {"columns": [], "rows": []}}}}
         
         metadata = {
             "method": "brisk_evaluate_model",
@@ -420,7 +421,7 @@ class TestReportingService:
         with mock.patch.object(report_service, '_collect_best_score') as mock_collect:
             report_service._collect_test_scores(metadata, rows)
             
-            stored_scores = report_service.test_scores["test_group"]["test_dataset"][0]
+            stored_scores = report_service.test_scores["test_group"][("test_dataset", None)][0]
             assert stored_scores["columns"] == ["Algorithm", "accuracy", "f1_score"]
             assert len(stored_scores["rows"]) == 1
             assert stored_scores["rows"][0] == ["Test Model", 0.85, 0.78]
@@ -428,26 +429,26 @@ class TestReportingService:
             mock_collect.assert_called_once_with(rows, ["Test Model"])
 
     def test_store_plot_svg(self, report_service):
-        report_service.set_context("test_group", "test_dataset", 0, None, ["test_algo"])
+        report_service.set_context("test_group", ("test_dataset", None), 0, None, ["test_algo"])
         
         image_data = "mock_svg_data"
         metadata = {"method": "test_plot_method"}
         
         report_service.store_plot_svg(image_data, metadata)
         
-        expected_key = ("test_group", "test_dataset", "split_0", "test_plot_method")
+        expected_key = ("test_group", ("test_dataset", None), "split_0", "test_plot_method")
         assert expected_key in report_service._image_cache
         assert report_service._image_cache[expected_key] == (image_data, metadata)
 
     def test_store_table_data(self, report_service):
-        report_service.set_context("test_group", "test_dataset", 0, None, ["test_algo"])
+        report_service.set_context("test_group", ("test_dataset", None), 0, None, ["test_algo"])
         
         table_data = {"column1": [1, 2, 3], "column2": [4, 5, 6]}
         metadata = {"method": "test_table_method"}
         
         report_service.store_table_data(table_data, metadata)
         
-        expected_key = ("test_group", "test_dataset", "split_0", "test_table_method")
+        expected_key = ("test_group", ("test_dataset", None), "split_0", "test_table_method")
         assert expected_key in report_service._table_cache
         assert report_service._table_cache[expected_key] == (table_data, metadata)
 
@@ -535,7 +536,7 @@ class TestReportingService:
         report_service.metric_manager._resolve_identifier.assert_called_once_with("acc")
 
     def test_collect_best_score(self, report_service):
-        report_service.set_context("test_group", "test_dataset", 0, None, ["test_algo"])
+        report_service.set_context("test_group", ("test_dataset", None), 0, None, ["test_algo"])
         report_service.tuning_metric = ("ACC", "Accuracy")
         
         report_service.metric_manager.is_higher_better = mock.MagicMock(return_value=True)
@@ -546,19 +547,19 @@ class TestReportingService:
         # Test initial score setting
         result = report_service._collect_best_score(rows, model_name)
         
-        stored_result = report_service.best_score_by_split["test_group"]["test_dataset"][0]
+        stored_result = report_service.best_score_by_split["test_group"][("test_dataset", None)][0]
         assert stored_result == ("Split 0", "Test Model", 0.85, "Accuracy")
         
         # Test score update with better score
         rows_better = [("Accuracy", 0.90), ("F1 Score", 0.82)]
         report_service._collect_best_score(rows_better, model_name)
         
-        updated_result = report_service.best_score_by_split["test_group"]["test_dataset"][0]
+        updated_result = report_service.best_score_by_split["test_group"][("test_dataset", None)][0]
         assert updated_result == ("Split 0", "Test Model", 0.90, "Accuracy")
         
         # Test score update with worse score (should not update)
         rows_worse = [("Accuracy", 0.80), ("F1 Score", 0.75)]
         report_service._collect_best_score(rows_worse, model_name)
         
-        final_result = report_service.best_score_by_split["test_group"]["test_dataset"][0]
+        final_result = report_service.best_score_by_split["test_group"][("test_dataset", None)][0]
         assert final_result == ("Split 0", "Test Model", 0.90, "Accuracy")  # Should remain the better score

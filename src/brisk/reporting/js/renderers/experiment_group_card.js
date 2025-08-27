@@ -67,10 +67,9 @@ class ExperimentGroupCardRenderer {
         }
 
         // Get experiments for this dataset
-        const currentDataset = this.cardData.datasets[0];
         const datasetExperiments = this.cardData.experiments.filter(expId => {
             const exp = window.app.reportData.experiments[expId];
-            return exp && exp.dataset === currentDataset;
+            return exp;
         });
 
         // Group by base experiment (before the final parameters)
@@ -115,7 +114,7 @@ class ExperimentGroupCardRenderer {
         table.className = 'split-table';
         table.id = `split-table-${this.cardIndex}`;
         
-        const firstDataset = this.cardData.datasets[0];
+        const firstDataset = this.cardData.name + "_" + this.cardData.datasets[0];
         const firstDatasetSplits = this.cardData.data_split_scores[firstDataset];
         
         // Get metric from first split (4th element in tuple)

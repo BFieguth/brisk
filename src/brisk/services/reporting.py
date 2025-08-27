@@ -339,9 +339,10 @@ class ReportingService(base.BaseService):
         None
         """
         group_name, dataset_name, _, _, algorithm_names = self.get_context()
+        dataset_name_id = self._get_dataset_name_id(dataset_name)
 
         experiment_id = (
-            f"{'_'.join(algorithm_names)}_{group_name}_{dataset_name}" # pylint: disable=W1405
+            f"{'_'.join(algorithm_names)}_{group_name}_{dataset_name_id}" # pylint: disable=W1405
         )
         hyperparam_grid = {
             key: str(value)
@@ -361,7 +362,7 @@ class ReportingService(base.BaseService):
         ]
         self.experiments[experiment_id] = report_data.Experiment(
             ID=experiment_id,
-            dataset=f"{group_name}_{dataset_name}",
+            dataset=f"{group_name}_{dataset_name_id}",
             algorithm=algorithm_display_names,
             tuned_params=tuned_params,
             hyperparam_grid=hyperparam_grid,
@@ -383,27 +384,25 @@ class ReportingService(base.BaseService):
         None
         """
         for group in groups:
-            datasets = [
-                f"{group.name}_{dataset.split('.')[0]}"
-                for dataset in group.datasets
-            ]
-
             test_scores = {}
             data_split_scores=defaultdict(list)
 
             data_manager = self.data_managers[group.name]
             num_splits = int(data_manager.n_splits)
+            datasets = []
             for dataset in group.datasets:
+                dataset_name = (dataset[0].split(".")[0], dataset[1])
+                dataset_name_id = self._get_dataset_name_id(dataset_name)
+                datasets.append(dataset_name_id)
                 for split in range(num_splits):
-                    dataset_name = dataset.split(".")[0]
-                    run_id = f"{group.name}_{dataset_name}_split_{split}"
+                    run_id = f"{group.name}_{dataset_name_id}_split_{split}"
                     test_scores[run_id] = report_data.TableData(
                         name=run_id,
                         description=f"Test set performance on {dataset_name} (Split {split})",
                         columns=self.test_scores[group.name][dataset_name][split]["columns"],
                         rows=self.test_scores[group.name][dataset_name][split]["rows"]
                     )
-                    data_split_scores[f"{group.name}_{dataset_name}"].append(
+                    data_split_scores[f"{group.name}_{dataset_name_id}"].append(
                         self.best_score_by_split[group.name][dataset_name][split]
                     )
 
@@ -881,3 +880,12 @@ class ReportingService(base.BaseService):
             self.best_score_by_split[group_name][dataset_name][split_index] = current_result
         elif not greater_is_better and tuning_score < best_result[2]:
             self.best_score_by_split[group_name][dataset_name][split_index] = current_result
+
+    def _get_dataset_name_id(self, dataset_name: tuple) -> str:
+        """Get the dataset ID string used in the report from the tuple"""
+        dataset_name_id = (
+            "_".join(dataset_name)
+            if dataset_name[1] is not None
+            else dataset_name[0]
+        )
+        return dataset_name_id
