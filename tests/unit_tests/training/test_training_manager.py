@@ -484,7 +484,6 @@ test_logfile
         expected_tqdm_calls = (
             "\nExperiment 'experiment1' on dataset 'dataset1' "
             "PASSED in 3m 8s.",
-            f"\n{'-' * 80}"
         )
 
         training_manager._handle_success(

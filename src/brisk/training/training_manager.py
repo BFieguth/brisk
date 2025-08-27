@@ -394,7 +394,6 @@ class TrainingManager:
             f"\nExperiment '{experiment_name}' on dataset "
             f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
         )
-        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
 
     def _handle_failure(
         self,
