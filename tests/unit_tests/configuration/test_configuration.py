@@ -214,3 +214,32 @@ class TestConfiguration:
             configuration._check_datasets_type(datasets_list)
 
         configuration._check_datasets_type(datasets_correct)
+
+    def test_convert_datasets_to_tuple(self, configuration):
+        datasets = [
+            "data.csv", ("mixed_features.db", "mixed_features_regression")
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("mixed_features.db", "mixed_features_regression")
+        ]
+
+        datasets = [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+
+        datasets = [
+            "data.csv", "test.csv"
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("test.csv", None)
+        ]
