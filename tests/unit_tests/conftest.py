@@ -231,6 +231,7 @@ from brisk.configuration.configuration import Configuration, ConfigurationManage
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
+        default_workflow = "regression_workflow",
         default_algorithms = ["linear"],
     )
     config.add_experiment_group(
@@ -775,8 +776,8 @@ C,5.0,6.0,0.7""",
 @pytest.fixture
 def mock_regression_workflow(tmp_path):
     workflow_dir = tmp_path / 'workflows'
-    workflow_dir.mkdir()
-    workflow_path = workflow_dir / 'test_workflow.py'
+    workflow_dir.mkdir(exist_ok=True)
+    workflow_path = workflow_dir / 'regression_workflow.py'
 
     workflow_py = """
 from brisk.training.workflow import Workflow
@@ -790,6 +791,29 @@ class Regression(Workflow):
 """
     workflow_path.write_text(workflow_py)
     return workflow_path
+
+
+@pytest.fixture
+def mock_categorical_workflow(tmp_path):
+    workflow_dir = tmp_path / 'workflows'
+    workflow_dir.mkdir(exist_ok=True)  # Safe pattern from real CLI
+    workflow_path = workflow_dir / 'categorical_workflow.py'
+
+    workflow_py = """
+from brisk.training.workflow import Workflow
+
+class Categorical(Workflow):
+    def workflow(self):
+        self.model.fit(self.X_train, self.y_train)
+        self.evaluate_model(
+            self.model, self.X_test, self.y_test, ["accuracy"], "test_metrics"
+        )
+"""
+    workflow_path.write_text(workflow_py)
+    return workflow_path
+
+
+
 
 
 @pytest.fixture

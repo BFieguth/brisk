@@ -88,12 +88,14 @@ from brisk.configuration.configuration import Configuration, ConfigurationManage
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
+        default_workflow = "workflow",
         default_algorithms = ["linear"],
     )
 
     config.add_experiment_group(
         name="group_name",
-        datasets=[]
+        datasets=[],
+        workflow="workflow"  
     )
 
     return config.build()
@@ -140,16 +142,11 @@ from settings import create_configuration
 
 config = create_configuration()
 
-# Define the TrainingManager for experiments with workflow mappings
-# Each experiment group must have an explicit workflow assigned
+# Define the TrainingManager for experiments
+# Workflows are assigned to experiment groups in settings.py
 manager = TrainingManager(
     metric_config=METRIC_CONFIG,
-    config_manager=config,
-    workflow_mapping={
-        # Example: "group_name": WorkflowClass
-        # "group1": RegressionSingle,
-        # "group2": RegressionSingleFull,
-    }
+    config_manager=config
 )
 """)
 
