@@ -7,7 +7,7 @@ from brisk.services import (
     GlobalServiceManager, get_services, get_service_manager, is_initialized
 )
 from brisk.services.bundle import ServiceBundle
-from conftest import get_algorithm_config, get_metric_config
+from tests.conftest import get_algorithm_config, get_metric_config
 
 @pytest.fixture
 def algo_config():

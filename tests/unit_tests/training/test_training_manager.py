@@ -53,12 +53,12 @@ def configuration(mock_brisk_project):
 
 @pytest.fixture
 def workflow(mock_brisk_project):
-    workflow_file = mock_brisk_project / "workflows" / "test_workflow.py"
+    workflow_file = mock_brisk_project / "workflows" / "regression_workflow.py"
     spec = importlib.util.spec_from_file_location(
-        "test_workflow", str(workflow_file)
+        "regression_workflow", str(workflow_file)
     )
     workflow_module = importlib.util.module_from_spec(spec)
-    sys.modules["test_workflow"] = workflow_module
+    sys.modules["regression_workflow"] = workflow_module
     spec.loader.exec_module(workflow_module)
 
     return workflow_module.Regression
@@ -79,6 +79,7 @@ def experiment():
             display_name="Linear Regression",
             algorithm_class=linear_model.LinearRegression
         )},
+        workflow="regression_workflow",
         workflow_args={},           
         table_name=None,
         categorical_features=None,
@@ -138,7 +139,7 @@ class TestTrainingManager:
         training_manager.experiment_results = initial_experiment_results
         # NOTE mock the _run_single_experiment method so no results are added
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"group1": workflow, "group2": workflow, "test_group": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager.run_experiments(False)
 
         assert training_manager.experiment_results == collections.defaultdict(
@@ -161,6 +162,7 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,
@@ -174,6 +176,7 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,
@@ -181,7 +184,7 @@ class TestTrainingManager:
         ))
         
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"group1": workflow, "group2": workflow, "test_group": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager.run_experiments(False)
         
         # Verify progress bar was created with correct total
@@ -209,7 +212,7 @@ class TestTrainingManager:
         assert initial_experiment_count > 0, "Training manager should have experiments for this test"
         
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"group1": workflow, "group2": workflow, "test_group": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager.run_experiments(False)
         
         # Verify experiments queue is empty after running
@@ -226,7 +229,7 @@ class TestTrainingManager:
     @mock.patch("brisk.services.reporting.ReportingService.add_experiment_groups")
     def test_run_single_experiment_success(self, mock_add_experiment_groups, mock_setup_workflow, mock_handle_success, training_manager, experiment, workflow):
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"test_experiment": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager._run_single_experiment(experiment, "test_results")
         assert mock_setup_workflow.call_count == 1
         assert mock_handle_success.call_count == 1
@@ -266,6 +269,7 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group"
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
         
         # Create a mock workflow instance that raises the specified error
         mock_workflow_instance = mock.Mock()
@@ -273,7 +277,7 @@ class TestTrainingManager:
         mock_setup_workflow.return_value = mock_workflow_instance
         
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"test_group": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager._run_single_experiment(
             mock_experiment,
             "test_results_dir"
@@ -314,13 +318,14 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group"
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
         
         # Create a mock workflow instance that succeeds
         mock_workflow_instance = mock.Mock()
         mock_setup_workflow.return_value = mock_workflow_instance
         
         # Set up workflow mapping for the test
-        training_manager.workflow_mapping = {"test_group": workflow}
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager._run_single_experiment(
             mock_experiment,
             "test_results_dir"
@@ -358,6 +363,7 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group" 
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
 
         # Create a mock workflow instance that triggers a warning
         def trigger_warning():
@@ -372,7 +378,7 @@ class TestTrainingManager:
         
         try:
             # Set up workflow mapping for the test
-            training_manager.workflow_mapping = {"test_group": workflow}
+            training_manager.workflow_mapping = {"regression_workflow": workflow}
             training_manager._run_single_experiment(
                 mock_experiment,
                 "test_results_dir"
@@ -436,6 +442,7 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,
