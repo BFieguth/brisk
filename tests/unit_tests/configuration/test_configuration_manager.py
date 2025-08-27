@@ -19,11 +19,13 @@ class TestConfigurationManager:
         """Test basic initialization of ConfigurationManager."""
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
         group2 = ExperimentGroup(
             name="test_group2", 
+            workflow="regression_workflow",
             datasets=["categorical.csv"],
             algorithms=["ridge"]
         )
@@ -49,6 +51,7 @@ class TestConfigurationManager:
 
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -69,6 +72,7 @@ class TestConfigurationManager:
 
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -94,6 +98,7 @@ class TestConfigurationManager:
 
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -121,6 +126,7 @@ class TestConfigurationManager:
         data_file.write_text(data_content)
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -149,6 +155,7 @@ class TestConfigurationManager:
         """Test the _validate_single_data_manager method correct behavior."""
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -209,6 +216,7 @@ class TestConfigurationManager:
         algorithm_file.unlink()
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -229,6 +237,7 @@ class TestConfigurationManager:
         algorithm_file.write_text(algorithm_content)
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -269,6 +278,7 @@ class TestConfigurationManager:
             )
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -280,6 +290,7 @@ class TestConfigurationManager:
         """Test the ALGORITHM_CONFIG is an AlgorithmCollection."""
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -332,6 +343,7 @@ class TestConfigurationManager:
         """Test the _get_base_params method of ConfigurationManager."""
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -354,6 +366,7 @@ class TestConfigurationManager:
         """Test passing data_config arg does not change the base data manager"""
         group = ExperimentGroup(
             name="test_group",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"],
             data_config={
@@ -381,17 +394,20 @@ class TestConfigurationManager:
         groups = [
             ExperimentGroup(
                 name="group1",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=["linear"]
             ),
             ExperimentGroup(
                 name="group2",
+                workflow="regression_workflow",
                 datasets=["categorical.csv"],
                 algorithms=["ridge"],
                 data_config={"test_size": 0.3}
             ),
             ExperimentGroup(
                 name="group3",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=["elasticnet"]
             )
@@ -412,11 +428,13 @@ class TestConfigurationManager:
         groups = [
             ExperimentGroup(
                 name="single",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=["linear"]
             ),
             ExperimentGroup(
                 name="multiple",
+                workflow="regression_workflow",
                 datasets=["regression.csv", "categorical.csv"],
                 algorithms=[["ridge", "elasticnet"]],
                 algorithm_config={
@@ -455,16 +473,19 @@ class TestConfigurationManager:
         groups = [
             ExperimentGroup(
                 name="group1",
+                workflow="regression_workflow",
                 datasets=["regression.csv", "categorical.csv"],
                 algorithms=["linear", "ridge", "elasticnet"]
             ),
             ExperimentGroup(
                 name="group2",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=[["ridge", "elasticnet"], ["linear", "ridge"]]
             ),
             ExperimentGroup(
                 name="group3",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=["linear", "ridge"]
             )
@@ -478,12 +499,14 @@ class TestConfigurationManager:
         """Test the _create_logfile method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
 
         group2 = ExperimentGroup(
             name="group2",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["ridge"],
             algorithm_config={"ridge": {"alpha": 0.5}}
@@ -630,6 +653,7 @@ Continuous: ['x', 'y']
         """Test the _create_logfile method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=["regression.csv", "categorical.csv"],
             data_config={
                 "test_size": 0.3,
@@ -652,6 +676,7 @@ Continuous: ['x', 'y']
 
         group2 = ExperimentGroup(
             name="group2",
+            workflow="regression_workflow",
             datasets=["group.csv"],
             data_config={
                 "test_size": 0.1,
@@ -824,12 +849,14 @@ Continuous: ['x', 'y']
         """Test the _get_output_structure method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"],
         )
         
         group2 = ExperimentGroup(
             name="group2",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["ridge"],
         )
@@ -852,6 +879,7 @@ Continuous: ['x', 'y']
         """Test the _get_output_structure method of ConfigurationManager what SQL table name is used."""        
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=[("test_data.db", "regression")],
             algorithms=["linear"],
         )
@@ -870,11 +898,13 @@ Continuous: ['x', 'y']
         """Test the _get_output_structure method of ConfigurationManager with multiple datasets."""
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=["regression.csv", "categorical.csv"],
             algorithms=["linear"]
         )
         group2 = ExperimentGroup(
             name="group2",
+            workflow="regression_workflow",
             datasets=[
                 "regression.csv",
                 ("test_data.db", "regression"),
@@ -904,18 +934,21 @@ Continuous: ['x', 'y']
         """Test the _create_description_map method of ConfigurationManager."""
         group1 = ExperimentGroup(
             name="group1",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"],
             description="This is a test description"
         )
         group2 = ExperimentGroup(
             name="group2",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["ridge"],
             description="This is another test description that needs to be wrapped and stored properly."
         )
         group3 = ExperimentGroup(
             name="group3",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["elasticnet"]
         )

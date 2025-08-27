@@ -47,6 +47,7 @@ def single_model(linear_wrapper):
     """Create a simple experiment with one model."""
     return Experiment(
         group_name="test_group",
+        workflow="regression_workflow",
         dataset_path=Path("datasets/regression.csv"),
         algorithms={"model": linear_wrapper},
         workflow_args={"metrics": ["MAE", "MSE"]},
@@ -61,6 +62,7 @@ def multiple_models(linear_wrapper, rf_wrapper):
     """Create an experiment with multiple models."""
     return Experiment(
         group_name="test_group",
+        workflow="regression_workflow",
         dataset_path=Path("datasets/regression.csv"),
         algorithms={
             "model": linear_wrapper,
@@ -78,6 +80,7 @@ def sql_table(ridge_wrapper):
     """Create an experiment with a SQL table."""
     return Experiment(
         group_name="sql_table",
+        workflow="regression_workflow",
         dataset_path=Path("datasets/test_data.db"),
         algorithms={"model": ridge_wrapper},
         workflow_args={},
@@ -192,6 +195,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Single model must use key"):
             Experiment(
                 group_name="test",
+                workflow="regression_workflow",
                 dataset_path="test.csv",
                 algorithms={"wrong_key": linear_wrapper},
                 workflow_args={},
@@ -203,6 +207,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Multiple models must use keys"):
             Experiment(
                 group_name="test",
+                workflow="regression_workflow",
                 dataset_path="test.csv",
                 algorithms={
                     "model": linear_wrapper,
@@ -219,6 +224,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Group name must be a string"):
             Experiment(
                 group_name=123,
+                workflow="regression_workflow",
                 dataset_path="test.csv",
                 algorithms={"model": linear_wrapper},
                 workflow_args={},
@@ -232,6 +238,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="Algorithms must be a dictionary"):
             Experiment(
                 group_name="test",
+                workflow="regression_workflow",
                 dataset_path="test.csv",
                 algorithms=[linear_wrapper],
                 workflow_args={},
@@ -245,6 +252,7 @@ class TestExperiment:
         with pytest.raises(ValueError, match="At least one algorithm must be provided"):
             Experiment(
                 group_name="test",
+                workflow="regression_workflow",
                 dataset_path="test.csv",
                 algorithms={},
                 workflow_args={},

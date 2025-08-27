@@ -11,13 +11,17 @@ import ast
 import collections
 from importlib import util
 from pathlib import Path
+import inspect
+import importlib
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
-from brisk.configuration import experiment_group, experiment_factory, project
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import (
+    experiment_group, experiment_factory, project, algorithm_wrapper
+)
 from brisk.reporting import formatting
 from brisk.services import get_services
+from brisk.training import workflow as workflow_module
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.
@@ -67,6 +71,7 @@ class ConfigurationManager:
         self.services = get_services()
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
+        self.workflow_map = {}
         self.project_root = project.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
@@ -270,9 +275,15 @@ class ConfigurationManager:
             data_config = group.data_config or {}
             if "preprocessors" in data_config:
                 # Create a key based on preprocessor types and other config
-                preprocessor_types = tuple(type(p).__name__ for p in data_config["preprocessors"])
-                other_config = {k: v for k, v in data_config.items() if k != "preprocessors"}
-                config_key = (preprocessor_types, frozenset(other_config.items()))
+                preprocessor_types = tuple(
+                    type(p).__name__ for p in data_config["preprocessors"]
+                )
+                other_config = {
+                    k: v for k, v in data_config.items() if k != "preprocessors"
+                }
+                config_key = (
+                    preprocessor_types, frozenset(other_config.items())
+                )
             else:
                 config_key = frozenset(data_config.items())
 
@@ -280,8 +291,10 @@ class ConfigurationManager:
 
         managers = {}
         for config_key, group_names in config_groups.items():
-            # Find the first group with this configuration to get the original data_config
-            first_group = next(g for g in self.experiment_groups if g.name in group_names)
+            first_group = next(
+                g for g in self.experiment_groups
+                if g.name in group_names
+            )
 
             if not first_group.data_config:
                 manager = self.base_data_manager
@@ -313,6 +326,8 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
+            workflow_class = self._check_workflow_exists(group.workflow)
+            self.workflow_map[group.workflow] = workflow_class
             n_splits = group.data_config.get(
                 "n_splits", self.base_data_manager.n_splits
             )
@@ -463,3 +478,34 @@ class ConfigurationManager:
             for group in self.experiment_groups
             if group.description != ""
         }
+
+    def _check_workflow_exists(self, workflow_name: str) -> None:
+        """Ensures workflow is a string and exists in the workflows directory.
+
+        Also checks only one Workflow subclass is defined in the file.
+        """
+        try:
+            module = importlib.import_module(
+                f"workflows.{workflow_name}"
+            )
+            workflow_classes = [
+                obj for _, obj in inspect.getmembers(module)
+                if inspect.isclass(obj)
+                and issubclass(obj, workflow_module.Workflow)
+                and obj is not workflow_module.Workflow
+            ]
+
+            if len(workflow_classes) == 0:
+                raise AttributeError(
+                    f"No Workflow subclass found in {workflow_name}.py"
+                )
+            elif len(workflow_classes) > 1:
+                raise AttributeError(
+                    f"Multiple Workflow subclasses found in {workflow_name}.py."
+                    " There can only be one Workflow per file."
+                    )
+
+            return workflow_classes[0]
+
+        except (ImportError, AttributeError) as e:
+            print(f"Error validating workflow: {e}")
