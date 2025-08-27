@@ -193,7 +193,7 @@ class TrainingManager:
             workflow_instance = self._setup_workflow(
                 current_experiment, workflow_class, results_dir
             )
-            workflow_instance.workflow()
+            workflow_instance.run()
             success = True
 
         except (
