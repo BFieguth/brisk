@@ -1,4 +1,4 @@
-"""Setup fixtures to use for testing.
+"""Setup fixtures to use for tests in unit_tests/ and integration/.
 
 There is a fixture for each file that is created in the project structure. The
 mock_regression_project fixture creates the entire project structure and

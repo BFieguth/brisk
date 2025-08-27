@@ -5,20 +5,12 @@ feature works correctly across different scenarios.
 """
 
 import pytest
-import tempfile
-import shutil
 import importlib.util
 import sys
-from pathlib import Path
-from unittest import mock
 
 from brisk.training.training_manager import TrainingManager
 from brisk.configuration.configuration_manager import ConfigurationManager
-from brisk.evaluation.metric_manager import MetricManager
 from brisk.configuration.experiment_group import ExperimentGroup
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
-from brisk.training.workflow import Workflow
-
 
 @pytest.fixture
 def configuration(mock_brisk_project):
@@ -99,7 +91,6 @@ class TestMultipleWorkflows:
 
         assert "regression_workflow" in training_manager.workflow_mapping
    
-
     def test_group_override_default(self, mock_brisk_project, mock_categorical_workflow, metric_config):
         from brisk.configuration.configuration import Configuration
         
@@ -213,5 +204,3 @@ class TestMultipleWorkflows:
 
         assert "nonexistent_workflow" in config_manager.workflow_map
         assert config_manager.workflow_map["nonexistent_workflow"] is None
-
-     
