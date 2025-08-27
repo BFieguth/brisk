@@ -6,7 +6,6 @@ if some fail.
 """
 
 import collections
-import logging
 import os
 import time
 import json
@@ -186,8 +185,7 @@ class TrainingManager:
 
         try:
             workflow_instance = self._setup_workflow(
-                current_experiment, workflow, results_dir, group_name,
-                dataset_name, experiment_name
+                current_experiment, workflow, results_dir
             )
             workflow_instance.workflow()
             success = True
@@ -293,10 +291,7 @@ class TrainingManager:
         self,
         current_experiment: experiment.Experiment,
         workflow: Type[workflow_module.Workflow],
-        results_dir: str,
-        group_name: str,
-        dataset_name: str,
-        experiment_name: str
+        results_dir: str
     ) -> workflow_module.Workflow:
         """Prepares a workflow instance for experiment execution.
 
@@ -327,12 +322,16 @@ class TrainingManager:
         Workflow
             Configured workflow instance.
         """
+        group_name = current_experiment.group_name
+        dataset_name = current_experiment.dataset_name
+        experiment_name = current_experiment.name
+
         data_split = self.data_managers[group_name].split(
             data_path=current_experiment.dataset_path,
             categorical_features=current_experiment.categorical_features,
-            table_name=current_experiment.table_name,
+            table_name=current_experiment.dataset_name[1],
             group_name=group_name,
-            filename=dataset_name
+            filename=current_experiment.dataset_name[0]
         ).get_split(current_experiment.split_index)
 
         X_train, X_test, y_train, y_test = data_split.get_train_test() # pylint: disable=C0103
@@ -394,7 +393,6 @@ class TrainingManager:
             f"\nExperiment '{experiment_name}' on dataset "
             f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
         )
-        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
 
     def _handle_failure(
         self,
@@ -476,8 +474,7 @@ class TrainingManager:
             f"Category: {category.__name__}\n\n"
             f"Message: {message}\n"
         )
-        logger = logging.getLogger("TrainingManager")
-        logger.warning(log_message)
+        self.services.logger.logger.warning(log_message)
 
     def _print_experiment_summary(self) -> None:
         """Print experiment summary organized by group and dataset.
@@ -535,9 +532,14 @@ class TrainingManager:
         str
             Path to the experiment directory.
         """
+        if dataset_name[1] is None:
+            dataset_dir_name = dataset_name[0]
+        else:
+            dataset_dir_name = f"{dataset_name[0]}_{dataset_name[1]}"
+
         full_path = os.path.normpath(
             os.path.join(
-                results_dir, group_name, dataset_name, f"split_{split_index}",
+                results_dir, group_name, dataset_dir_name, f"split_{split_index}",
                 experiment_name
             )
         )
@@ -582,7 +584,6 @@ class TrainingManager:
         None
         """
         progress_bar.close()
-        logging.shutdown()
         error_log_path = os.path.join(results_dir, "error_log.txt")
         if (os.path.exists(error_log_path)
             and os.path.getsize(error_log_path) == 0

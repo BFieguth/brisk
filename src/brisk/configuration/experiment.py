@@ -21,7 +21,7 @@ Examples
 """
 import dataclasses
 import pathlib
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 
 from brisk.configuration import algorithm_wrapper
 
@@ -55,8 +55,10 @@ class Experiment:
     ----------
     name : str
         Full descriptive name combining group and algorithms
-    dataset_name : str
-        Name of the dataset with optional table name
+    dataset_name : Tuple[str, Optional[str]]
+        Name of the dataset file and table name (for database files`)
+    table_name: str
+        Name of the table (database files only)
     algorithm_kwargs : dict
         Dictionary of instantiated algorithm objects
     algorithm_names : list
@@ -88,7 +90,7 @@ class Experiment:
         return f"{self.group_name}_{algo_names}"
 
     @property
-    def dataset_name(self) -> str:
+    def dataset_name(self) -> Tuple[str, Optional[str]]:
         """Get the dataset name with optional table name.
 
         Returns
@@ -97,11 +99,7 @@ class Experiment:
             Dataset stem with optional table name
             Example: 'data_table1' or 'data'
         """
-        dataset_name = (
-            f"{self.dataset_path.stem}_{self.table_name}"
-            if self.table_name else self.dataset_path.stem
-        )
-        return dataset_name
+        return (self.dataset_path.stem, self.table_name)
 
     @property
     def algorithm_kwargs(self) -> dict:

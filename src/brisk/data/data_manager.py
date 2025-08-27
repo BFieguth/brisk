@@ -645,7 +645,6 @@ class DataManager:
                 split_key=split_key,
                 split_index=split_index,
                 scaler=fitted_scaler,
-                features=feature_names,
                 categorical_features=categorical_features,
                 continuous_features=continuous_features
             )

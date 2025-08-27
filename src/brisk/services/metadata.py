@@ -33,6 +33,24 @@ class MetadataService(base_service.BaseService):
         super().__init__(name)
         self.algorithm_config = algorithm_config
 
+    def _get_base(self, method_name: str) -> Dict[str, Any]:
+        """Base information that is common to all metadata
+        
+        Parameters
+        ----------
+        method_name : str
+            The name of the calling method
+
+        Returns
+        -------
+        dict
+            Base metadata including timestamp, method name, and type
+        """
+        return {
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "method": method_name,
+        }
+
     def get_model(
         self,
         models: Union[base.BaseEstimator, List[base.BaseEstimator]],
@@ -58,13 +76,11 @@ class MetadataService(base_service.BaseService):
             Metadata including timestamp, method name, algorith wrapper name,
             and algorithm display name
         """
-        metadata = {
-            "type": "model",
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "method": method_name,
-            "models": {},
-            "is_test": str(is_test)
-        }
+        metadata = self._get_base(method_name)
+        metadata["type"] = "model"
+        metadata["models"] = {}
+        metadata["is_test"] = str(is_test)
+
         if not isinstance(models, list):
             models = [models]
 
@@ -97,10 +113,8 @@ class MetadataService(base_service.BaseService):
             Metadata including timestamp, method name, dataset name, and group
             name
         """
-        return {
-            "type": "dataset",
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "method": method_name,
-            "dataset": dataset_name,
-            "group": group_name
-        }
+        metadata = self._get_base(method_name)
+        metadata["type"] = "dataset"
+        metadata["dataset"] = dataset_name
+        metadata["group"] = group_name
+        return metadata
