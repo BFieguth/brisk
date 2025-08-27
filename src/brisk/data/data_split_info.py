@@ -52,8 +52,8 @@ class DataSplitInfo:
         The split index in DataSplits container
     scaler : object, optional
         The scaler used for this split
-    features : list of str, optional
-        The order of input features
+    continuous_features : list of str, optional
+        List of continuous feature names
     categorical_features : list of str, optional
         List of categorical feature names
     scaler : object, optional
@@ -111,14 +111,13 @@ class DataSplitInfo:
         split_key: Tuple[str, str, str],
         split_index: int,
         scaler: Optional[Any] = None,
-        features: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None,
         continuous_features: Optional[List[str]] = None
     ):
         self.group_name = split_key[0]
         self.dataset_name = split_key[1]
         self.table_name = split_key[2]
-        self.features = features
+        self.features = []
         self.split_index = split_index
 
         self.services = get_services()
@@ -144,27 +143,10 @@ class DataSplitInfo:
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
-        if categorical_features is None:
-            categorical_features = self._detect_categorical_features()
-
-        self.categorical_features = [
-            feature for feature in categorical_features
-            if feature in X_train.columns
-        ]
-
-        if continuous_features is None:
-            self.continuous_features = []
-        else:
-            # Only include features that are in X_train and are NOT categorical
-            self.continuous_features = [
-                feature for feature in continuous_features
-                if feature in X_train.columns and feature not in self.categorical_features
-            ]
-
+        self._set_features(
+            X_train.columns, categorical_features, continuous_features
+        )
         self.scaler = scaler
-
-        # Calculate continuous features for stats (everything except categorical)
-
         self.evaluate_data_split()
 
     def evaluate_data_split(self):
@@ -363,3 +345,22 @@ class DataSplitInfo:
             "num_features": len(self.X_train.columns),
             "num_samples": len(self.X_train) + len(self.X_test)
         }
+
+    def _set_features(self, columns, categorical_features, continuous_features):
+        if categorical_features is None:
+            categorical_features = self._detect_categorical_features()
+
+        self.categorical_features = [
+            feature for feature in categorical_features
+            if feature in columns
+        ]
+
+        if continuous_features is None:
+            self.continuous_features = []
+        else:
+            self.continuous_features = [
+                feature for feature in continuous_features
+                if feature in columns and feature not in self.categorical_features
+            ]
+        
+        self.features = self.continuous_features + self.categorical_features
