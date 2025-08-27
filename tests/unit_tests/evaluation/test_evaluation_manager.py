@@ -120,3 +120,7 @@ class TestEvaluationManager:
 
         loaded_model = eval_manager.load_model(f"{filename}.pkl")
         assert isinstance(loaded_model["model"], RandomForestRegressor)
+
+    def test_register_custom_evaluators(self, eval_manager, monkeypatch):
+        # Check classes from evaluators.py get registered   
+        assert "registered_class" in eval_manager.registry.evaluators
