@@ -9,6 +9,7 @@ def valid_group(mock_brisk_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
+        workflow="regression_workflow",
         datasets=["regression.csv"],
         algorithms=["linear", "ridge"],
         description="This is a test description"
@@ -20,6 +21,7 @@ def valid_group_two_datasets(mock_brisk_project):
     """Create a valid experiment group"""
     return ExperimentGroup(
         name="test_group",
+        workflow="regression_workflow",
         datasets=["regression.csv", "categorical.csv"],
         algorithms=["linear", "ridge"],
         description="This is a long description that should be wrapped over multiple lines since nobody wants to scroll across the screen to read this useless message."
@@ -32,34 +34,35 @@ class TestExperimentGroup:
         assert valid_group.name == "test_group"
         assert valid_group.datasets == ["regression.csv"]
         assert valid_group.algorithms == ["linear", "ridge"]
-        assert valid_group.algorithm_config == None
+        assert valid_group.algorithm_config is None
         assert valid_group.description == "This is a test description"
-        assert valid_group.workflow_args == None
+        assert valid_group.workflow_args is None
 
     def test_invalid_name(self, mock_brisk_project):
         """Test creation with invalid name"""
         with pytest.raises(ValueError, match="must be a non-empty string"):
-            ExperimentGroup(name="", datasets=["regression.csv"])
+            ExperimentGroup(name="", workflow="regression_workflow", datasets=["regression.csv"])
         
         with pytest.raises(ValueError, match="must be a non-empty string"):
-            ExperimentGroup(name="   ", datasets=["regression.csv"])
+            ExperimentGroup(name="   ", workflow="regression_workflow", datasets=["regression.csv"])
 
         with pytest.raises(ValueError, match="must be a non-empty string"):
-            ExperimentGroup(name=None, datasets=["regression.csv"])
+            ExperimentGroup(name=None, workflow="regression_workflow", datasets=["regression.csv"])
 
         with pytest.raises(ValueError, match="must be a non-empty string"):
-            ExperimentGroup(name=1, datasets=["regression.csv"])
+            ExperimentGroup(name=1, workflow="regression_workflow", datasets=["regression.csv"])
 
         # Check valid names don't raise errors
-        ExperimentGroup(name="test_group", datasets=["regression.csv"])
-        ExperimentGroup(name="test group", datasets=["regression.csv"])
-        ExperimentGroup(name="   test   ", datasets=["regression.csv"])
+        ExperimentGroup(name="test_group", workflow="regression_workflow", datasets=["regression.csv"])
+        ExperimentGroup(name="test group", workflow="regression_workflow", datasets=["regression.csv"])
+        ExperimentGroup(name="   test   ", workflow="regression_workflow", datasets=["regression.csv"])
 
     def test_missing_dataset(self, mock_brisk_project):
         """Test creation with non-existent dataset"""
         with pytest.raises(FileNotFoundError, match="Dataset not found"):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["nonexistent.csv"]
             )
 
@@ -68,6 +71,7 @@ class TestExperimentGroup:
         with pytest.raises(ValueError, match="At least one dataset must be specified"):
             ExperimentGroup(
                 name="test_group",
+                workflow="regression_workflow",
                 datasets=[],
                 algorithms=["linear", "ridge"]
             )
@@ -96,6 +100,7 @@ class TestExperimentGroup:
         ):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=["linear"],
                 algorithm_config={"ridge": {"alpha": 1.0}}
@@ -109,6 +114,7 @@ class TestExperimentGroup:
         ):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 algorithms=[["linear", "ridge"]],
                 algorithm_config={"elasticnet": {"alpha": 1.0}}
@@ -117,6 +123,7 @@ class TestExperimentGroup:
         # Check nested alorithms are found correctly
         ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=[["linear", "ridge"]],
             algorithm_config={"ridge": {"alpha": 1.0}}
@@ -127,6 +134,7 @@ class TestExperimentGroup:
         with pytest.raises(ValueError, match="Invalid DataManager parameters"):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 data_config={"invalid_param": 1.0}
             )
@@ -140,6 +148,7 @@ class TestExperimentGroup:
         """Test various valid data configurations"""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             data_config=data_config
         )
@@ -159,13 +168,15 @@ class TestExperimentGroup:
         with pytest.raises(ValueError, match="Description must be a string"):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 description=1
             )
-        
+
         with pytest.raises(ValueError, match="Description must be a string"):
             ExperimentGroup(
                 name="test",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 description=["A description", "that is not a string"]
             )
@@ -174,6 +185,7 @@ class TestExperimentGroup:
         with pytest.raises(ValueError, match="workflow_args must be a dict"):
             ExperimentGroup(
                 name="test_invalid_args",
+                workflow="regression_workflow",
                 datasets=["regression.csv"],
                 workflow_args=["arg1"]
             )

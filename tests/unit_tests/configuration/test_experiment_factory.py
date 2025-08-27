@@ -69,6 +69,7 @@ class TestExperimentFactory:
         """Test creation of experiment with single algorithm."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
@@ -90,6 +91,7 @@ class TestExperimentFactory:
         """Test creation of separate experiments for multiple algorithms."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear", "ridge"]
         )
@@ -125,6 +127,7 @@ class TestExperimentFactory:
         """Test creation of single experiment with multiple algorithms."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=[["linear", "ridge"]]
         )
@@ -148,6 +151,7 @@ class TestExperimentFactory:
         """Test creation of experiments for multiple datasets."""      
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv", "group.csv"],
             algorithms=["linear"]
         )
@@ -170,6 +174,7 @@ class TestExperimentFactory:
         """Test application of algorithm configuration."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["elasticnet"],
             algorithm_config={
@@ -194,6 +199,7 @@ class TestExperimentFactory:
         """Test handling of invalid algorithm name."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["invalid_algo"]
         )
@@ -205,6 +211,7 @@ class TestExperimentFactory:
         """Test handling of mixed single and grouped algorithms."""
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["regression.csv"],
             algorithms=["linear", ["ridge", "elasticnet"]]
         )
@@ -238,6 +245,7 @@ class TestExperimentFactory:
     def test_create_experiment_categorical_features(self, factory_categorical, mock_brisk_project, tmp_path):
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=["categorical.csv"],
             algorithms=["linear"]
         )
@@ -257,6 +265,7 @@ class TestExperimentFactory:
     def test_create_experiment_sql(self, factory, mock_brisk_project, tmp_path):
         group = ExperimentGroup(
             name="test",
+            workflow="regression_workflow",
             datasets=[("test_data.db", "regression")],
             algorithms=["linear"]
         )

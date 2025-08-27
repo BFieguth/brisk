@@ -32,6 +32,7 @@ def test_nested_project_root(tmp_path, monkeypatch):
     
     group = ExperimentGroup(
         name="test_group",
+        workflow="regression_workflow",
         datasets=["test.csv"],
         algorithms=["linear"]
     )
