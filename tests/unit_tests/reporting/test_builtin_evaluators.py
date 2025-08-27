@@ -17,7 +17,7 @@ from brisk.evaluation.evaluators.builtin import (
 from brisk.services.bundle import ServiceBundle
 from brisk.services.utility import UtilityService
 from brisk.data.data_manager import DataManager
-from conftest import get_metric_config, get_algorithm_config
+from tests.conftest import get_metric_config, get_algorithm_config
 
 
 @pytest.fixture

@@ -53,12 +53,12 @@ def configuration(mock_brisk_project):
 
 @pytest.fixture
 def workflow(mock_brisk_project):
-    workflow_file = mock_brisk_project / "workflows" / "test_workflow.py"
+    workflow_file = mock_brisk_project / "workflows" / "regression_workflow.py"
     spec = importlib.util.spec_from_file_location(
-        "test_workflow", str(workflow_file)
+        "regression_workflow", str(workflow_file)
     )
     workflow_module = importlib.util.module_from_spec(spec)
-    sys.modules["test_workflow"] = workflow_module
+    sys.modules["regression_workflow"] = workflow_module
     spec.loader.exec_module(workflow_module)
 
     return workflow_module.Regression
@@ -79,6 +79,7 @@ def experiment():
             display_name="Linear Regression",
             algorithm_class=linear_model.LinearRegression
         )},
+        workflow="regression_workflow",
         workflow_args={},           
         table_name=None,
         categorical_features=None,
@@ -137,17 +138,18 @@ class TestTrainingManager:
 
         training_manager.experiment_results = initial_experiment_results
         # NOTE mock the _run_single_experiment method so no results are added
-        training_manager.run_experiments(workflow, False)
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
+        training_manager.run_experiments(False)
 
         assert training_manager.experiment_results == collections.defaultdict(
             lambda: collections.defaultdict(list)
         )
 
-    @mock.patch("brisk.training.training_manager.TrainingManager._save_config_log")
     @mock.patch("tqdm.tqdm")
     @mock.patch("brisk.services.reporting.ReportingService._collect_best_score")
     @mock.patch("brisk.services.reporting.ReportingService.add_experiment_groups")
-    def  test_run_experiments_progress_bar(self, mock_add_experiment_groups, mock_collect_best_score, mock_tqdm, mock_save_config_log, training_manager, workflow):
+    def  test_run_experiments_progress_bar(self, mock_add_experiment_groups, mock_collect_best_score, mock_tqdm, training_manager, workflow):
         mock_progress_bar = mock.Mock()
         mock_tqdm.return_value = mock_progress_bar
         
@@ -160,6 +162,7 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,
@@ -173,13 +176,16 @@ class TestTrainingManager:
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,
             split_index=0
         ))
         
-        training_manager.run_experiments(workflow, False)
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
+        training_manager.run_experiments(False)
         
         # Verify progress bar was created with correct total
         mock_tqdm.assert_called_once_with(
@@ -194,11 +200,10 @@ class TestTrainingManager:
             args, _ = call
             assert args == (1,), f"Expected update(1), got update{args}"
 
-    @mock.patch("brisk.training.training_manager.TrainingManager._save_config_log")
     @mock.patch("brisk.training.training_manager.TrainingManager._run_single_experiment")
     @mock.patch("tqdm.tqdm")
     @mock.patch("brisk.services.reporting.ReportingService.add_experiment_groups")
-    def test_run_experiments_consumes_experiments(self, mock_add_experiment_groups, mock_tqdm, mock_run_single_experiment, mock_save_config_log, training_manager, workflow):
+    def test_run_experiments_consumes_experiments(self, mock_add_experiment_groups, mock_tqdm, mock_run_single_experiment, training_manager, workflow):
         mock_progress_bar = mock.Mock()
         mock_tqdm.return_value = mock_progress_bar
         
@@ -206,7 +211,9 @@ class TestTrainingManager:
         initial_experiments = list(training_manager.experiments)
         assert initial_experiment_count > 0, "Training manager should have experiments for this test"
         
-        training_manager.run_experiments(workflow, False)
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
+        training_manager.run_experiments(False)
         
         # Verify experiments queue is empty after running
         assert len(training_manager.experiments) == 0, "Experiments queue should be empty after running"
@@ -221,7 +228,9 @@ class TestTrainingManager:
     @mock.patch("brisk.training.training_manager.TrainingManager._handle_success")
     @mock.patch("brisk.services.reporting.ReportingService.add_experiment_groups")
     def test_run_single_experiment_success(self, mock_add_experiment_groups, mock_setup_workflow, mock_handle_success, training_manager, experiment, workflow):
-        training_manager._run_single_experiment(experiment, workflow, "test_results")
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
+        training_manager._run_single_experiment(experiment, "test_results")
         assert mock_setup_workflow.call_count == 1
         assert mock_handle_success.call_count == 1
 
@@ -260,15 +269,17 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group"
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
         
         # Create a mock workflow instance that raises the specified error
         mock_workflow_instance = mock.Mock()
         mock_workflow_instance.workflow.side_effect = error_type(error_message)
         mock_setup_workflow.return_value = mock_workflow_instance
         
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager._run_single_experiment(
             mock_experiment,
-            workflow,
             "test_results_dir"
         )
         
@@ -307,14 +318,16 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group"
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
         
         # Create a mock workflow instance that succeeds
         mock_workflow_instance = mock.Mock()
         mock_setup_workflow.return_value = mock_workflow_instance
         
+        # Set up workflow mapping for the test
+        training_manager.workflow_mapping = {"regression_workflow": workflow}
         training_manager._run_single_experiment(
             mock_experiment,
-            workflow,
             "test_results_dir"
         )
         
@@ -322,7 +335,7 @@ class TestTrainingManager:
             mock.call(f"\n{'=' * 80}"),
             mock.call(
                 f"\nStarting experiment 'test_experiment' on dataset "
-                f"'test_dataset'."
+                f"'test_dataset' using workflow 'Regression'."
             )
         ]
         mock_tqdm_write.assert_has_calls(expected_calls, any_order=False)
@@ -350,6 +363,7 @@ class TestTrainingManager:
         mock_experiment.group_name = "test_group" 
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
+        mock_experiment.workflow = "regression_workflow"
 
         # Create a mock workflow instance that triggers a warning
         def trigger_warning():
@@ -363,9 +377,10 @@ class TestTrainingManager:
         original_showwarning = warnings.showwarning
         
         try:
+            # Set up workflow mapping for the test
+            training_manager.workflow_mapping = {"regression_workflow": workflow}
             training_manager._run_single_experiment(
                 mock_experiment,
-                workflow,
                 "test_results_dir"
             )
             
@@ -413,22 +428,7 @@ class TestTrainingManager:
         training_manager._create_report("test_results_dir")
         mock_create_report.assert_called_once()
 
-    def test_save_config_log(self, training_manager, tmp_path):
-        os.makedirs(tmp_path / "test_results_dir")
-        training_manager._save_config_log(tmp_path / "test_results_dir", workflow, "test_logfile")
-        assert os.path.exists(tmp_path / "test_results_dir" / "config_log.md")
-        expected_content = """
-# Experiment Configuration Log
 
-## Workflow Configuration
-
-### Workflow Class: `workflow`
-
-test_logfile
-"""
-        with open(tmp_path / "test_results_dir" / "config_log.md", "r") as f:
-            actual_content = f.read()
-        assert actual_content.strip() == expected_content.strip()
 
     def test_setup_workflow(self, workflow, training_manager):
         training_manager.logger = mock.Mock()
@@ -442,6 +442,7 @@ test_logfile
                 display_name="Linear Regression",
                 algorithm_class=linear_model.LinearRegression
             )},
+            workflow="regression_workflow",
             workflow_args={},           
             table_name=None,
             categorical_features=None,

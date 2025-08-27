@@ -5,7 +5,7 @@ from unittest import mock
 
 from brisk.services.reporting import ReportingService
 from brisk.reporting import report_data
-from conftest import get_metric_config
+from tests.conftest import get_metric_config
 
 @pytest.fixture
 def metric_config():

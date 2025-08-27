@@ -121,7 +121,7 @@ class DataSplitInfo:
             self.dataset_name = f"{self.file_name}_{self.table_name}"
         else:
             self.dataset_name = self.file_name
-        self.features = features
+        self.features = []
         self.split_index = split_index
 
         self.services = get_services()

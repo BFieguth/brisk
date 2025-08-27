@@ -7,7 +7,10 @@ from brisk.configuration.configuration_manager import ConfigurationManager
 @pytest.fixture
 def configuration():
     """Create a basic configuration with mocked project root."""
-    return Configuration(default_algorithms=["linear", "ridge"])
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow"
+    )
 
 
 @pytest.fixture
@@ -15,6 +18,7 @@ def configuration_with_categorical_features():
     """Create a configuration with categorical features."""
     return Configuration(
         default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow",
         categorical_features={"categorical": ["category"]}
     )
 
@@ -24,6 +28,7 @@ def configuration_with_workflow_args():
     """Create a configuration with workflow args."""
     return Configuration(
         default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow",
         default_workflow_args={"kfold": 5}
     )
 
@@ -32,7 +37,8 @@ def configuration_with_workflow_args():
 def configuration_algorithm_groups():
     """Create a configuration with algorithm groups."""
     return Configuration(
-        default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]]
+        default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]],
+        default_workflow="regression_workflow"
     )
 
 
@@ -175,9 +181,9 @@ class TestConfiguration:
     def test_check_name_exists(self, mock_brisk_project, configuration):
         """Test check_name_exists method"""
         configuration.experiment_groups = [
-            ExperimentGroup(name="group", datasets=["regression.csv"]),
-            ExperimentGroup(name="group_2", datasets=["regression.csv"]),
-            ExperimentGroup(name="group_3", datasets=["regression.csv"])
+            ExperimentGroup(name="group", workflow="regression_workflow", datasets=["regression.csv"]),
+            ExperimentGroup(name="group_2", workflow="regression_workflow", datasets=["regression.csv"]),
+            ExperimentGroup(name="group_3", workflow="regression_workflow", datasets=["regression.csv"])
         ]
         with pytest.raises(ValueError, match="already exists"):
             configuration._check_name_exists("group")

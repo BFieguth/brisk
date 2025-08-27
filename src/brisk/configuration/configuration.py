@@ -14,7 +14,6 @@ Examples
     ... )
     >>> manager = config.build()
 """
-
 from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
@@ -49,10 +48,12 @@ class Configuration:
     """
     def __init__(
         self,
+        default_workflow: str,
         default_algorithms: List[str],
         categorical_features: Optional[Dict[str, List[str]]] = None,
         default_workflow_args: Optional[Dict[str, Any]] = None
     ):
+        self.default_workflow = default_workflow
         self.experiment_groups: List[ExperimentGroup] = []
         self.default_algorithms = default_algorithms
         self.categorical_features = categorical_features or {}
@@ -67,6 +68,7 @@ class Configuration:
         algorithms: Optional[List[str]] = None,
         algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None,
         description: Optional[str] = "",
+        workflow: Optional[str] = None,
         workflow_args: Optional[Dict[str, Any]] = None
     ) -> None:
         """Add a new ExperimentGroup.
@@ -86,6 +88,8 @@ class Configuration:
             algorithms.py
         description : str, optional
             Description for the experiment group
+        workflow : str, optional
+            Name of the workflow file to use (without .py extension)
         workflow_args : dict, optional
             Values to assign as attributes in the Workflow
 
@@ -97,6 +101,9 @@ class Configuration:
         """
         if algorithms is None:
             algorithms = self.default_algorithms
+
+        if workflow is None:
+            workflow = self.default_workflow
 
         if workflow_args is None:
             workflow_args = self.default_workflow_args
@@ -113,6 +120,7 @@ class Configuration:
             ExperimentGroup(
                 name,
                 datasets,
+                workflow,
                 data_config,
                 algorithms,
                 algorithm_config,
