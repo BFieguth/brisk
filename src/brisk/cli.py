@@ -249,6 +249,11 @@ def run(
             )
         os.makedirs(results_dir, exist_ok=False)
 
+        print(
+            "Begining experiment creation. "
+            f"The results will be saved to {results_dir}"
+        )
+
         algorithm_config = load_module_object(
             project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
         )
