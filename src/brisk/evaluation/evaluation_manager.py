@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Any
 import copy
 import os
+import importlib.util
 
 import numpy as np
 from sklearn import base
@@ -19,7 +20,8 @@ from brisk.evaluation.evaluators import registry
 from brisk.evaluation import metric_manager
 from brisk.evaluation.evaluators import builtin
 from brisk.services import get_services, update_experiment_config
-from brisk.evaluation.evaluators.base import BaseEvaluator
+from brisk.evaluation.evaluators import base as base_eval
+from brisk.configuration import project
 
 class EvaluationManager:
     """Coordinator for evaluation operations.
@@ -48,7 +50,7 @@ class EvaluationManager:
         self.metric_config = copy.deepcopy(metric_config)
         self.output_dir = None
         self.registry = registry.EvaluatorRegistry()
-        self._initialize_builtin_evaluators()
+        self._initialize_evaluators()
 
     def set_experiment_values(
         self,
@@ -95,7 +97,59 @@ class EvaluationManager:
         """
         self.metric_config.set_split_metadata(split_metadata)
 
-    def _initialize_builtin_evaluators(self):
+    def _register_custom_evaluators(self):
+        """Register any Evaluators defined in evaluators.py"""
+        project_root = project.find_project_root()
+        evaluators_file = project_root / "evaluators.py"
+
+        if evaluators_file.exists():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    "custom_evaluators", evaluators_file
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+
+                if hasattr(module, "register_custom_evaluators"):
+                    module.register_custom_evaluators(self.registry)
+                    self.services.logger.logger.info(
+                        "Custom evaluators loaded succesfully"
+                    )
+                else:
+                    self.services.logger.logger.warning(
+                        "No register_custom_evaluators function found in evaluators.py"
+                    )
+                
+                self._check_unregistered_evaluators(module)
+
+            except (ImportError, AttributeError) as e:
+                self.services.logger.logger.warning(
+                    f"Failed to load custom evaluators: {e}"
+                )
+
+    def _check_unregistered_evaluators(self, module) -> None:
+        module_classes = [
+            obj for _, obj in module.__dict__.items()
+            if isinstance(obj, type) and obj.__module__ == module.__name__
+        ]
+        evaluator_classes = [
+            obj for obj in module_classes
+            if issubclass(obj, base_eval.BaseEvaluator)
+        ]
+        for obj in evaluator_classes:
+            is_registered = any(
+                isinstance(evaluator, obj)
+                for evaluator in self.registry.evaluators.values()
+            )
+
+            if not is_registered:
+                self.services.logger.logger.warning(
+                    f"Found unregistered evalautor class {obj.__name__} in "
+                    "evaluators.py. Evaluators must be registered to integrate "
+                    "with Brisk."
+                )
+
+    def _initialize_evaluators(self):
         """Initalize all built-in evaluators with shared services.
 
         This method registers all built-in evaluators with the evaluator 
@@ -106,13 +160,14 @@ class EvaluationManager:
         None
         """
         builtin.register_builtin_evaluators(self.registry)
+        self._register_custom_evaluators()
 
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
         self.services.reporting.set_evaluator_registry(self.registry)
 
-    def get_evaluator(self, name: str) -> BaseEvaluator:
+    def get_evaluator(self, name: str) -> base_eval.BaseEvaluator:
         """Return an evaluator instance.
 
         Parameters

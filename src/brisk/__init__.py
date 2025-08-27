@@ -30,4 +30,6 @@ from brisk.training.training_manager import TrainingManager
 from brisk.training.workflow import Workflow
 from brisk.training.logging_util import TqdmLoggingHandler, FileFormatter
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
+from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator
 from brisk.version import __version__

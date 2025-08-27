@@ -16,6 +16,10 @@ class EvaluatorRegistry():
         evaluator_instance : BaseEvaluator
             Instance of an evaluator class
         """
+        if evaluator.method_name in self.evaluators:
+            raise ValueError(
+                f"Evaluator {evaluator.method_name} already registered"
+            )
         self.evaluators[evaluator.method_name] = evaluator
 
     def get(self, name: str):
