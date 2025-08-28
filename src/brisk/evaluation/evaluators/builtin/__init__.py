@@ -4,7 +4,7 @@ from brisk.evaluation.evaluators.builtin import (
     classification_plots, tools, dataset_measures, dataset_plots
 )
 
-def register_builtin_evaluators(registry):
+def register_builtin_evaluators(registry, theme):
     """Register built-in evaluators for model evaluation.
     
     Parameters
@@ -27,25 +27,30 @@ def register_builtin_evaluators(registry):
     ))
     registry.register(common_plots.PlotLearningCurve(
         "brisk_plot_learning_curve",
-        "Plot learning curve of number of examples vs. model performance."
+        "Plot learning curve of number of examples vs. model performance.",
+        theme
     ))
     registry.register(
         common_plots.PlotFeatureImportance(
             "brisk_plot_feature_importance",
-            "Plot feature importance."
+            "Plot feature importance.",
+            theme
         )
     )
     registry.register(common_plots.PlotModelComparison(
         "brisk_plot_model_comparison",
-        "Compare model performance across multiple algorithms."
+        "Compare model performance across multiple algorithms.",
+        theme
     ))
     registry.register(regression_plots.PlotPredVsObs(
         "brisk_plot_pred_vs_obs",
-        "Plot predicted vs. observed values."
+        "Plot predicted vs. observed values.",
+        theme
     ))
     registry.register(regression_plots.PlotResiduals(
         "brisk_plot_residuals",
-        "Plot residuals of model predictions."
+        "Plot residuals of model predictions.",
+        theme
     ))
     registry.register(classification_measures.ConfusionMatrix(
         "brisk_confusion_matrix",
@@ -53,23 +58,27 @@ def register_builtin_evaluators(registry):
     ))
     registry.register(classification_plots.PlotConfusionHeatmap(
         "brisk_plot_confusion_heatmap",
-        "Plot confusion heatmap."
+        "Plot confusion heatmap.",
+        theme
     ))
     registry.register(classification_plots.PlotRocCurve(
         "brisk_plot_roc_curve",
-        "Plot ROC curve."
+        "Plot ROC curve.",
+        theme
     ))
     registry.register(classification_plots.PlotPrecisionRecallCurve(
         "brisk_plot_precision_recall_curve",
-        "Plot precision-recall curve."
+        "Plot precision-recall curve.",
+        theme
     ))
     registry.register(tools.HyperparameterTuning(
         "brisk_hyperparameter_tuning",
-        "Hyperparameter tuning."
+        "Hyperparameter tuning.",
+        theme
     ))
 
 
-def register_dataset_evaluators(registry):
+def register_dataset_evaluators(registry, theme):
     """Register evaluators for dataset evaluation.
     
     Parameters
@@ -87,13 +96,16 @@ def register_dataset_evaluators(registry):
     ))
     registry.register(dataset_plots.HistogramBoxplot(
         "brisk_histogram_boxplot",
-        "Plot histogram and boxplot of dataset."
+        "Plot histogram and boxplot of dataset.",
+        theme
     ))
     registry.register(dataset_plots.PiePlot(
         "brisk_pie_plot",
-        "Plot pie chart of dataset."
+        "Plot pie chart of dataset.",
+        theme
     ))
     registry.register(dataset_plots.CorrelationMatrix(
         "brisk_correlation_matrix",
-        "Plot correlation matrix of dataset."
+        "Plot correlation matrix of dataset.",
+        theme
     ))

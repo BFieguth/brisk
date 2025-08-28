@@ -6,7 +6,7 @@ from sklearn import base
 import pandas as pd
 import matplotlib
 
-from brisk.theme import theme
+# from brisk.theme import theme
 from brisk.evaluation.evaluators.base import BaseEvaluator
 
 class PlotEvaluator(BaseEvaluator):
@@ -19,7 +19,7 @@ class PlotEvaluator(BaseEvaluator):
     description : str
         The description of the evaluation method
     """
-    def __init__(self, method_name: str, description: str):
+    def __init__(self, method_name: str, description: str, theme):
         super().__init__(method_name, description)
         # Ensure non-interactive backend for thread safety
         matplotlib.use("Agg", force=True)
@@ -82,7 +82,7 @@ class PlotEvaluator(BaseEvaluator):
         str
             The path to the saved plot
         """
-        output_path = self.services.io.output_dir / f"{filename}.png"
+        output_path = self.services.io.output_dir / f"{filename}"
         self.io.save_plot(output_path, metadata, **kwargs)
         return str(output_path)
 

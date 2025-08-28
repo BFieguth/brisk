@@ -11,11 +11,11 @@ import sklearn.model_selection as model_select
 import plotly.graph_objects as go
 
 from brisk.evaluation.evaluators import measure_evaluator
-from brisk.theme import theme
+# from brisk.theme import theme
 
 class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     """Perform hyperparameter tuning using grid or random search."""
-    def __init__(self, method_name: str, description: str):
+    def __init__(self, method_name: str, description: str, theme):
         super().__init__(method_name, description)
         matplotlib.use("Agg", force=True)
         self.theme = theme
@@ -211,7 +211,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         -------
         None
         """
-        output_path = self.services.io.output_dir / f"{filename}.png"
+        output_path = self.services.io.output_dir / f"{filename}"
         if isinstance(plot, plt.Figure):
             self.io.save_plot(output_path, metadata)
         else:
@@ -323,7 +323,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
             pn.geom_line(color=self.primary_color) +
             pn.ggtitle(title) +
             pn.xlab(param_name) +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot
 

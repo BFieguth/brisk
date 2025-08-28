@@ -5,7 +5,7 @@ from typing import Dict, Any
 import pandas as pd
 import matplotlib
 
-from brisk.theme import theme
+# from brisk.theme import theme
 from brisk.evaluation.evaluators.base import BaseEvaluator
 
 class DatasetPlotEvaluator(BaseEvaluator):
@@ -13,7 +13,8 @@ class DatasetPlotEvaluator(BaseEvaluator):
     def __init__(
         self,
         method_name: str,
-        description: str
+        description: str,
+        theme
     ):
         super().__init__(method_name, description)
         # Ensure non-interactive backend for thread safety
@@ -121,7 +122,7 @@ class DatasetPlotEvaluator(BaseEvaluator):
         str
             The path to the saved plot
         """
-        output_path = self.services.io.output_dir / f"{filename}.png"
+        output_path = self.services.io.output_dir / f"{filename}"
         self.io.save_plot(output_path, metadata, **kwargs)
         return str(output_path)
 

@@ -109,7 +109,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
                 xlim=[0, max_range],
                 ylim=[0, max_range]
             ) +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot
 
@@ -207,7 +207,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
                 linetype="dashed", size=1.5
             ) +
             pn.ggtitle(f"Residuals ({wrapper.display_name})") +
-            self.theme.brisk_theme()
+            self.theme
         )
 
         if add_fit_line:

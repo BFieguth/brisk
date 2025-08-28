@@ -371,7 +371,7 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
                 x="Feature", y=f"Importance ({display_name})",
                 title=f"Feature Importance ({wrapper.display_name})"
             ) +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot
 
@@ -500,6 +500,6 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
             ) +
             pn.ggtitle(f"Model Comparison on {display_name}") +
             pn.ylab(display_name) +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot

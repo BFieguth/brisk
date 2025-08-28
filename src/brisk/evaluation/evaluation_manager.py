@@ -15,6 +15,7 @@ import importlib.util
 import numpy as np
 from sklearn import base
 import joblib
+import plotnine as pn
 
 from brisk.evaluation.evaluators import registry
 from brisk.evaluation import metric_manager
@@ -97,7 +98,7 @@ class EvaluationManager:
         """
         self.metric_config.set_split_metadata(split_metadata)
 
-    def _register_custom_evaluators(self):
+    def _register_custom_evaluators(self, theme: pn.theme):
         """Register any Evaluators defined in evaluators.py"""
         project_root = project.find_project_root()
         evaluators_file = project_root / "evaluators.py"
@@ -111,7 +112,7 @@ class EvaluationManager:
                 spec.loader.exec_module(module)
 
                 if hasattr(module, "register_custom_evaluators"):
-                    module.register_custom_evaluators(self.registry)
+                    module.register_custom_evaluators(self.registry, theme)
                     self.services.logger.logger.info(
                         "Custom evaluators loaded succesfully"
                     )
@@ -159,8 +160,9 @@ class EvaluationManager:
         -------
         None
         """
-        builtin.register_builtin_evaluators(self.registry)
-        self._register_custom_evaluators()
+        theme = self.services.utility.get_theme()
+        builtin.register_builtin_evaluators(self.registry, theme)
+        self._register_custom_evaluators(theme)
 
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
