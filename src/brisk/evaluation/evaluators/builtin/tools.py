@@ -11,7 +11,6 @@ import sklearn.model_selection as model_select
 import plotly.graph_objects as go
 
 from brisk.evaluation.evaluators import measure_evaluator
-# from brisk.theme import theme
 
 class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     """Perform hyperparameter tuning using grid or random search."""
@@ -90,6 +89,9 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         self._log_results(model)
 
         self.reporting.cache_tuned_params(search_result.best_params_)
+
+        if not param_grid:
+            return tuned_model
 
         if plot_results:
             plot = self._plot_hyperparameter_performance(
