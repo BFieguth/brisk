@@ -250,8 +250,6 @@ class TrainingManager:
             Directory where results are stored.
         """
         report_data = self.services.reporting.get_report_data()
-        with open("./dev_report_data.json", "w", encoding="utf-8") as f:
-            json.dump(report_data.model_dump(), f, indent=4)
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _setup_workflow(
