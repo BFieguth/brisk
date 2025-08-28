@@ -83,7 +83,7 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
         assert group.data_config == {}
         assert group.algorithm_config is None
@@ -107,7 +107,7 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "custom_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["elasticnet"]
         assert group.algorithm_config == algorithm_config
         assert group.description == "This is a test description"
@@ -155,7 +155,7 @@ class TestConfiguration:
         
         group = configuration_with_workflow_args.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
         assert group.data_config == {}
         assert group.algorithm_config is None
@@ -214,3 +214,32 @@ class TestConfiguration:
             configuration._check_datasets_type(datasets_list)
 
         configuration._check_datasets_type(datasets_correct)
+
+    def test_convert_datasets_to_tuple(self, configuration):
+        datasets = [
+            "data.csv", ("mixed_features.db", "mixed_features_regression")
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("mixed_features.db", "mixed_features_regression")
+        ]
+
+        datasets = [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+
+        datasets = [
+            "data.csv", "test.csv"
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("test.csv", None)
+        ]

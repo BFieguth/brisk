@@ -116,10 +116,11 @@ class Configuration:
 
         self._check_name_exists(name)
         self._check_datasets_type(datasets)
+        formated_datasets = self._convert_datasets_to_tuple(datasets)
         self.experiment_groups.append(
             ExperimentGroup(
                 name,
-                datasets,
+                formated_datasets,
                 workflow,
                 data_config,
                 algorithms,
@@ -185,3 +186,19 @@ class Configuration:
                     "datasets must be a list containing strings and/or tuples "
                     f"of strings. Got {type(datasets)}."
                     )
+
+    def _convert_datasets_to_tuple(self, datasets: List[str | Tuple[str, str]]) -> List[Tuple[str, str]]:
+        """Convert datasets to tuples if they are strings.
+
+        Parameters
+        ----------
+        datasets : list
+            List of dataset specifications
+        """
+        formated_datasets = []
+        for dataset in datasets:
+            if isinstance(dataset, tuple):
+                formated_datasets.append(dataset)
+            else:
+                formated_datasets.append((dataset, None))
+        return formated_datasets

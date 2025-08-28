@@ -273,7 +273,7 @@ class TestTrainingManager:
         
         # Create a mock workflow instance that raises the specified error
         mock_workflow_instance = mock.Mock()
-        mock_workflow_instance.workflow.side_effect = error_type(error_message)
+        mock_workflow_instance.run.side_effect = error_type(error_message)
         mock_setup_workflow.return_value = mock_workflow_instance
         
         # Set up workflow mapping for the test
@@ -284,13 +284,13 @@ class TestTrainingManager:
         )
         
         mock_setup_workflow.assert_called_once()        
-        mock_workflow_instance.workflow.assert_called_once()        
+        mock_workflow_instance.run.assert_called_once()        
         mock_handle_failure.assert_called_once_with(
             "test_group",           # group_name
             "test_dataset",         # dataset_name  
             "test_experiment",      # experiment_name
             1234567890.0,          # start_time
-            mock_workflow_instance.workflow.side_effect  # the error instance
+            mock_workflow_instance.run.side_effect  # the error instance
         )
         
         mock_handle_success.assert_not_called()
@@ -339,7 +339,7 @@ class TestTrainingManager:
             )
         ]
         mock_tqdm_write.assert_has_calls(expected_calls, any_order=False)
-        mock_workflow_instance.workflow.assert_called_once()        
+        mock_workflow_instance.run.assert_called_once()        
         mock_handle_success.assert_called_once()
 
     @mock.patch("brisk.training.training_manager.TrainingManager._log_warning")
