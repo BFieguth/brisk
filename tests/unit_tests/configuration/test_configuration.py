@@ -83,7 +83,7 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
         assert group.data_config == {}
         assert group.algorithm_config is None
@@ -107,7 +107,7 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "custom_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["elasticnet"]
         assert group.algorithm_config == algorithm_config
         assert group.description == "This is a test description"
@@ -155,7 +155,7 @@ class TestConfiguration:
         
         group = configuration_with_workflow_args.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
         assert group.data_config == {}
         assert group.algorithm_config is None

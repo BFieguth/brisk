@@ -10,7 +10,7 @@ from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.training.workflow import Workflow
 
 class WorkflowSubclass(Workflow): # pragma: no cover
-    def workflow(self): 
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names): 
         """Mock workflow implementation for testing."""
         self.evaluate_model(
             self.model, self.X_train, self.y_train, "MAE", "evaluate_model"
@@ -158,8 +158,8 @@ class TestWorkflow:
         """Test that directly calling the base class 'workflow' method raises NotImplementedError."""
         
         class TempWorkflow(Workflow):
-            def workflow(self):
-                super().workflow()
+            def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
+                super().workflow(X_train, X_test, y_train, y_test, output_dir, feature_names)
 
         evaluation_manager = MagicMock()
         X_train = pd.DataFrame()
@@ -180,4 +180,4 @@ class TestWorkflow:
             NotImplementedError, 
             match="Subclass must implement the workflow method."
             ):
-            temp_workflow.workflow()
+            temp_workflow.workflow(X_train, X_test, y_train, y_test, output_dir, feature_names)
