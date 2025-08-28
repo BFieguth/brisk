@@ -5,6 +5,7 @@ from typing import Optional, Dict, Tuple
 import numpy as np
 import pandas as pd
 import sklearn.model_selection as model_select
+import plotnine as pn
 
 from brisk.configuration import algorithm_wrapper
 from brisk.services import base
@@ -38,6 +39,7 @@ class UtilityService(base.BaseService):
         self.set_split_indices(
             group_index_train, group_index_test
         )
+        self.theme: pn.theme = None
 
     def set_split_indices(
         self,
@@ -163,3 +165,9 @@ class UtilityService(base.BaseService):
             indices = None
 
         return splitter, indices
+
+    def set_theme(self, theme: pn.theme):
+        self.theme = theme
+
+    def get_theme(self):
+        return self.theme
