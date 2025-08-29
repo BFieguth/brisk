@@ -683,3 +683,24 @@ class DataManager:
 
         md.append("```")
         return "\n".join(md)
+
+    def export_data_manager_params(self) -> None:
+        """Export a JSON-serializable snapshot of the DataManager init params.
+        """
+        try:
+            json = {
+                "params": {
+                    "test_size": self.test_size,
+                    "n_splits": self.n_splits,
+                    "split_method": self.split_method,
+                    "group_column": self.group_column,
+                    "stratified": self.stratified,
+                    "random_state": self.random_state,
+                    "problem_type": self.problem_type,
+                    "preprocessors": [type(p).__name__ for p in self.preprocessors] if self.preprocessors else [],
+                }
+            }
+
+            self.services.rerun.add_base_data_manager(json)
+        except Exception as e:
+            print(f"Warning: Failed to export DataManager params for rerun. {e}")

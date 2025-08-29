@@ -18,6 +18,7 @@ from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
+from brisk.services import get_services
 
 class Configuration:
     """User interface for defining experiment configurations.
@@ -138,6 +139,51 @@ class Configuration:
         ConfigurationManager
             Processes ExperimentGroups and creates data splits.
         """
+        services = get_services()
+
+        # flatten categorical_features to a list of items
+        categorical_items = []
+        for key, features in (self.categorical_features or {}).items():
+            if isinstance(key, tuple):
+                dataset, table_name = key
+            else:
+                dataset, table_name = key, None
+            categorical_items.append({
+                "dataset": dataset,
+                "table_name": table_name,
+                "features": list(features or []),
+            })
+
+        configuration_json = {
+            "default_workflow": self.default_workflow,
+            "default_algorithms": list(self.default_algorithms),
+            "default_workflow_args": dict(self.default_workflow_args or {}),
+            "categorical_features": categorical_items,
+        }
+
+        groups_json = []
+        for group in self.experiment_groups:
+            # datasets converted to tuples; keep them as (path, table_name)
+            datasets = []
+            for dataset in group.datasets:
+                if isinstance(dataset, tuple):
+                    datasets.append({"dataset": dataset[0], "table_name": dataset[1]})
+                else:
+                    datasets.append({"dataset": dataset, "table_name": None})
+
+            groups_json.append({
+                "name": group.name,
+                "datasets": datasets,
+                "workflow": group.workflow,
+                "data_config": dict(group.data_config or {}),
+                "algorithms": list(group.algorithms or []),
+                "algorithm_config": dict(group.algorithm_config or {}),
+                "description": group.description,
+                "workflow_args": dict(group.workflow_args or {}),
+            })
+
+        services.rerun.add_configuration(configuration_json, groups_json)
+
         return ConfigurationManager(
             self.experiment_groups, self.categorical_features
         )

@@ -75,6 +75,7 @@ class ConfigurationManager:
         self.project_root = project.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
+        self.base_data_manager.export_data_manager_params()
         self.data_managers = self._create_data_managers()
         self.experiment_queue = self._create_experiment_queue()
         self._create_data_splits()

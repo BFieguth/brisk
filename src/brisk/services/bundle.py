@@ -2,7 +2,7 @@
 
 import dataclasses
 
-from brisk.services import logging, metadata, io, utility, reporting
+from brisk.services import logging, metadata, io, utility, reporting, rerun
 
 @dataclasses.dataclass
 class ServiceBundle:
@@ -30,3 +30,4 @@ class ServiceBundle:
     io: io.IOService
     utility: utility.UtilityService
     reporting: reporting.ReportingService
+    rerun: rerun.RerunService

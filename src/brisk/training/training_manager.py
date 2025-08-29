@@ -11,6 +11,7 @@ import time
 import json
 import warnings
 from typing import Optional, Type
+from pathlib import Path
 
 import tqdm
 
@@ -132,6 +133,11 @@ class TrainingManager:
         self._cleanup(self.results_dir, progress_bar)
         if create_report:
             self._create_report(self.results_dir)
+            
+        try:
+            self.services.rerun.export_and_save(Path(self.results_dir))
+        except Exception as e:
+            self.services.logger.logger.warning(f"Failed to save rerun config: {e}")
 
     def _run_single_experiment(
         self,

@@ -4,7 +4,7 @@ import pathlib
 
 import numpy as np
 
-from brisk.services import bundle, logging, metadata, io, utility, reporting
+from brisk.services import bundle, logging, metadata, io, utility, reporting, rerun
 from brisk.configuration import algorithm_wrapper
 from brisk.evaluation import metric_manager
 
@@ -67,6 +67,7 @@ class GlobalServiceManager:
         self.services["reporting"] = reporting.ReportingService(
             "reporting", metric_config
         )
+        self.services["rerun"] = rerun.RerunService("rerun")
         self._register_services()
         self.is_initalized = True
 
@@ -96,7 +97,8 @@ class GlobalServiceManager:
             metadata=self.services["metadata"],
             io=self.services["io"],
             utility=self.services["utility"],
-            reporting=self.services["reporting"]
+            reporting=self.services["reporting"],
+            rerun=self.services["rerun"],
         )
 
     def update_utility_config(
