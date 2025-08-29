@@ -148,6 +148,8 @@ class DataSplitInfo:
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
+        self.categorical_features = []
+        self.continuous_features = []
         self._set_features(
             X_train.columns, categorical_features, continuous_features
         )
@@ -352,7 +354,7 @@ class DataSplitInfo:
         }
 
     def _set_features(self, columns, categorical_features, continuous_features):
-        if categorical_features is None:
+        if categorical_features is None or len(categorical_features) == 0:
             categorical_features = self._detect_categorical_features()
 
         self.categorical_features = [
@@ -360,12 +362,15 @@ class DataSplitInfo:
             if feature in columns
         ]
 
-        if continuous_features is None:
+        if continuous_features is None or len(continuous_features) == 0:
             self.continuous_features = []
         else:
             self.continuous_features = [
                 feature for feature in continuous_features
-                if feature in columns and feature not in self.categorical_features
+                if (
+                    feature in columns and
+                    feature not in self.categorical_features
+                )
             ]
         
         self.features = self.continuous_features + self.categorical_features

@@ -393,7 +393,7 @@ class DataManager:
             current_categorical_features = updated_categorical_features
         elif current_categorical_features and not encoding_preprocessor:
             # Check if there are categorical features but no encoding preprocessor
-            raise ValueError(
+            self.services.logger.logger.warning(
                 f"Categorical features detected: {current_categorical_features} but no CategoricalEncodingPreprocessor provided. "
                 "You must encode categorical features before proceeding."
             )
