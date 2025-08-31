@@ -19,17 +19,15 @@ class PlotEvaluator(BaseEvaluator):
     description : str
         The description of the evaluation method
     """
-    def __init__(self, method_name: str, description: str, theme):
+    def __init__(self, method_name: str, description: str, plot_settings):
         super().__init__(method_name, description)
         # Ensure non-interactive backend for thread safety
         matplotlib.use("Agg", force=True)
-
-        self.theme = theme
-        self.primary_color = "#0074D9" # Celtic Blue
-        self.secondary_color = "#07004D" # Federal Blue
-        self.background_color = "#C4E0F9" # Columbia Blue
-        self.accent_color = "#00A878" # Jade
-        self.important_color = "#B95F89" # Mulberry
+        self.theme = plot_settings.get_theme()
+        colors = plot_settings.get_colors()
+        self.primary_color = colors["primary_color"]
+        self.secondary_color = colors["secondary_color"]
+        self.accent_color = colors["accent_color"]
 
     def plot(
         self,

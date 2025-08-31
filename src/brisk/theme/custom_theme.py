@@ -33,7 +33,10 @@ class PlotSettings:
         width: int = 10,
         height: int = 8,
         dpi: int = 300,
-        transparent: bool = False
+        transparent: bool = False,
+        primary_color: str = None,
+        secondary_color: str = None,
+        accent_color: str = None
     ):
         """Initialize PlotSettings with custom parameters.
         
@@ -52,11 +55,18 @@ class PlotSettings:
         height: float, figure height in inches
         dpi: int, resolution in dots per inch
         transparent: bool, transparent background
+        primary_color: str, primary color
+        secondary_color: str, secondary color
+        accent_color: str, accent color
         """
         self.file_io_settings = {}
         self._update_io_settings(
             format, width, height, dpi, transparent
         )
+
+        self.primary_color = primary_color or "#1175D5"
+        self.secondary_color = secondary_color or "#00A878"
+        self.accent_color = accent_color or "#DE6B48"
 
         if theme is not None:
             self._validate_theme(theme)
@@ -101,3 +111,11 @@ class PlotSettings:
     def get_io_settings(self):
         """Get the current file I/O settings."""
         return self.file_io_settings.copy()
+
+    def get_colors(self):
+        """Get the current color settings as a dictionary."""
+        return {
+            "primary_color": self.primary_color,
+            "secondary_color": self.secondary_color,
+            "accent_color": self.accent_color
+        }

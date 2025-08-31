@@ -71,6 +71,8 @@ class ConfigurationManager:
             categorical_features: Dict mapping categorical features to dataset
         """
         self.services = get_services()
+        self.services.io.set_io_settings(plot_settings.get_io_settings())
+        self.services.utility.set_plot_settings(plot_settings)
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
         self.workflow_map = {}
@@ -83,8 +85,7 @@ class ConfigurationManager:
         self._create_logfile()
         self.output_structure = self._get_output_structure()
         self.description_map = self._create_description_map()
-        self.services.io.set_io_settings(plot_settings.get_io_settings())
-        self.services.utility.set_theme(plot_settings.get_theme())
+
 
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.

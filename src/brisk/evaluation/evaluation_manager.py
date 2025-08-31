@@ -160,9 +160,9 @@ class EvaluationManager:
         -------
         None
         """
-        theme = self.services.utility.get_theme()
-        builtin.register_builtin_evaluators(self.registry, theme)
-        self._register_custom_evaluators(theme)
+        plot_settings = self.services.utility.get_plot_settings()
+        builtin.register_builtin_evaluators(self.registry, plot_settings)
+        self._register_custom_evaluators(plot_settings)
 
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)

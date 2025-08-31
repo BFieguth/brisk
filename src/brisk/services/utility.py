@@ -9,6 +9,7 @@ import plotnine as pn
 
 from brisk.configuration import algorithm_wrapper
 from brisk.services import base
+from brisk.theme.custom_theme import PlotSettings
 
 class UtilityService(base.BaseService):
     """Utility service with helper functions for the EvaluationManager.
@@ -39,7 +40,7 @@ class UtilityService(base.BaseService):
         self.set_split_indices(
             group_index_train, group_index_test
         )
-        self.theme: pn.theme = None
+        self.plot_settings: PlotSettings = None
 
     def set_split_indices(
         self,
@@ -166,8 +167,8 @@ class UtilityService(base.BaseService):
 
         return splitter, indices
 
-    def set_theme(self, theme: pn.theme):
-        self.theme = theme
+    def set_plot_settings(self, plot_settings: PlotSettings):
+        self.plot_settings = plot_settings
 
-    def get_theme(self):
-        return self.theme
+    def get_plot_settings(self):
+        return self.plot_settings

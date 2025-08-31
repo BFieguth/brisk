@@ -142,9 +142,9 @@ class DataSplitInfo:
         self.group_index_train = group_index_train
         self.group_index_test = group_index_test
 
-        theme = self.services.utility.get_theme()
+        plot_settings = self.services.utility.get_plot_settings()
         self.registry = EvaluatorRegistry()
-        register_dataset_evaluators(self.registry, theme)
+        register_dataset_evaluators(self.registry, plot_settings)
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
