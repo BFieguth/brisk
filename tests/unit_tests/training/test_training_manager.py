@@ -322,6 +322,7 @@ class TestTrainingManager:
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
         mock_experiment.workflow = "regression_workflow"
+        mock_experiment.split_index = 0
         
         # Create a mock workflow instance that succeeds
         mock_workflow_instance = mock.Mock()
@@ -338,7 +339,7 @@ class TestTrainingManager:
             mock.call(f"\n{'=' * 80}"),
             mock.call(
                 f"\nStarting experiment 'test_experiment' on dataset "
-                f"'test_dataset' using workflow 'Regression'."
+                f"'test_dataset' (Split 0) using workflow 'Regression'."
             )
         ]
         mock_tqdm_write.assert_has_calls(expected_calls, any_order=False)
@@ -430,8 +431,6 @@ class TestTrainingManager:
     def test_create_report(self, mock_create_report, training_manager):
         training_manager._create_report("test_results_dir")
         mock_create_report.assert_called_once()
-
-
 
     def test_setup_workflow(self, workflow, training_manager):
         training_manager.logger = mock.Mock()
