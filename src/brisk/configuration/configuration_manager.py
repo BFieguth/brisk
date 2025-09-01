@@ -17,7 +17,7 @@ from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
 from brisk.configuration import (
-    experiment_group, experiment_factory, project, algorithm_wrapper
+    experiment_group, experiment_factory, project, algorithm_wrapper, algorithm_collection
 )
 from brisk.reporting import formatting
 from brisk.services import get_services
@@ -78,6 +78,9 @@ class ConfigurationManager:
         self.workflow_map = {}
         self.project_root = project.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
+        self.services.rerun.add_algorithm_config(
+            self.algorithm_config.export_params()
+        )
         self.base_data_manager = self._load_base_data_manager()
         self.base_data_manager.export_data_manager_params()
         self.data_managers = self._create_data_managers()
@@ -190,7 +193,7 @@ class ConfigurationManager:
 
     def _load_algorithm_config(
         self
-    ) -> algorithm_wrapper.AlgorithmCollection:
+    ) -> algorithm_collection.AlgorithmCollection:
         """Load algorithm configuration from project's algorithms.py.
 
         Parameters
@@ -237,7 +240,7 @@ class ConfigurationManager:
             )
         self._validate_single_variable(algo_file, "ALGORITHM_CONFIG")
         if not isinstance(
-            algo_module.ALGORITHM_CONFIG, algorithm_wrapper.AlgorithmCollection
+            algo_module.ALGORITHM_CONFIG, algorithm_collection.AlgorithmCollection
         ):
             raise ValueError(
                 f"ALGORITHM_CONFIG in {algo_file} is not a valid "

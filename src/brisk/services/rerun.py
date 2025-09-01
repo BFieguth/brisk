@@ -26,6 +26,7 @@ class RerunService(base.BaseService):
             "configuration": {},
             "experiment_groups": [],
             "metrics": [],
+            "algorithms": [],
             # later add algorithms, metrics, etc.
         }
         self.capture_environment()  # capture at initialization
@@ -48,6 +49,17 @@ class RerunService(base.BaseService):
             List of metric configurations exported from MetricManager.export_params()
         """
         self.configs["metrics"] = metric_configs
+
+    def add_algorithm_config(self, algorithm_configs: List[Dict[str, Any]]) -> None:
+        """
+        Store algorithm configuration data for rerun functionality.
+        
+        Parameters
+        ----------
+        algorithm_configs : List[Dict[str, Any]]
+            List of algorithm configurations exported from AlgorithmCollection.export_params()
+        """
+        self.configs["algorithms"] = algorithm_configs
 
     def capture_environment(self) -> None:
         """Capture env info + pip freeze."""

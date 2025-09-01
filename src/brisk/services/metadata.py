@@ -6,7 +6,7 @@ import datetime
 from sklearn import base
 
 from brisk.services import base as base_service
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper, algorithm_collection
 
 class MetadataService(base_service.BaseService):
     """Metadata generation.
@@ -28,7 +28,7 @@ class MetadataService(base_service.BaseService):
     def __init__(
         self,
         name,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection
+        algorithm_config: algorithm_collection.AlgorithmCollection
     ):
         super().__init__(name)
         self.algorithm_config = algorithm_config

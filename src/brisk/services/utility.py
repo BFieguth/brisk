@@ -7,7 +7,7 @@ import pandas as pd
 import sklearn.model_selection as model_select
 import plotnine as pn
 
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper, algorithm_collection
 from brisk.services import base
 from brisk.theme.plot_settings import PlotSettings
 
@@ -28,7 +28,7 @@ class UtilityService(base.BaseService):
     def __init__(
         self,
         name: str,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        algorithm_config: algorithm_collection.AlgorithmCollection,
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None
     ):

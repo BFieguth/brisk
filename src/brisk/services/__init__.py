@@ -5,7 +5,7 @@ import pathlib
 import numpy as np
 
 from brisk.services import bundle, logging, metadata, io, utility, reporting, rerun
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper, algorithm_collection
 from brisk.evaluation import metric_manager
 
 class GlobalServiceManager:
@@ -45,7 +45,7 @@ class GlobalServiceManager:
 
     def __init__(
         self,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        algorithm_config: algorithm_collection.AlgorithmCollection,
         metric_config: metric_manager.MetricManager,
         results_dir: pathlib.Path,
         verbose: bool = False
@@ -143,7 +143,7 @@ class GlobalServiceManager:
 
 
 def initialize_services(
-    algorithm_config: algorithm_wrapper.AlgorithmCollection,
+    algorithm_config: algorithm_collection.AlgorithmCollection,
     metric_config: metric_manager.MetricManager,
     results_dir: pathlib.Path,
     verbose: bool = False
