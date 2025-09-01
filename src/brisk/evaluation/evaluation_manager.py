@@ -7,7 +7,7 @@ and evaluators.
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import copy
 import os
 import importlib.util
@@ -105,6 +105,9 @@ class EvaluationManager:
 
         if evaluators_file.exists():
             try:
+                self.services.rerun.add_evaluators_config(
+                    self.export_evaluators_config(evaluators_file)
+                )
                 spec = importlib.util.spec_from_file_location(
                     "custom_evaluators", evaluators_file
                 )
@@ -232,3 +235,32 @@ class EvaluationManager:
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
         return joblib.load(filepath)
+
+    def export_evaluators_config(self, evaluators_file: Path) -> Optional[Dict[str, Any]]:
+        """
+        Export evaluators configuration for rerun functionality.
+        
+        Captures the entire evaluators.py file content if it exists,
+        since custom evaluators often have complex dependencies and
+        user-defined classes that are best replicated as a complete file.
+        
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            Configuration dictionary containing the evaluators.py file content,
+            or None if no custom evaluators file exists
+        """
+        try:
+            with open(evaluators_file, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            
+            return {
+                "type": "evaluators_file",
+                "file_content": file_content,
+                "file_path": "evaluators.py"
+            }
+        except (IOError, OSError) as e:
+            self.services.logger.logger.warning(
+                f"Failed to read evaluators.py for rerun config: {e}"
+            )
+            return None

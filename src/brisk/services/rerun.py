@@ -3,7 +3,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from brisk.services import base
 from brisk.version import __version__
@@ -27,7 +27,7 @@ class RerunService(base.BaseService):
             "experiment_groups": [],
             "metrics": [],
             "algorithms": [],
-            # later add algorithms, metrics, etc.
+            "evaluators": None,
         }
         self.capture_environment()  # capture at initialization
 
@@ -60,6 +60,18 @@ class RerunService(base.BaseService):
             List of algorithm configurations exported from AlgorithmCollection.export_params()
         """
         self.configs["algorithms"] = algorithm_configs
+
+    def add_evaluators_config(self, evaluators_config: Optional[Dict[str, Any]]) -> None:
+        """
+        Store evaluators configuration data for rerun functionality.
+        
+        Parameters
+        ----------
+        evaluators_config : Optional[Dict[str, Any]]
+            Evaluators configuration exported from EvaluationManager.export_evaluators_config()
+            Can be None if no custom evaluators exist
+        """
+        self.configs["evaluators"] = evaluators_config
 
     def capture_environment(self) -> None:
         """Capture env info + pip freeze."""
