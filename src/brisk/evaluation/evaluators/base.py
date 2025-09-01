@@ -24,7 +24,7 @@ class BaseEvaluator(ABC):
     utility : UtilityService
         The utility service
     logger : LoggingService
-        The logging service
+        The logging servicem
     reporting : ReportingService
         The reporting service
     """
@@ -33,6 +33,9 @@ class BaseEvaluator(ABC):
         self.description = description
         self.services: Optional[Any] = None
         self.metric_config = None
+        self.primary_color = "#1175D5" # Blue
+        self.secondary_color = "#00A878" # Green
+        self.accent_color = "#DE6B48" # Orange
 
     def set_services(self, services) -> None:
         """Set the services bundle for this evaluator.
@@ -43,6 +46,18 @@ class BaseEvaluator(ABC):
             The global services bundle
         """
         self.services = services
+
+    def set_colors(self, colors: dict) -> None:
+        """Set colors from PlotSettings.
+        
+        Parameters
+        ----------
+        colors : dict
+            Dictionary with 'primary_color', 'secondary_color', 'accent_color'
+        """
+        self.primary_color = colors.get("primary_color", self.primary_color)
+        self.secondary_color = colors.get("secondary_color", self.secondary_color)  
+        self.accent_color = colors.get("accent_color", self.accent_color)
 
     @property
     def metadata(self):

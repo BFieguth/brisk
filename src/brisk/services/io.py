@@ -49,6 +49,11 @@ class IOService(base.BaseService):
         super().__init__(name)
         self.results_dir = results_dir
         self.output_dir = output_dir
+        self.format = "png"
+        self.width = 10
+        self.height = 8
+        self.dpi = 300
+        self.transparent = False
 
     def set_output_dir(self, output_dir: Path) -> None:
         """Set the current output directory.
@@ -110,8 +115,7 @@ class IOService(base.BaseService):
         output_path: Path,
         metadata: Optional[Dict[str, Any]] = None,
         plot: Optional[pn.ggplot | go.Figure] = None,
-        height: int = 6,
-        width: int = 8
+        **kwargs
     ) -> None:
         """Save current plot to file with metadata.
 
@@ -126,12 +130,6 @@ class IOService(base.BaseService):
         plot (ggplot, optional): 
             Plotnine plot object, by default None
 
-        height (int, optional): 
-            The plot height in inches, by default 6
-
-        width (int, optional): 
-            The plot width in inches, by default 8
-
         Returns
         -------
         None
@@ -139,7 +137,10 @@ class IOService(base.BaseService):
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
 
-        self._convert_to_svg(metadata, plot)
+        height = kwargs.get("height", self.height)
+        width = kwargs.get("width", self.width)
+        output_path = output_path.with_suffix(f".{self.format}")
+        self._convert_to_svg(metadata, plot, height, width)
 
         try:
             if metadata:
@@ -148,15 +149,19 @@ class IOService(base.BaseService):
                         metadata[key] = json.dumps(value)
             if plot and isinstance(plot, pn.ggplot):
                 plot.save(
-                    filename=output_path, format="png", metadata=metadata,
-                    height=height, width=width, dpi=100
+                    filename=output_path, format=self.format,
+                    height=height, width=width, dpi=self.dpi,
+                    transparent=self.transparent
                 )
             elif plot and isinstance(plot, go.Figure):
                 plot.write_image(
-                    file=output_path, format="png", width=width, height=height
+                    file=output_path, format=self.format
                 )
             else:
-                plt.savefig(output_path, format="png", metadata=metadata)
+                plt.savefig(
+                    output_path, format=self.format,
+                    dpi=self.dpi, transparent=self.transparent
+                )
                 plt.close()
 
         except IOError as e:
@@ -167,9 +172,9 @@ class IOService(base.BaseService):
     def _convert_to_svg(
         self,
         metadata: Dict[str, Any],
-        plot: Optional[pn.ggplot | go.Figure] = None,
-        height: int = 6,
-        width: int = 8
+        plot: Optional[pn.ggplot | go.Figure],
+        height,
+        width
     ) -> None:
         """Convert plot to SVG format for the report.
 
@@ -191,13 +196,18 @@ class IOService(base.BaseService):
         try:
             svg_buffer = io.BytesIO()
             if plot and isinstance(plot, pn.ggplot):
-                plot.save(svg_buffer, format="svg", height=height, width=width)
+                plot.save(
+                    svg_buffer, format="svg", height=height, width=width,
+                    dpi=100
+                )
             elif plot and isinstance(plot, go.Figure):
                 plot.write_image(
                     file=svg_buffer, format="svg", width=width, height=height
                 )
             else:
-                plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
+                plt.savefig(
+                    svg_buffer, format="svg", bbox_inches="tight", dpi=100
+                )
 
             svg_str = svg_buffer.getvalue().decode("utf-8")
             svg_buffer.close()
@@ -209,3 +219,11 @@ class IOService(base.BaseService):
             self._other_services["logging"].logger.info(
                 f"Failed to convert plot to SVG: {e}"
             )
+
+    def set_io_settings(self, io_settings: Dict[str, Any]) -> None:
+        """Set settings to use when saving plots."""
+        self.format = io_settings["format"]
+        self.width = io_settings["width"]
+        self.height = io_settings["height"]
+        self.dpi = io_settings["dpi"]
+        self.transparent = io_settings["transparent"]

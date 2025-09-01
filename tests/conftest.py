@@ -849,16 +849,18 @@ class RegisteredClass(PlotEvaluator):
         pass
 
 
-def register_custom_evaluators(registry: EvaluatorRegistry) -> None:
+def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> None:
     registry.register(
         RegisteredClass(
             "registered_class",
-            "Test registered evaluators can be accessed"
+            "Test registered evaluators can be accessed",
+            plot_settings
         )
     )
 """
     evaluators_path.write_text(evaluators_py)
     return evaluators_path
+
 
 @pytest.fixture
 def mock_brisk_project(

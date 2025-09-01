@@ -22,6 +22,7 @@ from brisk.configuration import (
 from brisk.reporting import formatting
 from brisk.services import get_services
 from brisk.training import workflow as workflow_module
+from brisk.theme.plot_settings import PlotSettings
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.
@@ -60,7 +61,8 @@ class ConfigurationManager:
     def __init__(
         self,
         experiment_groups: List[experiment_group.ExperimentGroup],
-        categorical_features: Dict[str, List[str]]
+        categorical_features: Dict[str, List[str]],
+        plot_settings: PlotSettings
     ):
         """Initialize ConfigurationManager.
 
@@ -69,6 +71,8 @@ class ConfigurationManager:
             categorical_features: Dict mapping categorical features to dataset
         """
         self.services = get_services()
+        self.services.io.set_io_settings(plot_settings.get_io_settings())
+        self.services.utility.set_plot_settings(plot_settings)
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
         self.workflow_map = {}
@@ -82,6 +86,7 @@ class ConfigurationManager:
         self._create_logfile()
         self.output_structure = self._get_output_structure()
         self.description_map = self._create_description_map()
+
 
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.

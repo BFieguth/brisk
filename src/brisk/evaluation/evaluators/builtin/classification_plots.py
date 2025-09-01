@@ -122,7 +122,7 @@ class PlotConfusionHeatmap(plot_evaluator.PlotEvaluator):
                 limits=(0, 100)
             ) +
             pn.ggtitle(f"Confusion Matrix Heatmap ({display_name})") +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot
 
@@ -271,7 +271,7 @@ class PlotRocCurve(plot_evaluator.PlotEvaluator):
                 size=12
             ) +
             pn.scale_color_manual(
-                values=[self.primary_color, self.important_color],
+                values=[self.primary_color, self.accent_color],
                 na_value="black"
             ) +
             pn.labs(
@@ -279,7 +279,7 @@ class PlotRocCurve(plot_evaluator.PlotEvaluator):
                 color="",
                 linetype=""
             ) +
-            self.theme.brisk_theme() +
+            self.theme +
             pn.coord_fixed(ratio=1)
         )
         return plot
@@ -428,7 +428,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
             )) +
             pn.geom_line(size=1) +
             pn.scale_color_manual(
-                values=[self.important_color, self.primary_color],
+                values=[self.accent_color, self.primary_color],
                 na_value="black"
             ) +
             pn.scale_linetype_manual(
@@ -439,7 +439,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
                 color="",
                 linetype=""
             ) +
-            self.theme.brisk_theme() +
+            self.theme +
             pn.coord_fixed(ratio=1)
         )
         return plot
