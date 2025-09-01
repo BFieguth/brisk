@@ -8,9 +8,10 @@ framework.
 import copy
 import functools
 import inspect
+import importlib
 
 from sklearn import metrics
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, Dict
 
 class MetricWrapper:
     """A wrapper for metric functions with default parameters and metadata.
@@ -59,6 +60,7 @@ class MetricWrapper:
         **default_params: Any
     ):
         self.name = name
+        self._original_func = func
         self.func = self._ensure_split_metadata_param(func)
         self.display_name = display_name
         self.abbr = abbr if abbr else name
@@ -128,3 +130,76 @@ class MetricWrapper:
             wrapped_func.__doc__ = func.__doc__
             return wrapped_func
         return func
+
+    def export_config(self) -> Dict[str, Any]:
+        """
+        Export this MetricWrapper's configuration for rerun functionality.
+        
+        Returns
+        -------
+        Dict[str, Any]
+            Configuration dictionary that can be used to recreate this MetricWrapper
+        """       
+        config = {
+            "name": self.name,
+            "display_name": self.display_name,
+            "abbr": self.abbr,
+            "greater_is_better": self.greater_is_better,
+            "params": dict(self.params)
+        }
+
+        if "split_metadata" in config["params"]:
+            del config["params"]["split_metadata"]
+        
+        original_func = self._original_func
+        try:
+            module_name = original_func.__module__
+            if module_name and not module_name.startswith('__'):
+                if module_name in ['metrics', '__main__'] or module_name.endswith('metrics'):
+                    config["func_type"] = "local"
+                    config["func_source"] = inspect.getsource(original_func)
+                else:
+                    # Try to import as external library function
+                    try:
+                        module = importlib.import_module(module_name)
+                        imported_func = getattr(module, original_func.__name__)                        
+                        if id(imported_func) == id(original_func):
+                            config["func_type"] = "imported"
+                            config["func_module"] = module_name
+                            config["func_name"] = original_func.__name__
+                        else:
+                            # Same name but different function - treat as local/custom
+                            config["func_type"] = "local"
+                            config["func_source"] = inspect.getsource(original_func)
+                            
+                    except (ImportError, AttributeError):
+                        # Can't import - treat as local function
+                        config["func_type"] = "local"
+                        config["func_source"] = inspect.getsource(original_func)
+            else:
+                config["func_type"] = "local"
+                config["func_source"] = inspect.getsource(original_func)
+                
+        except (OSError, TypeError):
+            if hasattr(original_func, '__module__') and hasattr(original_func, '__name__'):
+                module_name = original_func.__module__
+                if module_name and not module_name.startswith('__') and not module_name.endswith('metrics'):
+                    config["func_type"] = "imported"
+                    config["func_module"] = module_name
+                    config["func_name"] = original_func.__name__
+                else:
+                    config["func_type"] = "unknown"
+                    config["func_info"] = {
+                        "name": getattr(original_func, '__name__', 'unknown'),
+                        "module": getattr(original_func, '__module__', 'unknown'),
+                        "qualname": getattr(original_func, '__qualname__', 'unknown')
+                    }
+            else:
+                config["func_type"] = "unknown"
+                config["func_info"] = {
+                    "name": getattr(original_func, '__name__', 'unknown'),
+                    "module": getattr(original_func, '__module__', 'unknown'),
+                    "qualname": getattr(original_func, '__qualname__', 'unknown')
+                }
+        
+        return config

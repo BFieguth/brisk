@@ -3,11 +3,10 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from brisk.services import base
 from brisk.version import __version__
-
 
 class RerunService(base.BaseService):
     """
@@ -26,6 +25,7 @@ class RerunService(base.BaseService):
             "base_data_manager": None,
             "configuration": {},
             "experiment_groups": [],
+            "metrics": [],
             # later add algorithms, metrics, etc.
         }
         self.capture_environment()  # capture at initialization
@@ -37,6 +37,17 @@ class RerunService(base.BaseService):
     def add_configuration(self, configuration: Dict[str, Any], groups: list[Dict[str, Any]]) -> None:
         self.configs["configuration"] = configuration
         self.configs["experiment_groups"] = groups
+
+    def add_metric_config(self, metric_configs: List[Dict[str, Any]]) -> None:
+        """
+        Store metric configuration data for rerun functionality.
+        
+        Parameters
+        ----------
+        metric_configs : List[Dict[str, Any]]
+            List of metric configurations exported from MetricManager.export_params()
+        """
+        self.configs["metrics"] = metric_configs
 
     def capture_environment(self) -> None:
         """Capture env info + pip freeze."""
