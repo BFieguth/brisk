@@ -94,14 +94,14 @@ def register_dataset_evaluators(registry, plot_settings):
         "brisk_categorical_statistics",
         "Compute categorical statistics of dataset."
     ))
-    registry.register(dataset_plots.HistogramBoxplot(
-        "brisk_histogram_boxplot",
-        "Plot histogram and boxplot of dataset.",
+    registry.register(dataset_plots.Histogram(
+        "brisk_histogram_plot",
+        "Plot histogram dataset.",
         plot_settings
     ))
-    registry.register(dataset_plots.PiePlot(
-        "brisk_pie_plot",
-        "Plot pie chart of dataset.",
+    registry.register(dataset_plots.BarPlot(
+        "brisk_bar_plot",
+        "Plot bar plot of dataset.",
         plot_settings
     ))
     registry.register(dataset_plots.CorrelationMatrix(

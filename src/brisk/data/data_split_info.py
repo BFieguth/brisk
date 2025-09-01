@@ -196,14 +196,14 @@ class DataSplitInfo:
                 "categorical_stats", self.group_name, self.dataset_name
             )
             for feature in self.continuous_features:
-                evaluator = self.registry.get("brisk_histogram_boxplot")
+                evaluator = self.registry.get("brisk_histogram_plot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
                     feature, f"hist_box_plot/{feature}_hist_box_plot",
                     self.dataset_name, self.group_name
                 )
             for feature in self.categorical_features:
-                evaluator = self.registry.get("brisk_pie_plot")
+                evaluator = self.registry.get("brisk_bar_plot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
                     feature, f"pie_plot/{feature}_pie_plot",

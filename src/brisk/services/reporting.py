@@ -442,8 +442,8 @@ class ReportingService(base.BaseService):
             The FeatureDistribution object
         """
         methods = [
-            f"brisk_histogram_boxplot_{feature_name}",
-            f"brisk_pie_plot_{feature_name}"
+            f"brisk_histogram_plot_{feature_name}",
+            f"brisk_bar_plot_{feature_name}"
         ]
 
         for method in methods:

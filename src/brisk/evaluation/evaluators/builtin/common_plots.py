@@ -3,7 +3,6 @@ from typing import Optional, Dict, Union, List, Tuple, Any
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import plotnine as pn
 from sklearn import base
 import sklearn.model_selection as model_select
@@ -54,9 +53,9 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
         plot_data = self._generate_plot_data(
             model, X, y, cv, num_repeats, n_jobs, metric
         )
-        self._create_plot(plot_data, metric, model)
+        plot = self._create_plot(plot_data, metric, model)
         metadata = self._generate_metadata(model, X.attrs["is_test"])
-        self._save_plot(filename, metadata)
+        self._save_plot(filename, metadata, plot=plot)
         self._log_results("Learning Curve", filename)
 
     def _generate_plot_data(
@@ -68,7 +67,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
         num_repeats: Optional[int] = None,
         n_jobs: int = -1,
         metric: str = "neg_mean_absolute_error",
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """Calculate the plot data for the learning curve.
 
         Parameters
@@ -116,19 +115,17 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
     def _create_plot(
         self,
-        results: Dict[str, float],
+        results: Dict[str, Any],
         metric: str,
         model: base.BaseEstimator
-    ) -> None:
-        """Create a learning curve plot with three subplots.
-
-        First subplot is the learning curve, second is the scalability of the
-        model, and third is the performance of the model.
+    ) -> pn.ggplot:
+        """Create a learning curve plot using plotnine.
 
         Parameters
         ----------
-        results : Dict[str, float]
-            The data for the plot
+        results : Dict[str, Any]
+            The data for the plot containing train_sizes, train_scores_mean,
+            train_scores_std, test_scores_mean, test_scores_std
         metric : str
             The metric to use for the plot
         model : base.BaseEstimator
@@ -136,71 +133,52 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
         Returns
         -------
-        None
+        pn.ggplot
+            The plot object
         """
-        _, axes = plt.subplots(1, 3, figsize=(16, 6))
-        plt.rcParams.update({"font.size": 12})
-
-        # Plot Learning Curve
         display_name = self.metric_config.get_name(metric)
         wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
-        axes[0].set_title(
-            f"Learning Curve ({wrapper.display_name})", fontsize=20
+        
+        train_data = pd.DataFrame({
+            'Training_Examples': results["train_sizes"],
+            'Score': results["train_scores_mean"],
+            'Lower_CI': results["train_scores_mean"] - results["train_scores_std"],
+            'Upper_CI': results["train_scores_mean"] + results["train_scores_std"],
+            'Type': 'Training Score'
+        })
+        
+        val_data = pd.DataFrame({
+            'Training_Examples': results["train_sizes"],
+            'Score': results["test_scores_mean"],
+            'Lower_CI': results["test_scores_mean"] - results["test_scores_std"],
+            'Upper_CI': results["test_scores_mean"] + results["test_scores_std"],
+            'Type': 'Cross-Validation Score'
+        })
+        plot_data = pd.concat([train_data, val_data], ignore_index=True)
+        
+        plot = (
+            pn.ggplot(plot_data, pn.aes(x='Training_Examples', y='Score', color='Type')) +
+            pn.geom_ribbon(
+                pn.aes(ymin='Lower_CI', ymax='Upper_CI', fill='Type'), 
+                alpha=0.1, color="none") +
+            pn.geom_line(size=1) +
+            pn.geom_point(size=2) +
+            pn.scale_color_manual(values=['green', 'red']) +
+            pn.scale_fill_manual(values=['green', 'red']) +
+            pn.labs(
+                x="Training Examples",
+                y=display_name,
+                title=f"Learning Curve ({wrapper.display_name})",
+                color="",
+                fill=""
+            ) +
+            pn.theme(
+                legend_position="bottom"
+            )
+            + self.theme
         )
-        axes[0].set_xlabel("Training Examples", fontsize=12)
-        axes[0].set_ylabel(display_name, fontsize=12)
-        axes[0].grid()
-        axes[0].fill_between(
-            results["train_sizes"],
-            results["train_scores_mean"] - results["train_scores_std"],
-            results["train_scores_mean"] + results["train_scores_std"],
-            alpha=0.1, color="r"
-            )
-        axes[0].fill_between(
-            results["train_sizes"],
-            results["test_scores_mean"] - results["test_scores_std"],
-            results["test_scores_mean"] + results["test_scores_std"],
-            alpha=0.1, color="g"
-            )
-        axes[0].plot(
-            results["train_sizes"], results["train_scores_mean"], "o-",
-            color="r", label="Training Score"
-            )
-        axes[0].plot(
-            results["train_sizes"], results["test_scores_mean"], "o-",
-            color="g", label="Cross-Validation Score"
-            )
-        axes[0].legend(loc="best")
-
-        # Plot n_samples vs fit_times
-        axes[1].grid()
-        axes[1].plot(results["train_sizes"], results["fit_times_mean"], "o-")
-        axes[1].fill_between(
-            results["train_sizes"],
-            results["fit_times_mean"] - results["fit_times_std"],
-            results["fit_times_mean"] + results["fit_times_std"],
-            alpha=0.1
-            )
-        axes[1].set_xlabel("Training Examples", fontsize=12)
-        axes[1].set_ylabel("Fit Times", fontsize=12)
-        axes[1].set_title("Scalability of the Model", fontsize=16)
-
-        # Plot fit_time vs score
-        axes[2].grid()
-        axes[2].plot(
-            results["fit_times_mean"], results["test_scores_mean"], "o-"
-        )
-        axes[2].fill_between(
-            results["fit_times_mean"],
-            results["test_scores_mean"] - results["test_scores_std"],
-            results["test_scores_mean"] + results["test_scores_std"],
-            alpha=0.1
-            )
-        axes[2].set_xlabel("Fit Times", fontsize=12)
-        axes[2].set_ylabel(display_name, fontsize=12)
-        axes[2].set_title("Performance of the Model", fontsize=16)
-
-        plt.tight_layout()
+        
+        return plot
 
 
 class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
