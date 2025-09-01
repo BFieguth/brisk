@@ -413,7 +413,6 @@ class TrainingManager:
             f"'{dataset}' (Split {split_index}) FAILED in "
             f"{self._format_time(elapsed_time)}."
         )
-        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
 
     def _log_warning(
         self,

@@ -9,7 +9,7 @@ import plotnine as pn
 
 from brisk.configuration import algorithm_wrapper
 from brisk.services import base
-from brisk.theme.custom_theme import PlotSettings
+from brisk.theme.plot_settings import PlotSettings
 
 class UtilityService(base.BaseService):
     """Utility service with helper functions for the EvaluationManager.

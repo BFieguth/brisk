@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 from importlib import util
 import os
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -12,13 +13,18 @@ from brisk.evaluation.metric_manager import MetricManager
 from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 from brisk.services import GlobalServiceManager
 from brisk.evaluation.evaluators.base import BaseEvaluator
+from brisk.services.bundle import ServiceBundle
+from brisk.services.utility import UtilityService
+from brisk.services.metadata import MetadataService
+from brisk.theme.plot_settings import PlotSettings
 
 @pytest.fixture
-def data_manager(mock_brisk_project, tmp_path):
-    data_file = tmp_path / "data.py"
-    spec = util.spec_from_file_location("data", data_file)
-    data_module = util.module_from_spec(spec)
-    spec.loader.exec_module(data_module)
+def data_manager(mock_brisk_project, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_manager.get_services", return_value=mock_services):
+        data_file = tmp_path / "data.py"
+        spec = util.spec_from_file_location("data", data_file)
+        data_module = util.module_from_spec(spec)
+        spec.loader.exec_module(data_module)
     return data_module.BASE_DATA_MANAGER
 
 
@@ -32,32 +38,55 @@ def algorithm_config(mock_brisk_project, tmp_path):
 
 
 @pytest.fixture
-def regression_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "regression.csv"
-    splits = data_manager.split(
-        data_file,
-        categorical_features=None,
-        table_name=None,
-        group_name="test_group",
-        filename="regression"
+def mock_services(algorithm_config):
+    services = mock.MagicMock(spec=ServiceBundle)
+    services.logger = mock.MagicMock()
+    services.logger.logger = mock.MagicMock()
+    services.io = mock.MagicMock()
+    services.io.output_dir = mock.MagicMock()
+
+    services.utility = UtilityService(
+        name="utility",
+        algorithm_config=algorithm_config,
+        group_index_train=None,
+        group_index_test=None
     )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    # Fixed predictions for testing
-    predictions = [0.7, 0.23, 0.43, 0.79]
-    return X_train, y_train, predictions
+    services.metadata = MetadataService("metadata", algorithm_config)
+    services.utility.set_plot_settings(PlotSettings())
+    services.reporting = mock.MagicMock()
+    services.reporting.add_dataset = mock.MagicMock()
+    return services
 
 
 @pytest.fixture
-def eval_manager(tmp_path, mock_brisk_project):
-    metric_file = tmp_path / "metrics.py"
-    spec = util.spec_from_file_location("metrics", metric_file)
-    metric_module = util.module_from_spec(spec)
-    spec.loader.exec_module(metric_module)
-    metric_config = metric_module.METRIC_CONFIG
-    return EvaluationManager(metric_config)
+def regression_data(data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "regression.csv"
+        splits = data_manager.split(
+            data_file,
+            categorical_features=None,
+            table_name=None,
+            group_name="test_group",
+            filename="regression"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        # Fixed predictions for testing
+        predictions = [0.7, 0.23, 0.43, 0.79]
+        return X_train, y_train, predictions
+
+
+@pytest.fixture
+def eval_manager(tmp_path, mock_brisk_project, mock_services):
+    with mock.patch("brisk.evaluation.evaluation_manager.get_services", return_value=mock_services):
+        metric_file = tmp_path / "metrics.py"
+        spec = util.spec_from_file_location("metrics", metric_file)
+        metric_module = util.module_from_spec(spec)
+        spec.loader.exec_module(metric_module)
+        metric_config = metric_module.METRIC_CONFIG
+        return EvaluationManager(metric_config)
 
 
 @pytest.fixture
@@ -112,10 +141,12 @@ class TestEvaluationManager:
         filename = tmpdir.join("saved_model")
         eval_manager.output_dir = tmpdir
 
-        with patch("os.makedirs") as mock_makedirs:
+        with (
+            patch("os.makedirs") as mock_makedirs,
+        ):
             eval_manager.save_model(rf_regressor, filename)
             mock_makedirs.assert_called_once_with(eval_manager.output_dir, exist_ok=True)
-            
+
         assert Path(f"{filename}.pkl").exists()
 
         loaded_model = eval_manager.load_model(f"{filename}.pkl")

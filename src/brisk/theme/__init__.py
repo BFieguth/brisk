@@ -1,3 +1,3 @@
-from .custom_theme import PlotSettings, brisk_theme
+from .plot_settings import PlotSettings, brisk_theme
 
 __all__ = ["PlotSettings", "brisk_theme"]

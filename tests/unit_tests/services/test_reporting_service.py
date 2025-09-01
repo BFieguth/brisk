@@ -5,11 +5,19 @@ from unittest import mock
 
 from brisk.services.reporting import ReportingService
 from brisk.reporting import report_data
-from tests.conftest import get_metric_config
+from tests.conftest import get_metric_config, get_algorithm_config
+from brisk.services.utility import UtilityService
+from brisk.theme.plot_settings import PlotSettings
+from brisk.services.bundle import ServiceBundle
 
 @pytest.fixture
 def metric_config():
     return get_metric_config()
+
+
+@pytest.fixture
+def algorithm_config():
+    return get_algorithm_config()
 
 
 @pytest.fixture
@@ -20,37 +28,60 @@ def report_service(metric_config) -> ReportingService:
 
 
 @pytest.fixture
-def data_manager(mock_brisk_project):
-    data_file = mock_brisk_project / "data.py"
-    spec = importlib.util.spec_from_file_location(
-        "data", str(data_file)
+def mock_services(algorithm_config):
+    services = mock.MagicMock(spec=ServiceBundle)
+    services.logger = mock.MagicMock()
+    services.logger.logger = mock.MagicMock()
+    services.io = mock.MagicMock()
+    services.io.output_dir = mock.MagicMock()
+    services.utility = UtilityService(
+        name="utility",
+        algorithm_config=algorithm_config,
+        group_index_train=None,
+        group_index_test=None
+    )
+    services.metadata = mock.MagicMock()
+    services.utility.set_plot_settings(PlotSettings())
+    services.reporting = mock.MagicMock()
+    services.reporting.add_dataset = mock.MagicMock()
+    return services
+
+
+@pytest.fixture
+def data_manager(mock_brisk_project, mock_services):
+    with mock.patch("brisk.data.data_manager.get_services", return_value=mock_services):
+        data_file = mock_brisk_project / "data.py"
+        spec = importlib.util.spec_from_file_location(
+            "data", str(data_file)
+            )
+        data_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(data_module)
+        data_manager = data_module.BASE_DATA_MANAGER
+        return data_manager
+
+
+@pytest.fixture
+def data_splits(mock_brisk_project, data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        return data_manager.split(
+            data_path = tmp_path / "datasets/regression.csv",
+            categorical_features = [],
+            group_name = "test_group",
+            filename = "regression",
+            table_name = None
         )
-    data_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(data_module)
-    data_manager = data_module.BASE_DATA_MANAGER
-    return data_manager
 
 
 @pytest.fixture
-def data_splits(mock_brisk_project, data_manager, tmp_path):
-    return data_manager.split(
-        data_path = tmp_path / "datasets/regression.csv",
-        categorical_features = [],
-        group_name = "test_group",
-        filename = "regression",
-        table_name = None
-    )
-
-
-@pytest.fixture
-def data_splits_categorical(mock_brisk_project, data_manager, tmp_path):
-    return data_manager.split(
-        data_path = tmp_path / "datasets/classification100.csv",
-        categorical_features = ["cat_feature_1", "cat_feature_2"],
-        group_name = "test_group",
-        filename = "classification100",
-        table_name = None
-    )
+def data_splits_categorical(mock_brisk_project, data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        return data_manager.split(
+            data_path = tmp_path / "datasets/classification100.csv",
+            categorical_features = ["cat_feature_1", "cat_feature_2"],
+            group_name = "test_group",
+            filename = "classification100",
+            table_name = None
+        )
 
 
 @pytest.fixture
@@ -290,7 +321,7 @@ class TestReportingService:
 
     def test_create_feature_distribution(self, report_service):
         report_service._image_cache = {
-            ("test_group", "test_dataset", "split_0", "brisk_histogram_boxplot_feature1"): ("mock_image_data", {"method": "brisk_histogram_boxplot_feature1"})
+            ("test_group", "test_dataset", "split_0", "brisk_histogram_plot_feature1"): ("mock_image_data", {"method": "brisk_histogram_plot_feature1"})
         }
         
         report_service._table_cache = {

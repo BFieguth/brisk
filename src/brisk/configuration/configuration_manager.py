@@ -22,7 +22,7 @@ from brisk.configuration import (
 from brisk.reporting import formatting
 from brisk.services import get_services
 from brisk.training import workflow as workflow_module
-from brisk.theme.custom_theme import PlotSettings
+from brisk.theme.plot_settings import PlotSettings
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.

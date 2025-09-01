@@ -18,7 +18,7 @@ from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
-from brisk.theme.custom_theme import PlotSettings
+from brisk.theme.plot_settings import PlotSettings
 
 class Configuration:
     """User interface for defining experiment configurations.

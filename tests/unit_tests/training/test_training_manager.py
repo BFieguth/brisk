@@ -270,6 +270,7 @@ class TestTrainingManager:
         mock_experiment.dataset_name = "test_dataset"
         mock_experiment.name = "test_experiment"
         mock_experiment.workflow = "regression_workflow"
+        mock_experiment.split_index = 0
         
         # Create a mock workflow instance that raises the specified error
         mock_workflow_instance = mock.Mock()
@@ -290,7 +291,9 @@ class TestTrainingManager:
             "test_dataset",         # dataset_name  
             "test_experiment",      # experiment_name
             1234567890.0,          # start_time
-            mock_workflow_instance.run.side_effect  # the error instance
+            mock_workflow_instance.run.side_effect,  # the error instance
+            "test_dataset",          # dataset
+            0                        # split_index
         )
         
         mock_handle_success.assert_not_called()
@@ -481,13 +484,12 @@ class TestTrainingManager:
         group_name = "group1"
         dataset_name = "dataset1"
         experiment_name = "experiment1"
-        expected_tqdm_calls = (
-            "\nExperiment 'experiment1' on dataset 'dataset1' "
-            "PASSED in 3m 8s.",
-        )
+        expected_tqdm_calls = [
+            "\nExperiment 'experiment1' on dataset 'dataset1' (Split 0) PASSED in 3m 8s.",
+        ]
 
         training_manager._handle_success(
-            start_time, group_name, dataset_name, experiment_name
+            start_time, group_name, dataset_name, experiment_name, "dataset1", 0
         )
         assert (training_manager.experiment_results
                 [group_name][dataset_name][-1]
@@ -508,6 +510,7 @@ class TestTrainingManager:
         group_name = "group1"
         dataset_name = "dataset1"
         experiment_name = "experiment1"
+        split_index = 0
         start_time = 1734371000
         error = "This is a test error"
         expected_error_message = (
@@ -515,19 +518,15 @@ class TestTrainingManager:
             "Experiment Name: experiment1\n\n"
             "Error: This is a test error"
         )
-        expected_tqdm_calls = (
-            "\nExperiment 'experiment1' on dataset 'dataset1' "
-            "FAILED in 4m 48s.",
-            f"\n{'-' * 80}"
-        )
+        expected_tqdm_calls = [
+            "\nExperiment 'experiment1' on dataset 'dataset1' (Split 0) FAILED in 4m 48s.",
+        ]
 
         training_manager._handle_failure(
-            group_name, dataset_name, experiment_name, start_time, error
+            group_name, dataset_name, experiment_name, start_time, error,
+            "dataset1", split_index
         )
 
-        # training_manager.logger.exception.assert_called_once_with(
-        #     expected_error_message
-        # )
         assert (training_manager.experiment_results
                 [group_name][dataset_name][-1]
             ) == {
