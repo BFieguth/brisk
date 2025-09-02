@@ -5,6 +5,8 @@ from typing import Optional, Any, Dict, Union
 import json
 import os
 import io
+import sys
+import importlib
 
 import matplotlib.pyplot as plt
 import plotnine as pn
@@ -242,8 +244,8 @@ class IOService(base.BaseService):
         self.dpi = io_settings["dpi"]
         self.transparent = io_settings["transparent"]
 
+    @staticmethod
     def load_data(
-        self,
         data_path: str,
         table_name: Optional[str] = None
     ) -> pd.DataFrame:
@@ -291,3 +293,59 @@ class IOService(base.BaseService):
                 f"Unsupported file format: {file_extension}. "
                 "Supported formats are CSV, Excel, and SQL database."
             )
+
+    @staticmethod
+    def load_module_object(
+        project_root: str,
+        module_filename: str,
+        object_name: str,
+        required: bool = True
+    ) -> Union[object, None]:
+        """
+        Dynamically loads an object from a specified module file.
+
+        Parameters
+        ----------
+        project_root : str
+            Path to project root directory
+        module_filename : str
+            Name of the module file
+        object_name : str
+            Name of object to load
+        required : bool, default=True
+            Whether to raise error if object not found
+
+        Returns
+        -------
+        object or None
+            Loaded object or None if not found and not required
+
+        Raises
+        ------
+        FileNotFoundError
+            If module file not found
+        AttributeError
+            If required object not found in module
+        """
+        module_path = os.path.join(project_root, module_filename)
+
+        if not os.path.exists(module_path):
+            raise FileNotFoundError(
+                f'{module_filename} not found in {project_root}'
+            )
+
+        module_name = os.path.splitext(module_filename)[0]
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+
+        spec.loader.exec_module(module)
+
+        if hasattr(module, object_name):
+            return getattr(module, object_name)
+        elif required:
+            raise AttributeError(
+                f'The object \'{object_name}\' is not defined in {module_filename}'
+            )
+        else:
+            return None

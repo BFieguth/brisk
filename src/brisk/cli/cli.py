@@ -254,8 +254,6 @@ def run(
 
     if not results_name:
         results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-    #     results_dir = os.path.join("results", results_name)
-    # else:
     results_dir = os.path.join("results", results_name)
     if os.path.exists(results_dir):
         raise FileExistsError(

@@ -1,13 +1,12 @@
 """Define helper functions used by CLI commands."""
-import importlib
 from typing import Union
 import json
 import os
-import sys
 
 from sklearn import datasets
 
 from brisk.services import initialize_services
+from brisk.services import io
 from brisk import version
 
 
@@ -17,18 +16,17 @@ def _run_from_project(project_root, verbose, create_report, results_dir):
             "Begining experiment creation. "
             f"The results will be saved to {results_dir}"
         )
-
-        algorithm_config = load_module_object(
+        algorithm_config = io.IOService.load_module_object(
             project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
         )
-        metric_config = load_module_object(
+        metric_config = io.IOService.load_module_object(
             project_root, "metrics.py", "METRIC_CONFIG"
         )
         initialize_services(
             algorithm_config, metric_config, results_dir, verbose=verbose
         )
 
-        manager = load_module_object(project_root, 'training.py', 'manager')
+        manager = io.IOService.load_module_object(project_root, 'training.py', 'manager')
 
         manager.run_experiments(
             create_report=create_report
@@ -105,61 +103,5 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
     }
     if name in datasets_map:
         return datasets_map[name]()
-    else:
-        return None
-
-
-def load_module_object(
-    project_root: str,
-    module_filename: str,
-    object_name: str,
-    required: bool = True
-) -> Union[object, None]:
-    """
-    Dynamically loads an object from a specified module file.
-
-    Parameters
-    ----------
-    project_root : str
-        Path to project root directory
-    module_filename : str
-        Name of the module file
-    object_name : str
-        Name of object to load
-    required : bool, default=True
-        Whether to raise error if object not found
-
-    Returns
-    -------
-    object or None
-        Loaded object or None if not found and not required
-
-    Raises
-    ------
-    FileNotFoundError
-        If module file not found
-    AttributeError
-        If required object not found in module
-    """
-    module_path = os.path.join(project_root, module_filename)
-
-    if not os.path.exists(module_path):
-        raise FileNotFoundError(
-            f'{module_filename} not found in {project_root}'
-        )
-
-    module_name = os.path.splitext(module_filename)[0]
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-
-    spec.loader.exec_module(module)
-
-    if hasattr(module, object_name):
-        return getattr(module, object_name)
-    elif required:
-        raise AttributeError(
-            f'The object \'{object_name}\' is not defined in {module_filename}'
-        )
     else:
         return None
