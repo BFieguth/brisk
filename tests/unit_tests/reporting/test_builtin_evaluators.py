@@ -1095,3 +1095,88 @@ class TestHyperparameterTuning:
         
         assert hasattr(tuned_model, 'fit')
         assert hasattr(tuned_model, 'predict')
+
+
+class TestPlotShapleyValues:
+    """Test PlotShapleyValues evaluator."""
+    
+
+    def test_plot_multiple_types(self, mock_services, fitted_models, regression_data):
+        """Test plot method with multiple plot types."""
+        evaluator = common_plots.PlotShapleyValues(
+            "brisk_plot_shapley_values",
+            "Plot SHAP values for feature importance."
+        )
+        evaluator.services = mock_services
+        
+        X, y, _ = regression_data
+        X.attrs = {"is_test": True}  # Add required attrs
+        model = fitted_models["linear"]
+        
+        # Mock all the methods that plot() calls
+        with patch.object(evaluator, '_generate_plot_data') as mock_generate, \
+             patch.object(evaluator, '_create_plot') as mock_create, \
+             patch.object(evaluator, '_generate_metadata') as mock_metadata, \
+             patch.object(evaluator, '_save_plot') as mock_save, \
+             patch.object(evaluator, '_log_results') as mock_log:
+            
+            # Mock return values
+            mock_generate.return_value = {'mock': 'data'}
+            mock_create.return_value = mock.MagicMock()  # Mock plot object
+            mock_metadata.return_value = {'test': True}
+            
+            # Test multiple plot types
+            evaluator.plot(model, X, y, filename="test_shap", plot_type="bar,waterfall")
+            
+            # Verify _generate_plot_data called once
+            mock_generate.assert_called_once_with(model, X, y, "bar,waterfall")
+            
+            # Verify _create_plot called twice (once for each plot type)
+            assert mock_create.call_count == 2
+            mock_create.assert_any_call({'mock': 'data'}, 'bar')
+            mock_create.assert_any_call({'mock': 'data'}, 'waterfall')
+            
+            # Verify _save_plot called twice with different filenames
+            assert mock_save.call_count == 2
+            mock_save.assert_any_call("test_shap_bar", {'test': True}, plot=mock_create.return_value)
+            mock_save.assert_any_call("test_shap_waterfall", {'test': True}, plot=mock_create.return_value)
+            
+            # Verify _log_results called twice
+            assert mock_log.call_count == 2
+            mock_log.assert_any_call("SHAP Values", "test_shap_bar")
+            mock_log.assert_any_call("SHAP Values", "test_shap_waterfall")
+    
+    def test_plot_single_type(self, mock_services, fitted_models, regression_data):
+        """Test plot method with single plot type (no filename suffix)."""
+        evaluator = common_plots.PlotShapleyValues(
+            "brisk_plot_shapley_values",
+            "Plot SHAP values for feature importance."
+        )
+        evaluator.services = mock_services
+        
+        X, y, _ = regression_data
+        X.attrs = {"is_test": True}  # Add required attrs
+        model = fitted_models["linear"]
+        
+        # Mock all the methods that plot() calls
+        with patch.object(evaluator, '_generate_plot_data') as mock_generate, \
+             patch.object(evaluator, '_create_plot') as mock_create, \
+             patch.object(evaluator, '_generate_metadata') as mock_metadata, \
+             patch.object(evaluator, '_save_plot') as mock_save, \
+             patch.object(evaluator, '_log_results') as mock_log:
+            
+            # Mock return values
+            mock_generate.return_value = {'mock': 'data'}
+            mock_create.return_value = mock.MagicMock()  # Mock plot object
+            mock_metadata.return_value = {'test': True}
+            
+            # Test single plot type
+            evaluator.plot(model, X, y, filename="test_shap", plot_type="bar")
+            
+            # Verify methods called once each
+            mock_generate.assert_called_once_with(model, X, y, "bar")
+            mock_create.assert_called_once_with({'mock': 'data'}, 'bar')
+            
+            # Verify filename has no suffix for single plot
+            mock_save.assert_called_once_with("test_shap", {'test': True}, plot=mock_create.return_value)
+            mock_log.assert_called_once_with("SHAP Values", "test_shap")
