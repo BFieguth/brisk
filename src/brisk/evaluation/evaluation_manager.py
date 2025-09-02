@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import copy
 import os
-import importlib.util
 
 import numpy as np
 from sklearn import base
@@ -104,32 +103,19 @@ class EvaluationManager:
         evaluators_file = project_root / "evaluators.py"
 
         if evaluators_file.exists():
-            try:
-                self.services.rerun.add_evaluators_config(
-                    self.export_evaluators_config(evaluators_file)
-                )
-                spec = importlib.util.spec_from_file_location(
-                    "custom_evaluators", evaluators_file
-                )
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
+            module = self.services.io.load_custom_evaluators(evaluators_file)
+            self.services.rerun.add_evaluators_config(
+                self.export_evaluators_config(evaluators_file)
+            )
+        else:
+            raise FileNotFoundError(
+                f"evaluators.py not found in {project_root}"
+            )
 
-                if hasattr(module, "register_custom_evaluators"):
-                    module.register_custom_evaluators(self.registry, theme)
-                    self.services.logger.logger.info(
-                        "Custom evaluators loaded succesfully"
-                    )
-                else:
-                    self.services.logger.logger.warning(
-                        "No register_custom_evaluators function found in evaluators.py"
-                    )
-                
-                self._check_unregistered_evaluators(module)
+        if module:
+            module.register_custom_evaluators(self.registry, theme)
+            self._check_unregistered_evaluators(module)
 
-            except (ImportError, AttributeError) as e:
-                self.services.logger.logger.warning(
-                    f"Failed to load custom evaluators: {e}"
-                )
 
     def _check_unregistered_evaluators(self, module) -> None:
         module_classes = [

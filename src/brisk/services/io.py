@@ -349,3 +349,30 @@ class IOService(base.BaseService):
             )
         else:
             return None
+
+    def load_custom_evaluators(self, evaluators_file: Path):
+        """Load the register_custom_evaluators() function from evaluators.py
+        """
+        # NOTE This is where rerun service would hook in when in Coordinating mode
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "custom_evaluators", evaluators_file
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            if hasattr(module, "register_custom_evaluators"):
+                self.get_service("logging").logger.info(
+                    "Custom evaluators loaded succesfully"
+                )
+                return module
+            else:
+                self.get_service("logging").logger.warning(
+                    "No register_custom_evaluators function found in evaluators.py"
+                )
+                return None
+
+        except (ImportError, AttributeError) as e:
+            self.get_service("logging").logger.warning(
+                f"Failed to load custom evaluators: {e}"
+            )

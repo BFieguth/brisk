@@ -51,4 +51,9 @@ class BaseService(ABC):
         Any: 
             The service instance.
         """
+        if service_name not in self._other_services:
+            raise KeyError(
+                f"Service {service_name} not found. "
+                f"Registered services are: {self._other_services.keys()}"
+            )
         return self._other_services.get(service_name)
