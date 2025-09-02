@@ -9,7 +9,6 @@ configurations match.
 
 import ast
 import collections
-from importlib import util
 from pathlib import Path
 import inspect
 import importlib
@@ -143,36 +142,8 @@ class ConfigurationManager:
         algorithms.py must define ALGORITHM_CONFIG = AlgorithmCollection()
         """
         algo_file = self.project_root / "algorithms.py"
-
-        if not algo_file.exists():
-            raise FileNotFoundError(
-                f"algorithms.py file not found: {algo_file}\n"
-                f"Please create algorithms.py and define an AlgorithmCollection"
-            )
-
-        spec = util.spec_from_file_location("algorithms", algo_file)
-        if spec is None or spec.loader is None:
-            raise ImportError(
-                f"Failed to load algorithms module from {algo_file}"
-                )
-
-        algo_module = util.module_from_spec(spec)
-        spec.loader.exec_module(algo_module)
-
-        if not hasattr(algo_module, "ALGORITHM_CONFIG"):
-            raise ImportError(
-                f"ALGORITHM_CONFIG not found in {algo_file}\n"
-                f"Please define ALGORITHM_CONFIG = AlgorithmCollection()"
-            )
-        self._validate_single_variable(algo_file, "ALGORITHM_CONFIG")
-        if not isinstance(
-            algo_module.ALGORITHM_CONFIG, algorithm_collection.AlgorithmCollection
-        ):
-            raise ValueError(
-                f"ALGORITHM_CONFIG in {algo_file} is not a valid "
-                "AlgorithmCollection instance"
-            )
-        return algo_module.ALGORITHM_CONFIG
+        algo_config = self.services.io.load_algorithms(algo_file)
+        return algo_config
 
     def _get_base_params(self) -> Dict:
         """Get parameters from base DataManager instance.

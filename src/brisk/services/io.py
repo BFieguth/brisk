@@ -18,6 +18,7 @@ import sqlite3
 
 from brisk.services import base
 from brisk.data import data_manager
+from brisk.configuration import algorithm_collection
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -407,6 +408,37 @@ class IOService(base.BaseService):
             )
         self._validate_single_variable(data_file, "BASE_DATA_MANAGER")
         return data_module.BASE_DATA_MANAGER
+
+    def load_algorithms(self, algorithm_file: Path):
+        if not algorithm_file.exists():
+            raise FileNotFoundError(
+                f"algorithms.py file not found: {algorithm_file}\n"
+                f"Please create algorithms.py and define an AlgorithmCollection"
+            )
+
+        spec = importlib.util.spec_from_file_location("algorithms", algorithm_file)
+        if spec is None or spec.loader is None:
+            raise ImportError(
+                f"Failed to load algorithms module from {algorithm_file}"
+                )
+
+        algo_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(algo_module)
+
+        if not hasattr(algo_module, "ALGORITHM_CONFIG"):
+            raise ImportError(
+                f"ALGORITHM_CONFIG not found in {algorithm_file}\n"
+                f"Please define ALGORITHM_CONFIG = AlgorithmCollection()"
+            )
+        self._validate_single_variable(algorithm_file, "ALGORITHM_CONFIG")
+        if not isinstance(
+            algo_module.ALGORITHM_CONFIG, algorithm_collection.AlgorithmCollection
+        ):
+            raise ValueError(
+                f"ALGORITHM_CONFIG in {algorithm_file} is not a valid "
+                "AlgorithmCollection instance"
+            )
+        return algo_module.ALGORITHM_CONFIG
 
     def _validate_single_variable(
         self,
