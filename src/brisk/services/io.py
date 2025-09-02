@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import plotnine as pn
 import plotly.graph_objects as go
 import numpy as np
+import pandas as pd
+import sqlite3
 
 from brisk.services import base
 
@@ -239,3 +241,53 @@ class IOService(base.BaseService):
         self.height = io_settings["height"]
         self.dpi = io_settings["dpi"]
         self.transparent = io_settings["transparent"]
+
+    def load_data(
+        self,
+        data_path: str,
+        table_name: Optional[str] = None
+    ) -> pd.DataFrame:
+        """Loads data from a CSV, Excel file, or SQL database.
+
+        Parameters
+        ----------
+        data_path : str
+            Path to the dataset file
+        table_name : str, optional
+            Name of the table in SQL database. Required for SQL databases.
+
+        Returns
+        -------
+        pd.DataFrame: The loaded dataset.
+
+        Raises
+        ------
+        ValueError
+            If file format is unsupported or table_name is missing for SQL
+            database.
+        """
+        file_extension = os.path.splitext(data_path)[1].lower()
+
+        if file_extension == ".csv":
+            return pd.read_csv(data_path)
+
+        elif file_extension in [".xls", ".xlsx"]:
+            return pd.read_excel(data_path)
+
+        elif file_extension in [".db", ".sqlite"]:
+            if table_name is None:
+                raise ValueError(
+                    "For SQL databases, 'table_name' must be provided."
+                )
+
+            conn = sqlite3.connect(data_path)
+            query = f"SELECT * FROM {table_name}"
+            df = pd.read_sql(query, conn)
+            conn.close()
+            return df
+
+        else:
+            raise ValueError(
+                f"Unsupported file format: {file_extension}. "
+                "Supported formats are CSV, Excel, and SQL database."
+            )

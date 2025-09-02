@@ -11,8 +11,6 @@ Exports:
     preprocessing pipelines.
 """
 
-import os
-import sqlite3
 from typing import Optional, List, Any
 
 import pandas as pd
@@ -26,7 +24,6 @@ from brisk.data.preprocessing import (
     CategoricalEncodingPreprocessor,
     FeatureSelectionPreprocessor,
 )
-
 from brisk.data import data_splits
 from brisk.services import get_services
 
@@ -510,56 +507,6 @@ class DataManager:
             ]
         return X_train, X_test, current_feature_names, current_categorical_features
 
-    def _load_data(
-        self,
-        data_path: str,
-        table_name: Optional[str] = None
-    ) -> pd.DataFrame:
-        """Loads data from a CSV, Excel file, or SQL database.
-
-        Parameters
-        ----------
-        data_path : str
-            Path to the dataset file
-        table_name : str, optional
-            Name of the table in SQL database. Required for SQL databases.
-
-        Returns
-        -------
-        pd.DataFrame: The loaded dataset.
-
-        Raises
-        ------
-        ValueError
-            If file format is unsupported or table_name is missing for SQL
-            database.
-        """
-        file_extension = os.path.splitext(data_path)[1].lower()
-
-        if file_extension == ".csv":
-            return pd.read_csv(data_path)
-
-        elif file_extension in [".xls", ".xlsx"]:
-            return pd.read_excel(data_path)
-
-        elif file_extension in [".db", ".sqlite"]:
-            if table_name is None:
-                raise ValueError(
-                    "For SQL databases, 'table_name' must be provided."
-                )
-
-            conn = sqlite3.connect(data_path)
-            query = f"SELECT * FROM {table_name}"
-            df = pd.read_sql(query, conn)
-            conn.close()
-            return df
-
-        else:
-            raise ValueError(
-                f"Unsupported file format: {file_extension}. "
-                "Supported formats are CSV, Excel, and SQL database."
-            )
-
     def split(
         self,
         data_path: str,
@@ -598,7 +545,7 @@ class DataManager:
         if split_key in self._splits:
             return self._splits[split_key]
 
-        df = self._load_data(data_path, table_name)
+        df = self.services.io.load_data(data_path, table_name)
         X = df.iloc[:, :-1]  # pylint: disable=C0103
         y = df.iloc[:, -1]
         groups = df[self.group_column] if self.group_column else None

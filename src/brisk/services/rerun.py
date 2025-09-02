@@ -151,7 +151,9 @@ class RerunService(base.BaseService):
                 dataset_path = datasets_dir / dataset_name
                 if dataset_path.exists():
                     
-                    df = self._load_dataset_for_metadata(str(dataset_path), table_name)
+                    df = self.get_service("io").load_data(
+                        str(dataset_path), table_name
+                    )
                     
                     feature_names = list(df.columns)
                     dataset_shape = df.shape
@@ -185,50 +187,6 @@ class RerunService(base.BaseService):
                 }
         
         self.configs["datasets"] = dataset_metadata
-
-    def _load_dataset_for_metadata(self, data_path: str, table_name: Optional[str] = None) -> Any:
-        """
-        Load a dataset file to extract metadata (feature names, shape).
-        
-        This is a simplified version of DataManager._load_data() for metadata extraction only.
-        
-        Parameters
-        ----------
-        data_path : str
-            Path to the dataset file
-        table_name : Optional[str]
-            Name of the table for SQL databases
-            
-        Returns
-        -------
-        pd.DataFrame
-            The loaded dataset
-        """
-        import os
-        import sqlite3
-        import pandas as pd
-        
-        file_extension = os.path.splitext(data_path)[1].lower()
-
-        if file_extension == ".csv":
-            return pd.read_csv(data_path)
-        elif file_extension in [".xls", ".xlsx"]:
-            return pd.read_excel(data_path)
-        elif file_extension in [".db", ".sqlite"]:
-            if table_name is None:
-                raise ValueError(
-                    "For SQL databases, 'table_name' must be provided."
-                )
-            conn = sqlite3.connect(data_path)
-            query = f"SELECT * FROM {table_name}"
-            df = pd.read_sql(query, conn)
-            conn.close()
-            return df
-        else:
-            raise ValueError(
-                f"Unsupported file format: {file_extension}. "
-                "Supported formats are CSV, Excel, and SQL database."
-            )
 
     def capture_environment(self) -> None:
         """Capture env info + pip freeze."""
