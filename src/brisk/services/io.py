@@ -1,13 +1,14 @@
 """IO related utilities."""
 
 from pathlib import Path
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any, Dict, Union, TYPE_CHECKING
 import json
 import os
 import io
 import sys
 import importlib
 import ast
+import inspect
 
 import matplotlib.pyplot as plt
 import plotnine as pn
@@ -19,7 +20,10 @@ import sqlite3
 from brisk.services import base
 from brisk.data import data_manager
 from brisk.configuration import algorithm_collection
+# from brisk.training import workflow as workflow_module
 
+if TYPE_CHECKING:
+    from brisk.training import workflow as workflow_module
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -439,6 +443,51 @@ class IOService(base.BaseService):
                 "AlgorithmCollection instance"
             )
         return algo_module.ALGORITHM_CONFIG
+
+    def load_workflow(self, workflow_name: str):
+        def _is_workflow_subclass(obj) -> bool:
+            """Check if an object is a subclass of Workflow without importing workflow module."""
+            try:
+                import brisk.training.workflow as workflow_module
+                return issubclass(obj, workflow_module.Workflow)
+            except (ImportError, TypeError):
+                return False
+
+
+        def _get_workflow_base_class():
+            """Get the Workflow base class without importing at module level."""
+            try:
+                import brisk.training.workflow as workflow_module
+                return workflow_module.Workflow
+            except ImportError:
+                return None
+
+
+        try:
+            module = importlib.import_module(
+                f"workflows.{workflow_name}"
+            )
+            workflow_classes = [
+                obj for _, obj in inspect.getmembers(module)
+                if inspect.isclass(obj)
+                and _is_workflow_subclass(obj)
+                and obj is not _get_workflow_base_class()
+            ]
+
+            if len(workflow_classes) == 0:
+                raise AttributeError(
+                    f"No Workflow subclass found in {workflow_name}.py"
+                )
+            elif len(workflow_classes) > 1:
+                raise AttributeError(
+                    f"Multiple Workflow subclasses found in {workflow_name}.py."
+                    " There can only be one Workflow per file."
+                    )
+
+            return workflow_classes[0]
+
+        except (ImportError, AttributeError) as e:
+            print(f"Error validating workflow: {e}")
 
     def _validate_single_variable(
         self,

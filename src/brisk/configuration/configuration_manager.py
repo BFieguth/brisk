@@ -7,11 +7,7 @@ that DataManager instances are created efficiently and reused when
 configurations match.
 """
 
-import ast
 import collections
-from pathlib import Path
-import inspect
-import importlib
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
@@ -20,7 +16,6 @@ from brisk.configuration import (
 )
 from brisk.reporting import formatting
 from brisk.services import get_services
-from brisk.training import workflow as workflow_module
 from brisk.theme.plot_settings import PlotSettings
 
 class ConfigurationManager:
@@ -232,7 +227,7 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            workflow_class = self._check_workflow_exists(group.workflow)
+            workflow_class = self.services.io.load_workflow(group.workflow)
             self.workflow_map[group.workflow] = workflow_class
             n_splits = group.data_config.get(
                 "n_splits", self.base_data_manager.n_splits
@@ -384,84 +379,3 @@ class ConfigurationManager:
             for group in self.experiment_groups
             if group.description != ""
         }
-
-    def _check_workflow_exists(self, workflow_name: str) -> None:
-        """Ensures workflow is a string and exists in the workflows directory.
-
-        Also checks only one Workflow subclass is defined in the file.
-        """
-        try:
-            module = importlib.import_module(
-                f"workflows.{workflow_name}"
-            )
-            workflow_classes = [
-                obj for _, obj in inspect.getmembers(module)
-                if inspect.isclass(obj)
-                and issubclass(obj, workflow_module.Workflow)
-                and obj is not workflow_module.Workflow
-            ]
-
-            if len(workflow_classes) == 0:
-                raise AttributeError(
-                    f"No Workflow subclass found in {workflow_name}.py"
-                )
-            elif len(workflow_classes) > 1:
-                raise AttributeError(
-                    f"Multiple Workflow subclasses found in {workflow_name}.py."
-                    " There can only be one Workflow per file."
-                    )
-
-            return workflow_classes[0]
-
-        except (ImportError, AttributeError) as e:
-            print(f"Error validating workflow: {e}")
-
-
-
-
-    def _validate_single_variable(
-        self,
-        file_path: Path,
-        variable_name: str
-    ) -> None:
-        """Validate that only a variable name is defined only once in a file.
-
-        Parameters
-        ----------
-        file_path : Path
-            Path to the Python file to check
-        variable_name : str
-            Name of the variable to check
-
-        Raises
-        ------
-        ValueError
-            If the variable is defined multiple times
-        SyntaxError
-            If the file contains invalid Python syntax
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                source_code = f.read()
-
-            tree = ast.parse(source_code, filename=str(file_path))
-
-            assignments = []
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if (
-                            isinstance(target, ast.Name)
-                            and target.id == variable_name
-                        ):
-                            assignments.append(node.lineno)
-
-            if len(assignments) > 1:
-                lines_str = ", ".join(map(str, assignments))
-                raise ValueError(
-                    f"{variable_name} is defined multiple times in {file_path} "
-                    f"on lines: {lines_str}. Please define it exactly once to "
-                    "avoid ambiguity."
-                )
-        except SyntaxError as e:
-            raise SyntaxError(f"Invalid Python syntax in {file_path}") from e
