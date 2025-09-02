@@ -26,20 +26,19 @@ Run an experiment:
 Load a dataset:
     $ brisk load_data --dataset iris --dataset_name my_iris
 """
-import importlib
-import inspect
 import os
 import sys
-from typing import Optional, Union
+from typing import Optional
 from datetime import datetime
 
 import click
 import pandas as pd
 from sklearn import datasets
 
-from brisk.training.workflow import Workflow
 from brisk.configuration import project
-from brisk.services import initialize_services
+from brisk.cli.cli_helpers import (
+    _run_from_project, _run_from_config, load_sklearn_dataset,
+)
 
 @click.group()
 def cli():
@@ -206,6 +205,12 @@ def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> No
     help='The name of the results directory.'
 )
 @click.option(
+    "-f",
+    "--config_file",
+    default=None,
+    help="Name of the results folder to run from config file."
+)
+@click.option(
     '--disable_report',
     is_flag=True,
     default=False,
@@ -219,6 +224,7 @@ def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> No
 )
 def run(
     results_name: Optional[str],
+    config_file: Optional[str],
     disable_report: bool,
     verbose: bool
 ) -> None:
@@ -241,50 +247,30 @@ def run(
         If experiment groups are missing workflow mappings
     """
     create_report = not disable_report
-    try:
-        project_root = project.find_project_root()
+    project_root = project.find_project_root()
 
-        if project_root not in sys.path:
-            sys.path.insert(0, str(project_root))
+    if project_root not in sys.path:
+        sys.path.insert(0, str(project_root))
 
-        if not results_name:
-            results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-            results_dir = os.path.join("results", results_name)
-        else:
-            results_dir = os.path.join("results", results_name)
-        if os.path.exists(results_dir):
-            raise FileExistsError(
-                f"Results directory '{results_dir}' already exists."
-            )
-        os.makedirs(results_dir, exist_ok=False)
-
-        print(
-            "Begining experiment creation. "
-            f"The results will be saved to {results_dir}"
+    if not results_name:
+        results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+    #     results_dir = os.path.join("results", results_name)
+    # else:
+    results_dir = os.path.join("results", results_name)
+    if os.path.exists(results_dir):
+        raise FileExistsError(
+            f"Results directory '{results_dir}' already exists."
         )
+    os.makedirs(results_dir, exist_ok=False)
 
-        algorithm_config = load_module_object(
-            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
+    if config_file:
+        _run_from_config(
+            project_root, verbose, create_report, results_dir, config_file
         )
-        metric_config = load_module_object(
-            project_root, "metrics.py", "METRIC_CONFIG"
+    else:
+        _run_from_project(
+            project_root, verbose, create_report, results_dir
         )
-        initialize_services(
-            algorithm_config, metric_config, results_dir, verbose=verbose
-        )
-
-        manager = load_module_object(project_root, 'training.py', 'manager')
-
-        manager.run_experiments(
-            create_report=create_report
-        )
-
-    except FileNotFoundError as e:
-        print(f'Error: {e}')
-
-    except (ImportError, AttributeError, ValueError) as e:
-        print(f'Error: {str(e)}')
-        return
 
 
 @cli.command()
@@ -457,88 +443,6 @@ def create_data(
 
     except FileNotFoundError as e:
         print(f'Error: {e}')
-
-
-def load_sklearn_dataset(name: str) -> Union[dict, None]:
-    """Load a dataset from scikit-learn.
-
-    Parameters
-    ----------
-    name : {'iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud'}
-        Name of the dataset to load
-
-    Returns
-    -------
-    dict or None
-        Loaded dataset object or None if not found
-    """
-    datasets_map = {
-        'iris': datasets.load_iris,
-        'wine': datasets.load_wine,
-        'breast_cancer': datasets.load_breast_cancer,
-        'diabetes': datasets.load_diabetes,
-        'linnerud': datasets.load_linnerud
-    }
-    if name in datasets_map:
-        return datasets_map[name]()
-    else:
-        return None
-
-
-def load_module_object(
-    project_root: str,
-    module_filename: str,
-    object_name: str,
-    required: bool = True
-) -> Union[object, None]:
-    """
-    Dynamically loads an object from a specified module file.
-
-    Parameters
-    ----------
-    project_root : str
-        Path to project root directory
-    module_filename : str
-        Name of the module file
-    object_name : str
-        Name of object to load
-    required : bool, default=True
-        Whether to raise error if object not found
-
-    Returns
-    -------
-    object or None
-        Loaded object or None if not found and not required
-
-    Raises
-    ------
-    FileNotFoundError
-        If module file not found
-    AttributeError
-        If required object not found in module
-    """
-    module_path = os.path.join(project_root, module_filename)
-
-    if not os.path.exists(module_path):
-        raise FileNotFoundError(
-            f'{module_filename} not found in {project_root}'
-        )
-
-    module_name = os.path.splitext(module_filename)[0]
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-
-    spec.loader.exec_module(module)
-
-    if hasattr(module, object_name):
-        return getattr(module, object_name)
-    elif required:
-        raise AttributeError(
-            f'The object \'{object_name}\' is not defined in {module_filename}'
-        )
-    else:
-        return None
 
 
 if __name__ == '__main__':
