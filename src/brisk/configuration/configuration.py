@@ -188,6 +188,8 @@ class Configuration:
             })
 
         services.rerun.add_configuration(configuration_json, groups_json)
+        services.rerun.collect_workflow_files(configuration_json, groups_json)
+        services.rerun.collect_dataset_metadata(groups_json)
 
         return ConfigurationManager(
             self.experiment_groups, self.categorical_features,

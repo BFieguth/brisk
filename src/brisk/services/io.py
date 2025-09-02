@@ -169,6 +169,18 @@ class IOService(base.BaseService):
                 f"Failed to save plot to {output_path}: {e}"
             )
 
+    def save_rerun_config(self, data: Dict, output_path: Union[Path, str]):
+        if not os.path.exists(output_path.parent):
+            os.makedirs(output_path.parent, exist_ok=True)
+        try:
+            with open(output_path, "w", encoding="utf-8") as file:
+                json.dump(data, file, indent=4)
+
+        except IOError as e:
+            self._other_services["logging"].logger.info(
+                f"Failed to save JSON to {output_path}: {e}"
+            )
+
     def _convert_to_svg(
         self,
         metadata: Dict[str, Any],

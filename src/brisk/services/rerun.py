@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from brisk.services import base
 from brisk.version import __version__
+from brisk.configuration import project
 
 class RerunService(base.BaseService):
     """
@@ -28,8 +29,10 @@ class RerunService(base.BaseService):
             "metrics": [],
             "algorithms": [],
             "evaluators": None,
+            "workflows": {},
+            "datasets": {},
         }
-        self.capture_environment()  # capture at initialization
+        self.capture_environment()
 
 
     def add_base_data_manager(self, config: Dict[str, Any]) -> None:
@@ -73,6 +76,160 @@ class RerunService(base.BaseService):
         """
         self.configs["evaluators"] = evaluators_config
 
+    def collect_workflow_files(self, configuration_json: Dict[str, Any], groups_json: List[Dict[str, Any]]) -> None:
+        """
+        Collect all workflow files used in the configuration for rerun functionality.
+        
+        Captures the entire content of each workflow file used, including the default
+        workflow and any workflow overrides in experiment groups.
+        
+        Parameters
+        ----------
+        configuration_json : Dict[str, Any]
+            The main configuration dictionary
+        groups_json : List[Dict[str, Any]]
+            List of experiment group configurations
+        """
+        project_root = project.find_project_root()
+        workflows_dir = project_root / "workflows"
+        workflow_files = set()
+        
+        default_workflow = configuration_json.get("default_workflow")
+        if default_workflow:
+            workflow_files.add(default_workflow)
+        
+        for group in groups_json:
+            workflow_name = group.get("workflow")
+            if workflow_name:
+                workflow_files.add(workflow_name)
+        
+        workflows_content = {}
+        for workflow_name in workflow_files:
+            workflow_file = workflows_dir / f"{workflow_name}.py"
+            if workflow_file.exists():
+                try:
+                    with open(workflow_file, 'r', encoding='utf-8') as f:
+                        workflows_content[f"{workflow_name}.py"] = f.read()
+                except (IOError, OSError) as e:
+                    self._other_services["logger"].logger.warning(
+                        f"Failed to read workflow file {workflow_name}.py: {e}"
+                    )
+            else:
+                self._other_services["logger"].logger.warning(
+                    f"Workflow file {workflow_name}.py not found"
+                )
+        
+        self.configs["workflows"] = workflows_content
+
+    def collect_dataset_metadata(self, groups_json: List[Dict[str, Any]]) -> None:
+        """
+        Collect metadata about all datasets used in experiment groups for rerun functionality.
+        
+        Captures dataset metadata including filename, table name, file size, and feature names
+        to verify dataset compatibility during rerun.
+        
+        Parameters
+        ----------
+        groups_json : List[Dict[str, Any]]
+            List of experiment group configurations containing dataset information
+        """
+        project_root = project.find_project_root()
+        datasets_dir = project_root / "datasets"
+        dataset_metadata = {}
+        
+        unique_datasets = set()
+        for group in groups_json:
+            datasets = group.get("datasets", [])
+            for dataset_info in datasets:
+                dataset_name = dataset_info.get("dataset")
+                table_name = dataset_info.get("table_name")
+                dataset_key = (dataset_name, table_name)
+                unique_datasets.add(dataset_key)
+        
+        for dataset_name, table_name in unique_datasets:
+            try:
+                dataset_path = datasets_dir / dataset_name
+                if dataset_path.exists():
+                    
+                    df = self._load_dataset_for_metadata(str(dataset_path), table_name)
+                    
+                    feature_names = list(df.columns)
+                    dataset_shape = df.shape
+
+                    dataset_key_str = f"{dataset_name}|{table_name}" if table_name else dataset_name
+                    dataset_metadata[dataset_key_str] = {
+                        "filename": dataset_name,
+                        "table_name": table_name,
+                        "feature_names": feature_names,
+                        "num_features": len(feature_names),
+                        "num_samples": dataset_shape[0]
+                    }
+                else:
+                    self._other_services["logger"].logger.warning(
+                        f"Dataset file {dataset_name} not found"
+                    )
+                    dataset_metadata[dataset_key_str] = {
+                        "filename": dataset_name,
+                        "table_name": table_name,
+                        "error": "File not found"
+                    }
+                    
+            except IOError as e:
+                self._other_services["logger"].logger.warning(
+                    f"Failed to collect metadata for dataset {dataset_name}: {e}"
+                )
+                dataset_metadata[dataset_key_str] = {
+                    "filename": dataset_name,
+                    "table_name": table_name,
+                    "error": str(e)
+                }
+        
+        self.configs["datasets"] = dataset_metadata
+
+    def _load_dataset_for_metadata(self, data_path: str, table_name: Optional[str] = None) -> Any:
+        """
+        Load a dataset file to extract metadata (feature names, shape).
+        
+        This is a simplified version of DataManager._load_data() for metadata extraction only.
+        
+        Parameters
+        ----------
+        data_path : str
+            Path to the dataset file
+        table_name : Optional[str]
+            Name of the table for SQL databases
+            
+        Returns
+        -------
+        pd.DataFrame
+            The loaded dataset
+        """
+        import os
+        import sqlite3
+        import pandas as pd
+        
+        file_extension = os.path.splitext(data_path)[1].lower()
+
+        if file_extension == ".csv":
+            return pd.read_csv(data_path)
+        elif file_extension in [".xls", ".xlsx"]:
+            return pd.read_excel(data_path)
+        elif file_extension in [".db", ".sqlite"]:
+            if table_name is None:
+                raise ValueError(
+                    "For SQL databases, 'table_name' must be provided."
+                )
+            conn = sqlite3.connect(data_path)
+            query = f"SELECT * FROM {table_name}"
+            df = pd.read_sql(query, conn)
+            conn.close()
+            return df
+        else:
+            raise ValueError(
+                f"Unsupported file format: {file_extension}. "
+                "Supported formats are CSV, Excel, and SQL database."
+            )
+
     def capture_environment(self) -> None:
         """Capture env info + pip freeze."""
         env = {"python": platform.python_version()}
@@ -89,5 +246,5 @@ class RerunService(base.BaseService):
     def export_and_save(self, results_dir: Path) -> None:
         """Write the run configuration to results/run_config.json."""
         out_path = Path(results_dir) / "run_config.json"
-        meta = {"kind": "brisk_rerun_config"}
-        self.get_service("io").save_to_json(data=self.configs, output_path=out_path, metadata=meta)
+        # meta = {"kind": "brisk_rerun_config"} # TODO implelment w/ metadata service
+        self._other_services["io"].save_rerun_config(data=self.configs, output_path=out_path)
