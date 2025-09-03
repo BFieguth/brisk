@@ -5,7 +5,7 @@
             "name": "Debug Brisk CLI Run Command",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/brisk/cli.py",
+            "program": "${workspaceFolder}/src/brisk/cli/cli.py",
             "args": [
                 "run"
             ],
