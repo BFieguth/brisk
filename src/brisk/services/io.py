@@ -20,9 +20,11 @@ import sqlite3
 from brisk.services import base
 from brisk.data import data_manager
 from brisk.configuration import algorithm_collection
+from brisk.evaluation import metric_manager
 
 if TYPE_CHECKING:
     from brisk.training import workflow as workflow_module
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -560,3 +562,40 @@ class IOService(base.BaseService):
                 )
         except SyntaxError as e:
             raise SyntaxError(f"Invalid Python syntax in {file_path}") from e
+
+    def load_metric_config(self, metric_file):
+        rerun = self.get_service("rerun")
+        if rerun.is_coordinating:
+            return rerun.handle_load_metric_config(None)
+
+        if not metric_file.exists():
+            raise FileNotFoundError(
+                f"metrics.py file not found: {metric_file}\n"
+                f"Please create metric.py and define a MetricManager"
+            )
+
+        spec = importlib.util.spec_from_file_location("metrics", metric_file)
+        if spec is None or spec.loader is None:
+            raise ImportError(
+                f"Failed to load metrics module from {metric_file}"
+                )
+
+        metrics_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(metrics_module)
+
+        if not hasattr(metrics_module, "METRIC_CONFIG"):
+            raise ImportError(
+                f"METRIC_CONFIG not found in {metric_file}\n"
+                f"Please define METRIC_CONFIG = MetricManager()"
+            )
+        self._validate_single_variable(metric_file, "METRIC_CONFIG")
+        if not isinstance(
+            metrics_module.METRIC_CONFIG, metric_manager.MetricManager
+        ):
+            raise ValueError(
+                f"METRIC_CONFIG in {metric_file} is not a valid "
+                "MetricManager instance"
+            )
+        return rerun.handle_load_metric_config(
+            metrics_module.METRIC_CONFIG
+        )    

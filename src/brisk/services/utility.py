@@ -28,12 +28,11 @@ class UtilityService(base.BaseService):
     def __init__(
         self,
         name: str,
-        algorithm_config: algorithm_collection.AlgorithmCollection,
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None
     ):
         super().__init__(name)
-        self.algorithm_config = algorithm_config
+        self.algorithm_config = None
         self.group_index_train = None
         self.group_index_test = None
         self.data_has_groups = False
@@ -66,6 +65,9 @@ class UtilityService(base.BaseService):
             self.data_has_groups = True
         else:
             self.data_has_groups = False
+
+    def set_algorithm_config(self, algorithm_config: algorithm_collection.AlgorithmCollection):
+        self.algorithm_config = algorithm_config
 
     def get_algo_wrapper(
         self,

@@ -5,9 +5,9 @@ import os
 
 from sklearn import datasets
 
-from brisk.services import initialize_services
-from brisk.services import io
+from brisk.services import initialize_services, get_services
 from brisk import version
+from brisk.training.training_manager import TrainingManager
 
 
 def _run_from_project(project_root, verbose, create_report, results_dir):
@@ -16,17 +16,25 @@ def _run_from_project(project_root, verbose, create_report, results_dir):
             "Begining experiment creation. "
             f"The results will be saved to {results_dir}"
         )
-        algorithm_config = io.IOService.load_module_object(
-            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
-        )
-        metric_config = io.IOService.load_module_object(
-            project_root, "metrics.py", "METRIC_CONFIG"
-        )
-        initialize_services(
-            algorithm_config, metric_config, results_dir, verbose=verbose
+
+        initialize_services(results_dir, verbose=verbose, mode="capture")
+        services = get_services()
+
+        services.io.load_algorithms(project_root / "algorithms.py")
+        metric_config = services.io.load_metric_config(
+            project_root / "metrics.py"
         )
 
-        manager = io.IOService.load_module_object(project_root, 'training.py', 'manager')
+        create_configuration = services.io.load_module_object(
+            project_root, "settings.py", "create_configuration"
+        )
+
+        config_manager = create_configuration()
+
+        manager = TrainingManager(
+            metric_config=metric_config,
+            config_manager=config_manager
+        )
 
         manager.run_experiments(
             create_report=create_report
@@ -53,7 +61,7 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
         print(f"Error in config_file handling: {e}")
         exit() # NOTE: temp while developing
 
-# TODO: 00. Verify brisk version
+# TODO: 0. Verify brisk version
     if config["package_version"] != version.__version__:
         raise RuntimeError(
             "Configuration file was created using Brisk version "

@@ -64,9 +64,7 @@ class TrainingManager:
         config_manager: configuration.ConfigurationManager
     ):
         self.services = get_services()
-        self.services.rerun.add_metric_config(metric_config.export_params())
         self.results_dir = self.services.io.results_dir
-
         self.metric_config = metric_config
         self.eval_manager = evaluation_manager.EvaluationManager(
             self.metric_config

@@ -97,7 +97,6 @@ class ReportingService(base.BaseService):
     def __init__(
         self,
         name: str,
-        metric_manager: metric_config.MetricManager
     ):
         super().__init__(name)
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -109,7 +108,7 @@ class ReportingService(base.BaseService):
         self.experiments = {}
         self.experiment_groups = []
         self.data_managers = {}
-        self.metric_manager = metric_manager
+        self.metric_manager = None
         self.registry: Optional["EvaluatorRegistry"] = None
         self.group_to_experiment = defaultdict(list)
         self._current_context: Optional[ReportingContext] = None
@@ -133,6 +132,16 @@ class ReportingService(base.BaseService):
             )
         )
         self.tuning_metric = None
+
+    def set_metric_config(self, metric_config: metric_config.MetricManager) -> None:
+        """Set the metric manager for this reporting service.
+
+        Parameters
+        ----------
+        metric_config : MetricManager
+            The metric configuration
+        """
+        self.metric_manager = metric_config
 
     def set_context(
         self,

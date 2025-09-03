@@ -33,6 +33,11 @@ class RerunStrategy(abc.ABC):
         """Handle loading workflow."""
         pass
 
+    @abc.abstractmethod
+    def handle_load_metric_config(self, metric_config) -> Any:
+        """Handle loading metric config."""
+        pass
+
 
 class CaptureStrategy(RerunStrategy):
     """Strategy for capture mode - store data for config file."""
@@ -54,8 +59,25 @@ class CaptureStrategy(RerunStrategy):
     
     def handle_load_algorithms(self, algorithm_config) -> Any:
         """Load algorithms normally and capture their config."""
-        config = algorithm_config.export_params()
-        self.rerun_service.add_algorithm_config(config)
+        project_root = project.find_project_root()
+        algorithms_file = project_root / "algorithms.py"
+        
+        if algorithms_file.exists():
+            try:
+                with open(algorithms_file, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                
+                algo_config = {
+                    "type": "algorithms_file",
+                    "file_content": file_content,
+                    "file_path": "algorithms.py"
+                }
+                self.rerun_service.add_algorithm_config(algo_config)
+            except (IOError, OSError) as e:
+                self.rerun_service._other_services["logger"].logger.warning(
+                    f"Failed to read algorithms.py file: {e}"
+                )
+
         return algorithm_config
     
     def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
@@ -81,6 +103,28 @@ class CaptureStrategy(RerunStrategy):
         self.rerun_service.add_workflow_file(workflow_name)
         return workflow
  
+    def handle_load_metric_config(self, metric_config) -> Any:
+        """Load metric config normally and capture its content."""
+        project_root = project.find_project_root()
+        metrics_file = project_root / "metrics.py"
+        
+        if metrics_file.exists():
+            try:
+                with open(metrics_file, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                
+                config = {
+                    "type": "metrics_file",
+                    "file_content": file_content,
+                    "file_path": "metrics.py"
+                }
+                self.rerun_service.add_metric_config(config)
+            except (IOError, OSError) as e:
+                self.rerun_service._other_services["logger"].logger.warning(
+                    f"Failed to read metrics.py file: {e}"
+                )
+
+        return metric_config
 
 class CoordinatingStrategy(RerunStrategy):
     """Strategy for coordinating mode - provides data from config file."""
@@ -102,8 +146,7 @@ class CoordinatingStrategy(RerunStrategy):
         raise NotImplementedError(
             "handle_load_algorithms not implemented for CoordinatingStrategy"
         )
-    
-    
+        
     def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
         """Provide custom evaluators from config instead of loading from file."""
         raise NotImplementedError(
@@ -116,6 +159,12 @@ class CoordinatingStrategy(RerunStrategy):
 
         raise NotImplementedError(
             "handle_load_workflow not implemented for CoordinatingStrategy"
+        )
+
+    def handle_load_metric_config(metric_config) -> Any:
+        """Provide metric config from config instead of loading from file."""
+        raise NotImplementedError(
+            "handle_metric_config not implemented for CoordinatingStrategy"
         )
 
 
@@ -318,7 +367,10 @@ class RerunService(base.BaseService):
     
     def handle_load_algorithms(self, algorithm_config: Path) -> Any:
         """Delegate to current strategy."""
-        return self.strategy.handle_load_algorithms(algorithm_config)
+        algo_config = self.strategy.handle_load_algorithms(algorithm_config)
+        self.get_service("utility").set_algorithm_config(algo_config)
+        self.get_service("metadata").set_algorithm_config(algo_config)
+        return algo_config
     
     def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
         """Delegate to current strategy."""
@@ -329,3 +381,9 @@ class RerunService(base.BaseService):
     def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
         """Delegate to current strategy."""
         return self.strategy.handle_load_workflow(workflow, workflow_name)
+
+    def handle_load_metric_config(self, metric_config) -> Any:
+        """Delegate to current strategy."""
+        config = self.strategy.handle_load_metric_config(metric_config)
+        self.get_service("reporting").set_metric_config(metric_config)
+        return config

@@ -28,10 +28,9 @@ class MetadataService(base_service.BaseService):
     def __init__(
         self,
         name,
-        algorithm_config: algorithm_collection.AlgorithmCollection
     ):
         super().__init__(name)
-        self.algorithm_config = algorithm_config
+        self.algorithm_config = None
 
     def _get_base(self, method_name: str) -> Dict[str, Any]:
         """Base information that is common to all metadata
@@ -118,3 +117,6 @@ class MetadataService(base_service.BaseService):
         metadata["dataset"] = dataset_name
         metadata["group"] = group_name
         return metadata
+
+    def set_algorithm_config(self, algorithm_config):
+        self.algorithm_config = algorithm_config
