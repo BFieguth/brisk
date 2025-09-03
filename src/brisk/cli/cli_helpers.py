@@ -91,10 +91,10 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
         config.add_experiment_group(**group)
 
     # TODO 5. Create ConfigurationManger instance
-    # config_manager = config.build()
+    # TODO 6. setup base data manager
+    # TODO 7. Setup workflow files
+    config_manager = config.build()
 
-# TODO 6. setup base data manager
-# TODO 7. Setup workflow files
 # TODO 8. Initalize TrainingManager and call run_experiemnts
 # TODO 9. Setup evaluator file
 # TODO 10. Verify data files
@@ -106,9 +106,6 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
     print(f"Plotnine Theme: type={type(config.plot_settings.theme)}")
     print(f"ConfigurationManager: type={type(config_manager)}")
     print("\nFinished running from config file!")
-        # except Exception as e:
-        #     print(f"Error in config_file handling: {e}")
-        #     exit() # NOTE: temp while developing
 
 
 def load_sklearn_dataset(name: str) -> Union[dict, None]:

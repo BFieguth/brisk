@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 import abc
 import tempfile
 import os
+import importlib
+import inspect
 
 from brisk.services import base
 from brisk.version import __version__
@@ -16,7 +18,15 @@ from brisk.configuration import algorithm_collection
 from brisk.evaluation import metric_manager
 from brisk.theme.plot_settings import PlotSettings
 from brisk.theme.theme_serializer import ThemePickleJSONSerializer
-    
+from brisk.data import data_manager as data_manager_module
+from brisk.data.preprocessing import (
+    MissingDataPreprocessor,
+    ScalingPreprocessor,
+    CategoricalEncodingPreprocessor,
+    FeatureSelectionPreprocessor
+)
+
+
 class RerunStrategy(abc.ABC):
     """Abstract base class for rerun strategy."""
 
@@ -107,7 +117,7 @@ class CaptureStrategy(RerunStrategy):
     
     def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
         """Load workflow normally and capture its content."""
-        self.rerun_service.add_workflow_file(workflow_name)
+        self.rerun_service.add_workflow_file(workflow_name, workflow.__name__)
         return workflow
  
     def handle_load_metric_config(self, metric_config) -> Any:
@@ -144,9 +154,23 @@ class CoordinatingStrategy(RerunStrategy):
     
     def handle_load_base_data_manager(self, data_manager) -> Any:
         """Provide base data manager from config instead of loading from file."""
-        # TODO: This method must the base DataManager insance from config file
-        raise NotImplementedError(
-            "handle_load_base_data_manager not implemented for CoordinatingStrategy"
+        preprocessor_classes = {
+            'MissingDataPreprocessor': MissingDataPreprocessor,
+            'ScalingPreprocessor': ScalingPreprocessor,
+            'CategoricalEncodingPreprocessor': CategoricalEncodingPreprocessor,
+            'FeatureSelectionPreprocessor': FeatureSelectionPreprocessor,
+        }
+        data_manager_config = self.config_data["base_data_manager"]["params"]
+        preprocessor_config = data_manager_config.pop("preprocessors")
+        preprocessors=[]
+        for class_name, params in preprocessor_config.items():
+            preprocessor_class = preprocessor_classes[class_name]
+            preprocessor = preprocessor_class(**params)
+            preprocessors.append(preprocessor)
+
+        return data_manager_module.DataManager(
+            **data_manager_config,
+            preprocessors=preprocessors
         )
     
     def handle_load_algorithms(self, algorithm_config) -> Any:
@@ -184,11 +208,30 @@ class CoordinatingStrategy(RerunStrategy):
     
     def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
         """Provide workflow from config instead of loading from file."""
-        # TODO: this must return a Workflow instance 
-
-        raise NotImplementedError(
-            "handle_load_workflow not implemented for CoordinatingStrategy"
+        if f"{workflow_name}.py" not in self.config_data["workflows"]:
+            raise ValueError(
+                f"Workflow {workflow_name}.py not found in rerun configuration"
+            )
+        workflow_config = self.config_data["workflows"][f"{workflow_name}.py"]
+        temp_file_path = self._create_temp_file_from_content(
+            workflow_config["file_content"], 
+            f"{workflow_name}.py"
         )
+
+        spec = importlib.util.spec_from_file_location(
+            f"temp_workflow_{workflow_name}", 
+            temp_file_path
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        workflow_classes = [
+            obj for name, obj in inspect.getmembers(module)
+            if name == workflow_config["class_name"]
+        ]
+        
+        return workflow_classes[0]
 
     def handle_load_metric_config(self, metric_config) -> Any:
         """Provide metric config from config instead of loading from file."""
@@ -349,7 +392,7 @@ class RerunService(base.BaseService):
         """
         self.configs["evaluators"] = evaluators_config
 
-    def add_workflow_file(self, workflow_name: str):
+    def add_workflow_file(self, workflow_name: str, class_name: str):
         project_root = project.find_project_root()
         workflow_file = project_root / "workflows" / f"{workflow_name}.py"
         if workflow_file.exists():
@@ -357,7 +400,10 @@ class RerunService(base.BaseService):
                 with open(workflow_file, "r", encoding="utf-8") as f:
                     file_content = f.read()
 
-                self.configs["workflows"][f"{workflow_name}.py"] = file_content
+                self.configs["workflows"][f"{workflow_name}.py"] = {
+                    "file_content": file_content,
+                    "class_name": class_name
+                }
 
             except (IOError, OSError) as e:
                 self._other_services["logger"].logger.warning(

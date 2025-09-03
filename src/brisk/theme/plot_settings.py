@@ -11,7 +11,7 @@ from typing import Optional
 
 import plotnine as pn
 
-from brisk.theme.theme import brisk_theme
+from brisk.theme.theme import brisk_theme, register_fonts
 from brisk.theme import theme_serializer
 
 class PlotSettings:
@@ -68,7 +68,7 @@ class PlotSettings:
         self.primary_color = primary_color or "#1175D5"
         self.secondary_color = secondary_color or "#00A878"
         self.accent_color = accent_color or "#DE6B48"
-
+        register_fonts()
         if theme is not None:
             self._validate_theme(theme)
             if override:

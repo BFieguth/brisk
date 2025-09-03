@@ -634,22 +634,21 @@ class DataManager:
     def export_params(self) -> None:
         """Export a JSON-serializable snapshot of the DataManager init params.
         """
-        try:
-            json = {
-                "params": {
-                    "test_size": self.test_size,
-                    "n_splits": self.n_splits,
-                    "split_method": self.split_method,
-                    "group_column": self.group_column,
-                    "stratified": self.stratified,
-                    "random_state": self.random_state,
-                    "problem_type": self.problem_type,
-                    "preprocessors": [
-                        type(p).__name__ for p in self.preprocessors
-                    ] if self.preprocessors else [],
-                }
-            }
+        preprocessor_configs = {
+            type(preprocessor).__name__: preprocessor.export_params()
+            for preprocessor in self.preprocessors
+        }
 
-            return json
-        except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Warning: Failed to export DataManager params for rerun. {e}")
+        json = {
+            "params": {
+                "test_size": self.test_size,
+                "n_splits": self.n_splits,
+                "split_method": self.split_method,
+                "group_column": self.group_column,
+                "stratified": self.stratified,
+                "random_state": self.random_state,
+                "problem_type": self.problem_type,
+                "preprocessors": preprocessor_configs,
+            }
+        }
+        return json

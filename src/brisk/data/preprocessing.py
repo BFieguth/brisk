@@ -13,7 +13,7 @@ Exports:
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 import numpy as np
 import pandas as pd
 from sklearn import preprocessing
@@ -83,6 +83,11 @@ class BasePreprocessor(ABC):
         pd.DataFrame
             Transformed data
         """
+        pass
+
+    @abstractmethod
+    def export_params(self) -> Dict[str, Any]:
+        """Pass arguments to RerunService."""
         pass
 
     def fit_transform(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> pd.DataFrame:  # pylint: disable=C0103
@@ -261,6 +266,12 @@ class MissingDataPreprocessor(BasePreprocessor):
         """
         return feature_names
 
+    def export_params(self) -> Dict[str, Any]:
+        return {
+            "strategy": self.strategy,
+            "impute_method": self.impute_method,
+            "constant_value": self.constant_value
+        }
 
 class ScalingPreprocessor(BasePreprocessor):
     """Preprocessor for scaling numerical features.
@@ -286,7 +297,8 @@ class ScalingPreprocessor(BasePreprocessor):
             method=method,
             **kwargs
         )
-        self.scaler = None  
+        self.scaler = None
+
     def _validate_params(self, **kwargs) -> None:
         """Validate the scaling method."""
         method = kwargs.get("method", "standard")
@@ -416,6 +428,11 @@ class ScalingPreprocessor(BasePreprocessor):
         if feature_names is None:
             return []
         return feature_names.copy()
+
+    def export_params(self) -> Dict[str, Any]:
+        return {
+            "method": self.method,
+        }
 
 class CategoricalEncodingPreprocessor(BasePreprocessor):
     """Preprocessor for categorical feature encoding.
@@ -645,6 +662,11 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
 
         return new_feature_names
 
+    def export_params(self) -> Dict[str, Any]:
+        return {
+            "method": self.method,
+        }
+
 
 class FeatureSelectionPreprocessor(BasePreprocessor):
     """Preprocessor for feature selection methods.
@@ -822,3 +844,14 @@ class FeatureSelectionPreprocessor(BasePreprocessor):
             return [name for name, keep in zip(feature_names, selected_mask) if keep]
 
         return feature_names
+
+    def export_params(self) -> Dict[str, Any]:
+        return {
+            "method": self.method,
+            "n_features_to_select": self.n_features_to_select,
+            "feature_selection_cv": self.feature_selection_cv,
+            "estimator": self.estimator,
+            "algorithm_config": self.algorithm_config,
+            "feature_selection_estimator": self.feature_selection_estimator,
+            "problem_type": self.problem_type
+        }
