@@ -16,6 +16,22 @@
             }
         },
         {
+            "name": "Debug Brisk CLI Run from Rerun File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/brisk/cli/cli.py",
+            "args": [
+                "run",
+                "-f",
+                "${input:resultsDir}"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/${input:projectDir}/results/${input:resultsDir}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "Debug Sphinx Build",
             "type": "debugpy",
             "request": "launch",
@@ -44,6 +60,11 @@
             "id": "workflowName",
             "type": "promptString",
             "description": "Enter the workflow file name",
+        },
+        {
+            "id": "resultsDir",
+            "type": "promptString",
+            "description": "Enter the results directory name",
         }
     ]
 }
