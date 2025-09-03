@@ -4,10 +4,120 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import abc
 
 from brisk.services import base
 from brisk.version import __version__
 from brisk.configuration import project
+
+class RerunStrategy(abc.ABC):
+    """Abstract base class for rerun strategy."""
+
+    @abc.abstractmethod
+    def handle_load_base_data_manager(self, data_manager) -> Any:
+        """Handle loading base data manager."""
+        pass
+
+    @abc.abstractmethod
+    def handle_load_algorithms(self, algorithm_config) -> Any:
+        """Handle loading algorithms."""
+        pass
+    
+    @abc.abstractmethod
+    def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
+        """Handle loading custom evaluators."""
+        pass
+    
+    @abc.abstractmethod
+    def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
+        """Handle loading workflow."""
+        pass
+
+
+class CaptureStrategy(RerunStrategy):
+    """Strategy for capture mode - store data for config file."""
+
+    def __init__(self, rerun_service):
+        self.rerun_service = rerun_service
+    
+    def handle_load_base_data_manager(self, data_manager) -> Any:
+        """Load data manager normally and capture its config.
+        
+        Parameters
+        ----------
+        data_manager: DataManager
+            The DataManager instance loaded by the IOService from data.py
+        """
+        config = data_manager.export_params()
+        self.rerun_service.add_base_data_manager(config)
+        return data_manager
+    
+    def handle_load_algorithms(self, algorithm_config) -> Any:
+        """Load algorithms normally and capture their config."""
+        config = algorithm_config.export_params()
+        self.rerun_service.add_algorithm_config(config)
+        return algorithm_config
+    
+    def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
+        """Load evaluators normally and capture their config.
+        
+        Captures the entire evaluators.py file content if it exists,
+        since custom evaluators often have complex dependencies and
+        user-defined classes that are best replicated as a complete file.
+        """
+        with open(evaluators_file, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+        
+        evaluator_config = {
+            "type": "evaluators_file",
+            "file_content": file_content,
+            "file_path": "evaluators.py"
+        }
+        self.rerun_service.add_evaluators_config(evaluator_config)
+        return module
+    
+    def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
+        """Load workflow normally and capture its content."""
+        self.rerun_service.add_workflow_file(workflow_name)
+        return workflow
+ 
+
+class CoordinatingStrategy(RerunStrategy):
+    """Strategy for coordinating mode - provides data from config file."""
+    
+    def __init__(self, config_data: Dict[str, Any]):
+        self.config_data = config_data
+        self._reconstructed_objects = {}
+    
+    def handle_load_base_data_manager(self, data_manager) -> Any:
+        """Provide base data manager from config instead of loading from file."""
+        # TODO: This method must the base DataManager insance from config file
+        raise NotImplementedError(
+            "handle_load_base_data_manager not implemented for CoordinatingStrategy"
+        )
+    
+    def handle_load_algorithms(self, algorithm_config) -> Any:
+        """Provide algorithms from config instead of loading from file."""
+        # TODO: This method must the AlgorithmCollection insance from config file
+        raise NotImplementedError(
+            "handle_load_algorithms not implemented for CoordinatingStrategy"
+        )
+    
+    
+    def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
+        """Provide custom evaluators from config instead of loading from file."""
+        raise NotImplementedError(
+            "handle_load_custom_evaluators not implemented for CoordinatingStrategy"
+        )
+    
+    def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
+        """Provide workflow from config instead of loading from file."""
+        # TODO: this must return a Workflow instance 
+
+        raise NotImplementedError(
+            "handle_load_workflow not implemented for CoordinatingStrategy"
+        )
+
 
 class RerunService(base.BaseService):
     """
@@ -17,7 +127,7 @@ class RerunService(base.BaseService):
     - Uses IOService.save_to_json(...) to write a single run_config.json at the end.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, mode: str = "capture"):
         super().__init__(name)
         self.configs: Dict[str, Any] = {
             "package_version": __version__,
@@ -32,8 +142,20 @@ class RerunService(base.BaseService):
             "workflows": {},
             "datasets": {},
         }
-        self.capture_environment()
 
+        if mode == "capture":
+            self.strategy = CaptureStrategy(self)
+            self.capture_environment()
+            self.is_coordinating = False
+        elif mode == "coordianate":
+            self.strategy = CoordinatingStrategy(self.configs)
+            self.is_coordinating = True
+        else:
+            raise ValueError(
+                f"Unkown mode: {mode}. Must be 'capture' or 'coordianate'"
+            )
+
+        self.mode = mode
 
     def add_base_data_manager(self, config: Dict[str, Any]) -> None:
         self.configs["base_data_manager"] = config
@@ -76,50 +198,24 @@ class RerunService(base.BaseService):
         """
         self.configs["evaluators"] = evaluators_config
 
-    def collect_workflow_files(self, configuration_json: Dict[str, Any], groups_json: List[Dict[str, Any]]) -> None:
-        """
-        Collect all workflow files used in the configuration for rerun functionality.
-        
-        Captures the entire content of each workflow file used, including the default
-        workflow and any workflow overrides in experiment groups.
-        
-        Parameters
-        ----------
-        configuration_json : Dict[str, Any]
-            The main configuration dictionary
-        groups_json : List[Dict[str, Any]]
-            List of experiment group configurations
-        """
+    def add_workflow_file(self, workflow_name: str):
         project_root = project.find_project_root()
-        workflows_dir = project_root / "workflows"
-        workflow_files = set()
-        
-        default_workflow = configuration_json.get("default_workflow")
-        if default_workflow:
-            workflow_files.add(default_workflow)
-        
-        for group in groups_json:
-            workflow_name = group.get("workflow")
-            if workflow_name:
-                workflow_files.add(workflow_name)
-        
-        workflows_content = {}
-        for workflow_name in workflow_files:
-            workflow_file = workflows_dir / f"{workflow_name}.py"
-            if workflow_file.exists():
-                try:
-                    with open(workflow_file, 'r', encoding='utf-8') as f:
-                        workflows_content[f"{workflow_name}.py"] = f.read()
-                except (IOError, OSError) as e:
-                    self._other_services["logger"].logger.warning(
-                        f"Failed to read workflow file {workflow_name}.py: {e}"
-                    )
-            else:
+        workflow_file = project_root / "workflows" / f"{workflow_name}.py"
+        if workflow_file.exists():
+            try:
+                with open(workflow_file, "r", encoding="utf-8") as f:
+                    file_content = f.read()
+
+                self.configs["workflows"][f"{workflow_name}.py"] = file_content
+
+            except (IOError, OSError) as e:
                 self._other_services["logger"].logger.warning(
-                    f"Workflow file {workflow_name}.py not found"
+                    f"Failed to read workflow file {workflow_name}.py: {e}"
                 )
-        
-        self.configs["workflows"] = workflows_content
+        else:
+            self._other_services["logger"].logger.warning(
+                f"Workflow file {workflow_name}.py not found"
+            )
 
     def collect_dataset_metadata(self, groups_json: List[Dict[str, Any]]) -> None:
         """
@@ -206,3 +302,30 @@ class RerunService(base.BaseService):
         out_path = Path(results_dir) / "run_config.json"
         # meta = {"kind": "brisk_rerun_config"} # TODO implelment w/ metadata service
         self._other_services["io"].save_rerun_config(data=self.configs, output_path=out_path)
+
+    def set_configs(self, configs: Dict[str, Any]):
+        self.configs = configs
+
+    def handle_load_base_data_manager(self, data_manager) -> Any:
+        """Delegate to current strategy.
+        
+        Parameters
+        ----------
+        data_manager: DataManager
+            The DataManager instance loaded by the IOService from data.py
+        """
+        return self.strategy.handle_load_base_data_manager(data_manager)
+    
+    def handle_load_algorithms(self, algorithm_config: Path) -> Any:
+        """Delegate to current strategy."""
+        return self.strategy.handle_load_algorithms(algorithm_config)
+    
+    def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
+        """Delegate to current strategy."""
+        return self.strategy.handle_load_custom_evaluators(
+            module, evaluators_file
+        )
+    
+    def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
+        """Delegate to current strategy."""
+        return self.strategy.handle_load_workflow(workflow, workflow_name)

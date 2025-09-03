@@ -20,7 +20,6 @@ import sqlite3
 from brisk.services import base
 from brisk.data import data_manager
 from brisk.configuration import algorithm_collection
-# from brisk.training import workflow as workflow_module
 
 if TYPE_CHECKING:
     from brisk.training import workflow as workflow_module
@@ -360,8 +359,11 @@ class IOService(base.BaseService):
     def load_custom_evaluators(self, evaluators_file: Path):
         """Load the register_custom_evaluators() function from evaluators.py
         """
-        # NOTE This is where rerun service would hook in when in Coordinating mode
+        rerun = self.get_service("rerun")
+        if rerun.is_coordinating:
+            return rerun.handle_load_custom_evaluators(None, evaluators_file)
         try:
+            loaded_module = None
             spec = importlib.util.spec_from_file_location(
                 "custom_evaluators", evaluators_file
             )
@@ -372,19 +374,27 @@ class IOService(base.BaseService):
                 self.get_service("logging").logger.info(
                     "Custom evaluators loaded succesfully"
                 )
-                return module
+                loaded_module = module
             else:
                 self.get_service("logging").logger.warning(
                     "No register_custom_evaluators function found in evaluators.py"
                 )
-                return None
+
+            return rerun.handle_load_custom_evaluators(
+                loaded_module, evaluators_file
+            )
 
         except (ImportError, AttributeError) as e:
             self.get_service("logging").logger.warning(
                 f"Failed to load custom evaluators: {e}"
             )
+            return rerun.handle_load_custom_evaluators(None, evaluators_file)
 
     def load_base_data_manager(self, data_file: Path):
+        rerun = self.get_service("rerun")
+        if rerun.is_coordinating:
+            return rerun.handle_load_base_data_manager(None)
+
         if not data_file.exists():
             raise FileNotFoundError(
                 f"Data file not found: {data_file}\n"
@@ -411,9 +421,15 @@ class IOService(base.BaseService):
                 "DataManager instance"
             )
         self._validate_single_variable(data_file, "BASE_DATA_MANAGER")
-        return data_module.BASE_DATA_MANAGER
+        return rerun.handle_load_base_data_manager(
+            data_module.BASE_DATA_MANAGER
+        )
 
     def load_algorithms(self, algorithm_file: Path):
+        rerun = self.get_service("rerun")
+        if rerun.is_coordinating:
+            return rerun.handle_load_algorithms(None)
+
         if not algorithm_file.exists():
             raise FileNotFoundError(
                 f"algorithms.py file not found: {algorithm_file}\n"
@@ -442,7 +458,9 @@ class IOService(base.BaseService):
                 f"ALGORITHM_CONFIG in {algorithm_file} is not a valid "
                 "AlgorithmCollection instance"
             )
-        return algo_module.ALGORITHM_CONFIG
+        return rerun.handle_load_algorithms(
+            algo_module.ALGORITHM_CONFIG
+        )
 
     def load_workflow(self, workflow_name: str):
         def _is_workflow_subclass(obj) -> bool:
@@ -462,6 +480,10 @@ class IOService(base.BaseService):
             except ImportError:
                 return None
 
+
+        rerun = self.get_service("rerun")
+        if rerun.is_coordinating:
+            return rerun.handle_load_workflow(None, workflow_name)
 
         try:
             module = importlib.import_module(
@@ -484,10 +506,13 @@ class IOService(base.BaseService):
                     " There can only be one Workflow per file."
                     )
 
-            return workflow_classes[0]
+            return rerun.handle_load_workflow(
+                workflow_classes[0], workflow_name
+            )
 
         except (ImportError, AttributeError) as e:
             print(f"Error validating workflow: {e}")
+            return rerun.handle_load_workflow(None, workflow_name)
 
     def _validate_single_variable(
         self,

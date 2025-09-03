@@ -48,7 +48,8 @@ class GlobalServiceManager:
         algorithm_config: algorithm_collection.AlgorithmCollection,
         metric_config: metric_manager.MetricManager,
         results_dir: pathlib.Path,
-        verbose: bool = False
+        verbose: bool = False,
+        mode: str = "capture"
     ) -> None:
         if self.is_initalized:
             return
@@ -67,7 +68,7 @@ class GlobalServiceManager:
         self.services["reporting"] = reporting.ReportingService(
             "reporting", metric_config
         )
-        self.services["rerun"] = rerun.RerunService("rerun")
+        self.services["rerun"] = rerun.RerunService("rerun", mode)
         self._register_services()
         self.is_initalized = True
 
@@ -146,7 +147,8 @@ def initialize_services(
     algorithm_config: algorithm_collection.AlgorithmCollection,
     metric_config: metric_manager.MetricManager,
     results_dir: pathlib.Path,
-    verbose: bool = False
+    verbose: bool = False,
+    mode: str = "capture"
 ) -> None:
     """Initialize the global service manager.
 
@@ -160,6 +162,8 @@ def initialize_services(
         The root directory for the results.
     verbose (bool): 
         Whether to use verbose logging.
+    mode (str): 
+        The mode of RerunService. Must be "capture" or "coordianate".
 
     Returns
     -------
@@ -169,7 +173,8 @@ def initialize_services(
         algorithm_config=algorithm_config,
         metric_config=metric_config,
         results_dir=results_dir,
-        verbose=verbose
+        verbose=verbose,
+        mode=mode
     )
 
 
