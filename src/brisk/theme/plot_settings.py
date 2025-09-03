@@ -12,6 +12,7 @@ from typing import Optional
 import plotnine as pn
 
 from brisk.theme.theme import brisk_theme
+from brisk.theme import theme_serializer
 
 class PlotSettings:
     """Control the styling and file I/O settings for plots.
@@ -118,4 +119,20 @@ class PlotSettings:
             "primary_color": self.primary_color,
             "secondary_color": self.secondary_color,
             "accent_color": self.accent_color
+        }
+
+    def export_params(self):
+        """Export PlotSettings to a JSON-serializable dictionary.
+        
+        Returns
+        -------
+        dict
+            Dictionary containing all PlotSettings parameters, with the theme
+            serialized as a JSON-compatible pickled object.
+        """
+        serializer = theme_serializer.ThemePickleJSONSerializer()
+        return {
+            "file_io_settings": self.get_io_settings(),
+            "colors": self.get_colors(),
+            "theme_json": serializer.theme_to_json(self.theme),
         }

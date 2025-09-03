@@ -8,7 +8,7 @@ from sklearn import datasets
 from brisk.services import initialize_services, get_services
 from brisk import version
 from brisk.training.training_manager import TrainingManager
-
+from brisk.configuration import configuration
 
 def _run_from_project(project_root, verbose, create_report, results_dir):
     try:
@@ -17,7 +17,9 @@ def _run_from_project(project_root, verbose, create_report, results_dir):
             f"The results will be saved to {results_dir}"
         )
 
-        initialize_services(results_dir, verbose=verbose, mode="capture")
+        initialize_services(
+            results_dir, verbose=verbose, mode="capture", rerun_config=None
+        )
         services = get_services()
 
         services.io.load_algorithms(project_root / "algorithms.py")
@@ -55,35 +57,55 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
         )
 
         with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
+            configs = json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error in config_file handling: {e}")
         exit() # NOTE: temp while developing
 
-# TODO: 0. Verify brisk version
-    if config["package_version"] != version.__version__:
+    # TODO: 0. Verify brisk version
+    if configs["package_version"] != version.__version__:
         raise RuntimeError(
             "Configuration file was created using Brisk version "
-            f"{config["package_version"]} but Brisk version "
+            f"{configs["package_version"]} but Brisk version "
             f"{version.__version__} was detected."
         )
 
-# TODO : 0. Verify data files
-        
+    # TODO 1. initalize services
+    initialize_services(
+        results_dir, verbose=verbose, mode="coordinate", rerun_config=configs
+    )
+    services = get_services()
 
-# TODO: 01. Setup workflow files
-# TODO: 02. Setup evaluator file
-# TODO: 1. load algorithm config
-# TODO 2. load metric config
-# TODO 3. initalize services
-# TODO 3.5. setup base data manager
-# TODO 4. Setup Configuration instance
-# TODO 5. Create ConfigurationManger instance
-# TODO 6. Initalize TrainingManager and call run_experiemnts
-# TODO 7. Create environment for "env" and use this to run
+    # TODO 2. load algorithm config
+    algo_config = services.io.load_algorithms(project_root / "algorithms.py")
 
+    # TODO 3. load metric config
+    metric_config = services.io.load_metric_config(project_root / "metrics.py")
 
+    # TODO 4. Setup Configuration instance
+    configuration_args = services.rerun.get_configuration_args()
+    config = configuration.Configuration(**configuration_args)
+    experiment_groups = services.rerun.get_experiment_groups()
+    for group in experiment_groups:
+        config.add_experiment_group(**group)
+
+    # TODO 5. Create ConfigurationManger instance
+    # config_manager = config.build()
+
+# TODO 6. setup base data manager
+# TODO 7. Setup workflow files
+# TODO 8. Initalize TrainingManager and call run_experiemnts
+# TODO 9. Setup evaluator file
+# TODO 10. Verify data files
+# TODO 11. Create environment for "env" and use this to run
+
+    print(f"AlgorithmCollection: type={type(algo_config)}")
+    print(f"MetricManager: type={type(metric_config)}")
+    print(f"Configuration: type={type(config)}")
+    print(f"Plotnine Theme: type={type(config.plot_settings.theme)}")
+    print(f"ConfigurationManager: type={type(config_manager)}")
+    print("\nFinished running from config file!")
         # except Exception as e:
         #     print(f"Error in config_file handling: {e}")
         #     exit() # NOTE: temp while developing

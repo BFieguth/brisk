@@ -644,7 +644,9 @@ class DataManager:
                     "stratified": self.stratified,
                     "random_state": self.random_state,
                     "problem_type": self.problem_type,
-                    "preprocessors": [type(p).__name__ for p in self.preprocessors] if self.preprocessors else [],
+                    "preprocessors": [
+                        type(p).__name__ for p in self.preprocessors
+                    ] if self.preprocessors else [],
                 }
             }
 

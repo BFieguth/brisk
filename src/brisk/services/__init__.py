@@ -1,5 +1,5 @@
 """Global service management."""
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import pathlib
 
 import numpy as np
@@ -46,7 +46,8 @@ class GlobalServiceManager:
         self,
         results_dir: pathlib.Path,
         verbose: bool = False,
-        mode: str = "capture"
+        mode: str = "capture",
+        rerun_config: Optional[Dict[str, Any]] = None
     ) -> None:
         if self.is_initalized:
             return
@@ -63,7 +64,7 @@ class GlobalServiceManager:
         self.services["reporting"] = reporting.ReportingService(
             "reporting"
         )
-        self.services["rerun"] = rerun.RerunService("rerun", mode)
+        self.services["rerun"] = rerun.RerunService("rerun", mode, rerun_config)
         self._register_services()
         self.is_initalized = True
 
@@ -141,7 +142,8 @@ class GlobalServiceManager:
 def initialize_services(
     results_dir: pathlib.Path,
     verbose: bool = False,
-    mode: str = "capture"
+    mode: str = "capture",
+    rerun_config: Optional[Dict[str, Any]] = None
 ) -> None:
     """Initialize the global service manager.
 
@@ -165,7 +167,8 @@ def initialize_services(
     GlobalServiceManager(
         results_dir=results_dir,
         verbose=verbose,
-        mode=mode
+        mode=mode,
+        rerun_config=rerun_config
     )
 
 

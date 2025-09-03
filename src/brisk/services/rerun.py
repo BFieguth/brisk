@@ -5,11 +5,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import abc
+import tempfile
+import os
 
 from brisk.services import base
 from brisk.version import __version__
 from brisk.configuration import project
-
+from brisk.services import io
+from brisk.configuration import algorithm_collection
+from brisk.evaluation import metric_manager
+from brisk.theme.plot_settings import PlotSettings
+from brisk.theme.theme_serializer import ThemePickleJSONSerializer
+    
 class RerunStrategy(abc.ABC):
     """Abstract base class for rerun strategy."""
 
@@ -126,12 +133,14 @@ class CaptureStrategy(RerunStrategy):
 
         return metric_config
 
+
 class CoordinatingStrategy(RerunStrategy):
     """Strategy for coordinating mode - provides data from config file."""
     
     def __init__(self, config_data: Dict[str, Any]):
         self.config_data = config_data
         self._reconstructed_objects = {}
+        self._temp_files = []
     
     def handle_load_base_data_manager(self, data_manager) -> Any:
         """Provide base data manager from config instead of loading from file."""
@@ -142,10 +151,30 @@ class CoordinatingStrategy(RerunStrategy):
     
     def handle_load_algorithms(self, algorithm_config) -> Any:
         """Provide algorithms from config instead of loading from file."""
-        # TODO: This method must the AlgorithmCollection insance from config file
-        raise NotImplementedError(
-            "handle_load_algorithms not implemented for CoordinatingStrategy"
+        if "algorithms" not in self.config_data:
+            raise ValueError("No algorithms file found in rerun configuration")
+
+        config = self.config_data["algorithms"]
+        temp_file_path = self._create_temp_file_from_content(
+            config["file_content"], 
+            config["file_path"]
         )
+        
+        algorithm_config_obj = io.IOService.load_module_object(
+            str(temp_file_path.parent),
+            temp_file_path.name,
+            "ALGORITHM_CONFIG"
+        )
+        
+        if not isinstance(
+            algorithm_config_obj, algorithm_collection.AlgorithmCollection
+        ):
+            raise ValueError(
+                "ALGORITHM_CONFIG is not a valid AlgorithmCollection instance"
+            )
+
+        self._reconstructed_objects["algorithms"] = algorithm_config_obj    
+        return self._reconstructed_objects["algorithms"]
         
     def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
         """Provide custom evaluators from config instead of loading from file."""
@@ -161,11 +190,82 @@ class CoordinatingStrategy(RerunStrategy):
             "handle_load_workflow not implemented for CoordinatingStrategy"
         )
 
-    def handle_load_metric_config(metric_config) -> Any:
+    def handle_load_metric_config(self, metric_config) -> Any:
         """Provide metric config from config instead of loading from file."""
-        raise NotImplementedError(
-            "handle_metric_config not implemented for CoordinatingStrategy"
+        if "metrics" not in self.config_data:
+            raise ValueError("No metrics file found in rerun configuration")
+
+        config = self.config_data["metrics"]
+        temp_file_path = self._create_temp_file_from_content(
+            config["file_content"], 
+            config["file_path"]
         )
+        
+        metric_config_obj = io.IOService.load_module_object(
+            str(temp_file_path.parent),
+            temp_file_path.name,
+            "METRIC_CONFIG"
+        )
+        
+        if not isinstance(
+            metric_config_obj, metric_manager.MetricManager
+        ):
+            raise ValueError(
+                "METRIC_CONFIG is not a valid MetricManager instance"
+            )
+
+        self._reconstructed_objects["metrics"] = metric_config_obj    
+        return self._reconstructed_objects["metrics"]
+
+    def _create_temp_file_from_content(self, file_content: str, filename: str) -> Path:
+        """
+        Helper method to create a temporary file from string content.
+        
+        Parameters
+        ----------
+        file_content : str
+            The content to write to the file
+        filename : str
+            The desired filename (for reference and extension)
+            
+        Returns
+        -------
+        Path
+            Path to the created temporary file
+        """                
+
+        temp_file = tempfile.NamedTemporaryFile(
+            mode='w', 
+            prefix=filename.split(".")[0],
+            suffix=".py", 
+            delete=False,
+            encoding='utf-8'
+        )
+        
+        try:
+            temp_file.write(file_content)
+            temp_file.flush()
+            temp_file_path = Path(temp_file.name)
+            self._temp_files.append(temp_file_path)
+            return temp_file_path
+            
+        finally:
+            temp_file.close()
+
+    def cleanup_temp_files(self):
+        """Clean up all temporary files created during coordination."""        
+        for temp_file_path in self._temp_files:
+            try:
+                if temp_file_path.exists():
+                    os.unlink(temp_file_path)
+            except OSError as e:
+                print(f"Warning: Failed to cleanup temp file {temp_file_path}: {e}")
+
+        self._temp_files.clear()
+
+    def __del__(self):
+        """Cleanup temporary files when strategy is destroyed."""
+        self.cleanup_temp_files()
 
 
 class RerunService(base.BaseService):
@@ -176,9 +276,9 @@ class RerunService(base.BaseService):
     - Uses IOService.save_to_json(...) to write a single run_config.json at the end.
     """
 
-    def __init__(self, name: str, mode: str = "capture"):
+    def __init__(self, name: str, mode: str = "capture", rerun_config: Optional[Dict[str, Any]] = None):
         super().__init__(name)
-        self.configs: Dict[str, Any] = {
+        self.configs: Dict[str, Any] = rerun_config or {
             "package_version": __version__,
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "env": {},
@@ -196,12 +296,12 @@ class RerunService(base.BaseService):
             self.strategy = CaptureStrategy(self)
             self.capture_environment()
             self.is_coordinating = False
-        elif mode == "coordianate":
+        elif mode == "coordinate":
             self.strategy = CoordinatingStrategy(self.configs)
             self.is_coordinating = True
         else:
             raise ValueError(
-                f"Unkown mode: {mode}. Must be 'capture' or 'coordianate'"
+                f"Unkown mode: {mode}. Must be 'capture' or 'coordinate'"
             )
 
         self.mode = mode
@@ -209,8 +309,10 @@ class RerunService(base.BaseService):
     def add_base_data_manager(self, config: Dict[str, Any]) -> None:
         self.configs["base_data_manager"] = config
     
-    def add_configuration(self, configuration: Dict[str, Any], groups: list[Dict[str, Any]]) -> None:
+    def add_configuration(self, configuration: Dict[str, Any]) -> None:
         self.configs["configuration"] = configuration
+
+    def add_experiment_groups(self, groups: List[Dict[str, Any]]) -> None:
         self.configs["experiment_groups"] = groups
 
     def add_metric_config(self, metric_configs: List[Dict[str, Any]]) -> None:
@@ -352,9 +454,6 @@ class RerunService(base.BaseService):
         # meta = {"kind": "brisk_rerun_config"} # TODO implelment w/ metadata service
         self._other_services["io"].save_rerun_config(data=self.configs, output_path=out_path)
 
-    def set_configs(self, configs: Dict[str, Any]):
-        self.configs = configs
-
     def handle_load_base_data_manager(self, data_manager) -> Any:
         """Delegate to current strategy.
         
@@ -387,3 +486,80 @@ class RerunService(base.BaseService):
         config = self.strategy.handle_load_metric_config(metric_config)
         self.get_service("reporting").set_metric_config(metric_config)
         return config
+
+    def get_configuration_args(self) -> Dict:
+        configuration = self.configs["configuration"]
+        categorical_features = {}
+        for group in configuration["categorical_features"]:
+            if group["table_name"]:
+                categorical_features[(group["dataset"], group["table_name"])] = group["features"]
+            else:
+                categorical_features[group["dataset"]] = group["features"]
+        args = {
+            "default_workflow": configuration["default_workflow"],
+            "default_algorithms": configuration["default_algorithms"],
+            "categorical_features": categorical_features,
+            "default_workflow_args": configuration["default_workflow_args"],
+            "plot_settings": self.reconstruct_plot_settings(configuration["plot_settings"]),
+        }
+        return args
+
+    def get_experiment_groups(self):
+        experiment_groups = self.configs["experiment_groups"]
+        for group in experiment_groups:
+            for idx, dataset in enumerate(group["datasets"]):
+                if dataset["table_name"]:
+                    group["datasets"][idx] = (
+                        dataset["dataset"], dataset["table_name"]
+                    )
+                else:
+                    group["datasets"][idx] = dataset["dataset"]
+        return experiment_groups
+
+    def reconstruct_plot_settings(self, plot_settings_data: Dict[str, Any]) -> 'PlotSettings':
+        """
+        Reconstruct a PlotSettings instance from exported parameters.
+        
+        Parameters
+        ----------
+        plot_settings_data : dict
+            Dictionary containing exported PlotSettings data
+        
+        Returns
+        -------
+        PlotSettings
+            Reconstructed PlotSettings instance
+        """
+        if not plot_settings_data:
+            return PlotSettings()
+
+        try:
+            file_io_settings = plot_settings_data.get("file_io_settings", {})
+            colors = plot_settings_data.get("colors", {})
+            theme_json = plot_settings_data.get("theme_json")
+
+            theme = None
+            if theme_json:
+                serializer = ThemePickleJSONSerializer()
+                theme = serializer.theme_from_json(theme_json)
+
+            plot_settings = PlotSettings(
+                theme=theme,
+                override=True,
+                format=file_io_settings.get("format"),
+                width=file_io_settings.get("width"),
+                height=file_io_settings.get("height"),
+                dpi=file_io_settings.get("dpi"),
+                transparent=file_io_settings.get("transparent"),
+                primary_color=colors.get("primary_color"),
+                secondary_color=colors.get("secondary_color"),
+                accent_color=colors.get("accent_color")
+            )
+            
+            return plot_settings
+            
+        except Exception as e:
+            self._other_services["logging"].logger.warning(
+                f"Failed to reconstruct PlotSettings: {e}. Using defaults."
+            )
+            # return PlotSettings()
