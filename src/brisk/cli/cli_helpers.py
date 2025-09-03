@@ -42,10 +42,7 @@ def _run_from_project(project_root, verbose, create_report, results_dir):
             create_report=create_report
         )
 
-    except FileNotFoundError as e:
-        print(f'Error: {e}')
-
-    except (ImportError, AttributeError, ValueError) as e:
+    except (FileNotFoundError, ImportError, AttributeError, ValueError) as e:
         print(f'Error: {str(e)}')
         return
 
@@ -63,7 +60,6 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
         print(f"Error in config_file handling: {e}")
         exit() # NOTE: temp while developing
 
-    # TODO: 0. Verify brisk version
     if configs["package_version"] != version.__version__:
         raise RuntimeError(
             "Configuration file was created using Brisk version "
@@ -71,41 +67,29 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
             f"{version.__version__} was detected."
         )
 
-    # TODO 1. initalize services
     initialize_services(
         results_dir, verbose=verbose, mode="coordinate", rerun_config=configs
     )
     services = get_services()
 
-    # TODO 2. load algorithm config
-    algo_config = services.io.load_algorithms(project_root / "algorithms.py")
-
-    # TODO 3. load metric config
+    services.io.load_algorithms(project_root / "algorithms.py")
     metric_config = services.io.load_metric_config(project_root / "metrics.py")
-
-    # TODO 4. Setup Configuration instance
     configuration_args = services.rerun.get_configuration_args()
     config = configuration.Configuration(**configuration_args)
     experiment_groups = services.rerun.get_experiment_groups()
     for group in experiment_groups:
         config.add_experiment_group(**group)
 
-    # TODO 5. Create ConfigurationManger instance
-    # TODO 6. setup base data manager
-    # TODO 7. Setup workflow files
     config_manager = config.build()
+    manager = TrainingManager(metric_config, config_manager)
 
-# TODO 8. Initalize TrainingManager and call run_experiemnts
-# TODO 9. Setup evaluator file
-# TODO 10. Verify data files
-# TODO 11. Create environment for "env" and use this to run
-
-    print(f"AlgorithmCollection: type={type(algo_config)}")
-    print(f"MetricManager: type={type(metric_config)}")
-    print(f"Configuration: type={type(config)}")
-    print(f"Plotnine Theme: type={type(config.plot_settings.theme)}")
-    print(f"ConfigurationManager: type={type(config_manager)}")
-    print("\nFinished running from config file!")
+    # TODO 10. Verify data files
+    # TODO 11. Create environment for "env" and use this to run
+    try:
+        manager.run_experiments(create_report)
+    except (FileNotFoundError, ImportError, AttributeError, ValueError) as e:
+        print(f'Error: {str(e)}')
+        return
 
 
 def load_sklearn_dataset(name: str) -> Union[dict, None]:

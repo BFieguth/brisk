@@ -202,10 +202,33 @@ class CoordinatingStrategy(RerunStrategy):
         
     def handle_load_custom_evaluators(self, module, evaluators_file: Path) -> Any:
         """Provide custom evaluators from config instead of loading from file."""
-        raise NotImplementedError(
-            "handle_load_custom_evaluators not implemented for CoordinatingStrategy"
+        if "evaluators" not in self.config_data:
+            raise ValueError("No evaluators file found in rerun configuration")
+
+        config = self.config_data["evaluators"]
+        temp_file_path = self._create_temp_file_from_content(
+            config["file_content"], 
+            config["file_path"]
         )
-    
+        module_path = os.path.join(
+            str(temp_file_path.parent), temp_file_path.name
+        )
+        if not os.path.exists(module_path):
+            raise FileNotFoundError(
+                f'{temp_file_path.name} not found in {str(temp_file_path.parent)}'
+            )
+        module_name = os.path.splitext(temp_file_path.name)[0]
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        if hasattr(module, "register_custom_evaluators"):
+            return module
+        else:
+            raise AttributeError(
+                f"The object 'register_custom_evaluators' is not defined in {temp_file_path.name}"
+            )
+
     def handle_load_workflow(self, workflow, workflow_name: str) -> Any:
         """Provide workflow from config instead of loading from file."""
         if f"{workflow_name}.py" not in self.config_data["workflows"]:
@@ -530,7 +553,7 @@ class RerunService(base.BaseService):
     def handle_load_metric_config(self, metric_config) -> Any:
         """Delegate to current strategy."""
         config = self.strategy.handle_load_metric_config(metric_config)
-        self.get_service("reporting").set_metric_config(metric_config)
+        self.get_service("reporting").set_metric_config(config)
         return config
 
     def get_configuration_args(self) -> Dict:
