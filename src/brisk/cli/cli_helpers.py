@@ -5,7 +5,7 @@ import os
 
 from sklearn import datasets
 
-from brisk.services import initialize_services, get_services
+from brisk.services import initialize_services, get_services, io
 from brisk import version
 from brisk.training.training_manager import TrainingManager
 from brisk.configuration import configuration
@@ -67,6 +67,12 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
             f"{version.__version__} was detected."
         )
 
+    for dataset_file, metadata in configs["datasets"].items():
+        dataset_path = os.path.join(
+            project_root, "datasets", dataset_file
+        )
+        _validate_dataset(dataset_path, metadata)
+
     initialize_services(
         results_dir, verbose=verbose, mode="coordinate", rerun_config=configs
     )
@@ -83,7 +89,6 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
     config_manager = config.build()
     manager = TrainingManager(metric_config, config_manager)
 
-    # TODO 10. Verify data files
     # TODO 11. Create environment for "env" and use this to run
     try:
         manager.run_experiments(create_report)
@@ -116,3 +121,28 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
         return datasets_map[name]()
     else:
         return None
+
+def _validate_dataset(dataset_path, metadata):
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+
+    df = io.IOService.load_data(dataset_path, metadata["table_name"])
+    
+    rows, cols = df.shape
+    if rows != metadata["num_samples"]:
+        raise ValueError(
+            f"Number of rows for {dataset_path} do not match expected rows "
+            f"{metadata["num_samples"]}"
+        )
+    if cols != metadata["num_features"]:
+        raise ValueError(
+            f"Number of columns for {dataset_path} do not match expected columns "
+            f"{metadata["num_features"]}"
+        )
+
+    current_features = list(df.columns)
+    if current_features.sort() != metadata["feature_names"].sort():
+        raise ValueError(
+            f"Feature name for {dataset_path} do not match expected features "
+            f"{metadata["feature_names"]}"
+        )
