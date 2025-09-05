@@ -118,5 +118,10 @@ class MetadataService(base_service.BaseService):
         metadata["group"] = group_name
         return metadata
 
+    def get_rerun(self, method_name):
+        """Get metadata for rerun config file."""
+        metadata = self._get_base(method_name)
+        metadata["type"] = "rerun_config"
+
     def set_algorithm_config(self, algorithm_config):
         self.algorithm_config = algorithm_config

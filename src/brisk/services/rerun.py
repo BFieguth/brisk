@@ -1,5 +1,4 @@
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import abc
@@ -345,7 +344,6 @@ class RerunService(base.BaseService):
         super().__init__(name)
         self.configs: Dict[str, Any] = rerun_config or {
             "package_version": __version__,
-            "created_at": datetime.now().isoformat(timespec="seconds"),
             "env": {},
             "base_data_manager": None,
             "configuration": {},
@@ -512,8 +510,11 @@ class RerunService(base.BaseService):
     def export_and_save(self, results_dir: Path) -> None:
         """Write the run configuration to results/run_config.json."""
         out_path = Path(results_dir) / "run_config.json"
-        # meta = {"kind": "brisk_rerun_config"} # TODO implelment w/ metadata service
-        self._other_services["io"].save_rerun_config(data=self.configs, output_path=out_path)
+        metadata = self.get_service("metadata").get_rerun("export_and_save")
+        if self.mode == "capture":
+            self._other_services["io"].save_rerun_config(
+                data=self.configs, metadata=metadata, output_path=out_path
+            )
 
     def handle_load_base_data_manager(self, data_manager) -> Any:
         """Delegate to current strategy.
