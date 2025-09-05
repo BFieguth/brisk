@@ -2,6 +2,7 @@
 from typing import Union
 import json
 import os
+from pathlib import Path
 
 from sklearn import datasets
 
@@ -9,6 +10,7 @@ from brisk.services import initialize_services, get_services, io
 from brisk import version
 from brisk.training.training_manager import TrainingManager
 from brisk.configuration import configuration
+from brisk.cli.environment import EnvironmentManager, VersionMatch
 
 def _run_from_project(project_root, verbose, create_report, results_dir):
     try:
@@ -58,7 +60,7 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
 
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error in config_file handling: {e}")
-        exit() # NOTE: temp while developing
+        return
 
     if configs["package_version"] != version.__version__:
         raise RuntimeError(
@@ -72,6 +74,19 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
             project_root, "datasets", dataset_file
         )
         _validate_dataset(dataset_path, metadata)
+
+    saved_env = configs.get("env")
+    if saved_env:
+        env_manager = EnvironmentManager(Path(project_root))
+        differences, is_compatible = env_manager.compare_environments(saved_env)
+        
+        if not is_compatible:
+            _handle_incompatible(config_file, differences, env_manager)
+
+            response = input("\nContinue anyway? (y/N): ").strip().lower()
+            if response == "N":
+                print("Rerun cancelled.")
+                return
 
     initialize_services(
         results_dir, verbose=verbose, mode="coordinate", rerun_config=configs
@@ -89,7 +104,6 @@ def _run_from_config(project_root, verbose, create_report, results_dir, config_f
     config_manager = config.build()
     manager = TrainingManager(metric_config, config_manager)
 
-    # TODO 11. Create environment for "env" and use this to run
     try:
         manager.run_experiments(create_report)
     except (FileNotFoundError, ImportError, AttributeError, ValueError) as e:
@@ -122,6 +136,7 @@ def load_sklearn_dataset(name: str) -> Union[dict, None]:
     else:
         return None
 
+
 def _validate_dataset(dataset_path, metadata):
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
@@ -146,3 +161,37 @@ def _validate_dataset(dataset_path, metadata):
             f"Feature name for {dataset_path} do not match expected features "
             f"{metadata["feature_names"]}"
         )
+
+
+def _handle_incompatible(config_file, differences, env_manager):
+    print("\n" + "="*60)
+    print("ENVIRONMENT COMPATIBILITY WARNING")
+    print("="*60)
+    
+    critical_status = [VersionMatch.MISSING, VersionMatch.INCOMPATIBLE]
+    critical_diffs = [
+        d for d in differences 
+        if (
+            d.status in critical_status
+            and (
+                d.package in env_manager.CRITICAL_PACKAGES or 
+                d.package == "python"
+            ))]
+    
+    if critical_diffs:
+        print("\nCritical package differences detected:")
+        print("   (Note: Critical packages now require major.minor version compatibility)")
+        for diff in critical_diffs:
+            print(f"   {str(diff)}")
+    
+    print("\nResults may differ significantly from the original run!")
+    print("\n🔧 To recreate the original environment:")
+    print(f"   brisk export-env {config_file} --output requirements.txt")
+    print(f"   python -m venv brisk_env && source brisk_env/bin/activate")
+    print(f"   pip install -r requirements.txt")
+    print(f"   brisk rerun {config_file}")
+    
+    print("\nFor detailed comparison:")
+    print(f"   brisk check-env {config_file} --verbose")
+    
+    print("\n" + "="*60)

@@ -30,15 +30,18 @@ import os
 import sys
 from typing import Optional
 from datetime import datetime
+import json
 
 import click
 import pandas as pd
 from sklearn import datasets
+from pathlib import Path
 
 from brisk.configuration import project
 from brisk.cli.cli_helpers import (
     _run_from_project, _run_from_config, load_sklearn_dataset,
 )
+from brisk.cli.environment import EnvironmentManager, VersionMatch
 
 @click.group()
 def cli():
@@ -441,6 +444,123 @@ def create_data(
 
     except FileNotFoundError as e:
         print(f'Error: {e}')
+
+
+@cli.command("export-env")
+@click.argument('run_id')
+@click.option('--output', '-o', help='Output path for requirements file')
+@click.option('--include-all', is_flag=True, help='Include all packages, not just critical ones')
+def export_env(run_id, output, include_all):
+    """Export environment requirements from a previous run.
+    
+    Creates a requirements.txt file from the environment captured during
+    a previous experiment run. By default, only includes critical packages
+    that affect computation results.
+    
+    Parameters
+    ----------
+    run_id : str
+        The run ID to export environment from
+    output : str, optional
+        Output path for requirements file
+    include_all : bool, default=False
+        Include all packages, not just critical ones
+
+    Examples:
+        brisk export-env my_run_20240101_120000
+        brisk export-env my_run_20240101_120000 --output my_requirements.txt
+        brisk export-env my_run_20240101_120000 --include-all
+    """
+    project_root = project.find_project_root()
+    config_path = project_root / "results" / run_id / "run_config.json"
+    
+    if not config_path.exists():
+        print(f"Error: Run configuration not found: {config_path}")
+        return
+    
+    with open(config_path, 'r', encoding="utf-8") as f:
+        config = json.load(f)
+    
+    env_manager = EnvironmentManager(project_root)
+    
+    if output:
+        output_path = Path(output)
+    else:
+        output_path = project_root / f"requirements_{run_id}.txt"
+    
+    saved_env = config.get("env", {})
+    if not saved_env:
+        print("Error: No environment information found in run configuration")
+        return
+    
+    req_path = env_manager.export_requirements(
+        saved_env,
+        output_path,
+        include_all=include_all
+    )
+    
+    print(f"Requirements exported to: {req_path}")
+    print(f"\nTo recreate this environment:")
+    print(f"  python -m venv brisk_env")
+    print(f"  source brisk_env/bin/activate  # On Windows: brisk_env\\Scripts\\activate")
+    print(f"  pip install -r {req_path.name}")
+
+
+@cli.command("check-env")
+@click.argument('run_id')
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed compatibility report')
+def check_env(run_id, verbose):
+    """Check environment compatibility with a previous run.
+    
+    Compares the current Python environment with the environment used
+    in a previous experiment run. Identifies version differences and
+    potential compatibility issues.
+    
+    
+    Parameters
+    ----------
+    run_id : str
+        The run ID to check environment against
+    verbose : bool, default=False
+        Show detailed report
+
+    Examples:
+        brisk check-env my_run_20240101_120000
+        brisk check-env my_run_20240101_120000 --verbose
+    """
+    project_root = Path.cwd()
+    config_path = project_root / "results" / run_id / "run_config.json"
+    
+    if not config_path.exists():
+        print(f"Error: Run configuration not found: {config_path}")
+        return
+    
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    saved_env = config.get("env", {})
+    if not saved_env:
+        print("Error: No environment information found in run configuration")
+        return
+    
+    env_manager = EnvironmentManager(project_root)
+    
+    if verbose:
+        report = env_manager.generate_environment_report(saved_env)
+        print(report)
+    else:
+        differences, is_compatible = env_manager.compare_environments(saved_env)
+        
+        if is_compatible:
+            print("Environment is compatible")
+        else:
+            critical_diffs = [d for d in differences 
+                            if d.status in [VersionMatch.MISSING, VersionMatch.INCOMPATIBLE]]
+            
+            print(f"Environment has {len(critical_diffs)} critical differences")
+            print("\nRun with --verbose for full report, or use:")
+            print(f"  brisk export-env {run_id} --output requirements.txt")
+            print("to export requirements for recreating the original environment.")
 
 
 if __name__ == '__main__':

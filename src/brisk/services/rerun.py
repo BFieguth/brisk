@@ -1,5 +1,3 @@
-import platform
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -25,6 +23,7 @@ from brisk.data.preprocessing import (
     CategoricalEncodingPreprocessor,
     FeatureSelectionPreprocessor
 )
+from brisk.cli.environment import EnvironmentManager
 
 
 class RerunStrategy(abc.ABC):
@@ -505,16 +504,9 @@ class RerunService(base.BaseService):
         self.configs["datasets"] = dataset_metadata
 
     def capture_environment(self) -> None:
-        """Capture env info + pip freeze."""
-        env = {"python": platform.python_version()}
-
-        cp = subprocess.run(
-            [sys.executable, "-m", "pip", "freeze"],
-            capture_output=True,
-            text=True,
-        )
-        env["pip_freeze"] = cp.stdout.strip() if cp.returncode == 0 and cp.stdout else None
-
+        """Capture structured environment information."""       
+        env_manager = EnvironmentManager(project.find_project_root())
+        env = env_manager.capture_environment()
         self.configs["env"] = env
 
     def export_and_save(self, results_dir: Path) -> None:
