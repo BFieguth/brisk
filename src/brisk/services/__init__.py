@@ -54,7 +54,7 @@ class GlobalServiceManager:
 
         self.services = {}
         self.services["logging"] = logging.LoggingService(
-            "logging", None, verbose
+            "logging", results_dir, verbose
         )
         self.services["metadata"] = metadata.MetadataService("metadata")
         self.services["io"] = io.IOService("io", results_dir, None)
