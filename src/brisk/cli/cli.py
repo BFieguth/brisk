@@ -72,7 +72,6 @@ def create(project_name: str) -> None:
     - algorithms.py : Algorithm definitions
     - metrics.py : Metric definitions
     - data.py : Data management setup
-    - training.py : Training manager setup
     - workflows/ : Directory for workflow definitions
     - datasets/ : Directory for data storage
     """
@@ -135,23 +134,6 @@ BASE_DATA_MANAGER = DataManager(
 )
 """)
 
-    with open(
-        os.path.join(project_dir, 'training.py'), 'w', encoding='utf-8') as f:
-        f.write("""# training.py
-from brisk.training.training_manager import TrainingManager
-from metrics import METRIC_CONFIG
-from settings import create_configuration
-
-config = create_configuration()
-
-# Define the TrainingManager for experiments
-# Workflows are assigned to experiment groups in settings.py
-manager = TrainingManager(
-    metric_config=METRIC_CONFIG,
-    config_manager=config
-)
-""")
-
     datasets_dir = os.path.join(project_dir, 'datasets')
     os.makedirs(datasets_dir, exist_ok=True)
 
@@ -166,9 +148,9 @@ manager = TrainingManager(
 from brisk.training.workflow import Workflow
 
 class MyWorkflow(Workflow):
-    def workflow(self):
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
         self.model.fit(self.X_train, self.y_train)
-        self.evaluate_model(
+        self.evaluate_model_cv(
             self.model, self.X_train, self.y_train, ["MAE"], "pre_tune_score"
         )
         tuned_model = self.hyperparameter_tuning(
@@ -231,7 +213,7 @@ def run(
     disable_report: bool,
     verbose: bool
 ) -> None:
-    """Run experiments using workflow mappings defined in training.py.
+    """Run experiments using experiment groups in settings.py.
 
     Parameters
     ----------

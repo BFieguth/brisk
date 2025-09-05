@@ -204,26 +204,6 @@ METRIC_CONFIG = brisk.MetricManager(
 
 
 @pytest.fixture
-def mock_training_py(tmp_path):
-    training_path = tmp_path / 'training.py'
-    training_py = """
-from brisk.training.training_manager import TrainingManager
-from metrics import METRIC_CONFIG
-from settings import create_configuration
-
-config = create_configuration()
-
-# Define the TrainingManager for experiments
-manager = TrainingManager(
-    metric_config=METRIC_CONFIG,
-    config_manager=config
-)             
-"""
-    training_path.write_text(training_py)
-    return training_path
-
-
-@pytest.fixture
 def mock_settings_py(tmp_path):
     settings_path = tmp_path / 'settings.py'
     settings_py = """
@@ -868,7 +848,6 @@ def mock_brisk_project(
     mock_algorithms_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_data_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_metrics_py, # pylint: disable=unused-argument, redefined-outer-name
-    mock_training_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_settings_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
     mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
