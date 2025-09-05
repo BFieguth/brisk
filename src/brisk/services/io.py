@@ -181,7 +181,14 @@ class IOService(base.BaseService):
                 f"Failed to save plot to {output_path}: {e}"
             )
 
-    def save_rerun_config(self, data: Dict, output_path: Union[Path, str]):
+    def save_rerun_config(
+        self,
+        data: Dict,
+        metadata: Dict,
+        output_path: Union[Path, str]
+    ):
+        if metadata:
+            data["_metadata"] = metadata
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
         try:
