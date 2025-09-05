@@ -214,10 +214,11 @@ class DataManager:
         X_train: pd.DataFrame,  # pylint: disable=C0103
         X_test: pd.DataFrame,  # pylint: disable=C0103
         y_train: Optional[pd.Series] = None,
+        y_test: Optional[pd.Series] = None,
         feature_names: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None
     ) -> tuple[
-        pd.DataFrame, pd.DataFrame, List[str],
+        pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str],
         List[str], List[str], Optional[Any]
     ]:
         """Apply all configured preprocessors to the data in fixed order:
@@ -231,6 +232,8 @@ class DataManager:
             Test features
         y_train : pd.Series, optional
             Training target values
+        y_test : pd.Series, optional
+            Test target values
         feature_names : List[str], optional
             Original feature names
         categorical_features : List[str], optional
@@ -239,11 +242,11 @@ class DataManager:
         Returns
         -------
         tuple[
-            pd.DataFrame, pd.DataFrame, List[str],
+            pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str],
             List[str], List[str], Optional[Any]
         ]
-            Transformed training data, transformed test data, updated feature names,
-            updated categorical features, updated continuous features,
+            Transformed training data, transformed test data, transformed y_train, transformed y_test,
+            updated feature names, updated categorical features, updated continuous features,
             and fitted scaler
         """
         if not self.preprocessors:
@@ -252,7 +255,7 @@ class DataManager:
                 f for f in (feature_names or list(X_train.columns))
                 if f not in (categorical_features or [])
             ]
-            return X_train, X_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
+            return X_train, X_test, y_train, y_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
 
         current_feature_names = feature_names or list(X_train.columns)
         current_categorical_features = categorical_features or []
@@ -269,8 +272,8 @@ class DataManager:
         )
 
         # Step 2: Apply categorical encoding
-        X_train, X_test, current_feature_names, current_categorical_features = self._apply_categorical_encoding(
-            X_train, X_test, y_train, current_feature_names, current_categorical_features, encoding_preprocessor
+        X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features = self._apply_categorical_encoding(
+            X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features, encoding_preprocessor
         )
 
         # Step 3: Apply scaling
@@ -288,7 +291,7 @@ class DataManager:
             f for f in current_feature_names if f not in current_categorical_features
         ]
 
-        return X_train, X_test, current_feature_names, current_categorical_features, updated_continuous_features, fitted_scaler
+        return X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features, updated_continuous_features, fitted_scaler
 
     def _apply_missing_data_preprocessing(
         self,
@@ -340,10 +343,11 @@ class DataManager:
         X_train: pd.DataFrame,  # pylint: disable=C0103
         X_test: pd.DataFrame,  # pylint: disable=C0103
         y_train: Optional[pd.Series],
+        y_test: Optional[pd.Series],
         current_feature_names: List[str],
         current_categorical_features: List[str],
         encoding_preprocessor: Optional[CategoricalEncodingPreprocessor]
-    ) -> tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str], List[str]]:
         """Apply categorical encoding preprocessing.
         
         Encodes categorical features using the configured encoding preprocessor.
@@ -359,6 +363,8 @@ class DataManager:
             Test features
         y_train : pd.Series
             Training target values
+        y_test : pd.Series
+            Test target values
         current_feature_names : List[str]
             Current feature names
         current_categorical_features : List[str]
@@ -368,14 +374,17 @@ class DataManager:
             
         Returns
         -------
-        tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]
-            Transformed training data, transformed test data, updated feature names,
-            updated categorical features (including encoded features)
+        tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str], List[str]]
+            Transformed training data, transformed test data, transformed y_train, transformed y_test,
+            updated feature names, updated categorical features (including encoded features)
         """
         if current_categorical_features and encoding_preprocessor:
             encoding_preprocessor.fit(X_train, y_train, categorical_features=current_categorical_features)
-            X_train = encoding_preprocessor.transform(X_train)
-            X_test = encoding_preprocessor.transform(X_test)
+            
+            # Transform features and target (always returns tuple now)
+            X_train, y_train = encoding_preprocessor.transform(X_train, y_train)
+            X_test, y_test = encoding_preprocessor.transform(X_test, y_test)
+            
             current_feature_names = encoding_preprocessor.get_feature_names(current_feature_names)
             
             # Update categorical features to include encoded features
@@ -394,7 +403,7 @@ class DataManager:
                 f"Categorical features detected: {current_categorical_features} but no CategoricalEncodingPreprocessor provided. "
                 "You must encode categorical features before proceeding."
             )
-        return X_train, X_test, current_feature_names, current_categorical_features
+        return X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features
 
     def _apply_scaling(
         self,
@@ -563,8 +572,8 @@ class DataManager:
             y_train, y_test = y.iloc[train_idx], y.iloc[test_idx] # pylint: disable=C0103
 
             # Apply preprocessing
-            X_train, X_test, feature_names, categorical_features, continuous_features, fitted_scaler = self._apply_preprocessing(  # pylint: disable=C0103
-                X_train, X_test, y_train, feature_names, categorical_features
+            X_train, X_test, y_train, y_test, feature_names, categorical_features, continuous_features, fitted_scaler = self._apply_preprocessing(  # pylint: disable=C0103
+                X_train, X_test, y_train, y_test, feature_names, categorical_features
             )
 
             if self.group_column:

@@ -437,18 +437,24 @@ class ScalingPreprocessor(BasePreprocessor):
 class CategoricalEncodingPreprocessor(BasePreprocessor):
     """Preprocessor for categorical feature encoding.
 
-    Supports ordinal, one-hot, label, and cyclic encoding.
+    Supports ordinal, one-hot, label, cyclic, and threshold encoding.
 
     Parameters
     ----------
     method : str or dict
-        Encoding method: "ordinal", "onehot", "label", "cyclic"
+        Encoding method: "ordinal", "onehot", "label", "cyclic", "threshold"
         Or dict mapping column names to methods: {"col1": "ordinal", "col2": "onehot"}
+        If a target feature name matches a key in the dict, it will be encoded.
+    cutoffs : list, optional
+        For threshold encoding: list of cutoff values to create bins.
+        Example: [20, 40] creates bins: <20=0, 20-40=1, >40=2
 
     Attributes
     ----------
     encoders : dict
         Dictionary mapping feature names to their fitted encoder objects
+    target_encoder : object or None
+        Encoder for target variable if target name matches method dict
     is_fitted : bool
         Whether the preprocessor has been fitted
     """
@@ -456,18 +462,23 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
     def __init__(
         self,
         method: str = "label",
+        cutoffs: Optional[List[float]] = None,
         **kwargs
     ):
         super().__init__(
             method=method,
+            cutoffs=cutoffs,
             **kwargs
         )
         self.encoders = {}
+        self.target_encoder = None
+        self.cutoffs = cutoffs or []
 
     def _validate_params(self, **kwargs) -> None:
         """Validate encoding parameters."""
         method = kwargs.get("method", "label")
-        valid_methods = ["ordinal", "onehot", "label", "cyclic"]
+        cutoffs = kwargs.get("cutoffs", [])
+        valid_methods = ["ordinal", "onehot", "label", "cyclic", "threshold"]
 
         if isinstance(method, str):
             if method not in valid_methods:
@@ -483,6 +494,15 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         else:
             raise ValueError("method must be a string or dict")
 
+        # Validate cutoffs for threshold encoding
+        if isinstance(method, str) and method == "threshold":
+            if not cutoffs:
+                raise ValueError("cutoffs must be provided for threshold encoding")
+        elif isinstance(method, dict):
+            for column, encoding_method in method.items():
+                if encoding_method == "threshold" and not cutoffs:
+                    raise ValueError(f"cutoffs must be provided for threshold encoding of column '{column}'")
+
     def _create_encoder(self, method: str) -> Any:
         """Create the appropriate encoder for the method."""
         if method == "ordinal":
@@ -493,8 +513,26 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
             return preprocessing.LabelEncoder()
         elif method == "cyclic":
             return None
+        elif method == "threshold":
+            return None
         else:
             raise ValueError(f"Unknown encoding method: {method}")
+
+    def _apply_threshold_encoding(self, data: pd.Series, cutoffs: List[float]) -> pd.Series:
+        """Apply threshold encoding to convert continuous values to bins."""
+        bins = [-np.inf] + cutoffs + [np.inf]
+        labels = list(range(len(bins) - 1))
+        
+        binned = pd.cut(data, bins=bins, labels=labels, include_lowest=True)
+        return binned.astype(int)
+
+    def _should_encode_target(self, y: pd.Series) -> bool:
+        """Check if target should be encoded based on its name and method configuration."""
+        if y is None or not hasattr(y, 'name') or y.name is None:
+            return False
+        
+        # Only encode target if method is a dict and target name is in the dict
+        return isinstance(self.method, dict) and y.name in self.method
 
     def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None, categorical_features: Optional[List[str]] = None) -> "CategoricalEncodingPreprocessor":
         """Fit the encoders to the data.
@@ -504,7 +542,7 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         X : pd.DataFrame
             Training data
         y : pd.Series, optional
-            Target values (not used for encoding)
+            Target values
         categorical_features : List[str], optional
             List of categorical feature names to encode
 
@@ -515,6 +553,21 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         """
         # Don't store categorical_features as state - just use the parameter directly
         categorical_features = categorical_features or []
+
+        # Handle target encoding if target name matches method dict
+        if self._should_encode_target(y):
+            target_method = self._get_method_for_feature(y.name)
+            
+            if target_method == "threshold":
+                self.target_encoder = {"method": "threshold", "cutoffs": self.cutoffs}
+            else:
+                encoder = self._create_encoder(target_method)
+                if encoder is not None:
+                    if target_method == "label":
+                        encoder.fit(y)
+                    else:
+                        encoder.fit(y.values.reshape(-1, 1))
+                    self.target_encoder = {"method": target_method, "encoder": encoder}
 
         # Check if categorical_features is provided
         if not categorical_features:
@@ -546,6 +599,8 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
                 unique_values = X[feature].unique()
                 sorted_values = sorted(unique_values)
                 self.encoders[feature] = sorted_values
+            elif method == "threshold":
+                self.encoders[feature] = {"method": "threshold", "cutoffs": self.cutoffs}
 
         self.is_fitted = True
         return self
@@ -565,9 +620,11 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         Returns
         -------
         pd.DataFrame
-            Transformed data with encoded categorical features
+            Transformed data with encoded categorical features (only X for backwards compatibility)
         """
-        return self.fit(X, y, categorical_features).transform(X)
+        self.fit(X, y, categorical_features)
+        X_transformed, y_transformed = self.transform(X, y)
+        return X_transformed, y_transformed
 
     def _get_method_for_feature(self, feature: str) -> str:
         """Get the encoding method for a specific feature."""
@@ -576,11 +633,35 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
         else:
             return self.method.get(feature, "label")  # Default to label if not specified
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # pylint: disable=C0103
-        """Transform the data using the fitted encoders."""
+    def transform(self, X: pd.DataFrame, y: Optional[pd.Series] = None):  # pylint: disable=C0103
+        """Transform the data using the fitted encoders.
+        
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Features to transform
+        y : pd.Series, optional
+            Target values to transform (if target name matches method dict)
+            
+        Returns
+        -------
+        tuple[pd.DataFrame, pd.Series or None]
+            Always returns tuple of (transformed features, transformed target or None)
+        """
         if not self.is_fitted:
             raise ValueError("Preprocessor must be fitted before transform")
 
+        X_transformed = self._transform_features(X)
+        
+        if self._should_encode_target(y) and self.target_encoder:
+            y_transformed = self._transform_target(y)
+        else:
+            y_transformed = y
+        
+        return X_transformed, y_transformed
+
+    def _transform_features(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform features using fitted encoders."""
         # If no encoders were fitted, return original data
         if not hasattr(self, 'encoders') or not self.encoders:
             return X
@@ -632,8 +713,30 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
 
                 # Remove original feature
                 X_transformed = X_transformed.drop(columns=[feature])
+            elif method == "threshold":
+                encoder_info = self.encoders[feature]
+                cutoffs = encoder_info["cutoffs"]
+                X_transformed[feature] = self._apply_threshold_encoding(X[feature], cutoffs)
 
         return X_transformed
+
+    def _transform_target(self, y: pd.Series) -> pd.Series:
+        """Transform target variable using fitted encoder."""
+        if not self.target_encoder:
+            return y
+            
+        method = self.target_encoder["method"]
+        
+        if method == "threshold":
+            cutoffs = self.target_encoder["cutoffs"]
+            return self._apply_threshold_encoding(y, cutoffs)
+        else:
+            encoder = self.target_encoder["encoder"]
+            if method == "label":
+                return pd.Series(encoder.transform(y), index=y.index, name=y.name)
+            else:
+                transformed = encoder.transform(y.values.reshape(-1, 1)).flatten()
+                return pd.Series(transformed, index=y.index, name=y.name)
 
     def get_feature_names(self, feature_names: List[str]) -> List[str]:
         """Get the feature names after encoding."""
@@ -665,6 +768,7 @@ class CategoricalEncodingPreprocessor(BasePreprocessor):
     def export_params(self) -> Dict[str, Any]:
         return {
             "method": self.method,
+            "cutoffs": self.cutoffs,
         }
 
 

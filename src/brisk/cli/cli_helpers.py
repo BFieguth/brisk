@@ -15,7 +15,7 @@ from brisk.cli.environment import EnvironmentManager, VersionMatch
 def _run_from_project(project_root, verbose, create_report, results_dir):
     try:
         print(
-            "Begining experiment creation. "
+            "Beginning experiment creation. "
             f"The results will be saved to {results_dir}"
         )
 
