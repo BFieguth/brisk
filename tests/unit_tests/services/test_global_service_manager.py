@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 import pytest
 import numpy as np
@@ -20,23 +21,26 @@ def metric_config():
 
 
 class TestGlobalServiceManager:
-    def test_init(self, algo_config, metric_config, tmp_path):
+    def test_init(self, mock_brisk_project):
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results")
         )
-        assert len(manager.services) == 5
+        assert len(manager.services) == 6
         assert manager.is_initalized is True
 
-    def test_singleton(self, algo_config, metric_config, tmp_path):
+    def test_singleton(self, mock_brisk_project):
+        results_dir = mock_brisk_project / "results"
+        results_dir.mkdir(exist_ok=True)
+        
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results")
         )
         manager.__setattr__("test_attribute", "check this value")
         assert manager.test_attribute == "check this value"
 
         # Should return the same instance with "test_attribute"
         manager2 = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results")
         )
         assert manager2.test_attribute == "check this value"
         assert manager == manager2
@@ -44,7 +48,7 @@ class TestGlobalServiceManager:
         # Check test_attribute is gone after reset
         manager.reset()
         manager3 = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results")
         )
         with pytest.raises(
             AttributeError,
@@ -52,9 +56,11 @@ class TestGlobalServiceManager:
         ):
             attribute = manager3.test_attribute
 
-    def test_update_utility_config(self, algo_config, metric_config, tmp_path):
+    def test_update_utility_config(self, mock_brisk_project):
+        results_dir = mock_brisk_project / "results"
+        results_dir.mkdir(exist_ok=True)
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results"), False
         )
         group_index_train = {"feature": np.array([1, 2, 3, 4, 5])}
         group_index_test = {"feature": np.array([6, 7, 8])}
@@ -67,38 +73,44 @@ class TestGlobalServiceManager:
         manager.reset()
 
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results"), False
         )
         utility_service = manager.services["utility"]
         assert utility_service.group_index_train is None
         assert utility_service.group_index_test is None
 
-    def test_get_services(self, algo_config, metric_config, tmp_path):
+    def test_get_services(self, mock_brisk_project):
+        results_dir = mock_brisk_project / "results"
+        results_dir.mkdir(exist_ok=True)
         GlobalServiceManager.reset()
         with pytest.raises(RuntimeError, match="Services not initialized"):
             services = get_services()
 
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results"), False
         )
         services = get_services()
         assert isinstance(services, ServiceBundle)
 
-    def test_get_service_manager(self, algo_config, metric_config, tmp_path):
+    def test_get_service_manager(self, mock_brisk_project):
+        results_dir = mock_brisk_project / "results"
+        results_dir.mkdir(exist_ok=True)
         GlobalServiceManager.reset()
         with pytest.raises(RuntimeError, match="Services not initialized."):
             service_manager = get_service_manager()
 
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results"), False
         )
         service_manager = get_service_manager()
         assert manager == service_manager
 
-    def test_is_initialized(self, algo_config, metric_config, tmp_path):
+    def test_is_initialized(self, mock_brisk_project):
+        results_dir = mock_brisk_project / "results"
+        results_dir.mkdir(exist_ok=True)
         GlobalServiceManager.reset()
         assert is_initialized() is False
         manager = GlobalServiceManager(
-            algo_config, metric_config, Path(tmp_path / "results"), False
+            Path(mock_brisk_project / "results"), False
         )
         assert is_initialized() is True

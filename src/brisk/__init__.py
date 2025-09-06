@@ -18,7 +18,8 @@ Usage:
 
 For more information, please refer to the documentation or the README file.
 """
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_collection import AlgorithmCollection
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.configuration import Configuration
 from brisk.data.data_manager import DataManager

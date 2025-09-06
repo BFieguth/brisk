@@ -417,7 +417,8 @@ class CorrelationMatrix(dataset_plot_evaluator.DatasetPlotEvaluator):
                 y=''
             ) +
             pn.theme(
-                figure_size=(plot_data["width"], plot_data["height"])
+                figure_size=(plot_data["width"], plot_data["height"]),
+                axis_text_x=pn.element_text(angle=45, hjust=1)
             ) +
             self.theme
         )

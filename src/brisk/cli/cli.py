@@ -26,20 +26,22 @@ Run an experiment:
 Load a dataset:
     $ brisk load_data --dataset iris --dataset_name my_iris
 """
-import importlib
-import inspect
 import os
 import sys
-from typing import Optional, Union
+from typing import Optional
 from datetime import datetime
+import json
 
 import click
 import pandas as pd
 from sklearn import datasets
+from pathlib import Path
 
-from brisk.training.workflow import Workflow
 from brisk.configuration import project
-from brisk.services import initialize_services
+from brisk.cli.cli_helpers import (
+    _run_from_project, _run_from_config, load_sklearn_dataset,
+)
+from brisk.cli.environment import EnvironmentManager, VersionMatch
 
 @click.group()
 def cli():
@@ -70,7 +72,6 @@ def create(project_name: str) -> None:
     - algorithms.py : Algorithm definitions
     - metrics.py : Metric definitions
     - data.py : Data management setup
-    - training.py : Training manager setup
     - workflows/ : Directory for workflow definitions
     - datasets/ : Directory for data storage
     """
@@ -133,23 +134,6 @@ BASE_DATA_MANAGER = DataManager(
 )
 """)
 
-    with open(
-        os.path.join(project_dir, 'training.py'), 'w', encoding='utf-8') as f:
-        f.write("""# training.py
-from brisk.training.training_manager import TrainingManager
-from metrics import METRIC_CONFIG
-from settings import create_configuration
-
-config = create_configuration()
-
-# Define the TrainingManager for experiments
-# Workflows are assigned to experiment groups in settings.py
-manager = TrainingManager(
-    metric_config=METRIC_CONFIG,
-    config_manager=config
-)
-""")
-
     datasets_dir = os.path.join(project_dir, 'datasets')
     os.makedirs(datasets_dir, exist_ok=True)
 
@@ -164,9 +148,9 @@ manager = TrainingManager(
 from brisk.training.workflow import Workflow
 
 class MyWorkflow(Workflow):
-    def workflow(self):
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
         self.model.fit(self.X_train, self.y_train)
-        self.evaluate_model(
+        self.evaluate_model_cv(
             self.model, self.X_train, self.y_train, ["MAE"], "pre_tune_score"
         )
         tuned_model = self.hyperparameter_tuning(
@@ -206,6 +190,12 @@ def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> No
     help='The name of the results directory.'
 )
 @click.option(
+    "-f",
+    "--config_file",
+    default=None,
+    help="Name of the results folder to run from config file."
+)
+@click.option(
     '--disable_report',
     is_flag=True,
     default=False,
@@ -219,10 +209,11 @@ def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> No
 )
 def run(
     results_name: Optional[str],
+    config_file: Optional[str],
     disable_report: bool,
     verbose: bool
 ) -> None:
-    """Run experiments using workflow mappings defined in training.py.
+    """Run experiments using experiment groups in settings.py.
 
     Parameters
     ----------
@@ -241,50 +232,28 @@ def run(
         If experiment groups are missing workflow mappings
     """
     create_report = not disable_report
-    try:
-        project_root = project.find_project_root()
+    project_root = project.find_project_root()
 
-        if project_root not in sys.path:
-            sys.path.insert(0, str(project_root))
+    if project_root not in sys.path:
+        sys.path.insert(0, str(project_root))
 
-        if not results_name:
-            results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-            results_dir = os.path.join("results", results_name)
-        else:
-            results_dir = os.path.join("results", results_name)
-        if os.path.exists(results_dir):
-            raise FileExistsError(
-                f"Results directory '{results_dir}' already exists."
-            )
-        os.makedirs(results_dir, exist_ok=False)
-
-        print(
-            "Begining experiment creation. "
-            f"The results will be saved to {results_dir}"
+    if not results_name:
+        results_name = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+    results_dir = os.path.join("results", results_name)
+    if os.path.exists(results_dir):
+        raise FileExistsError(
+            f"Results directory '{results_dir}' already exists."
         )
+    os.makedirs(results_dir, exist_ok=False)
 
-        algorithm_config = load_module_object(
-            project_root, 'algorithms.py', 'ALGORITHM_CONFIG'
+    if config_file:
+        _run_from_config(
+            project_root, verbose, create_report, results_dir, config_file
         )
-        metric_config = load_module_object(
-            project_root, "metrics.py", "METRIC_CONFIG"
+    else:
+        _run_from_project(
+            project_root, verbose, create_report, results_dir
         )
-        initialize_services(
-            algorithm_config, metric_config, results_dir, verbose=verbose
-        )
-
-        manager = load_module_object(project_root, 'training.py', 'manager')
-
-        manager.run_experiments(
-            create_report=create_report
-        )
-
-    except FileNotFoundError as e:
-        print(f'Error: {e}')
-
-    except (ImportError, AttributeError, ValueError) as e:
-        print(f'Error: {str(e)}')
-        return
 
 
 @cli.command()
@@ -459,86 +428,121 @@ def create_data(
         print(f'Error: {e}')
 
 
-def load_sklearn_dataset(name: str) -> Union[dict, None]:
-    """Load a dataset from scikit-learn.
-
+@cli.command("export-env")
+@click.argument('run_id')
+@click.option('--output', '-o', help='Output path for requirements file')
+@click.option('--include-all', is_flag=True, help='Include all packages, not just critical ones')
+def export_env(run_id, output, include_all):
+    """Export environment requirements from a previous run.
+    
+    Creates a requirements.txt file from the environment captured during
+    a previous experiment run. By default, only includes critical packages
+    that affect computation results.
+    
     Parameters
     ----------
-    name : {'iris', 'wine', 'breast_cancer', 'diabetes', 'linnerud'}
-        Name of the dataset to load
+    run_id : str
+        The run ID to export environment from
+    output : str, optional
+        Output path for requirements file
+    include_all : bool, default=False
+        Include all packages, not just critical ones
 
-    Returns
-    -------
-    dict or None
-        Loaded dataset object or None if not found
+    Examples:
+        brisk export-env my_run_20240101_120000
+        brisk export-env my_run_20240101_120000 --output my_requirements.txt
+        brisk export-env my_run_20240101_120000 --include-all
     """
-    datasets_map = {
-        'iris': datasets.load_iris,
-        'wine': datasets.load_wine,
-        'breast_cancer': datasets.load_breast_cancer,
-        'diabetes': datasets.load_diabetes,
-        'linnerud': datasets.load_linnerud
-    }
-    if name in datasets_map:
-        return datasets_map[name]()
+    project_root = project.find_project_root()
+    config_path = project_root / "results" / run_id / "run_config.json"
+    
+    if not config_path.exists():
+        print(f"Error: Run configuration not found: {config_path}")
+        return
+    
+    with open(config_path, 'r', encoding="utf-8") as f:
+        config = json.load(f)
+    
+    env_manager = EnvironmentManager(project_root)
+    
+    if output:
+        output_path = Path(output)
     else:
-        return None
+        output_path = project_root / f"requirements_{run_id}.txt"
+    
+    saved_env = config.get("env", {})
+    if not saved_env:
+        print("Error: No environment information found in run configuration")
+        return
+    
+    req_path = env_manager.export_requirements(
+        saved_env,
+        output_path,
+        include_all=include_all
+    )
+    
+    print(f"Requirements exported to: {req_path}")
+    print(f"\nTo recreate this environment:")
+    print(f"  python -m venv brisk_env")
+    print(f"  source brisk_env/bin/activate  # On Windows: brisk_env\\Scripts\\activate")
+    print(f"  pip install -r {req_path.name}")
 
 
-def load_module_object(
-    project_root: str,
-    module_filename: str,
-    object_name: str,
-    required: bool = True
-) -> Union[object, None]:
-    """
-    Dynamically loads an object from a specified module file.
-
+@cli.command("check-env")
+@click.argument('run_id')
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed compatibility report')
+def check_env(run_id, verbose):
+    """Check environment compatibility with a previous run.
+    
+    Compares the current Python environment with the environment used
+    in a previous experiment run. Identifies version differences and
+    potential compatibility issues.
+    
+    
     Parameters
     ----------
-    project_root : str
-        Path to project root directory
-    module_filename : str
-        Name of the module file
-    object_name : str
-        Name of object to load
-    required : bool, default=True
-        Whether to raise error if object not found
+    run_id : str
+        The run ID to check environment against
+    verbose : bool, default=False
+        Show detailed report
 
-    Returns
-    -------
-    object or None
-        Loaded object or None if not found and not required
-
-    Raises
-    ------
-    FileNotFoundError
-        If module file not found
-    AttributeError
-        If required object not found in module
+    Examples:
+        brisk check-env my_run_20240101_120000
+        brisk check-env my_run_20240101_120000 --verbose
     """
-    module_path = os.path.join(project_root, module_filename)
-
-    if not os.path.exists(module_path):
-        raise FileNotFoundError(
-            f'{module_filename} not found in {project_root}'
-        )
-
-    module_name = os.path.splitext(module_filename)[0]
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-
-    spec.loader.exec_module(module)
-
-    if hasattr(module, object_name):
-        return getattr(module, object_name)
-    elif required:
-        raise AttributeError(
-            f'The object \'{object_name}\' is not defined in {module_filename}'
-        )
+    project_root = Path.cwd()
+    config_path = project_root / "results" / run_id / "run_config.json"
+    
+    if not config_path.exists():
+        print(f"Error: Run configuration not found: {config_path}")
+        return
+    
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    saved_env = config.get("env", {})
+    if not saved_env:
+        print("Error: No environment information found in run configuration")
+        return
+    
+    env_manager = EnvironmentManager(project_root)
+    
+    if verbose:
+        report = env_manager.generate_environment_report(saved_env)
+        print(report)
     else:
-        return None
+        differences, is_compatible = env_manager.compare_environments(saved_env)
+        
+        if is_compatible:
+            print("Environment is compatible")
+        else:
+            critical_diffs = [d for d in differences 
+                            if d.status in [VersionMatch.MISSING, VersionMatch.INCOMPATIBLE]]
+            
+            print(f"Environment has {len(critical_diffs)} critical differences")
+            print("\nRun with --verbose for full report, or use:")
+            print(f"  brisk export-env {run_id} --output requirements.txt")
+            print("to export requirements for recreating the original environment.")
 
 
 if __name__ == '__main__':

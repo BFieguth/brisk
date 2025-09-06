@@ -35,6 +35,7 @@ from typing import List, Dict, Any, Deque, Union
 from brisk.configuration import experiment
 from brisk.configuration import experiment_group
 from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_collection
 
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.
@@ -60,11 +61,11 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        algorithm_config: algorithm_collection.AlgorithmCollection,
         categorical_features: Dict[str, List[str]]
     ):
         if not isinstance(
-            algorithm_config, algorithm_wrapper.AlgorithmCollection
+            algorithm_config, algorithm_collection.AlgorithmCollection
         ):
             raise TypeError(
                 "algorithm_config must be an AlgorithmCollection, "

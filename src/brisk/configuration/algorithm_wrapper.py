@@ -5,7 +5,7 @@ parameters, and hyperparameter grids. It includes functionality for model
 instantiation and parameter tuning.
 """
 
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type
 
 from brisk.reporting import formatting
 
@@ -189,84 +189,97 @@ class AlgorithmWrapper:
         ]
         return "\n".join(md)
 
-
-class AlgorithmCollection(list):
-    """A collection for managing AlgorithmWrapper instances.
-
-    Provides both list-like and dict-like access to AlgorithmWrapper objects,
-    with name-based lookup functionality.
-
-    Parameters
-    ----------
-    *args : AlgorithmWrapper
-        Initial AlgorithmWrapper instances
-
-    Raises
-    ------
-    TypeError
-        If non-AlgorithmWrapper instance is added
-    ValueError
-        If duplicate algorithm names are found
-    """
-    def __init__(self, *args):
-        super().__init__()
-        for item in args:
-            self.append(item)
-
-    def append(self, item: AlgorithmWrapper) -> None:
-        """Add an AlgorithmWrapper to the collection.
-
-        Parameters
-        ----------
-        item : AlgorithmWrapper
-            Algorithm wrapper to add
-
-        Raises
-        ------
-        TypeError
-            If item is not an AlgorithmWrapper
-        ValueError
-            If algorithm name already exists in collection
+    def export_config(self) -> Dict[str, Any]:
         """
-        if not isinstance(item, AlgorithmWrapper):
-            raise TypeError(
-                "AlgorithmCollection only accepts AlgorithmWrapper instances"
-            )
-        if any(wrapper.name == item.name for wrapper in self):
-            raise ValueError(
-                f"Duplicate algorithm name: {item.name}"
-            )
-        super().append(item)
-
-    def __getitem__(self, key: Union[int, str]) -> AlgorithmWrapper:
-        """Get algorithm by index or name.
-
-        Parameters
-        ----------
-        key : int or str
-            Index or name of algorithm to retrieve
-
+        Export this AlgorithmWrapper's configuration for rerun functionality.
+        
         Returns
         -------
-        AlgorithmWrapper
-            The requested algorithm wrapper
-
-        Raises
-        ------
-        KeyError
-            If string key doesn't match any algorithm name
-        TypeError
-            If key is neither int nor str
+        Dict[str, Any]
+            Configuration dictionary that can be used to recreate this AlgorithmWrapper
         """
-        if isinstance(key, int):
-            return super().__getitem__(key)
+        config = {
+            "name": self.name,
+            "display_name": self.display_name,
+            "algorithm_class_module": self.algorithm_class.__module__,
+            "algorithm_class_name": self.algorithm_class.__name__,
+            "default_params": self._serialize_params(self.default_params),
+            "hyperparam_grid": self._serialize_params(self.hyperparam_grid)
+        }
+        
+        return config
 
-        if isinstance(key, str):
-            for wrapper in self:
-                if wrapper.name == key:
-                    return wrapper
-            raise KeyError(f"No algorithm found with name: {key}")
+    def _serialize_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Serialize parameters, handling complex objects like sklearn estimators.
+        
+        Parameters
+        ----------
+        params : Dict[str, Any]
+            Parameters to serialize
+            
+        Returns
+        -------
+        Dict[str, Any]
+            Serialized parameters
+        """
+        serialized = {}
+        
+        for key, value in params.items():
+            if hasattr(value, '__module__') and hasattr(value, '__class__'):
+                if hasattr(value, 'get_params'):
+                    serialized[key] = {
+                        "_brisk_object_type": "sklearn_estimator",
+                        "module": value.__class__.__module__,
+                        "class_name": value.__class__.__name__,
+                        "params": value.get_params()
+                    }
+                else:
+                    serialized[key] = {
+                        "_brisk_object_type": "object",
+                        "module": value.__class__.__module__,
+                        "class_name": value.__class__.__name__,
+                        "repr": repr(value)
+                    }
+            elif isinstance(value, list):
+                serialized[key] = self._serialize_list(value)
+            else:
+                serialized[key] = value
+                
+        return serialized
 
-        raise TypeError(
-            f"Index must be an integer or string, got {type(key).__name__}"
-        )
+    def _serialize_list(self, lst: list) -> list:
+        """
+        Serialize a list, handling tuples with sklearn estimators.
+        
+        Parameters
+        ----------
+        lst : list
+            List to serialize
+            
+        Returns
+        -------
+        list
+            Serialized list
+        """
+        serialized_list = []
+        
+        for item in lst:
+            if isinstance(item, tuple) and len(item) == 2:
+                name, estimator = item
+                if hasattr(estimator, '__module__') and hasattr(estimator, 'get_params'):
+                    serialized_list.append([
+                        name,
+                        {
+                            "_brisk_object_type": "sklearn_estimator",
+                            "module": estimator.__class__.__module__,
+                            "class_name": estimator.__class__.__name__,
+                            "params": estimator.get_params()
+                        }
+                    ])
+                else:
+                    serialized_list.append(list(item))
+            else:
+                serialized_list.append(item)
+                
+        return serialized_list

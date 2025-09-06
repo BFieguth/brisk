@@ -11,7 +11,8 @@ import textwrap
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.data.data_manager import DataManager
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_collection import AlgorithmCollection
 from brisk.theme.plot_settings import PlotSettings
 
 class TestConfigurationManager:
@@ -154,16 +155,17 @@ class TestConfigurationManager:
             ):
             manager = ConfigurationManager([], {}, PlotSettings())
     
-    def test_validate_single_data_manager(self,mock_brisk_project):
-        """Test the _validate_single_data_manager method correct behavior."""
-        group = ExperimentGroup(
-            name="test_group",
-            workflow="regression_workflow",
-            datasets=["regression.csv"],
-            algorithms=["linear"]
-        )
-        manager = ConfigurationManager([group], {}, PlotSettings())
-        assert manager._validate_single_variable(mock_brisk_project / "data.py", "BASE_DATA_MANAGER") is None
+    # NOTE move to IOService
+    # def test_validate_single_data_manager(self, mock_brisk_project):
+    #     """Test the _validate_single_data_manager method correct behavior."""
+    #     group = ExperimentGroup(
+    #         name="test_group",
+    #         workflow="regression_workflow",
+    #         datasets=["regression.csv"],
+    #         algorithms=["linear"]
+    #     )
+    #     manager = ConfigurationManager([group], {}, PlotSettings())
+    #     assert manager._validate_single_variable(mock_brisk_project / "data.py", "BASE_DATA_MANAGER") is None
 
     def test_validate_single_data_manager_two_definitions(
             self,
@@ -253,7 +255,7 @@ class TestConfigurationManager:
         algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
-            from brisk.configuration.algorithm_wrapper import AlgorithmCollection
+            from brisk.configuration.algorithm_collection import AlgorithmCollection
             algorithm_config = AlgorithmCollection()
         """).strip()
         algorithm_file.write_text(algorithm_content)
@@ -289,26 +291,27 @@ class TestConfigurationManager:
         with pytest.raises(ImportError, match="Failed to load algorithms module"):
             ConfigurationManager([group], {}, PlotSettings())
 
-    def test_validate_single_algorithm_config(self, mock_brisk_project):
-        """Test the ALGORITHM_CONFIG is an AlgorithmCollection."""
-        group = ExperimentGroup(
-            name="test_group",
-            workflow="regression_workflow",
-            datasets=["regression.csv"],
-            algorithms=["linear"]
-        )
-        manager = ConfigurationManager([group], {}, PlotSettings())
-        assert manager._validate_single_variable(
-            mock_brisk_project / "algorithms.py", 
-            "ALGORITHM_CONFIG"
-            ) is None
+    # NOTE move to IOService
+    # def test_validate_single_algorithm_config(self, mock_brisk_project):
+    #     """Test the ALGORITHM_CONFIG is an AlgorithmCollection."""
+    #     group = ExperimentGroup(
+    #         name="test_group",
+    #         workflow="regression_workflow",
+    #         datasets=["regression.csv"],
+    #         algorithms=["linear"]
+    #     )
+    #     manager = ConfigurationManager([group], {}, PlotSettings())
+    #     assert manager._validate_single_variable(
+    #         mock_brisk_project / "algorithms.py", 
+    #         "ALGORITHM_CONFIG"
+    #         ) is None
 
     def test_validate_two_algorithm_configs(self, mock_brisk_project):
         """Test two ALGORITHM_CONFIGs are not allowed."""
         algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
-            from brisk.configuration.algorithm_wrapper import AlgorithmCollection
+            from brisk.configuration.algorithm_collection import AlgorithmCollection
             ALGORITHM_CONFIG = AlgorithmCollection()
             ALGORITHM_CONFIG = AlgorithmCollection()
         """).strip()
@@ -327,7 +330,8 @@ class TestConfigurationManager:
         algorithm_file = mock_brisk_project / 'algorithms.py'
         algorithm_file.unlink()
         algorithm_content = textwrap.dedent("""
-            from brisk.configuration.algorithm_wrapper import AlgorithmCollection, AlgorithmWrapper
+            from brisk.configuration.algorithm_collection import AlgorithmCollection
+            from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
             from sklearn.linear_model import LinearRegression
             ALGORITHM_CONFIG = AlgorithmCollection(
                 AlgorithmWrapper(

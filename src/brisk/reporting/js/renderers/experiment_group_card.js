@@ -140,7 +140,14 @@ class ExperimentGroupCardRenderer {
         table.appendChild(tbody);
         
         if (firstDatasetSplits) {
-            firstDatasetSplits.forEach((split, index) => {
+            // Filter out splits with null algorithm or score values
+            const validSplits = firstDatasetSplits.filter(split => {
+                const [splitName, algorithm, score] = split;
+                return algorithm !== null && algorithm !== undefined && 
+                       score !== null && score !== undefined;
+            });
+            
+            validSplits.forEach((split, index) => {
                 const [splitName, algorithm, score] = split;
                 
                 const row = document.createElement('tr');

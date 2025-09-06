@@ -7,7 +7,7 @@ import pandas as pd
 import sklearn.model_selection as model_select
 import plotnine as pn
 
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper, algorithm_collection
 from brisk.services import base
 from brisk.theme.plot_settings import PlotSettings
 
@@ -28,19 +28,18 @@ class UtilityService(base.BaseService):
     def __init__(
         self,
         name: str,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
         group_index_train: Dict[str, np.array] | None,
         group_index_test: Dict[str, np.array] | None
     ):
         super().__init__(name)
-        self.algorithm_config = algorithm_config
+        self.algorithm_config = None
         self.group_index_train = None
         self.group_index_test = None
         self.data_has_groups = False
         self.set_split_indices(
             group_index_train, group_index_test
         )
-        self.plot_settings: PlotSettings = None
+        self.plot_settings = PlotSettings()
 
     def set_split_indices(
         self,
@@ -66,6 +65,9 @@ class UtilityService(base.BaseService):
             self.data_has_groups = True
         else:
             self.data_has_groups = False
+
+    def set_algorithm_config(self, algorithm_config: algorithm_collection.AlgorithmCollection):
+        self.algorithm_config = algorithm_config
 
     def get_algo_wrapper(
         self,

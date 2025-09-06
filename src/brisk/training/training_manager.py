@@ -8,9 +8,9 @@ if some fail.
 import collections
 import os
 import time
-import json
 import warnings
 from typing import Optional, Type
+from pathlib import Path
 
 import tqdm
 
@@ -21,6 +21,13 @@ from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
 from brisk.services import get_services
+
+warnings.filterwarnings(
+    "ignore",
+    message="Filename: <_io.BytesIO object at.*>",
+    category=UserWarning,
+    module="plotnine"
+)
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
@@ -64,7 +71,6 @@ class TrainingManager:
     ):
         self.services = get_services()
         self.results_dir = self.services.io.results_dir
-
         self.metric_config = metric_config
         self.eval_manager = evaluation_manager.EvaluationManager(
             self.metric_config
@@ -128,10 +134,28 @@ class TrainingManager:
             progress_bar.update(1)
 
         self._print_experiment_summary()
+        all_failed = all(
+            result['status'] == 'FAILED'
+            for group_datasets in self.experiment_results.values()
+            for experiments in group_datasets.values()
+            for result in experiments
+        )
+        if all_failed:
+            self._cleanup(self.results_dir, progress_bar)
+            self.services.logger.logger.error(
+                "All experiments failed. Exiting without creating a report."
+            )
+            return
+
         self.services.reporting.add_experiment_groups(self.experiment_groups)
         self._cleanup(self.results_dir, progress_bar)
         if create_report:
             self._create_report(self.results_dir)
+            
+        try:
+            self.services.rerun.export_and_save(Path(self.results_dir))
+        except Exception as e:
+            self.services.logger.logger.warning(f"Failed to save rerun config: {e}")
 
     def _run_single_experiment(
         self,

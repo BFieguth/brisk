@@ -7,21 +7,15 @@ that DataManager instances are created efficiently and reused when
 configurations match.
 """
 
-import ast
 import collections
-from importlib import util
-from pathlib import Path
-import inspect
-import importlib
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
 from brisk.configuration import (
-    experiment_group, experiment_factory, project, algorithm_wrapper
+    experiment_group, experiment_factory, project, algorithm_collection
 )
 from brisk.reporting import formatting
 from brisk.services import get_services
-from brisk.training import workflow as workflow_module
 from brisk.theme.plot_settings import PlotSettings
 
 class ConfigurationManager:
@@ -86,7 +80,6 @@ class ConfigurationManager:
         self.output_structure = self._get_output_structure()
         self.description_map = self._create_description_map()
 
-
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
 
@@ -111,85 +104,12 @@ class ConfigurationManager:
         data.py must define BASE_DATA_MANAGER = DataManager(...)
         """
         data_file = self.project_root / "data.py"
-
-        if not data_file.exists():
-            raise FileNotFoundError(
-                f"Data file not found: {data_file}\n"
-                f"Please create data.py with BASE_DATA_MANAGER configuration"
-            )
-
-        spec = util.spec_from_file_location("data", data_file)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Failed to load data module from {data_file}")
-
-        data_module = util.module_from_spec(spec)
-        spec.loader.exec_module(data_module)
-
-        if not hasattr(data_module, "BASE_DATA_MANAGER"):
-            raise ImportError(
-                f"BASE_DATA_MANAGER not found in {data_file}\n"
-                f"Please define BASE_DATA_MANAGER = DataManager(...)"
-            )
-        self._validate_single_variable(data_file, "BASE_DATA_MANAGER")
-        if not isinstance(
-            data_module.BASE_DATA_MANAGER, data_manager.DataManager
-        ):
-            raise ValueError(
-                f"BASE_DATA_MANAGER in {data_file} is not a valid "
-                "DataManager instance"
-            )
-        return data_module.BASE_DATA_MANAGER
-
-    def _validate_single_variable(
-        self,
-        file_path: Path,
-        variable_name: str
-    ) -> None:
-        """Validate that only a variable name is defined only once in a file.
-
-        Parameters
-        ----------
-        file_path : Path
-            Path to the Python file to check
-        variable_name : str
-            Name of the variable to check
-
-        Raises
-        ------
-        ValueError
-            If the variable is defined multiple times
-        SyntaxError
-            If the file contains invalid Python syntax
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                source_code = f.read()
-
-            tree = ast.parse(source_code, filename=str(file_path))
-
-            assignments = []
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if (
-                            isinstance(target, ast.Name)
-                            and target.id == variable_name
-                        ):
-                            assignments.append(node.lineno)
-
-            if len(assignments) > 1:
-                lines_str = ", ".join(map(str, assignments))
-                raise ValueError(
-                    f"{variable_name} is defined multiple times in {file_path} "
-                    f"on lines: {lines_str}. Please define it exactly once to "
-                    "avoid ambiguity."
-                )
-        except SyntaxError as e:
-            raise SyntaxError(f"Invalid Python syntax in {file_path}") from e
+        base_data_manager = self.services.io.load_base_data_manager(data_file)
+        return base_data_manager
 
     def _load_algorithm_config(
         self
-    ) -> algorithm_wrapper.AlgorithmCollection:
+    ) -> algorithm_collection.AlgorithmCollection:
         """Load algorithm configuration from project's algorithms.py.
 
         Parameters
@@ -213,36 +133,8 @@ class ConfigurationManager:
         algorithms.py must define ALGORITHM_CONFIG = AlgorithmCollection()
         """
         algo_file = self.project_root / "algorithms.py"
-
-        if not algo_file.exists():
-            raise FileNotFoundError(
-                f"algorithms.py file not found: {algo_file}\n"
-                f"Please create algorithms.py and define an AlgorithmCollection"
-            )
-
-        spec = util.spec_from_file_location("algorithms", algo_file)
-        if spec is None or spec.loader is None:
-            raise ImportError(
-                f"Failed to load algorithms module from {algo_file}"
-                )
-
-        algo_module = util.module_from_spec(spec)
-        spec.loader.exec_module(algo_module)
-
-        if not hasattr(algo_module, "ALGORITHM_CONFIG"):
-            raise ImportError(
-                f"ALGORITHM_CONFIG not found in {algo_file}\n"
-                f"Please define ALGORITHM_CONFIG = AlgorithmCollection()"
-            )
-        self._validate_single_variable(algo_file, "ALGORITHM_CONFIG")
-        if not isinstance(
-            algo_module.ALGORITHM_CONFIG, algorithm_wrapper.AlgorithmCollection
-        ):
-            raise ValueError(
-                f"ALGORITHM_CONFIG in {algo_file} is not a valid "
-                "AlgorithmCollection instance"
-            )
-        return algo_module.ALGORITHM_CONFIG
+        algo_config = self.services.io.load_algorithms(algo_file)
+        return algo_config
 
     def _get_base_params(self) -> Dict:
         """Get parameters from base DataManager instance.
@@ -331,7 +223,7 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            workflow_class = self._check_workflow_exists(group.workflow)
+            workflow_class = self.services.io.load_workflow(group.workflow)
             self.workflow_map[group.workflow] = workflow_class
             n_splits = group.data_config.get(
                 "n_splits", self.base_data_manager.n_splits
@@ -483,34 +375,3 @@ class ConfigurationManager:
             for group in self.experiment_groups
             if group.description != ""
         }
-
-    def _check_workflow_exists(self, workflow_name: str) -> None:
-        """Ensures workflow is a string and exists in the workflows directory.
-
-        Also checks only one Workflow subclass is defined in the file.
-        """
-        try:
-            module = importlib.import_module(
-                f"workflows.{workflow_name}"
-            )
-            workflow_classes = [
-                obj for _, obj in inspect.getmembers(module)
-                if inspect.isclass(obj)
-                and issubclass(obj, workflow_module.Workflow)
-                and obj is not workflow_module.Workflow
-            ]
-
-            if len(workflow_classes) == 0:
-                raise AttributeError(
-                    f"No Workflow subclass found in {workflow_name}.py"
-                )
-            elif len(workflow_classes) > 1:
-                raise AttributeError(
-                    f"Multiple Workflow subclasses found in {workflow_name}.py."
-                    " There can only be one Workflow per file."
-                    )
-
-            return workflow_classes[0]
-
-        except (ImportError, AttributeError) as e:
-            print(f"Error validating workflow: {e}")

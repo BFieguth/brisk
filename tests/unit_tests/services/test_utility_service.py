@@ -9,37 +9,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
 from brisk.services.utility import UtilityService
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
-from tests.conftest import get_algorithm_config
-from brisk.services.bundle import ServiceBundle
-from brisk.services.utility import UtilityService
-from brisk.theme.plot_settings import PlotSettings
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_collection import AlgorithmCollection
+from brisk.services import get_services
 
 
 @pytest.fixture
-def algorithm_config():
-    return get_algorithm_config()
-
-
-@pytest.fixture
-def mock_services(algorithm_config):
-    services = mock.MagicMock(spec=ServiceBundle)
-    services.logger = mock.MagicMock()
-    services.logger.logger = mock.MagicMock()
-    services.io = mock.MagicMock()
-    services.io.output_dir = mock.MagicMock()
-    services.utility = UtilityService(
-        name="utility",
-        algorithm_config=algorithm_config,
-        group_index_train=None,
-        group_index_test=None
-    )
-    services.metadata = mock.MagicMock()
-    services.utility.set_plot_settings(PlotSettings())
-    services.reporting = mock.MagicMock()
-    services.reporting.add_dataset = mock.MagicMock()
-    return services
-
+def mock_services(mock_brisk_project):
+    return get_services()
 
 @pytest.fixture
 def algorithm_config():
@@ -78,20 +55,18 @@ def group_index_test():
 
 
 @pytest.fixture
-def utility_service_with_groups(algorithm_config, group_index_train, group_index_test):
+def utility_service_with_groups(group_index_train, group_index_test):
     return UtilityService(
         name="utility",
-        algorithm_config=algorithm_config,
         group_index_train=group_index_train,
         group_index_test=group_index_test
     )
 
 
 @pytest.fixture
-def utility_service_no_groups(algorithm_config):
+def utility_service_no_groups():
     return UtilityService(
         name="utility",
-        algorithm_config=algorithm_config,
         group_index_train=None,
         group_index_test=None
     )
@@ -148,16 +123,16 @@ def regression100_data(data_manager, tmp_path, mock_services):
 
 
 class TestUtilityService:
-    def test_init_with_groups(self, utility_service_with_groups, algorithm_config, group_index_train, group_index_test):
+    def test_init_with_groups(self, utility_service_with_groups, group_index_train, group_index_test):
         assert utility_service_with_groups.name == "utility"
-        assert utility_service_with_groups.algorithm_config == algorithm_config
+        assert utility_service_with_groups.algorithm_config is None
         assert utility_service_with_groups.group_index_train == group_index_train
         assert utility_service_with_groups.group_index_test == group_index_test
         assert utility_service_with_groups.data_has_groups is True
 
-    def test_init_without_groups(self, utility_service_no_groups, algorithm_config):
+    def test_init_without_groups(self, utility_service_no_groups):
         assert utility_service_no_groups.name == "utility"
-        assert utility_service_no_groups.algorithm_config == algorithm_config
+        assert utility_service_no_groups.algorithm_config is None
         assert utility_service_no_groups.group_index_train is None
         assert utility_service_no_groups.group_index_test is None
         assert utility_service_no_groups.data_has_groups is False
@@ -184,7 +159,8 @@ class TestUtilityService:
         assert utility_service_no_groups.group_index_test is None
         assert utility_service_no_groups.data_has_groups is False
 
-    def test_get_algo_wrapper(self, utility_service_with_groups):
+    def test_get_algo_wrapper(self, utility_service_with_groups, algorithm_config):
+        utility_service_with_groups.set_algorithm_config(algorithm_config)
         wrapper = utility_service_with_groups.get_algo_wrapper("logistic_regression")
         
         assert wrapper.name == "logistic_regression"

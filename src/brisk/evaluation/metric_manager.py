@@ -7,7 +7,8 @@ corresponding scoring callables.
 from typing import Callable, List, Dict, Any
 
 from brisk.evaluation import metric_wrapper
-
+from brisk.defaults import regression_metrics, classification_metrics
+        
 class MetricManager:
     """A class to manage scoring metrics.
 
@@ -186,3 +187,67 @@ class MetricManager:
         """
         name = self._resolve_identifier(identifier)
         return self._metrics_by_name[name].greater_is_better
+
+    def export_params(self) -> List[Dict[str, Any]]:
+        """
+        Export metric configuration data for rerun functionality.
+        
+        Detects built-in metric collections and exports custom metrics with
+        their function definitions to enable exact rerun functionality.
+        
+        Returns
+        -------
+        List[Dict[str, Any]]
+            List of metric configurations that can be used to recreate the MetricManager
+        """        
+        regression_names = {
+            wrapper.name for wrapper in regression_metrics.REGRESSION_METRICS
+        }
+        classification_names = {
+            wrapper.name for wrapper in classification_metrics.CLASSIFICATION_METRICS
+        }
+        
+        found_regression_metrics = set()
+        found_classification_metrics = set()
+        custom_metrics = []
+        
+        for name, wrapper in self._metrics_by_name.items():
+            if name in regression_names:
+                found_regression_metrics.add(name)
+            elif name in classification_names:
+                found_classification_metrics.add(name)
+            else:
+                custom_metrics.append(wrapper.export_config())
+        
+        result = []        
+        if found_regression_metrics == regression_names:
+            result.append({
+                "type": "builtin_collection",
+                "collection": "brisk.REGRESSION_METRICS"
+            })
+        elif found_regression_metrics:
+            for name in found_regression_metrics:
+                result.append({
+                    "type": "builtin_metric",
+                    "collection": "brisk.REGRESSION_METRICS",
+                    "name": name
+                })
+        
+        if found_classification_metrics == classification_names:
+            result.append({
+                "type": "builtin_collection", 
+                "collection": "brisk.CLASSIFICATION_METRICS"
+            })
+        elif found_classification_metrics:
+            for name in found_classification_metrics:
+                result.append({
+                    "type": "builtin_metric",
+                    "collection": "brisk.CLASSIFICATION_METRICS", 
+                    "name": name
+                })
+        
+        for custom_config in custom_metrics:
+            custom_config["type"] = "custom_metric"
+            result.append(custom_config)
+        
+        return result

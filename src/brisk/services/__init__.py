@@ -1,12 +1,11 @@
 """Global service management."""
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import pathlib
 
 import numpy as np
 
-from brisk.services import bundle, logging, metadata, io, utility, reporting
-from brisk.configuration import algorithm_wrapper
-from brisk.evaluation import metric_manager
+from brisk.services import bundle, logging, metadata, io, utility, reporting, rerun
+
 
 class GlobalServiceManager:
     """A singleton that makes services available to the entire Brisk package.
@@ -45,28 +44,27 @@ class GlobalServiceManager:
 
     def __init__(
         self,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
-        metric_config: metric_manager.MetricManager,
         results_dir: pathlib.Path,
-        verbose: bool = False
+        verbose: bool = False,
+        mode: str = "capture",
+        rerun_config: Optional[Dict[str, Any]] = None
     ) -> None:
         if self.is_initalized:
             return
 
         self.services = {}
         self.services["logging"] = logging.LoggingService(
-            "logging", None, verbose
+            "logging", results_dir, verbose
         )
-        self.services["metadata"] = metadata.MetadataService(
-            "metadata", algorithm_config
-        )
+        self.services["metadata"] = metadata.MetadataService("metadata")
         self.services["io"] = io.IOService("io", results_dir, None)
         self.services["utility"] = utility.UtilityService(
-            "utility", algorithm_config, None, None
+            "utility", None, None
         )
         self.services["reporting"] = reporting.ReportingService(
-            "reporting", metric_config
+            "reporting"
         )
+        self.services["rerun"] = rerun.RerunService("rerun", mode, rerun_config)
         self._register_services()
         self.is_initalized = True
 
@@ -96,7 +94,8 @@ class GlobalServiceManager:
             metadata=self.services["metadata"],
             io=self.services["io"],
             utility=self.services["utility"],
-            reporting=self.services["reporting"]
+            reporting=self.services["reporting"],
+            rerun=self.services["rerun"],
         )
 
     def update_utility_config(
@@ -141,10 +140,10 @@ class GlobalServiceManager:
 
 
 def initialize_services(
-    algorithm_config: algorithm_wrapper.AlgorithmCollection,
-    metric_config: metric_manager.MetricManager,
     results_dir: pathlib.Path,
-    verbose: bool = False
+    verbose: bool = False,
+    mode: str = "capture",
+    rerun_config: Optional[Dict[str, Any]] = None
 ) -> None:
     """Initialize the global service manager.
 
@@ -158,16 +157,18 @@ def initialize_services(
         The root directory for the results.
     verbose (bool): 
         Whether to use verbose logging.
+    mode (str): 
+        The mode of RerunService. Must be "capture" or "coordianate".
 
     Returns
     -------
     None
     """
     GlobalServiceManager(
-        algorithm_config=algorithm_config,
-        metric_config=metric_config,
         results_dir=results_dir,
-        verbose=verbose
+        verbose=verbose,
+        mode=mode,
+        rerun_config=rerun_config
     )
 
 

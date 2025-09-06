@@ -6,7 +6,7 @@ import datetime
 from sklearn import base
 
 from brisk.services import base as base_service
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_wrapper, algorithm_collection
 
 class MetadataService(base_service.BaseService):
     """Metadata generation.
@@ -28,10 +28,9 @@ class MetadataService(base_service.BaseService):
     def __init__(
         self,
         name,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection
     ):
         super().__init__(name)
-        self.algorithm_config = algorithm_config
+        self.algorithm_config = None
 
     def _get_base(self, method_name: str) -> Dict[str, Any]:
         """Base information that is common to all metadata
@@ -118,3 +117,11 @@ class MetadataService(base_service.BaseService):
         metadata["dataset"] = dataset_name
         metadata["group"] = group_name
         return metadata
+
+    def get_rerun(self, method_name):
+        """Get metadata for rerun config file."""
+        metadata = self._get_base(method_name)
+        metadata["type"] = "rerun_config"
+
+    def set_algorithm_config(self, algorithm_config):
+        self.algorithm_config = algorithm_config

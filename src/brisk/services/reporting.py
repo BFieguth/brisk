@@ -97,7 +97,6 @@ class ReportingService(base.BaseService):
     def __init__(
         self,
         name: str,
-        metric_manager: metric_config.MetricManager
     ):
         super().__init__(name)
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -109,7 +108,7 @@ class ReportingService(base.BaseService):
         self.experiments = {}
         self.experiment_groups = []
         self.data_managers = {}
-        self.metric_manager = metric_manager
+        self.metric_manager = None
         self.registry: Optional["EvaluatorRegistry"] = None
         self.group_to_experiment = defaultdict(list)
         self._current_context: Optional[ReportingContext] = None
@@ -133,6 +132,16 @@ class ReportingService(base.BaseService):
             )
         )
         self.tuning_metric = None
+
+    def set_metric_config(self, metric_config: metric_config.MetricManager) -> None:
+        """Set the metric manager for this reporting service.
+
+        Parameters
+        ----------
+        metric_config : MetricManager
+            The metric configuration
+        """
+        self.metric_manager = metric_config
 
     def set_context(
         self,
@@ -403,7 +412,10 @@ class ReportingService(base.BaseService):
                         rows=self.test_scores[group.name][dataset_name][split]["rows"]
                     )
                     data_split_scores[f"{group.name}_{dataset_name_id}"].append(
-                        self.best_score_by_split[group.name][dataset_name][split]
+                        self.best_score_by_split[group.name][dataset_name].get(
+                            split,
+                            (f"Split {split}", None, "Score not found", None)
+                        )
                     )
 
             experiment_group = report_data.ExperimentGroup(
@@ -854,10 +866,10 @@ class ReportingService(base.BaseService):
         available_measures = [row[0] for row in rows]
         tuning_metric = (
             self.tuning_metric[1]
-            if self.tuning_metric[1] in available_measures
+            if self.tuning_metric and 
+            self.tuning_metric[1] in available_measures
             else available_measures[0]
         )
-
         tuning_score = None
         for row in rows:
             if row[0] == tuning_metric:
