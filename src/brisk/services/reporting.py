@@ -412,7 +412,10 @@ class ReportingService(base.BaseService):
                         rows=self.test_scores[group.name][dataset_name][split]["rows"]
                     )
                     data_split_scores[f"{group.name}_{dataset_name_id}"].append(
-                        self.best_score_by_split[group.name][dataset_name][split]
+                        self.best_score_by_split[group.name][dataset_name].get(
+                            split,
+                            (f"Split {split}", None, "Score not found", None)
+                        )
                     )
 
             experiment_group = report_data.ExperimentGroup(
@@ -863,10 +866,10 @@ class ReportingService(base.BaseService):
         available_measures = [row[0] for row in rows]
         tuning_metric = (
             self.tuning_metric[1]
-            if self.tuning_metric[1] in available_measures
+            if self.tuning_metric and 
+            self.tuning_metric[1] in available_measures
             else available_measures[0]
         )
-
         tuning_score = None
         for row in rows:
             if row[0] == tuning_metric:

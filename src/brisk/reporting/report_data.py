@@ -195,7 +195,7 @@ class ExperimentGroup(RoundedModel):
     experiments: List[str] = Field(
         default_factory=list, description="List of experiment IDs"
     )
-    data_split_scores: Dict[str, List[Tuple[str, str, str, str]]] = Field(
+    data_split_scores: Dict[str, List[Tuple[str, str | None, str, str | None]]] = Field(
         default_factory=dict,
         description="Best algorithm and score for each data split."
     )

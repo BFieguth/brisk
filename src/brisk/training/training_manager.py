@@ -128,6 +128,19 @@ class TrainingManager:
             progress_bar.update(1)
 
         self._print_experiment_summary()
+        all_failed = all(
+            result['status'] == 'FAILED'
+            for group_datasets in self.experiment_results.values()
+            for experiments in group_datasets.values()
+            for result in experiments
+        )
+        if all_failed:
+            self._cleanup(self.results_dir, progress_bar)
+            self.services.logger.logger.error(
+                "All experiments failed. Exiting without creating a report."
+            )
+            return
+
         self.services.reporting.add_experiment_groups(self.experiment_groups)
         self._cleanup(self.results_dir, progress_bar)
         if create_report:
