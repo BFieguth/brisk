@@ -39,7 +39,7 @@ class UtilityService(base.BaseService):
         self.set_split_indices(
             group_index_train, group_index_test
         )
-        self.plot_settings: PlotSettings = None
+        self.plot_settings = PlotSettings()
 
     def set_split_indices(
         self,

@@ -6,7 +6,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
 from brisk.services.metadata import MetadataService
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.configuration.algorithm_collection import AlgorithmCollection
 
 
 class MockModel:
@@ -35,10 +36,11 @@ def algorithm_config():
 
 @pytest.fixture
 def metadata_service(algorithm_config):
-    return MetadataService(
+    metadata_service = MetadataService(
         name="metadata",
-        algorithm_config=algorithm_config
     )
+    metadata_service.set_algorithm_config(algorithm_config)
+    return metadata_service
 
 
 class TestMetadataService:

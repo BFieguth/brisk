@@ -12,14 +12,12 @@ import importlib.util as util
 
 from brisk.evaluation.evaluators.builtin import (
     common_measures, common_plots, regression_plots, classification_measures,
-    classification_plots, dataset_measures, tools
+    classification_plots, tools
 )
-from brisk.services.bundle import ServiceBundle
-from brisk.services.utility import UtilityService
 from brisk.data.data_manager import DataManager
 from brisk.theme.plot_settings import PlotSettings
 from tests.conftest import get_metric_config, get_algorithm_config, mock_data_py
-
+from brisk.services import get_services
 
 @pytest.fixture
 def metric_config():
@@ -32,22 +30,9 @@ def algorithm_config():
 
 
 @pytest.fixture
-def mock_services(algorithm_config):
-    services = mock.MagicMock(spec=ServiceBundle)
-    services.logger = mock.MagicMock()
-    services.logger.logger = mock.MagicMock()
-    services.io = mock.MagicMock()
-    services.io.output_dir = mock.MagicMock()
-    services.utility = UtilityService(
-        name="utility",
-        algorithm_config=algorithm_config,
-        group_index_train=None,
-        group_index_test=None
-    )
-    services.metadata = mock.MagicMock()
-    services.utility.set_plot_settings(PlotSettings())
-    services.reporting = mock.MagicMock()
-    services.reporting.add_dataset = mock.MagicMock()
+def mock_services(mock_brisk_project, algorithm_config):
+    services = get_services()
+    services.utility.set_algorithm_config(algorithm_config)
     return services
 
 
@@ -631,7 +616,6 @@ class TestPlotModelComparison:
         X, y, _ = regression_data
         models = [fitted_models["linear"], fitted_models["ridge"], fitted_models["elasticnet"]]
         metric = "mean_absolute_error"
-        
         plot_data = evaluator._generate_plot_data(*models, X=X, y=y, metric=metric)
         
         assert isinstance(plot_data, pd.DataFrame)

@@ -58,7 +58,8 @@ def workflow(mock_brisk_project):
         "regression_workflow", str(workflow_file)
     )
     workflow_module = importlib.util.module_from_spec(spec)
-    sys.modules["regression_workflow"] = workflow_module
+    # Load as workflows.regression_workflow to match what load_workflow expects
+    sys.modules["workflows.regression_workflow"] = workflow_module
     spec.loader.exec_module(workflow_module)
 
     return workflow_module.Regression

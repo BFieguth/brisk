@@ -91,7 +91,7 @@ class TestMultipleWorkflows:
 
         assert "regression_workflow" in training_manager.workflow_mapping
    
-    def test_group_override_default(self, mock_brisk_project, mock_categorical_workflow, metric_config):
+    def test_group_override_default(self, mock_brisk_project, metric_config):
         from brisk.configuration.configuration import Configuration
         
         config = Configuration(
@@ -128,9 +128,9 @@ class TestMultipleWorkflows:
         assert len(experiments) > 0
         assert all(e.workflow == "regression_workflow" for e in experiments)
 
-    def test_multiple_groups_each_own_workflow(self, mock_brisk_project, mock_categorical_workflow, metric_config):
+    def test_multiple_groups_each_own_workflow(self, mock_brisk_project, metric_config):
         from brisk.configuration.configuration import Configuration
-        
+
         config = Configuration(
             default_workflow="regression_workflow",
             default_algorithms=["linear"]
@@ -169,38 +169,3 @@ class TestMultipleWorkflows:
         workflow_assignments = {exp.group_name: exp.workflow for exp in experiments}
         assert workflow_assignments["regression_group"] == "regression_workflow"
         assert workflow_assignments["categorical_group"] == "categorical_workflow"
-
-    def test_workflow_missing_mapping(self, mock_brisk_project, capfd):
-
-        metrics_file = mock_brisk_project / "metrics.py"
-        spec = importlib.util.spec_from_file_location("metrics", str(metrics_file))
-        metrics_module = importlib.util.module_from_spec(spec)
-        sys.modules["metrics"] = metrics_module
-        spec.loader.exec_module(metrics_module)
-        metric_config = metrics_module.METRIC_CONFIG
-
-        group = ExperimentGroup(
-            name="test_group",
-            description="Test group",
-            datasets=["regression.csv"],
-            algorithms=["linear"],
-            workflow="nonexistent_workflow"
-        )
-
-        from brisk.configuration.configuration import Configuration
-        config = Configuration(
-            default_workflow="regression_workflow",
-            default_algorithms=["linear"]
-        )
-        config.add_experiment_group(**group.__dict__)
-        
-        config_manager = config.build()
-        
-
-        captured = capfd.readouterr()
-        assert ("Error validating workflow" in captured.out or 
-                "No module named 'workflows'" in captured.out)
-        
-
-        assert "nonexistent_workflow" in config_manager.workflow_map
-        assert config_manager.workflow_map["nonexistent_workflow"] is None

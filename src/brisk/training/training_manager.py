@@ -8,7 +8,6 @@ if some fail.
 import collections
 import os
 import time
-import json
 import warnings
 from typing import Optional, Type
 from pathlib import Path
@@ -22,6 +21,13 @@ from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.configuration import experiment
 from brisk.services import get_services
+
+warnings.filterwarnings(
+    "ignore",
+    message="Filename: <_io.BytesIO object at.*>",
+    category=UserWarning,
+    module="plotnine"
+)
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.

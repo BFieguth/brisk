@@ -10,6 +10,7 @@ import pytest
 import sqlite3
 from io import StringIO
 import sys
+import warnings
 
 import pandas as pd
 import sklearn.linear_model as linear
@@ -22,6 +23,19 @@ import brisk
 _CACHED_ALGORITHM_CONFIG = None
 _CACHED_METRIC_CONFIG = None
 
+warnings.filterwarnings(
+    "ignore",
+    message="Filename: <_io.BytesIO object at.*>",
+    category=UserWarning,
+    module="plotnine"
+)
+
+warnings.filterwarnings(
+    "ignore",
+    message="Saving .* in image",
+    category=UserWarning,
+    module="plotnine"
+)
 
 def get_algorithm_config():
     """Get cached algorithm configuration."""
@@ -86,16 +100,11 @@ def get_metric_config():
     return _CACHED_METRIC_CONFIG
 
 
-def setup_services(tmp_path):
-    algorithm_config = get_algorithm_config()
-    metric_config = get_metric_config()
-    
+def setup_services(tmp_path):   
     results_dir = tmp_path / 'test_results'
     results_dir.mkdir(exist_ok=True)
     
     initialize_services(
-        algorithm_config=algorithm_config,
-        metric_config=metric_config,
         results_dir=results_dir,
         verbose=False
     )
@@ -756,7 +765,10 @@ C,5.0,6.0,0.7""",
 @pytest.fixture
 def mock_regression_workflow(tmp_path):
     workflow_dir = tmp_path / 'workflows'
-    workflow_dir.mkdir(exist_ok=True)
+    workflow_dir.mkdir(exist_ok=True)    
+    init_file = workflow_dir / '__init__.py'
+    init_file.write_text("")
+
     workflow_path = workflow_dir / 'regression_workflow.py'
 
     workflow_py = """
@@ -776,27 +788,10 @@ class Regression(Workflow):
 @pytest.fixture
 def mock_categorical_workflow(tmp_path):
     workflow_dir = tmp_path / 'workflows'
-    workflow_dir.mkdir(exist_ok=True)  # Safe pattern from real CLI
-    workflow_path = workflow_dir / 'categorical_workflow.py'
+    workflow_dir.mkdir(exist_ok=True)
+    init_file = workflow_dir / '__init__.py'
+    init_file.write_text("")
 
-    workflow_py = """
-from brisk.training.workflow import Workflow
-
-class Categorical(Workflow):
-    def workflow(self):
-        self.model.fit(self.X_train, self.y_train)
-        self.evaluate_model(
-            self.model, self.X_test, self.y_test, ["accuracy"], "test_metrics"
-        )
-"""
-    workflow_path.write_text(workflow_py)
-    return workflow_path
-
-
-@pytest.fixture
-def mock_categorical_workflow(tmp_path):
-    workflow_dir = tmp_path / 'workflows'
-    workflow_dir.mkdir(exist_ok=True)  # Safe pattern from real CLI
     workflow_path = workflow_dir / 'categorical_workflow.py'
 
     workflow_py = """
@@ -851,12 +846,16 @@ def mock_brisk_project(
     mock_settings_py, # pylint: disable=unused-argument, redefined-outer-name
     mock_datasets, # pylint: disable=unused-argument, redefined-outer-name
     mock_regression_workflow, # pylint: disable=unused-argument, redefined-outer-name
+    mock_categorical_workflow, # pylint: disable=unused-argument, redefined-outer-name
     mock_evaluators_py, # pylint: disable=unused-argument, redefined-outer-name
     tmp_path,
     monkeypatch
 ):
     """Create a standardized temporary project structure for testing."""    
     monkeypatch.chdir(tmp_path)    
+    if str(tmp_path) not in sys.path:
+        sys.path.insert(0, str(tmp_path))
+    
     try:
         setup_services(tmp_path)
         yield tmp_path

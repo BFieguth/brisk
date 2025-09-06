@@ -8,10 +8,7 @@ from sklearn.linear_model import LinearRegression
 
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.training.workflow import Workflow
-from brisk.services.bundle import ServiceBundle
-from brisk.services.utility import UtilityService
-from brisk.theme.plot_settings import PlotSettings
-from tests.conftest import get_algorithm_config
+from brisk.services import get_services
 
 class WorkflowSubclass(Workflow): # pragma: no cover
     def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names): 
@@ -27,28 +24,9 @@ class InvalidWorkflowSubclass(Workflow): # pragma: no cover
 
 
 @pytest.fixture
-def algorithm_config():
-    return get_algorithm_config()
-
-
-@pytest.fixture
-def mock_services(algorithm_config):
-    services = mock.MagicMock(spec=ServiceBundle)
-    services.logger = mock.MagicMock()
-    services.logger.logger = mock.MagicMock()
-    services.io = mock.MagicMock()
-    services.io.output_dir = mock.MagicMock()
-    services.utility = UtilityService(
-        name="utility",
-        algorithm_config=algorithm_config,
-        group_index_train=None,
-        group_index_test=None
-    )
-    services.metadata = mock.MagicMock()
-    services.utility.set_plot_settings(PlotSettings())
-    services.reporting = mock.MagicMock()
-    services.reporting.add_dataset = mock.MagicMock()
-    return services
+def mock_services(mock_brisk_project):
+    return get_services()
+    
 
 
 @pytest.fixture

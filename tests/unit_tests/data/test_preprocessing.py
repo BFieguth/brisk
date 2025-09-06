@@ -30,9 +30,6 @@ def sample_data():
     return X, y
 
 
-
-
-
 @pytest.fixture
 def missing_data():
     """Fixture to create data with missing values for testing."""
@@ -246,7 +243,7 @@ class TestFeatureSelectionPreprocessor:
         # First encode categorical features (real flow)
         encoder = CategoricalEncodingPreprocessor(method="onehot")
         encoder.fit(X, y, categorical_features=['categorical_feature'])
-        X_encoded = encoder.transform(X)
+        X_encoded, _ = encoder.transform(X)
         
         # Now feature selection can work on encoded data
         preprocessor = FeatureSelectionPreprocessor(
@@ -268,7 +265,7 @@ class TestFeatureSelectionPreprocessor:
         # First encode categorical features (real flow)
         encoder = CategoricalEncodingPreprocessor(method="onehot")
         encoder.fit(X, y, categorical_features=['categorical_feature'])
-        X_encoded = encoder.transform(X)
+        X_encoded, _ = encoder.transform(X)
         
         # Now feature selection can work on encoded data
         preprocessor = FeatureSelectionPreprocessor(
@@ -290,7 +287,7 @@ class TestFeatureSelectionPreprocessor:
         # First encode categorical features (real flow)
         encoder = CategoricalEncodingPreprocessor(method="onehot")
         encoder.fit(X, y, categorical_features=['categorical_feature'])
-        X_encoded = encoder.transform(X)
+        X_encoded, _ = encoder.transform(X)
         
         estimator = LogisticRegression(random_state=42)
         preprocessor = FeatureSelectionPreprocessor(
@@ -310,7 +307,7 @@ class TestFeatureSelectionPreprocessor:
         # First encode categorical features (real flow)
         encoder = CategoricalEncodingPreprocessor(method="onehot")
         encoder.fit(X, y, categorical_features=['categorical_feature'])
-        X_encoded = encoder.transform(X)
+        X_encoded, _ = encoder.transform(X)
         
         estimator = LogisticRegression(random_state=42)
         preprocessor = FeatureSelectionPreprocessor(
@@ -352,7 +349,7 @@ class TestFeatureSelectionPreprocessor:
             method="onehot",
             categorical_features=['categorical_feature']
         )
-        X_encoded = encoder.fit_transform(X, y)
+        X_encoded, _ = encoder.fit_transform(X, y)
         
         preprocessor = FeatureSelectionPreprocessor(method="rfecv")
         with pytest.raises(ValueError, match="algorithm_config must be provided"):
@@ -367,7 +364,7 @@ class TestFeatureSelectionPreprocessor:
             method="onehot",
             categorical_features=['categorical_feature']
         )
-        X_encoded = encoder.fit_transform(X, y)
+        X_encoded, _ = encoder.fit_transform(X, y)
         
         preprocessor = FeatureSelectionPreprocessor(method="sequential")
         with pytest.raises(ValueError, match="algorithm_config must be provided"):
@@ -405,7 +402,7 @@ class TestCategoricalEncodingPreprocessor:
         preprocessor = CategoricalEncodingPreprocessor(method="label")
         
         preprocessor.fit(X, y, categorical_features=['category1', 'category2', 'binary_category'])
-        X_transformed = preprocessor.transform(X)
+        X_transformed, _ = preprocessor.transform(X)
         
         # Check that categorical columns are now numeric
         assert X_transformed['category1'].dtype in ['int64', 'int32']
@@ -419,7 +416,7 @@ class TestCategoricalEncodingPreprocessor:
         preprocessor = CategoricalEncodingPreprocessor(method="onehot")
         
         preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
-        X_transformed = preprocessor.transform(X)
+        X_transformed, _ = preprocessor.transform(X)
         
         # Check that we have more columns after one-hot encoding
         assert X_transformed.shape[1] > X.shape[1]
@@ -436,14 +433,12 @@ class TestCategoricalEncodingPreprocessor:
         preprocessor = CategoricalEncodingPreprocessor(method="ordinal")
         
         preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
-        X_transformed = preprocessor.transform(X)
+        X_transformed, _ = preprocessor.transform(X)
         
         # Check that categorical columns are now numeric
         assert X_transformed['category1'].dtype in ['float64', 'float32']
         assert X_transformed['category2'].dtype in ['float64', 'float32']
         assert X_transformed.shape == X.shape
-    
-
     
     def test_cyclic_encoding(self, categorical_data):
         """Test cyclic encoding."""
@@ -451,7 +446,7 @@ class TestCategoricalEncodingPreprocessor:
         preprocessor = CategoricalEncodingPreprocessor(method="cyclic")
         
         preprocessor.fit(X, y, categorical_features=['category1'])
-        X_transformed = preprocessor.transform(X)
+        X_transformed, _ = preprocessor.transform(X)
         
         # Check that original column is gone and sin/cos columns are created
         assert 'category1' not in X_transformed.columns
@@ -470,7 +465,7 @@ class TestCategoricalEncodingPreprocessor:
         )
         
         preprocessor.fit(X, y, categorical_features=['category1', 'category2'])
-        X_transformed = preprocessor.transform(X)
+        X_transformed, _ = preprocessor.transform(X)
         
         # Check that category1 is one-hot encoded
         assert 'category1' not in X_transformed.columns
@@ -522,7 +517,7 @@ class TestPreprocessorPipeline:
     
                 # Apply encoding first
         encoder.fit(X, y, categorical_features=['category1', 'category2'])
-        X_encoded = encoder.transform(X)
+        X_encoded, _ = encoder.transform(X)
         
         # Then apply feature selection
         selector.fit(X_encoded, y)
@@ -573,7 +568,7 @@ class TestPreprocessorPipeline:
         scaler.fit(X_imputed, y, categorical_features=['categorical_feature', 'category'])
         X_scaled = scaler.transform(X_imputed)
         encoder.fit(X_scaled, y, categorical_features=['categorical_feature', 'category'])
-        X_encoded = encoder.transform(X_scaled)
+        X_encoded, _ = encoder.transform(X_scaled)
         selector.fit(X_encoded, y)
         X_selected = selector.transform(X_encoded)
         
