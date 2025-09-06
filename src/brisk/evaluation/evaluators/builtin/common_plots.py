@@ -481,3 +481,233 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
             self.theme
         )
         return plot
+
+
+class PlotShapleyValues(plot_evaluator.PlotEvaluator):
+    """Plot SHAP (SHapley Additive exPlanations) values for feature importance."""
+    
+    def plot(
+        self,
+        model: base.BaseEstimator,
+        X: pd.DataFrame, # pylint: disable=C0103
+        y: pd.Series,
+        filename: str = "shap_values",
+        plot_type: str = "bar"
+    ) -> None:
+        """Generate SHAP value plots for feature importance.
+        
+        Parameters
+        ----------
+        model : BaseEstimator
+            Trained model to explain
+        X : DataFrame
+            Feature data for generating explanations
+        y : Series
+            Target data (not used for SHAP but required by interface)
+        filename : str, optional
+            Base output filename, by default "shap_values"
+        plot_type : str, optional
+            Type of SHAP plot ('bar', 'waterfall', 'violin', 'beeswarm'). 
+            Multiple types can be specified as 'bar,waterfall' to generate 
+            multiple plots, by default "bar"
+        
+        Returns
+        -------
+        None
+        """
+        
+        plot_data = self._generate_plot_data(
+            model, X, y, plot_type
+        )
+        
+        if plot_data is not None:
+            # Handle multiple plot types
+            plot_types = [pt.strip() for pt in plot_type.split(',')]
+            
+            for i, single_plot_type in enumerate(plot_types):
+                plot = self._create_plot(plot_data, single_plot_type)
+                
+                plot_filename = filename if len(plot_types) == 1 else f"{filename}_{single_plot_type}"
+                
+                metadata = self._generate_metadata(model, X.attrs["is_test"])
+                self._save_plot(plot_filename, metadata, plot=plot)
+                self._log_results("SHAP Values", plot_filename)
+    
+    def _generate_plot_data(
+        self,
+        model: base.BaseEstimator,
+        X: pd.DataFrame, # pylint: disable=C0103
+        y: pd.Series,
+        plot_type: str = "bar"
+    ) -> Optional[Dict[str, Any]]:
+        """Generate SHAP values and prepare data for plotting.
+        
+        Parameters
+        ----------
+        model : BaseEstimator
+            Trained model to explain
+        X : DataFrame
+            Feature data
+        y : Series
+            Target data
+        plot_type : str
+            Type of plot to generate
+        
+        Returns
+        -------
+        Dict[str, Any] or None
+            Dictionary containing SHAP values and related data, or None if failed
+        """
+        try:
+            import shap # pylint: disable=C0415
+        except ImportError:
+            return None
+            
+        # Choose appropriate SHAP explainer based on model type
+        if hasattr(model, 'tree_') or hasattr(model, 'estimators_'):
+            explainer = shap.TreeExplainer(model)
+        elif hasattr(model, 'coef_'):
+            explainer = shap.LinearExplainer(model, X)
+        else:
+            # Fall back to KernelExplainer (model-agnostic but slower)
+            background = shap.sample(X, min(100, len(X)))
+            explainer = shap.KernelExplainer(model.predict, background)
+        
+        # Generate SHAP values
+        shap_values = explainer(X)
+        
+        plot_data = {
+            'shap_values': shap_values,
+            'X_sample': X
+        }
+        
+        return plot_data
+    
+    def _create_plot(
+        self,
+        plot_data: Dict[str, Any],
+        plot_type: str = "bar"
+    ) -> pn.ggplot:
+        """Create the SHAP plot using plotnine with Brisk theme.
+        
+        Parameters
+        ----------
+        plot_data : Dict[str, Any]
+            Data containing SHAP values and features
+        plot_type : str
+            Type of plot to create
+        
+        Returns
+        -------
+        pn.ggplot
+            The plotnine plot object
+        """
+        shap_values = plot_data['shap_values']
+        X_sample = plot_data['X_sample']
+        
+        # Convert SHAP values to DataFrame for plotting
+        if hasattr(shap_values, 'values'):
+            values = shap_values.values
+        else:
+            values = shap_values
+            
+        feature_names = X_sample.columns.tolist()
+        
+        if plot_type == "bar":
+            # Bar plot of mean absolute SHAP values
+            mean_abs_shap = np.abs(values).mean(axis=0)
+            plot_df = pd.DataFrame({
+                'feature': feature_names,
+                'importance': mean_abs_shap
+            }).sort_values('importance', ascending=False)
+            
+            plot = (
+                pn.ggplot(plot_df, pn.aes(x='pn.reorder(feature, importance)', y='importance')) +
+                pn.geom_col(fill=self.primary_color) +
+                pn.coord_flip() +
+                pn.labs(
+                    title="SHAP Feature Importance (Bar Plot)",
+                    x="Feature",
+                    y="Mean |SHAP Value|"
+                ) +
+                self.theme.brisk_theme()
+            )
+            
+        elif plot_type == "waterfall":
+            # Waterfall plot showing feature contributions for one specific sample (first row)
+            if len(values) > 0:
+                instance_values = values[0]
+                instance_data = X_sample.iloc[0]
+                
+                plot_df = pd.DataFrame({
+                    'feature': feature_names,
+                    'shap_value': instance_values,
+                    'feature_value': instance_data.values
+                }).sort_values('shap_value', key=abs, ascending=False)
+                
+                plot_df['color'] = plot_df['shap_value'].apply(
+                    lambda x: self.accent_color if x > 0 else self.important_color
+                )
+                
+                plot = (
+                    pn.ggplot(plot_df, pn.aes(x='pn.reorder(feature, shap_value)', y='shap_value', fill='color')) +
+                    pn.geom_col() +
+                    pn.scale_fill_identity() +
+                    pn.coord_flip() +
+                    pn.labs(
+                        title="SHAP Waterfall Plot (Single Instance)",
+                        x="Feature",
+                        y="SHAP Value"
+                    ) +
+                    pn.geom_hline(yintercept=0, linetype="dashed", alpha=0.7) +
+                    self.theme.brisk_theme()
+                )
+            else:
+                # Fallback to bar plot if no data
+                return self._create_plot(plot_data, "bar")
+                
+        elif plot_type == "violin":
+            # Violin plot showing distribution of SHAP values
+            plot_df = pd.DataFrame(values, columns=feature_names)
+            
+            # Melt for plotting
+            plot_df = plot_df.melt(var_name='feature', value_name='shap_value')
+            
+            plot = (
+                pn.ggplot(plot_df, pn.aes(x='feature', y='shap_value')) +
+                pn.geom_violin(fill=self.primary_color, alpha=0.7) +
+                pn.geom_hline(yintercept=0, linetype="dashed", alpha=0.7) +
+                pn.theme(axis_text_x=pn.element_text(angle=45, hjust=1)) +
+                pn.labs(
+                    title="SHAP Value Distribution (Violin Plot)",
+                    x="Feature",
+                    y="SHAP Value"
+                ) +
+                self.theme.brisk_theme()
+            )
+            
+        elif plot_type == "beeswarm":
+            # Beeswarm-style plot (scatter with jitter)
+            plot_df = pd.DataFrame(values, columns=feature_names)
+            
+            # Melt for plotting
+            plot_df = plot_df.melt(var_name='feature', value_name='shap_value')
+            
+            plot = (
+                pn.ggplot(plot_df, pn.aes(x='feature', y='shap_value')) +
+                pn.geom_jitter(color=self.primary_color, alpha=0.6, width=0.3) +
+                pn.geom_hline(yintercept=0, linetype="dashed", alpha=0.7) +
+                pn.theme(axis_text_x=pn.element_text(angle=45, hjust=1)) +
+                pn.labs(
+                    title="SHAP Value Distribution (Beeswarm Plot)",
+                    x="Feature",
+                    y="SHAP Value"
+                ) +
+                self.theme.brisk_theme()
+            )
+            
+        else:
+            # Default to bar plot
+            return self._create_plot(plot_data, "bar")
+            
+        return plot
