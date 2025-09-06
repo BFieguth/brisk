@@ -42,6 +42,10 @@ def register_builtin_evaluators(registry, plot_settings):
         "Compare model performance across multiple algorithms.",
         plot_settings
     ))
+    registry.register(common_plots.PlotShapleyValues(
+        "brisk_plot_shapley_values",
+        "Plot SHAP values for feature importance."
+    ))
     registry.register(regression_plots.PlotPredVsObs(
         "brisk_plot_pred_vs_obs",
         "Plot predicted vs. observed values.",

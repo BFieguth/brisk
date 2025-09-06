@@ -16,7 +16,7 @@ from sklearn import base
 from brisk.evaluation import evaluation_manager as eval_manager
 
 class Workflow(abc.ABC):
-    """Base class for machine learning workflows. Delegates EvaluationManager.
+    """Base class for machine learning workflows. 
 
     Parameters
     ----------
@@ -97,51 +97,18 @@ class Workflow(abc.ABC):
         for key, model in config.items():
             setattr(self, key, model)
 
-    @abc.abstractmethod
-    def workflow(
-        self,
-        X_train: pd.DataFrame,
-        X_test: pd.DataFrame,
-        y_train: pd.Series,
-        y_test: pd.Series,
-        output_dir: str,
-        feature_names: List[str],
-    ) -> None:
-        """Define the workflow steps for training and evaluation.
+    def run(self) -> None: # pragma: no cover
+        """Execute the workflow.
         
-        This method should be implemented by subclasses to define the specific
-        steps for training models, evaluation, and any other workflow logic.
-        
-        Parameters
-        ----------
-        X_train : DataFrame
-            Training feature data with is_test=False attribute
-        X_test : DataFrame
-            Test feature data with is_test=True attribute
-        y_train : Series
-            Training target data with is_test=False attribute
-        y_test : Series
-            Test target data with is_test=True attribute
-        output_dir : str
-            Directory where results should be saved
-        feature_names : list of str
-            Names of the features in the datasets
-            
-        Notes
-        -----
-        Models and additional variables from workflow_attributes are available
-        as instance attributes (e.g., self.model, self.user_variable, etc.)
+        This method calls the abstract workflow method that must be
+        implemented by subclasses.
         """
+        self.workflow()
+
+    @abc.abstractmethod
+    def workflow(self) -> None:
         raise NotImplementedError(
             "Subclass must implement the workflow method."
-        )
-
-    def run(self) -> None:
-        """Call the workflow method with the processed parameters.
-        """
-        self.workflow(
-            self.X_train, self.X_test, self.y_train, self.y_test,
-            self.output_dir, self.feature_names,
         )
 
     # Interface to call Evaluators registered to EvaluationManager
@@ -623,3 +590,37 @@ class Workflow(abc.ABC):
             If model file does not exist
         """
         self.evaluation_manager.load_model(filepath)
+
+    def plot_shapley_values( # pragma: no cover
+        self,
+        model: base.BaseEstimator,
+        X: pd.DataFrame, # pylint: disable=C0103
+        y: pd.Series,
+        filename: str = "shapley_values",
+        plot_type: str = "bar"
+    ) -> None:
+        """Generate SHAP value plots for feature importance.
+        
+        Parameters
+        ----------
+        model : BaseEstimator
+            Trained model to explain
+        X : DataFrame
+            Feature data for generating explanations
+        y : Series
+            Target data
+        filename : str, optional
+            Base output filename, by default "shapley_values"
+        plot_type : str, optional
+            Type of SHAP plot ('bar', 'waterfall', 'violin', 'beeswarm'). 
+            Multiple types can be specified as 'bar,waterfall' to generate 
+            multiple plots, by default "bar"
+        
+        Returns
+        -------
+        None
+        """
+        evaluator = self.evaluation_manager.get_evaluator("brisk_plot_shapley_values")
+        return evaluator.plot(
+            model, X, y, filename=filename, plot_type=plot_type
+        )
