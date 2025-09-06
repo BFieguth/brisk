@@ -5,9 +5,11 @@ from typing import Optional, Dict, Tuple
 import numpy as np
 import pandas as pd
 import sklearn.model_selection as model_select
+import plotnine as pn
 
 from brisk.configuration import algorithm_wrapper
 from brisk.services import base
+from brisk.theme.plot_settings import PlotSettings
 
 class UtilityService(base.BaseService):
     """Utility service with helper functions for the EvaluationManager.
@@ -38,6 +40,7 @@ class UtilityService(base.BaseService):
         self.set_split_indices(
             group_index_train, group_index_test
         )
+        self.plot_settings: PlotSettings = None
 
     def set_split_indices(
         self,
@@ -163,3 +166,9 @@ class UtilityService(base.BaseService):
             indices = None
 
         return splitter, indices
+
+    def set_plot_settings(self, plot_settings: PlotSettings):
+        self.plot_settings = plot_settings
+
+    def get_plot_settings(self):
+        return self.plot_settings

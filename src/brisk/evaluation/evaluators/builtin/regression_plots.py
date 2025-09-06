@@ -97,7 +97,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
                 color="black", size=3, stroke=0.25, fill=self.primary_color
             ) +
             pn.geom_abline(
-                slope=1, intercept=0, color=self.important_color,
+                slope=1, intercept=0, color=self.accent_color,
                 linetype="dashed"
             ) +
             pn.labs(
@@ -109,7 +109,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
                 xlim=[0, max_range],
                 ylim=[0, max_range]
             ) +
-            self.theme.brisk_theme()
+            self.theme
         )
         return plot
 
@@ -203,11 +203,11 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
                 color="black", size=3, stroke=0.25, fill=self.primary_color
             ) +
             pn.geom_abline(
-                slope=0, intercept=0, color=self.important_color,
+                slope=0, intercept=0, color=self.accent_color,
                 linetype="dashed", size=1.5
             ) +
             pn.ggtitle(f"Residuals ({wrapper.display_name})") +
-            self.theme.brisk_theme()
+            self.theme
         )
 
         if add_fit_line:
@@ -220,7 +220,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
             plot += (
                 pn.geom_line(
                     pn.aes(x="Observed", y=fit_line, group=1),
-                    color=self.accent_color, size=1
+                    color=self.secondary_color, size=1
                 )
             )
         return plot

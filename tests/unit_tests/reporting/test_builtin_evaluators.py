@@ -17,7 +17,8 @@ from brisk.evaluation.evaluators.builtin import (
 from brisk.services.bundle import ServiceBundle
 from brisk.services.utility import UtilityService
 from brisk.data.data_manager import DataManager
-from tests.conftest import get_metric_config, get_algorithm_config
+from brisk.theme.plot_settings import PlotSettings
+from tests.conftest import get_metric_config, get_algorithm_config, mock_data_py
 
 
 @pytest.fixture
@@ -44,196 +45,207 @@ def mock_services(algorithm_config):
         group_index_test=None
     )
     services.metadata = mock.MagicMock()
+    services.utility.set_plot_settings(PlotSettings())
+    services.reporting = mock.MagicMock()
+    services.reporting.add_dataset = mock.MagicMock()
     return services
 
 
 @pytest.fixture
-def data_manager(mock_brisk_project, tmp_path):
-    data_file = tmp_path / "data.py"
-    spec = util.spec_from_file_location("data", data_file)
-    data_module = util.module_from_spec(spec)
-    spec.loader.exec_module(data_module)
-    return data_module.BASE_DATA_MANAGER
+def data_manager(mock_brisk_project, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_manager.get_services", return_value=mock_services):
+        data_file = tmp_path / "data.py"
+        spec = util.spec_from_file_location("data", data_file)
+        data_module = util.module_from_spec(spec)
+        spec.loader.exec_module(data_module)
+        return data_module.BASE_DATA_MANAGER
 
 
 @pytest.fixture
-def data_manager_group(mock_brisk_project, tmp_path):
-    data_manager = DataManager(
-        test_size=0.2, 
-        n_splits=5,
-        split_method="shuffle",
-        random_state=42,
-        group_column="group"
-    )
-    return data_manager
+def data_manager_group(mock_brisk_project, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_manager.get_services", return_value=mock_services):
+        data_manager = DataManager(
+            test_size=0.2, 
+            n_splits=5,
+            split_method="shuffle",
+            random_state=42,
+            group_column="group"
+        )
+        return data_manager
 
 
 @pytest.fixture
-def regression_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "regression.csv"
-    splits = data_manager.split(
-        data_file,
-        categorical_features=None,
-        table_name=None,
-        group_name="test_group",
-        filename="regression"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    # Fixed predictions for testing
-    predictions = [0.7, 0.23, 0.43, 0.79]
-    return X_train, y_train, predictions
-
-
-@pytest.fixture
-def regression100_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "regression100.csv"
-    splits = data_manager.split(
-        data_file,
-        categorical_features=None,
-        table_name=None,
-        group_name="test_group",
-        filename="regression100"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    # Fixed predictions for testing
-    predictions = pd.Series([
-        -2.21217924e+02,  1.65825828e+01,  3.11337997e+00,  4.82845707e+00,
-        1.54536773e+02,  8.44781940e+00, -1.80027578e+01, -9.21100836e+00,
-        -7.66634881e+01,  4.97458872e+01, -3.05020000e+01, -3.55248800e+00,
-        2.94593309e+00, -1.11133601e+02, -8.14443112e+01, -1.52532226e+02,
-        2.10043321e+02, -6.84191478e+01, -1.34531149e+01, -1.66022008e+01,
-        4.28049122e+01,  2.71563536e+01,  1.72066306e+01, -2.29122007e+01,
-        3.26928949e+00, -3.88841245e+01, -2.51496666e+01,  4.57463424e+01,
-        2.09237656e+02, -1.08703023e+02,  1.10276525e+02,  5.05850856e+01,
-        -1.04817919e+02,  9.56853195e+01, -5.94308228e+01, -1.52260781e+01,
-        6.53448761e+01,  5.78285064e+01,  6.13106332e+01,  6.17112832e+00,
-        2.00254563e+01, -5.84401526e+01, -2.52671245e+02,  2.78899119e+01,
-        1.39359311e+01, -1.92903666e+02,  1.42964142e+02,  2.18549442e+01,
-        1.08853746e+02,  1.46647263e+00, -3.10520667e+00,  2.28175081e+00,
-        -1.40259801e+02, -2.59084174e+01, -5.10372303e+01,  1.81746487e+01,
-        1.54168651e+01, -1.46359330e+01, -5.71988356e+01,  6.53202893e+00,
-        -1.36070162e+02,  2.98898394e+01, -3.83434619e+01,  2.20278571e+02,
-        -2.31905202e+01,  7.92614171e-03,  1.24631200e-01, -1.39743453e+02,
-        9.85133780e+01, -1.17681824e+02,  2.33802488e+01,  8.19178834e+00,
-        9.77163755e+01,  9.20506388e+01,  4.95536575e+01, -4.81291179e+00,
-        1.34413981e+01, -3.55054901e-01,  7.70581565e+01, -7.68183871e+01
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
-
-
-@pytest.fixture
-def regression100_group_data(data_manager_group, tmp_path):
-    data_file = tmp_path / "datasets" / "regression100_group.csv"
-    splits = data_manager_group.split(
-        data_file,
-        categorical_features=["cat_feature_1"],
-        table_name=None,
-        group_name="test_group",
-        filename="regression100_group"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    # Fixed predictions for testing
-    predictions = pd.Series([
-        1.01850213e+01, -7.46359889e+01, -4.09011219e+00, -2.35397907e+01,
-        -3.02211452e+01,  1.76412077e+00,  3.97353112e+01,  1.07967132e+01,
-        -3.31828396e+01, -1.77577091e+01,  2.56977331e+01, -3.84573232e+01,
-        1.53751998e+02,  7.21257811e+01, -1.09582695e+02, -3.72609120e+00,
-        -6.25888847e+01,  9.02447204e-02, -4.16125038e+01,  1.55441506e+02,
-        6.36313856e+01, -6.13357486e+01, -5.91397966e+01,  1.75016829e+02,
-        -3.00998119e+01, -1.25383368e+02, -1.50237347e+01,  2.32111375e+01,
-        1.23488947e+02,  6.73223590e+01, -2.87091664e+01,  6.21350354e+01,
-        -7.85016362e+01,  8.72685056e+00,  7.88018348e+01, -4.14342288e+00,
-        -1.63268607e+02, -2.98423960e+01,  1.23741753e+02, -7.81036802e+01,
-        -1.90123755e+01,  1.83399183e+02,  3.04386847e+00,  5.57716151e+01,
-        8.71607636e+01,  7.88957428e+01, -1.46311134e+02, -1.02176756e+02,
-        2.63408165e+01, -2.16197369e+02,  4.45366036e+01,  1.67651159e+02,
-        -2.40110200e+02,  8.04223485e+00,  2.15703834e+01, -1.82211448e+01,
-        -7.60577774e+01, -1.82137723e+01, -1.49421749e+01,  9.53903442e+00,
-        -3.39756824e+01
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
-
-
-@pytest.fixture
-def classification_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "classification.csv"
-    with mock.patch.object(data_manager.services.reporting, 'add_dataset'):
+def regression_data(mock_services, data_manager, tmp_path):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "regression.csv"
         splits = data_manager.split(
             data_file,
             categorical_features=None,
             table_name=None,
             group_name="test_group",
-            filename="classification"
+            filename="regression"
         )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    predictions = pd.Series([
-        "A", "B", "A", "B"
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        # Fixed predictions for testing
+        predictions = [0.7, 0.23, 0.43, 0.79]
+        return X_train, y_train, predictions
 
 
 @pytest.fixture
-def classification100_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "classification100.csv"
-    splits = data_manager.split(
-        data_file,
-        categorical_features=["cat_feature_1", "cat_feature_2"],
-        table_name=None,
-        group_name="test_group",
-        filename="classification100"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    predictions = pd.Series([
-        0, 0, 0, 1, 1, 1, 0, 1, 1, 0,
-        1, 0, 0, 1, 1, 1, 0, 1, 1, 0,
-        0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 1, 1, 0, 1, 1, 0,
-        0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
-        1, 1, 0, 1, 0, 0, 0, 1, 1, 0,
-        1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
-        0, 0, 0, 1, 0, 1, 0, 1, 1, 0
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+def regression100_data(data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "regression100.csv"
+        splits = data_manager.split(
+            data_file,
+            categorical_features=None,
+            table_name=None,
+            group_name="test_group",
+            filename="regression100"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        # Fixed predictions for testing
+        predictions = pd.Series([
+            -2.21217924e+02,  1.65825828e+01,  3.11337997e+00,  4.82845707e+00,
+            1.54536773e+02,  8.44781940e+00, -1.80027578e+01, -9.21100836e+00,
+            -7.66634881e+01,  4.97458872e+01, -3.05020000e+01, -3.55248800e+00,
+            2.94593309e+00, -1.11133601e+02, -8.14443112e+01, -1.52532226e+02,
+            2.10043321e+02, -6.84191478e+01, -1.34531149e+01, -1.66022008e+01,
+            4.28049122e+01,  2.71563536e+01,  1.72066306e+01, -2.29122007e+01,
+            3.26928949e+00, -3.88841245e+01, -2.51496666e+01,  4.57463424e+01,
+            2.09237656e+02, -1.08703023e+02,  1.10276525e+02,  5.05850856e+01,
+            -1.04817919e+02,  9.56853195e+01, -5.94308228e+01, -1.52260781e+01,
+            6.53448761e+01,  5.78285064e+01,  6.13106332e+01,  6.17112832e+00,
+            2.00254563e+01, -5.84401526e+01, -2.52671245e+02,  2.78899119e+01,
+            1.39359311e+01, -1.92903666e+02,  1.42964142e+02,  2.18549442e+01,
+            1.08853746e+02,  1.46647263e+00, -3.10520667e+00,  2.28175081e+00,
+            -1.40259801e+02, -2.59084174e+01, -5.10372303e+01,  1.81746487e+01,
+            1.54168651e+01, -1.46359330e+01, -5.71988356e+01,  6.53202893e+00,
+            -1.36070162e+02,  2.98898394e+01, -3.83434619e+01,  2.20278571e+02,
+            -2.31905202e+01,  7.92614171e-03,  1.24631200e-01, -1.39743453e+02,
+            9.85133780e+01, -1.17681824e+02,  2.33802488e+01,  8.19178834e+00,
+            9.77163755e+01,  9.20506388e+01,  4.95536575e+01, -4.81291179e+00,
+            1.34413981e+01, -3.55054901e-01,  7.70581565e+01, -7.68183871e+01
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
 
 
 @pytest.fixture
-def classification100_group_data(data_manager_group, tmp_path):
-    data_file = tmp_path / "datasets" / "classification100_group.csv"
-    splits = data_manager_group.split(
-        data_file,
-        categorical_features=["cat_feature_1", "cat_feature_2"],
-        table_name=None,
-        group_name="test_group",
-        filename="classification100_group"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    predictions = pd.Series([
-        0, 0, 0, 1, 1, 1, 0, 1, 1, 0,
-        1, 0, 0, 1, 1, 1, 0, 1, 1, 0,
-        0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 1, 1, 0, 1, 1, 0,
-        0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
-        1
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+def regression100_group_data(data_manager_group, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "regression100_group.csv"
+        splits = data_manager_group.split(
+            data_file,
+            categorical_features=["cat_feature_1"],
+            table_name=None,
+            group_name="test_group",
+            filename="regression100_group"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        # Fixed predictions for testing
+        predictions = pd.Series([
+            1.01850213e+01, -7.46359889e+01, -4.09011219e+00, -2.35397907e+01,
+            -3.02211452e+01,  1.76412077e+00,  3.97353112e+01,  1.07967132e+01,
+            -3.31828396e+01, -1.77577091e+01,  2.56977331e+01, -3.84573232e+01,
+            1.53751998e+02,  7.21257811e+01, -1.09582695e+02, -3.72609120e+00,
+            -6.25888847e+01,  9.02447204e-02, -4.16125038e+01,  1.55441506e+02,
+            6.36313856e+01, -6.13357486e+01, -5.91397966e+01,  1.75016829e+02,
+            -3.00998119e+01, -1.25383368e+02, -1.50237347e+01,  2.32111375e+01,
+            1.23488947e+02,  6.73223590e+01, -2.87091664e+01,  6.21350354e+01,
+            -7.85016362e+01,  8.72685056e+00,  7.88018348e+01, -4.14342288e+00,
+            -1.63268607e+02, -2.98423960e+01,  1.23741753e+02, -7.81036802e+01,
+            -1.90123755e+01,  1.83399183e+02,  3.04386847e+00,  5.57716151e+01,
+            8.71607636e+01,  7.88957428e+01, -1.46311134e+02, -1.02176756e+02,
+            2.63408165e+01, -2.16197369e+02,  4.45366036e+01,  1.67651159e+02,
+            -2.40110200e+02,  8.04223485e+00,  2.15703834e+01, -1.82211448e+01,
+            -7.60577774e+01, -1.82137723e+01, -1.49421749e+01,  9.53903442e+00,
+            -3.39756824e+01
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+
+
+@pytest.fixture
+def classification_data(data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "classification.csv"
+        with mock.patch.object(data_manager.services.reporting, 'add_dataset'):
+            splits = data_manager.split(
+                data_file,
+                categorical_features=None,
+                table_name=None,
+                group_name="test_group",
+                filename="classification"
+            )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        predictions = pd.Series([
+            "A", "B", "A", "B"
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+
+
+@pytest.fixture
+def classification100_data(data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "classification100.csv"
+        splits = data_manager.split(
+            data_file,
+            categorical_features=["cat_feature_1", "cat_feature_2"],
+            table_name=None,
+            group_name="test_group",
+            filename="classification100"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        predictions = pd.Series([
+            0, 0, 0, 1, 1, 1, 0, 1, 1, 0,
+            1, 0, 0, 1, 1, 1, 0, 1, 1, 0,
+            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+            0, 0, 0, 0, 1, 1, 0, 1, 1, 0,
+            0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
+            1, 1, 0, 1, 0, 0, 0, 1, 1, 0,
+            1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
+            0, 0, 0, 1, 0, 1, 0, 1, 1, 0
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+
+
+@pytest.fixture
+def classification100_group_data(data_manager_group, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "classification100_group.csv"
+        splits = data_manager_group.split(
+            data_file,
+            categorical_features=["cat_feature_1", "cat_feature_2"],
+            table_name=None,
+            group_name="test_group",
+            filename="classification100_group"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        predictions = pd.Series([
+            0, 0, 0, 1, 1, 1, 0, 1, 1, 0,
+            1, 0, 0, 1, 1, 1, 0, 1, 1, 0,
+            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+            0, 0, 0, 0, 1, 1, 0, 1, 1, 0,
+            0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
+            1
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
 
 
 @pytest.fixture
@@ -476,7 +488,8 @@ class TestPlotPredVsObs:
         """Test _generate_plot_data method with regression.csv."""
         evaluator = regression_plots.PlotPredVsObs(
             "brisk_plot_pred_vs_obs",
-            "Plot predicted vs. observed values."
+            "Plot predicted vs. observed values.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -492,7 +505,8 @@ class TestPlotPredVsObs:
         """Test _generate_plot_data method with regression100.csv."""
         evaluator = regression_plots.PlotPredVsObs(
             "brisk_plot_pred_vs_obs",
-            "Plot predicted vs. observed values."
+            "Plot predicted vs. observed values.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -511,7 +525,8 @@ class TestPlotResiduals:
         """Test _generate_plot_data method with regression.csv."""
         evaluator = regression_plots.PlotResiduals(
             "brisk_plot_residuals",
-            "Plot residuals of model predictions."
+            "Plot residuals of model predictions.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -528,7 +543,8 @@ class TestPlotResiduals:
         """Test _generate_plot_data method with regression100.csv."""
         evaluator = regression_plots.PlotResiduals(
             "brisk_plot_residuals",
-            "Plot residuals of model predictions."
+            "Plot residuals of model predictions.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -567,7 +583,8 @@ class TestPlotResiduals:
         """Test _generate_plot_data method with regression100_group.csv."""
         evaluator = regression_plots.PlotResiduals(
             "brisk_plot_residuals",
-            "Plot residuals of model predictions."
+            "Plot residuals of model predictions.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -605,7 +622,8 @@ class TestPlotModelComparison:
         """Test _generate_plot_data method with regression.csv."""
         evaluator = common_plots.PlotModelComparison(
             "brisk_plot_model_comparison",
-            "Compare model performance across algorithms."
+            "Compare model performance across algorithms.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services
@@ -625,7 +643,8 @@ class TestPlotModelComparison:
         """Test _generate_plot_data method with regression100.csv."""
         evaluator = common_plots.PlotModelComparison(
             "brisk_plot_model_comparison",
-            "Compare model performance across algorithms."
+            "Compare model performance across algorithms.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services
@@ -651,7 +670,8 @@ class TestPlotModelComparison:
         """Test _generate_plot_data method with regression100_group.csv."""
         evaluator = common_plots.PlotModelComparison(
             "brisk_plot_model_comparison",
-            "Compare model performance across algorithms."
+            "Compare model performance across algorithms.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services
@@ -731,7 +751,8 @@ class TestPlotConfusionHeatmap:
         """Test _generate_plot_data method with classification.csv."""
         evaluator = classification_plots.PlotConfusionHeatmap(
             "brisk_plot_confusion_heatmap",
-            "Plot confusion heatmap."
+            "Plot confusion heatmap.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -750,7 +771,8 @@ class TestPlotConfusionHeatmap:
         """Test _generate_plot_data method with classification100.csv."""
         evaluator = classification_plots.PlotConfusionHeatmap(
             "brisk_plot_confusion_heatmap",
-            "Plot confusion heatmap."
+            "Plot confusion heatmap.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -769,7 +791,8 @@ class TestPlotConfusionHeatmap:
         """Test _generate_plot_data method with classification100_group.csv."""
         evaluator = classification_plots.PlotConfusionHeatmap(
             "brisk_plot_confusion_heatmap",
-            "Plot confusion heatmap."
+            "Plot confusion heatmap.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -792,7 +815,8 @@ class TestPlotRocCurve:
         """Test _generate_plot_data method with classification.csv."""
         evaluator = classification_plots.PlotRocCurve(
             "brisk_plot_roc_curve",
-            "Plot ROC curve."
+            "Plot ROC curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -823,7 +847,8 @@ class TestPlotRocCurve:
         """Test _generate_plot_data method with classification100.csv."""
         evaluator = classification_plots.PlotRocCurve(
             "brisk_plot_roc_curve",
-            "Plot ROC curve."
+            "Plot ROC curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -862,7 +887,8 @@ class TestPlotRocCurve:
         """Test _generate_plot_data method with classification100_group.csv."""
         evaluator = classification_plots.PlotRocCurve(
             "brisk_plot_roc_curve",
-            "Plot ROC curve."
+            "Plot ROC curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -896,7 +922,8 @@ class TestPlotPrecisionRecallCurve:
         """Test _generate_plot_data method with classification.csv."""
         evaluator = classification_plots.PlotPrecisionRecallCurve(
             "brisk_plot_precision_recall_curve",
-            "Plot precision-recall curve."
+            "Plot precision-recall curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -926,7 +953,8 @@ class TestPlotPrecisionRecallCurve:
         """Test _generate_plot_data method with classification100.csv."""
         evaluator = classification_plots.PlotPrecisionRecallCurve(
             "brisk_plot_precision_recall_curve",
-            "Plot precision-recall curve."
+            "Plot precision-recall curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -964,7 +992,8 @@ class TestPlotPrecisionRecallCurve:
         """Test _generate_plot_data method with classification100_group.csv."""
         evaluator = classification_plots.PlotPrecisionRecallCurve(
             "brisk_plot_precision_recall_curve",
-            "Plot precision-recall curve."
+            "Plot precision-recall curve.",
+            PlotSettings()
         )
         evaluator.services = mock_services
         
@@ -998,7 +1027,8 @@ class TestPlotFeatureImportance:
         """Test _generate_plot_data method with regression100.csv."""
         evaluator = common_plots.PlotFeatureImportance(
             "brisk_plot_feature_importance",
-            "Plot feature importance."
+            "Plot feature importance.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services
@@ -1033,7 +1063,8 @@ class TestPlotFeatureImportance:
         """Test _generate_plot_data method with regression100_group.csv."""
         evaluator = common_plots.PlotFeatureImportance(
             "brisk_plot_feature_importance",
-            "Plot feature importance."
+            "Plot feature importance.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services
@@ -1072,7 +1103,8 @@ class TestHyperparameterTuning:
         """Test _calculate_measures method."""
         evaluator = tools.HyperparameterTuning(
             "brisk_hyperparameter_tuning",
-            "Hyperparameter tuning."
+            "Hyperparameter tuning.",
+            PlotSettings()
         )
         evaluator.metric_config = metric_config
         evaluator.services = mock_services

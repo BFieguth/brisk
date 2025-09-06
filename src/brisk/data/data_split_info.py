@@ -142,11 +142,14 @@ class DataSplitInfo:
         self.group_index_train = group_index_train
         self.group_index_test = group_index_test
 
+        plot_settings = self.services.utility.get_plot_settings()
         self.registry = EvaluatorRegistry()
-        register_dataset_evaluators(self.registry)
+        register_dataset_evaluators(self.registry, plot_settings)
         for evaluator in self.registry.evaluators.values():
             evaluator.set_services(self.services)
 
+        self.categorical_features = []
+        self.continuous_features = []
         self._set_features(
             X_train.columns, categorical_features, continuous_features
         )
@@ -193,14 +196,14 @@ class DataSplitInfo:
                 "categorical_stats", self.group_name, self.dataset_name
             )
             for feature in self.continuous_features:
-                evaluator = self.registry.get("brisk_histogram_boxplot")
+                evaluator = self.registry.get("brisk_histogram_plot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
                     feature, f"hist_box_plot/{feature}_hist_box_plot",
                     self.dataset_name, self.group_name
                 )
             for feature in self.categorical_features:
-                evaluator = self.registry.get("brisk_pie_plot")
+                evaluator = self.registry.get("brisk_bar_plot")
                 evaluator.plot(
                     self.X_train[feature], self.X_test[feature],
                     feature, f"pie_plot/{feature}_pie_plot",
@@ -351,7 +354,7 @@ class DataSplitInfo:
         }
 
     def _set_features(self, columns, categorical_features, continuous_features):
-        if categorical_features is None:
+        if categorical_features is None or len(categorical_features) == 0:
             categorical_features = self._detect_categorical_features()
 
         self.categorical_features = [
@@ -359,12 +362,15 @@ class DataSplitInfo:
             if feature in columns
         ]
 
-        if continuous_features is None:
+        if continuous_features is None or len(continuous_features) == 0:
             self.continuous_features = []
         else:
             self.continuous_features = [
                 feature for feature in continuous_features
-                if feature in columns and feature not in self.categorical_features
+                if (
+                    feature in columns and
+                    feature not in self.categorical_features
+                )
             ]
         
         self.features = self.continuous_features + self.categorical_features

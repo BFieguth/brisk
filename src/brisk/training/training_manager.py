@@ -172,10 +172,16 @@ class TrainingManager:
             current_experiment.algorithm_names
         )
 
+        if dataset_name[1] is None:
+            dataset = current_experiment.dataset_path.name
+        else:
+            dataset = dataset_name
+
         tqdm.tqdm.write(f"\n{'=' * 80}") # pylint: disable=W1405
         tqdm.tqdm.write(
             f"\nStarting experiment '{experiment_name}' on dataset "
-            f"'{dataset_name}' using workflow '{workflow_class.__name__}'."
+            f"'{dataset}' (Split {current_experiment.split_index}) using "
+            f"workflow '{workflow_class.__name__}'."
         )
 
         warnings.showwarning = (
@@ -211,7 +217,9 @@ class TrainingManager:
                 dataset_name,
                 experiment_name,
                 start_time,
-                e
+                e,
+                dataset,
+                current_experiment.split_index
             )
             self.services.reporting.add_experiment(
                 current_experiment.algorithms
@@ -223,7 +231,9 @@ class TrainingManager:
                 start_time,
                 group_name,
                 dataset_name,
-                experiment_name
+                experiment_name,
+                dataset,
+                current_experiment.split_index
             )
             self.services.reporting.add_experiment(
                 current_experiment.algorithms
@@ -250,8 +260,6 @@ class TrainingManager:
             Directory where results are stored.
         """
         report_data = self.services.reporting.get_report_data()
-        with open("./dev_report_data.json", "w", encoding="utf-8") as f:
-            json.dump(report_data.model_dump(), f, indent=4)
         report_renderer.ReportRenderer().render(report_data, results_dir)
 
     def _setup_workflow(
@@ -328,7 +336,9 @@ class TrainingManager:
         start_time: float,
         group_name: str,
         dataset_name: str,
-        experiment_name: str
+        experiment_name: str,
+        dataset: str,
+        split_index: int
     ) -> None:
         """Handle results for a successful experiment.
 
@@ -348,14 +358,15 @@ class TrainingManager:
         None
         """
         elapsed_time = time.time() - start_time
-        self.experiment_results[group_name][dataset_name].append({
+        self.experiment_results[group_name][dataset].append({
             "experiment": experiment_name,
             "status": "PASSED",
             "time_taken": self._format_time(elapsed_time)
         })
         tqdm.tqdm.write(
             f"\nExperiment '{experiment_name}' on dataset "
-            f"'{dataset_name}' PASSED in {self._format_time(elapsed_time)}."
+            f"'{dataset}' (Split {split_index}) PASSED in "
+            f"{self._format_time(elapsed_time)}."
         )
 
     def _handle_failure(
@@ -364,7 +375,9 @@ class TrainingManager:
         dataset_name: str,
         experiment_name: str,
         start_time: float,
-        error: Exception
+        error: Exception,
+        dataset: str,
+        split_index: int
     ) -> None:
         """Handle results and logging for a failed experiment.
 
@@ -383,13 +396,13 @@ class TrainingManager:
         """
         elapsed_time = time.time() - start_time
         error_message = (
-            f"\n\nDataset Name: {dataset_name}\n"
+            f"\n\nDataset Name: {dataset}\n"
             f"Experiment Name: {experiment_name}\n\n"
             f"Error: {error}"
         )
         self.services.logger.logger.exception(error_message)
 
-        self.experiment_results[group_name][dataset_name].append({
+        self.experiment_results[group_name][dataset].append({
             "experiment": experiment_name,
             "status": "FAILED",
             "time_taken": self._format_time(elapsed_time),
@@ -397,9 +410,9 @@ class TrainingManager:
         })
         tqdm.tqdm.write(
             f"\nExperiment '{experiment_name}' on dataset "
-            f"'{dataset_name}' FAILED in {self._format_time(elapsed_time)}."
+            f"'{dataset}' (Split {split_index}) FAILED in "
+            f"{self._format_time(elapsed_time)}."
         )
-        tqdm.tqdm.write(f"\n{'-' * 80}") # pylint: disable=W1405
 
     def _log_warning(
         self,

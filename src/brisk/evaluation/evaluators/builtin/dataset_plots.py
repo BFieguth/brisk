@@ -2,13 +2,12 @@
 from typing import Any, List, Dict
 
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+import plotnine as pn
 
 from brisk.evaluation.evaluators import dataset_plot_evaluator
 
-class HistogramBoxplot(dataset_plot_evaluator.DatasetPlotEvaluator):
+class Histogram(dataset_plot_evaluator.DatasetPlotEvaluator):
     """Plot a histogram and boxplot for a dataset."""
     def plot(
         self,
@@ -43,11 +42,11 @@ class HistogramBoxplot(dataset_plot_evaluator.DatasetPlotEvaluator):
         plot_data = self._generate_plot_data(
             train_data, test_data, feature_name
         )
-        self._create_plot(plot_data)
+        plot = self._create_plot(plot_data)
         metadata = self._generate_metadata(
             dataset_name, group_name, feature_name
         )
-        self._save_plot(filename, metadata)
+        self._save_plot(filename, metadata, plot=plot)
         self._log_results(self.method_name, filename)
 
     def _generate_plot_data(
@@ -79,8 +78,8 @@ class HistogramBoxplot(dataset_plot_evaluator.DatasetPlotEvaluator):
         }
         return plot_data
 
-    def _create_plot(self, plot_data: Dict[str, Any]) -> None:
-        """Create a histogram and boxplot for a dataset.
+    def _create_plot(self, plot_data: Dict[str, Any]):
+        """Create side-by-side histograms for train and test datasets.
         
         Parameters
         ----------
@@ -89,40 +88,39 @@ class HistogramBoxplot(dataset_plot_evaluator.DatasetPlotEvaluator):
 
         Returns
         -------
-        None
+        plotnine plot object
         """
-        _, axs = plt.subplots(
-            nrows=2, ncols=2, sharex="col",
-            gridspec_kw={"height_ratios": (3, 1)}, figsize=(12, 6)
-        )
-
+        train_df = pd.DataFrame({
+            'value': plot_data["train_series"],
+            'dataset': pd.Categorical(['Train'] * len(plot_data["train_series"]), 
+                                    categories=['Train', 'Test'])
+        })
+        test_df = pd.DataFrame({
+            'value': plot_data["test_series"],
+            'dataset': pd.Categorical(['Test'] * len(plot_data["test_series"]), 
+                                    categories=['Train', 'Test'])
+        })
+        combined_df = pd.concat([train_df, test_df], ignore_index=True)
+        
         bins_train = self._get_bin_number(plot_data["train_series"])
         bins_test = self._get_bin_number(plot_data["test_series"])
-
-        axs[0, 0].hist(
-            plot_data["train_series"], bins=bins_train, edgecolor="black",
-            alpha=0.7
-            )
-        axs[0, 0].set_title(
-            f"Train Distribution of {plot_data['feature_name']}",fontsize=14 # pylint: disable=W1405
-        )
-        axs[0, 0].set_ylabel("Frequency", fontsize=12)
-
-        axs[0, 1].hist(
-            plot_data["test_series"], bins=bins_test, edgecolor="black",
-            alpha=0.7
-        )
-        axs[0, 1].set_title(
-            f"Test Distribution of {plot_data['feature_name']}", fontsize=14 # pylint: disable=W1405
+        
+        hist_plot = (
+            pn.ggplot(combined_df, pn.aes(x='value', fill='dataset')) +
+            pn.geom_histogram(alpha=0.7, position='identity', 
+                            bins=max(bins_train, bins_test), color='black') +
+            pn.facet_wrap('~dataset', ncol=2, scales='free_y') +
+            pn.labs(fill='Data Split') +
+            pn.labs(
+                title=f"Distribution of {plot_data['feature_name']}",
+                x=plot_data['feature_name'],
+                y='Frequency'
+            ) +
+            pn.scale_fill_manual(values=[self.primary_color, self.accent_color]) +
+            self.theme
         )
 
-        axs[1, 0].boxplot(plot_data["train_series"], orientation="horizontal")
-        axs[1, 1].boxplot(plot_data["test_series"], orientation="horizontal")
-
-        axs[1, 0].set_xlabel(plot_data["feature_name"], fontsize=12)
-        axs[1, 1].set_xlabel(plot_data["feature_name"], fontsize=12)
-
-        plt.tight_layout()
+        return hist_plot
 
     def _get_bin_number(self, feature_series: pd.Series) -> int:
         """Get the number of bins for a given feature using Sturges' rule.
@@ -167,7 +165,7 @@ class HistogramBoxplot(dataset_plot_evaluator.DatasetPlotEvaluator):
         )
 
 
-class PiePlot(dataset_plot_evaluator.DatasetPlotEvaluator):
+class BarPlot(dataset_plot_evaluator.DatasetPlotEvaluator):
     """Plot a pie chart for a dataset."""
     def plot(
         self,
@@ -202,11 +200,11 @@ class PiePlot(dataset_plot_evaluator.DatasetPlotEvaluator):
         plot_data = self._generate_plot_data(
             train_data, test_data, feature_name
         )
-        self._create_plot(plot_data)
+        plot = self._create_plot(plot_data)
         metadata = self._generate_metadata(
             dataset_name, group_name, feature_name
         )
-        self._save_plot(filename, metadata)
+        self._save_plot(filename, metadata, plot=plot)
         self._log_results(self.method_name, filename)
 
     def _generate_plot_data(
@@ -238,8 +236,8 @@ class PiePlot(dataset_plot_evaluator.DatasetPlotEvaluator):
         }
         return plot_data
 
-    def _create_plot(self, plot_data: Dict[str, Any]) -> None:
-        """Create a pie chart for a feature.
+    def _create_plot(self, plot_data: Dict[str, Any]):
+        """Create a grouped bar chart comparing categorical proportions between train and test.
         
         Parameters
         ----------
@@ -248,25 +246,43 @@ class PiePlot(dataset_plot_evaluator.DatasetPlotEvaluator):
 
         Returns
         -------
-        None
+        plotnine plot object
         """
-        _, axs = plt.subplots(1, 2, figsize=(14, 8))
-
-        axs[0].pie(
-            plot_data["train_value_counts"],
-            labels=plot_data["train_value_counts"].index,
-            autopct="%1.1f%%", startangle=90, colors=plt.cm.Paired.colors
+        train_df = pd.DataFrame({
+            'category': plot_data["train_value_counts"].index,
+            'count': plot_data["train_value_counts"].values,
+            'proportion': (plot_data["train_value_counts"].values / 
+                        plot_data["train_value_counts"].sum()),
+            'dataset': pd.Categorical(['Train'] * len(plot_data["train_value_counts"]), 
+                                    categories=['Train', 'Test'])
+        })
+        
+        test_df = pd.DataFrame({
+            'category': plot_data["test_value_counts"].index,
+            'count': plot_data["test_value_counts"].values,
+            'proportion': (plot_data["test_value_counts"].values / 
+                        plot_data["test_value_counts"].sum()),
+            'dataset': pd.Categorical(['Test'] * len(plot_data["test_value_counts"]), 
+                                    categories=['Train', 'Test'])
+        })
+        
+        combined_df = pd.concat([train_df, test_df], ignore_index=True)
+        
+        plot = (
+            pn.ggplot(combined_df, pn.aes(x='category', y='proportion', fill='dataset')) +
+            pn.geom_col(position='dodge', alpha=0.7, color='black', width=0.7) +
+            pn.labs(
+                title=f"Proportion Comparison: {plot_data['feature_name']}",
+                x=plot_data['feature_name'],
+                y='Proportion',
+                fill='Data Split'
+            ) +
+            pn.scale_y_continuous(labels=lambda x: [f"{val:.1%}" for val in x]) +
+            pn.scale_fill_manual(values=[self.primary_color, self.accent_color]) +
+            self.theme
         )
-        axs[0].set_title(f"Train {plot_data['feature_name']} Distribution") # pylint: disable=W1405
-
-        axs[1].pie(
-            plot_data["test_value_counts"],
-            labels=plot_data["test_value_counts"].index,
-            autopct="%1.1f%%", startangle=90, colors=plt.cm.Paired.colors
-        )
-        axs[1].set_title(f"Test {plot_data['feature_name']} Distribution") # pylint: disable=W1405
-
-        plt.tight_layout()
+        
+        return plot
 
     def _generate_metadata(
         self,
@@ -326,9 +342,9 @@ class CorrelationMatrix(dataset_plot_evaluator.DatasetPlotEvaluator):
         None
         """
         plot_data = self._generate_plot_data(train_data, continuous_features)
-        self._create_plot(plot_data)
+        plot = self._create_plot(plot_data)
         metadata = self._generate_metadata(dataset_name, group_name)
-        self._save_plot(filename, metadata)
+        self._save_plot(filename, metadata, plot=plot)
         self._log_results(self.method_name, filename)
 
     def _generate_plot_data(
@@ -360,8 +376,8 @@ class CorrelationMatrix(dataset_plot_evaluator.DatasetPlotEvaluator):
         }
         return plot_data
 
-    def _create_plot(self, plot_data: Dict[str, Any]) -> None:
-        """Create a correlation matrix for a dataset.
+    def _create_plot(self, plot_data: Dict[str, Any]):
+        """Create a correlation matrix heatmap using plotnine.
         
         Parameters
         ----------
@@ -370,12 +386,40 @@ class CorrelationMatrix(dataset_plot_evaluator.DatasetPlotEvaluator):
 
         Returns
         -------
-        None
+        plotnine plot object
         """
-        plt.figure(figsize=(plot_data["width"], plot_data["height"]))
-        sns.heatmap(
-            plot_data["correlation_matrix"], annot=True, cmap="coolwarm",
-            fmt=".2f", linewidths=0.5
-            )
-        plt.title("Correlation Matrix of Continuous Features", fontsize=14)
-        plt.tight_layout()
+        corr_matrix = plot_data["correlation_matrix"]
+        
+        corr_df = corr_matrix.reset_index().melt(
+            id_vars='index',
+            var_name='variable2',
+            value_name='correlation'
+        )
+        corr_df.rename(columns={'index': 'variable1'}, inplace=True)
+        
+        plot = (
+            pn.ggplot(corr_df, pn.aes(x='variable1', y='variable2', fill='correlation')) +
+            pn.geom_tile(color='white', size=0.5) +
+            pn.geom_text(pn.aes(label='correlation'), 
+                    format_string='{:.2f}', 
+                    size=8, 
+                    color='black') +
+            pn.scale_fill_gradient2(
+                low=self.primary_color, 
+                high=self.accent_color, 
+                midpoint=0,
+                name='Correlation',
+                limits=(-1, 1)
+            ) +
+            pn.labs(
+                title='Correlation Matrix of Continuous Features',
+                x='',
+                y=''
+            ) +
+            pn.theme(
+                figure_size=(plot_data["width"], plot_data["height"])
+            ) +
+            self.theme
+        )
+        
+        return plot

@@ -441,19 +441,17 @@ class ReportingService(base.BaseService):
         Optional[FeatureDistribution]
             The FeatureDistribution object
         """
-        hist_method = f"brisk_histogram_boxplot_{feature_name}"
-        pie_method = f"brisk_pie_plot_{feature_name}"
+        methods = [
+            f"brisk_histogram_plot_{feature_name}",
+            f"brisk_bar_plot_{feature_name}"
+        ]
 
-        plot_image, _ = (
-            self._image_cache.get(
-                (group_name, dataset_name, split_id, hist_method),
-                (None, None)
-            ) or
-            self._image_cache.get(
-                (group_name, dataset_name, split_id, pie_method),
-                (None, None)
+        for method in methods:
+            plot_image, _ = self._image_cache.get(
+                (group_name, dataset_name, split_id, method), (None, None)
             )
-        )
+            if plot_image:
+                break
 
         if not plot_image:
             self._other_services["logging"].logger.warning(

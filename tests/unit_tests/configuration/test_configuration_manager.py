@@ -12,6 +12,7 @@ from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.data.data_manager import DataManager
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from brisk.theme.plot_settings import PlotSettings
 
 class TestConfigurationManager:
     """Unit tests for the ConfigurationManager class."""
@@ -30,9 +31,11 @@ class TestConfigurationManager:
             algorithms=["ridge"]
         )
         experiment_groups = [group, group2]
-        manager = ConfigurationManager(experiment_groups, {
-            "categorical.csv": ["category"]
-        })
+        manager = ConfigurationManager(
+            experiment_groups, 
+            {"categorical.csv": ["category"]},
+            PlotSettings()
+        )
         
         assert manager.experiment_groups == experiment_groups
         assert manager.categorical_features == {"categorical.csv": ["category"]}
@@ -57,7 +60,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(FileNotFoundError, match="Data file not found:"):
-            ConfigurationManager([group], {})
+            ConfigurationManager([group], {}, PlotSettings())
 
     def test_invalid_data_file(self, mock_brisk_project):
         """Test error handling for data.py without BASE_DATA_MANAGER."""
@@ -78,7 +81,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(ImportError, match="BASE_DATA_MANAGER not found"):
-            ConfigurationManager([group], {})
+            ConfigurationManager([group], {}, PlotSettings())
 
     def test_unloadable_data_file(self, mock_brisk_project, monkeypatch):
         """Test error handling for invalid data.py file."""
@@ -104,7 +107,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(ImportError, match="Failed to load data module"):
-            ConfigurationManager([group], {})      
+            ConfigurationManager([group], {}, PlotSettings())      
 
     def test_two_data_managers(self, mock_brisk_project):
         """Test correct data manager is loaded if multiple are defined"""
@@ -134,7 +137,7 @@ class TestConfigurationManager:
             ValueError, 
             match="BASE_DATA_MANAGER is defined multiple times in"
             ):
-            manager = ConfigurationManager([group], {})
+            manager = ConfigurationManager([group], {}, PlotSettings())
 
     def test_base_data_manager_wrong_class(self, mock_brisk_project):
         """Test error handling for invalid base data manager class"""
@@ -149,7 +152,7 @@ class TestConfigurationManager:
             ValueError, 
             match="is not a valid DataManager instance"
             ):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
     
     def test_validate_single_data_manager(self,mock_brisk_project):
         """Test the _validate_single_data_manager method correct behavior."""
@@ -159,7 +162,7 @@ class TestConfigurationManager:
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
-        manager = ConfigurationManager([group], {})
+        manager = ConfigurationManager([group], {}, PlotSettings())
         assert manager._validate_single_variable(mock_brisk_project / "data.py", "BASE_DATA_MANAGER") is None
 
     def test_validate_single_data_manager_two_definitions(
@@ -188,7 +191,7 @@ class TestConfigurationManager:
             ValueError, 
             match="BASE_DATA_MANAGER is defined multiple times in"
             ):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
 
     def test_validate_single_data_manager_invalid_syntax(
             self,
@@ -208,7 +211,7 @@ class TestConfigurationManager:
         data_file.write_text(data_content)
 
         with pytest.raises(SyntaxError, match="invalid syntax"):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
 
     def test_missing_algorithm_file(self, mock_brisk_project):
         """Test error handling for missing algorithms.py."""
@@ -225,7 +228,7 @@ class TestConfigurationManager:
             FileNotFoundError, 
             match="algorithms.py file not found:"
             ):
-            ConfigurationManager([group], {})
+            ConfigurationManager([group], {}, PlotSettings())
 
     def test_missing_algorithm_config(self, mock_brisk_project):
         """Test error handling for algorithms.py without ALGORITHM_CONFIG."""
@@ -243,7 +246,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(ImportError, match="ALGORITHM_CONFIG not found in"):
-            ConfigurationManager([group], {})
+            ConfigurationManager([group], {}, PlotSettings())
       
     def test_invalid_algorithm_file(self, mock_brisk_project):
         """Test error handling for invalid algorithms.py file."""
@@ -259,7 +262,7 @@ class TestConfigurationManager:
             ImportError, 
             match="ALGORITHM_CONFIG not found in"
             ):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
 
     def test_unloadable_algorithm_file(self, mock_brisk_project, monkeypatch):
         """Test error handling for invalid data.py file."""
@@ -284,7 +287,7 @@ class TestConfigurationManager:
         )
         
         with pytest.raises(ImportError, match="Failed to load algorithms module"):
-            ConfigurationManager([group], {})
+            ConfigurationManager([group], {}, PlotSettings())
 
     def test_validate_single_algorithm_config(self, mock_brisk_project):
         """Test the ALGORITHM_CONFIG is an AlgorithmCollection."""
@@ -294,7 +297,7 @@ class TestConfigurationManager:
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
-        manager = ConfigurationManager([group], {})
+        manager = ConfigurationManager([group], {}, PlotSettings())
         assert manager._validate_single_variable(
             mock_brisk_project / "algorithms.py", 
             "ALGORITHM_CONFIG"
@@ -314,7 +317,7 @@ class TestConfigurationManager:
             ValueError, 
             match="ALGORITHM_CONFIG is defined multiple times in"
             ):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
 
     def test_single_algorithm_config_invalid_syntax(
             self,
@@ -337,7 +340,7 @@ class TestConfigurationManager:
         algorithm_file.write_text(algorithm_content)
 
         with pytest.raises(SyntaxError, match="invalid syntax"):
-            manager = ConfigurationManager([], {})
+            manager = ConfigurationManager([], {}, PlotSettings())
 
     def test_get_base_params(self, mock_brisk_project):
         """Test the _get_base_params method of ConfigurationManager."""
@@ -347,7 +350,7 @@ class TestConfigurationManager:
             datasets=["regression.csv"],
             algorithms=["linear"]
         )
-        manager = ConfigurationManager([group], {})
+        manager = ConfigurationManager([group], {}, PlotSettings())
         base_params = manager._get_base_params()
         expected_params = {
             'test_size': 0.2,
@@ -374,7 +377,7 @@ class TestConfigurationManager:
                 "split_method": "kfold"
             }
         )
-        manager = ConfigurationManager([group], {})
+        manager = ConfigurationManager([group], {}, PlotSettings())
         base_params = manager._get_base_params()
         expected_params = {
             'test_size': 0.2,
@@ -412,9 +415,9 @@ class TestConfigurationManager:
                 algorithms=["elasticnet"]
             )
         ]
-        manager = ConfigurationManager(groups, {
-            "categorical.csv": ["category"]
-        })
+        manager = ConfigurationManager(
+            groups, {"categorical.csv": ["category"]}, PlotSettings()
+        )
         for data_manager in manager.data_managers.values():
             assert isinstance(data_manager, DataManager)
         assert len(manager.data_managers) == 3
@@ -445,7 +448,7 @@ class TestConfigurationManager:
         
         manager = ConfigurationManager(groups, {
             "categorical.csv": ["category"]
-        })
+        }, PlotSettings())
         
         assert len(manager.experiment_queue) == 6
         assert isinstance(manager.experiment_queue, collections.deque)
@@ -492,7 +495,7 @@ class TestConfigurationManager:
         ]
         manager = ConfigurationManager(groups, {
             "categorical.csv": ["category"]
-        })
+        }, PlotSettings())
         assert len(manager.experiment_queue) == 20
 
     def test_create_logfile(self, mock_brisk_project):
@@ -512,7 +515,7 @@ class TestConfigurationManager:
             algorithm_config={"ridge": {"alpha": 0.5}}
         )
         
-        manager = ConfigurationManager([group1, group2], {})
+        manager = ConfigurationManager([group1, group2], {}, PlotSettings())
         manager._create_logfile()
 
         expected_logfile_content = """
@@ -694,7 +697,7 @@ Continuous: ['x', 'y']
         
         manager = ConfigurationManager([group1, group2], {
             "categorical.csv": ["category"]
-        })
+        }, PlotSettings())
         manager._create_logfile()
 
         expected_logfile_content = """
@@ -861,7 +864,7 @@ Continuous: ['x', 'y']
             algorithms=["ridge"],
         )
         
-        manager = ConfigurationManager([group1, group2], {})
+        manager = ConfigurationManager([group1, group2], {}, PlotSettings())
         output_structure = manager._get_output_structure()
         
         expected_output_structure = {
@@ -884,7 +887,7 @@ Continuous: ['x', 'y']
             algorithms=["linear"],
         )
 
-        manager = ConfigurationManager([group1], {})
+        manager = ConfigurationManager([group1], {}, PlotSettings())
         output_structure = manager._get_output_structure()
         
         expected_output_structure = {
@@ -915,7 +918,7 @@ Continuous: ['x', 'y']
         manager = ConfigurationManager([group1, group2], {
             "categorical.csv": ["category"],
             ("test_data.db", "categorical"): ["category", "result"]
-        })
+        }, PlotSettings())
         output_structure = manager._get_output_structure()
         expected_output_structure = {
             "group1": {
@@ -952,7 +955,7 @@ Continuous: ['x', 'y']
             datasets=["regression.csv"],
             algorithms=["elasticnet"]
         )
-        manager = ConfigurationManager([group1, group2, group3], {})
+        manager = ConfigurationManager([group1, group2, group3], {}, PlotSettings())
         expected_group2_description = textwrap.dedent("""
         This is another test description that needs to be wrapped
         and stored properly.

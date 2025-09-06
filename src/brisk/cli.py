@@ -187,7 +187,7 @@ class MyWorkflow(Workflow):
 from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 from brisk import PlotEvaluator, MeasureEvaluator
 
-def register_custom_evaluators(registry: EvaluatorRegistry) -> None:
+def register_custom_evaluators(registry: EvaluatorRegistry, plot_settings) -> None:
     # registry.register(
     # Initalize an evaluator instance here to register
     # )

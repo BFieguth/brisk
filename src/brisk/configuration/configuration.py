@@ -18,6 +18,7 @@ from typing import List, Dict, Optional, Any, Tuple
 
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.experiment_group import ExperimentGroup
+from brisk.theme.plot_settings import PlotSettings
 
 class Configuration:
     """User interface for defining experiment configurations.
@@ -51,13 +52,17 @@ class Configuration:
         default_workflow: str,
         default_algorithms: List[str],
         categorical_features: Optional[Dict[str, List[str]]] = None,
-        default_workflow_args: Optional[Dict[str, Any]] = None
+        default_workflow_args: Optional[Dict[str, Any]] = None,
+        plot_settings: Optional[PlotSettings] = None
     ):
         self.default_workflow = default_workflow
         self.experiment_groups: List[ExperimentGroup] = []
         self.default_algorithms = default_algorithms
         self.categorical_features = categorical_features or {}
         self.default_workflow_args = default_workflow_args or {}
+        self.plot_settings = plot_settings
+        if self.plot_settings is None:
+            self.plot_settings = PlotSettings()
 
     def add_experiment_group(
         self,
@@ -139,7 +144,8 @@ class Configuration:
             Processes ExperimentGroups and creates data splits.
         """
         return ConfigurationManager(
-            self.experiment_groups, self.categorical_features
+            self.experiment_groups, self.categorical_features,
+            self.plot_settings
         )
 
     def _check_name_exists(self, name: str) -> None:

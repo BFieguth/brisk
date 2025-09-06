@@ -10,6 +10,36 @@ from sklearn.ensemble import RandomForestClassifier
 
 from brisk.services.utility import UtilityService
 from brisk.configuration.algorithm_wrapper import AlgorithmWrapper, AlgorithmCollection
+from tests.conftest import get_algorithm_config
+from brisk.services.bundle import ServiceBundle
+from brisk.services.utility import UtilityService
+from brisk.theme.plot_settings import PlotSettings
+
+
+@pytest.fixture
+def algorithm_config():
+    return get_algorithm_config()
+
+
+@pytest.fixture
+def mock_services(algorithm_config):
+    services = mock.MagicMock(spec=ServiceBundle)
+    services.logger = mock.MagicMock()
+    services.logger.logger = mock.MagicMock()
+    services.io = mock.MagicMock()
+    services.io.output_dir = mock.MagicMock()
+    services.utility = UtilityService(
+        name="utility",
+        algorithm_config=algorithm_config,
+        group_index_train=None,
+        group_index_test=None
+    )
+    services.metadata = mock.MagicMock()
+    services.utility.set_plot_settings(PlotSettings())
+    services.reporting = mock.MagicMock()
+    services.reporting.add_dataset = mock.MagicMock()
+    return services
+
 
 @pytest.fixture
 def algorithm_config():
@@ -68,51 +98,53 @@ def utility_service_no_groups(algorithm_config):
 
 
 @pytest.fixture
-def data_manager(mock_brisk_project, tmp_path):
-    data_file = tmp_path / "data.py"
-    spec = util.spec_from_file_location("data", data_file)
-    data_module = util.module_from_spec(spec)
-    spec.loader.exec_module(data_module)
-    return data_module.BASE_DATA_MANAGER
+def data_manager(mock_brisk_project, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_manager.get_services", return_value=mock_services):
+        data_file = tmp_path / "data.py"
+        spec = util.spec_from_file_location("data", data_file)
+        data_module = util.module_from_spec(spec)
+        spec.loader.exec_module(data_module)
+        return data_module.BASE_DATA_MANAGER
 
 
 @pytest.fixture
-def regression100_data(data_manager, tmp_path):
-    data_file = tmp_path / "datasets" / "regression100.csv"
-    splits = data_manager.split(
-        data_file,
-        categorical_features=None,
-        group_name="test_group",
-        filename="regression100"
-    )
-    split = splits.get_split(0)
-    X_train, y_train = split.get_train()
-    X_train.attrs["is_test"] = False
-    y_train.attrs["is_test"] = False
-    # Fixed predictions for testing
-    predictions = pd.Series([
-        -2.21217924e+02,  1.65825828e+01,  3.11337997e+00,  4.82845707e+00,
-        1.54536773e+02,  8.44781940e+00, -1.80027578e+01, -9.21100836e+00,
-        -7.66634881e+01,  4.97458872e+01, -3.05020000e+01, -3.55248800e+00,
-        2.94593309e+00, -1.11133601e+02, -8.14443112e+01, -1.52532226e+02,
-        2.10043321e+02, -6.84191478e+01, -1.34531149e+01, -1.66022008e+01,
-        4.28049122e+01,  2.71563536e+01,  1.72066306e+01, -2.29122007e+01,
-        3.26928949e+00, -3.88841245e+01, -2.51496666e+01,  4.57463424e+01,
-        2.09237656e+02, -1.08703023e+02,  1.10276525e+02,  5.05850856e+01,
-        -1.04817919e+02,  9.56853195e+01, -5.94308228e+01, -1.52260781e+01,
-        6.53448761e+01,  5.78285064e+01,  6.13106332e+01,  6.17112832e+00,
-        2.00254563e+01, -5.84401526e+01, -2.52671245e+02,  2.78899119e+01,
-        1.39359311e+01, -1.92903666e+02,  1.42964142e+02,  2.18549442e+01,
-        1.08853746e+02,  1.46647263e+00, -3.10520667e+00,  2.28175081e+00,
-        -1.40259801e+02, -2.59084174e+01, -5.10372303e+01,  1.81746487e+01,
-        1.54168651e+01, -1.46359330e+01, -5.71988356e+01,  6.53202893e+00,
-        -1.36070162e+02,  2.98898394e+01, -3.83434619e+01,  2.20278571e+02,
-        -2.31905202e+01,  7.92614171e-03,  1.24631200e-01, -1.39743453e+02,
-        9.85133780e+01, -1.17681824e+02,  2.33802488e+01,  8.19178834e+00,
-        9.77163755e+01,  9.20506388e+01,  4.95536575e+01, -4.81291179e+00,
-        1.34413981e+01, -3.55054901e-01,  7.70581565e+01, -7.68183871e+01
-    ])
-    return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
+def regression100_data(data_manager, tmp_path, mock_services):
+    with mock.patch("brisk.data.data_split_info.get_services", return_value=mock_services):
+        data_file = tmp_path / "datasets" / "regression100.csv"
+        splits = data_manager.split(
+            data_file,
+            categorical_features=None,
+            group_name="test_group",
+            filename="regression100"
+        )
+        split = splits.get_split(0)
+        X_train, y_train = split.get_train()
+        X_train.attrs["is_test"] = False
+        y_train.attrs["is_test"] = False
+        # Fixed predictions for testing
+        predictions = pd.Series([
+            -2.21217924e+02,  1.65825828e+01,  3.11337997e+00,  4.82845707e+00,
+            1.54536773e+02,  8.44781940e+00, -1.80027578e+01, -9.21100836e+00,
+            -7.66634881e+01,  4.97458872e+01, -3.05020000e+01, -3.55248800e+00,
+            2.94593309e+00, -1.11133601e+02, -8.14443112e+01, -1.52532226e+02,
+            2.10043321e+02, -6.84191478e+01, -1.34531149e+01, -1.66022008e+01,
+            4.28049122e+01,  2.71563536e+01,  1.72066306e+01, -2.29122007e+01,
+            3.26928949e+00, -3.88841245e+01, -2.51496666e+01,  4.57463424e+01,
+            2.09237656e+02, -1.08703023e+02,  1.10276525e+02,  5.05850856e+01,
+            -1.04817919e+02,  9.56853195e+01, -5.94308228e+01, -1.52260781e+01,
+            6.53448761e+01,  5.78285064e+01,  6.13106332e+01,  6.17112832e+00,
+            2.00254563e+01, -5.84401526e+01, -2.52671245e+02,  2.78899119e+01,
+            1.39359311e+01, -1.92903666e+02,  1.42964142e+02,  2.18549442e+01,
+            1.08853746e+02,  1.46647263e+00, -3.10520667e+00,  2.28175081e+00,
+            -1.40259801e+02, -2.59084174e+01, -5.10372303e+01,  1.81746487e+01,
+            1.54168651e+01, -1.46359330e+01, -5.71988356e+01,  6.53202893e+00,
+            -1.36070162e+02,  2.98898394e+01, -3.83434619e+01,  2.20278571e+02,
+            -2.31905202e+01,  7.92614171e-03,  1.24631200e-01, -1.39743453e+02,
+            9.85133780e+01, -1.17681824e+02,  2.33802488e+01,  8.19178834e+00,
+            9.77163755e+01,  9.20506388e+01,  4.95536575e+01, -4.81291179e+00,
+            1.34413981e+01, -3.55054901e-01,  7.70581565e+01, -7.68183871e+01
+        ])
+        return X_train.reset_index(drop=True), y_train.reset_index(drop=True), predictions
 
 
 class TestUtilityService:
