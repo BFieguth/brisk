@@ -9,6 +9,8 @@ User Guide
 
    defaults/index
    custom_metrics
+   custom_evaluators
+   applying_preprocessing
    using_experiment_groups
 
 .. grid:: 1 1 2 2
@@ -33,6 +35,25 @@ User Guide
         ^^^^^^^^^^^^^^
         Add more metrics to your project
 
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: custom_evaluators
+        :link-type: doc
+
+        Custom Evaluators
+        ^^^^^^^^^^^^^^^^^
+        Create custom plots and evaluation methods
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: applying_preprocessing
+        :link-type: doc
+
+        Applying Preprocessing
+        ^^^^^^^^^^^^^^^^^^^^^^
+        Configure data preprocessing pipelines and compare strategies
 
     .. grid-item-card::
         :columns: 12 6 6 6

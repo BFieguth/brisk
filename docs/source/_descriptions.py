@@ -6,8 +6,8 @@ from collections import OrderedDict
 DESCRIPTIONS = OrderedDict({
     "DataManager": {
         "path": "~brisk.data.data_manager.DataManager",
-        "desc": "Handles the grouping, splitting, and scaling of data. Arguments"
-                " are used to define the splitting strategy."
+        "desc": "Handles data splitting and preprocessing pipelines. Arguments"
+                " are used to define the splitting strategy and preprocessing steps."
     },
     "DataSplitInfo": {
         "path": "~brisk.data.data_split_info.DataSplitInfo",

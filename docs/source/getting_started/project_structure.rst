@@ -22,8 +22,6 @@ Brisk takes a different approach by separating your project into logical compone
 
 * The ``settings.py`` file specifies what experiments to run
 
-* ``training.py`` brings everything together to train the models
-
 This separation offers several key advantages:
 
 * Better organization: Each file has a clear, focused purpose
@@ -105,9 +103,9 @@ data.py
 ~~~~~~~
 
 Configures how your data will be processed and split. This file defines a 
-``DataManager`` that handles train-test splitting and scaling. This is the default
-processing used for all datasets. You can override this default for individual 
-experiment groups in ``settings.py``.
+``DataManager`` that handles train-test splitting and preprocessing pipelines. 
+This is the default processing used for all datasets. You can override this 
+default for individual experiment groups in ``settings.py``.
 
 .. code-block:: python
 
@@ -115,7 +113,6 @@ experiment groups in ``settings.py``.
 
     BASE_DATA_MANAGER = DataManager(
         test_size=0.2,
-        scale_method="minmax",
         split_method="shuffle"
     )
 
@@ -132,49 +129,47 @@ you could define two experiment groups:
 .. code-block:: python
 
     from brisk.configuration.configuration import Configuration, ConfigurationManager
+    from brisk.data.preprocessing import ScalingPreprocessor
 
     def create_configuration() -> ConfigurationManager:
         config = Configuration(
-            default_algorithms=["linear", "ridge", "lasso"],
+            default_workflow="my_workflow",
+            default_algorithms=["linear", "ridge"],
+            categorical_features={"data.csv": ["category_col", "region"]}  
         )
 
         config.add_experiment_group(
             name="minmax_scaled",
             description="Training models with minmax scaling",
             datasets=["diabetes.csv"],
-            data_config={"test_size": 0.25, "scale_method": "minmax"}
+            data_config={
+                "test_size": 0.25, 
+                "preprocessors": [ScalingPreprocessor(method="minmax")]
+            }
         )
 
         config.add_experiment_group(
             name="standard_scaled",
             description="Training models with standard scaling",
             datasets=["diabetes.csv"],
-            data_config={"test_size": 0.25, "scale_method": "standard"}
+            data_config={
+                "test_size": 0.25,
+                "preprocessors": [ScalingPreprocessor(method="standard")]
+            }
         )
 
         return config.build()
 
+The ``categorical_features`` parameter maps dataset filenames to lists of categorical column names. 
+Brisk automatically detects categorical features, but you can explicitly specify them for better 
+control over preprocessing. Categorical features are handled differently during preprocessing - 
+they're excluded from scaling operations and processed by categorical encoders.
 
-training.py
-~~~~~~~~~~~
+.. note::
+   Consider specifying categorical features explicitly if auto-detection doesn't work 
+   well for your data. This is especially useful for numeric categorical features 
+   (like zip codes or customer IDs) that might be misclassified as continuous.
 
-Responsible for running the experiments you've defined. This file typically 
-doesn't need modification - it loads your configurations and creates a 
-``TrainingManager`` that handles the training process.
-
-.. code-block:: python
-
-    from brisk.training.training_manager import TrainingManager
-    from metrics import METRIC_CONFIG
-    from settings import create_configuration
-
-    config = create_configuration()
-
-    # Define the TrainingManager for experiments
-    manager = TrainingManager(
-        metric_config=METRIC_CONFIG,
-        config_manager=config
-    )
 
 workflows/
 ~~~~~~~~~~~
@@ -202,6 +197,10 @@ Brisk's ``Workflow`` class. Each workflow file should contain exactly one workfl
             self.plot_learning_curve(
                 self.model, self.X_train, self.y_train
             )
+
+As mentioned earlier, you can create multiple workflows. You can use one workflow for your entire project, or assign different workflows to different experiment groups.
+For details on using default workflows or assigning specific workflows to experiment groups, see 
+:doc:`Using Experiment Groups </users/using_experiment_groups>`.
 
 
 By embracing this modular structure, we hope you'll find it easier to try many
