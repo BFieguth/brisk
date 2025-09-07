@@ -16,4 +16,3 @@ Module Contents
 
    training/training_manager
    training/workflow
-   training/logging_util

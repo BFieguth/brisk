@@ -4,7 +4,7 @@ Using ExperimentGroups
 ======================
 
 The ``ExperimentGroup`` object is used to define a group of experiments. This can be used
-to help orgainze your experiments. The ``ExperimentGroup`` class also allows you to override
+to help organize your experiments. The ``ExperimentGroup`` class also allows you to override
 the default settings for a set of experiments. This allows you to test out different values
 without having to change the configuration file.
 
@@ -20,31 +20,49 @@ As an example imagine we define the following ``DataManager`` in the ``data.py``
 
 .. code-block:: python
 
+    from brisk.data.data_manager import DataManager
+    from brisk.data.preprocessing import ScalingPreprocessor
+
     data_manager = DataManager(
         test_size=0.2,
         split_method="shuffle",
-        scale_method="standard"
+        preprocessors=[ScalingPreprocessor(method="standard")]
     )
 
 This will use a shuffle split method to create a train/test split of 80/20. It will also
 use standard scaling to scale the input features.
 
-What if we want to compare minmax scaling to standard scaling? We can create an 
-``ExperimentGroup`` that uses minmax scaling instead of standard scaling.
+What if we want to compare different preprocessing strategies? We can create 
+experiment groups with different preprocessing configurations:
 
 .. code-block:: python
+
+    from brisk.data.preprocessing import (
+        ScalingPreprocessor, 
+        FeatureSelectionPreprocessor
+    )
 
     config.add_experiment_group(
         name="standard_scaling",
         datasets=["data.csv"],
-        description="Use standard scaling on the data."
+        description="Use standard scaling (from data.py configuration)"
     )
 
     config.add_experiment_group(
         name="minmax_scaling",
         datasets=["data.csv"],
-        data_config={"scale_method": "minmax"},
-        description="Use minmax scaling on the data."
+        data_config={"preprocessors": [ScalingPreprocessor(method="minmax")]},
+        description="Use minmax scaling instead"
+    )
+
+    config.add_experiment_group(
+        name="with_feature_selection",
+        datasets=["data.csv"],
+        data_config={"preprocessors": [
+            ScalingPreprocessor(method="robust"),
+            FeatureSelectionPreprocessor(method="selectkbest", n_features_to_select=10)
+        ]},
+        description="Robust scaling with top 10 features"
     )
 
 Any argument passed to the ``DataManager`` constructor can be modified in this way.
@@ -52,8 +70,11 @@ Any argument passed to the ``DataManager`` constructor can be modified in this w
 .. note::
     If you are using multiple datasets in the ``ExperimentGroup`` then the same 
     ``DataManager`` will be used for **all** of the datasets. If you want to use different
-    ``DataManager`` for each dataset then you will need to define a seperate 
+    ``DataManager`` for each dataset then you will need to define a separate 
     ``ExperimentGroup`` for each dataset.
+
+.. note::
+    For database files, you can specify datasets as tuples: ``datasets=[("database.db", "table_name")]``
 
 
 Modify Algorithms
@@ -87,18 +108,70 @@ configuration file.
     hyperparameter from the grid using ``algorithm_config``.
 
 
+Assign Different Workflows
+---------------------------
+Each experiment group can use a different workflow by specifying the ``workflow`` 
+parameter. This allows you to test different modeling approaches across experiment groups.
+
+Setting Default Workflow
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, all experiment groups use the ``default_workflow`` specified in the 
+``Configuration`` object:
+
+.. code-block:: python
+
+    # settings.py
+    config = Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="basic_workflow"  # All groups use this unless overridden
+    )
+    
+    config.add_experiment_group(
+        name="baseline", 
+        datasets=["data.csv"]
+        # Uses default_workflow automatically
+    )
+
+Assign Different Workflows for Specific Groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can override the default workflow for specific experiment groups:
+
+.. code-block:: python
+
+    # settings.py
+    config = Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="basic_workflow"  # Default for all groups
+    )
+    
+    config.add_experiment_group(
+        name="baseline_models",
+        datasets=["data.csv"],
+        algorithms=["linear", "ridge"]
+        # Uses default_workflow (basic_workflow)
+    )
+
+    config.add_experiment_group(
+        name="tuned_models",
+        datasets=["data.csv"],
+        algorithms=["rf", "svm"],
+        workflow="advanced_workflow",  # Overrides default_workflow
+        description="Hyperparameter tuning with customized evaluation"
+    )
+
+.. important::
+   The workflow filename (without ``.py``) must match the workflow name you specify 
+   in ``add_experiment_group()``. For example, ``workflow="my_analysis"`` expects 
+   a file named ``workflows/my_analysis.py``.
+
+.. note::
+   For detailed examples of creating these workflow files, see the 
+   :doc:`Project Structure </getting_started/project_structure>` guide.
+
 Pass Workflow Arguments
 -----------------------
-It is also possible to pass values to the ``Workflow`` class. This can be done using the
-``workflow_args`` argument. This is a dictionary of arguments that will be passed to the
-``Workflow`` constructor. The keys of the dictionary will be the name of the instance variable
-in the ``Workflow`` class.
-
-When doing this there are a few things to keep in mind:
-
-- Since these values are accessed as instance variables in the workflow they must be defined for all ExperimentGroups. Otherwise the workflow will not have access to the values and will throw a ValueError.
-
-- You should avoid using the names of attributes that are already defined in the ``Workflow`` class. See :ref:`api_workflow` for more information.
 
 If you want to use ``workflow_args`` it is best practice to first define the default values
 in the ``Configuration`` object. This will ensure that the ``Workflow`` class has the
@@ -109,7 +182,9 @@ experiment group we can do the following. First we define the default value in t
 .. code-block:: python
 
     config = Configuration(
+        default_workflow="basic_workflow",
         default_algorithms=["linear", "ridge"],
+        categorical_features={"housing_data.csv": ["neighborhood", "property_type"]},
         default_workflow_args={"kfold": 5}
     )
 

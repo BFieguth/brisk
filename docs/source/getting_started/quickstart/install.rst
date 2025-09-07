@@ -25,6 +25,7 @@ a virtual environment, such as `venv <https://docs.python.org/3/library/venv.htm
 - `tqdm <https://tqdm.github.io/>`_: provides progress bars for visualizing the progress of loops and long-running tasks.
 - `joblib <https://joblib.readthedocs.io/en/latest/>`_: provides tools for serializing and de-serializing objects.
 - `openpyxl <https://openpyxl.readthedocs.io/en/stable/>`_: provides tools for working with Excel files.
+- `shap <https://shap.readthedocs.io/en/latest/>`_: provides SHAP-based feature importance plots for model interpretability.
 
 Install Brisk
 =============

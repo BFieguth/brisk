@@ -47,24 +47,23 @@ This creates a new directory structure with the following files:
 * ``algorithms.py``: Algorithm definitions
 * ``metrics.py``: Metric definitions
 * ``data.py``: Data management setup
-* ``training.py``: Training manager setup
 * ``workflows/``: Directory for workflow files
 * ``datasets/``: Directory for data storage
 
 run
 ^^^
 
-The ``run`` command runs the experiments defined in the ``settings.py`` file using 
-the specified workflow. It is best to call this command from the root of your 
-project directory to ensure all the files are found.
+The ``run`` command runs the experiments defined in the ``settings.py`` file. You can 
+either use one workflow for all experiment groups (by setting a ``default_workflow``) 
+or assign different workflows to specific experiment groups. All workflow assignments 
+are configured in ``settings.py``, so you just run the command from your project root.
 
 .. code-block:: bash
 
-    brisk run -w <workflow> -n <results_name> --disable_report
+    brisk run -n <results_name> --disable_report
 
 **Arguments:**
 
-* ``-w, --workflow`` (required): Name of the workflow file (without .py extension) in the workflows/ directory
 * ``-n, --results_name`` (optional): Custom name for the results directory
 * ``--disable_report`` (optional): Flag to disable HTML report generation
 
@@ -72,9 +71,10 @@ project directory to ensure all the files are found.
 
 .. code-block:: bash
 
-    brisk run -w my_workflow -n experiment_1_results
+    brisk run -n experiment_1_results
 
-This runs the workflow defined in ``workflows/my_workflow.py`` and saves the results in a directory named "experiment_1_results" within the results directory.
+This runs all experiments defined in your ``settings.py`` configuration and saves 
+the results in a directory named "experiment_1_results" within the results directory.
 
 load_data
 ^^^^^^^^^

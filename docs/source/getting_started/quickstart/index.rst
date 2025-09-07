@@ -7,7 +7,6 @@ Quick Start Guide
 
    install
    create_project
-   create_workflow
    run_experiments
 
 This quickstart guide will walk you through the process of creating a Brisk

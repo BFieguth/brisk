@@ -17,13 +17,14 @@ of the file in the ``workflows`` directory containing the workflow class, withou
 the .py extension. You can give the results directory a name using the ``-n`` 
 argument.
 
-To run the workflow we just made you would call:
+To run the experiments we just configured you would call:
 
 .. code-block:: bash
 
-    brisk run -w workflow -n tutorial_results
+    brisk run -n tutorial_results
 
-When you call this you will see a progress bar appear in the terminal. When all 
+This command runs the experiments defined in your ``settings.py`` file using the workflows 
+you specified in the configuration. When you call this you will see a progress bar appear in the terminal. When all 
 the experiments are complete, you will see a summary of the experiments run, with
 a status (PASSED or FAILED) and the time taken for each experiment.
 
@@ -47,6 +48,13 @@ You should see a summary table that looks like this:
     ======================================================================
 
 Congratulations! You have just trained your first models with Brisk.
+
+.. note::
+   In this tutorial, all experiment groups used the same workflow. You can also assign 
+   different workflows to different experiment groups by specifying the ``workflow`` 
+   parameter in ``add_experiment_group()``. This allows you to test different modeling 
+   approaches on the same data. See the :doc:`Using ExperimentGroups </users/using_experiment_groups>` 
+   guide for examples.
 
 
 HTML Report
