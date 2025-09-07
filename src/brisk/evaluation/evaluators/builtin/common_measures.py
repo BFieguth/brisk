@@ -1,4 +1,10 @@
-"""Evaluators that calculate measures of model performance."""
+"""Evaluators that calculate measures of model performance.
+
+This module provides built-in evaluators for calculating various performance
+measures and metrics for machine learning models. These evaluators support
+both single model evaluation and cross-validation, as well as model comparison
+capabilities.
+"""
 from typing import Dict, List, Any, Tuple
 import itertools
 
@@ -10,35 +16,47 @@ import sklearn.model_selection as model_select
 from brisk.evaluation.evaluators import measure_evaluator
 
 class EvaluateModel(measure_evaluator.MeasureEvaluator):
-    """Evaluate a model on the provided measures and save the results."""
-    def evaluate(
-        self,
-        model: base.BaseEstimator,
-        X: pd.DataFrame, # pylint: disable=C0103
-        y: pd.Series,
-        metrics: List[str],
-        filename: str
-    ) -> None:
-        """Evaluate a model on the provided metrics and save the results.
+    """Evaluate a model on the provided measures and save the results.
 
-        Parameters
-        ----------
-        model (BaseEstimator): 
-            The trained model to evaluate.
-        X (pd.DataFrame): 
-            The input features.
-        y (pd.Series): 
-            The target data.
-        metrics (List[str]): 
-            A list of metrics to calculate.
-        filename (str): 
-            The name of the output file without extension.
+    This evaluator calculates specified performance measures for a single
+    trained model on a given dataset. It supports any metric that is
+    configured in the metric configuration manager.
 
-        Returns
-        -------
-        None
-        """
-        return super().evaluate(model, X, y, metrics, filename)
+    Parameters
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+
+    Attributes
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+    services : ServiceBundle or None
+        The global services bundle
+    metric_config : MetricManager or None
+        The metric configuration manager
+
+    Notes
+    -----
+    This evaluator provides a straightforward way to calculate performance
+    measures for a single model. It uses the metric configuration manager
+    to retrieve the appropriate metric functions and calculates scores
+    for all specified metrics.
+
+    The evaluator supports both classification and regression metrics,
+    depending on what is configured in the metric configuration manager.
+
+    Examples
+    --------
+    Use the model evaluation evaluator:
+        >>> from brisk.evaluation.evaluators import registry
+        >>> evaluator = registry.get("brisk_evaluate_model")
+        >>> evaluator.evaluate(model, X, y, ["accuracy", "f1_score"], "results")
+    """
 
     def _calculate_measures(
         self,
@@ -48,19 +66,32 @@ class EvaluateModel(measure_evaluator.MeasureEvaluator):
     ) -> Dict[str, float]:
         """Calculate the evaluation results for a model.
 
+        Calculates the specified performance measures for the given
+        predictions and true values using the configured metric functions.
+
         Parameters
         ----------
-        predictions (Dict[str, Any]): 
-            The predictions of the model.
-        y_true (pd.Series): 
-            The true target values.
-        metrics (List[str]): 
-            A list of metrics to calculate.
+        predictions : Dict[str, Any]
+            The predictions of the model (typically a pandas Series)
+        y_true : pd.Series
+            The true target values
+        metrics : List[str]
+            A list of metric names to calculate
 
-        Returns:
+        Returns
         -------
-        Dict[str, float]: 
-            A dictionary containing the evaluation results for each metric.
+        Dict[str, float]
+            A dictionary containing the evaluation results for each metric
+            with display names as keys and scores as values
+
+        Notes
+        -----
+        The method retrieves metric functions from the metric configuration
+        manager and calculates scores for each specified metric. If a metric
+        function is not found, it logs a warning and skips that metric.
+
+        The returned dictionary uses display names as keys for better
+        readability in reports and logs.
         """
         results = {}
         for metric_name in metrics:
@@ -76,18 +107,29 @@ class EvaluateModel(measure_evaluator.MeasureEvaluator):
         return results
 
     def _log_results(self, results: Dict[str, float], filename: str) -> None:
-        """Overrides default logging.
+        """Override default logging for model evaluation results.
+
+        Provides custom logging format for model evaluation results,
+        showing each metric and its score in a readable format.
 
         Parameters
         ----------
         results : Dict[str, float]
             The results of the evaluation
         filename : str
-            The name of the file to save the results to
+            The name of the file where results were saved
 
         Returns
         -------
         None
+
+        Notes
+        -----
+        The logging format shows each metric name and its score with
+        4 decimal places precision for numeric values. Non-numeric
+        values are displayed as-is.
+
+        The metadata key is excluded from the logged results.
         """
         scores_log = "\n".join([
             f"{metric}: {score:.4f}"
@@ -109,6 +151,9 @@ class EvaluateModel(measure_evaluator.MeasureEvaluator):
     ) -> Tuple[List[str], List[List[Any]]]:
         """Generate a report of the evaluation results.
 
+        Converts evaluation results into a format suitable for reporting
+        with metric names and scores in a tabular format.
+
         Parameters
         ----------
         results : Dict[str, Any]
@@ -117,7 +162,17 @@ class EvaluateModel(measure_evaluator.MeasureEvaluator):
         Returns
         -------
         Tuple[List[str], List[List[Any]]]
-            The list of column headers and a nested list of rows
+            A tuple containing:
+            - List of column headers: ["Metric", "Score"]
+            - Nested list of rows with metric names and scores
+
+        Notes
+        -----
+        The report format is designed for easy display in tables or
+        reports, with one row per metric showing the metric name and
+        its corresponding score.
+
+        The metadata key is excluded from the report.
         """
         columns = ["Metric","Score"]
         metrics = [key for key in results.keys() if key != "_metadata"]
@@ -130,7 +185,50 @@ class EvaluateModel(measure_evaluator.MeasureEvaluator):
         return columns, rows
 
 class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
-    """Evaluate a model using cross-validation and save the scores."""
+    """Evaluate a model using cross-validation and save the scores.
+
+    This evaluator calculates performance measures for a model using
+    cross-validation, providing more robust estimates of model performance
+    by averaging scores across multiple train-test splits.
+
+    Parameters
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+
+    Attributes
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+    services : ServiceBundle or None
+        The global services bundle
+    metric_config : MetricManager or None
+        The metric configuration manager
+
+    Notes
+    -----
+    Cross-validation provides a more reliable estimate of model performance
+    by reducing the variance associated with a single train-test split.
+    The evaluator calculates mean scores, standard deviations, and stores
+    all individual fold scores for detailed analysis.
+
+    The evaluator uses the utility service to get the appropriate
+    cross-validation splitter based on the data characteristics.
+
+    Examples
+    --------
+    Use the cross-validation evaluator:
+        >>> from brisk.evaluation.evaluators import registry
+        >>> evaluator = registry.get("brisk_evaluate_model_cv")
+        >>> evaluator.evaluate(
+        ...     model, X, y, ["accuracy", "f1_score"], "cv_results", cv=5
+        ... )
+    """
+
     def evaluate(
         self,
         model: base.BaseEstimator,
@@ -142,24 +240,38 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
     ) -> None:
         """Evaluate a model using cross-validation and save the scores.
 
+        Executes the complete cross-validation evaluation workflow.
+        This includes calculating scores across multiple folds, computing
+        statistics, and saving the results with metadata.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The model to evaluate.
-        X (pd.DataFrame): 
-            The input features.
-        y (pd.Series): 
-            The target data.
-        metrics (List[str]): 
-            A list of metrics to calculate.
-        filename (str): 
-            The name of the output file without extension.
-        cv (int): 
-            The number of cross-validation folds. Defaults to 5.
+        model : base.BaseEstimator
+            The model to evaluate
+        X : pd.DataFrame
+            The input features for evaluation
+        y : pd.Series
+            The target data
+        metrics : List[str]
+            A list of metric names to calculate
+        filename : str
+            The name of the output file (without extension)
+        cv : int, optional
+            The number of cross-validation folds, by default 5
 
         Returns
         -------
         None
+
+        Notes
+        -----
+        The cross-validation process uses the utility service to get the
+        appropriate splitter based on the data characteristics (e.g.,
+        stratified splits for classification, grouped splits if groups
+        are specified).
+
+        Results include mean scores, standard deviations, and all
+        individual fold scores for comprehensive analysis.
         """
         results = self._calculate_measures(model, X, y, metrics, cv)
         metadata = self._generate_metadata(model, X.attrs["is_test"])
@@ -172,6 +284,9 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
     ) -> Tuple[List[str], List[List[Any]]]:
         """Generate a report of the cross-validation results.
 
+        Converts cross-validation results into a format suitable for
+        reporting with mean scores, standard deviations, and all scores.
+
         Parameters
         ----------
         results : Dict[str, Any]
@@ -180,7 +295,16 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
         Returns
         -------
         Tuple[List[str], List[List[Any]]]
-            The list of column headers and a nested list of rows
+            A tuple containing:
+            - List of column headers: ["Metric", "Mean Score", "All Scores"]
+            - Nested list of rows with metric statistics
+
+        Notes
+        -----
+        The report format shows mean scores with standard deviations in
+        parentheses, and all individual fold scores for detailed analysis.
+
+        The metadata key is excluded from the report.
         """
         columns = ["Metric","Mean Score", "All Scores"]
         metrics = [key for key in results.keys() if key != "_metadata"]
@@ -204,23 +328,40 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
     ) -> Dict[str, float]:
         """Calculate the cross-validation results for a model.
 
+        Performs cross-validation evaluation for the specified metrics
+        and returns comprehensive statistics including mean, standard
+        deviation, and all individual fold scores.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The model to evaluate.
-        X (pd.DataFrame):
-            The input features.
-        y (pd.Series): 
-            The target data.
-        metrics (List[str]): 
-            A list of metrics to calculate.
-        cv (int): 
-            The number of cross-validation folds. Defaults to 5.
+        model : base.BaseEstimator
+            The model to evaluate
+        X : pd.DataFrame
+            The input features for evaluation
+        y : pd.Series
+            The target data
+        metrics : List[str]
+            A list of metric names to calculate
+        cv : int, optional
+            The number of cross-validation folds, by default 5
 
         Returns
         -------
         Dict[str, float]
-            A dictionary containing the cross-validation results for each metric
+            A dictionary containing cross-validation results for each metric
+            with display names as keys and statistics as values
+
+        Notes
+        -----
+        The method uses scikit-learn's cross_val_score function with the
+        appropriate cross-validation splitter obtained from the utility
+        service. The splitter is chosen based on data characteristics
+        (e.g., stratified for classification, grouped if groups are specified).
+
+        Each metric result contains:
+        - mean_score: Average score across all folds
+        - std_dev: Standard deviation of scores
+        - all_scores: List of all individual fold scores
         """
         splitter, indices = self.utility.get_cv_splitter(y, cv)
         results = {}
@@ -243,18 +384,29 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
         return results
 
     def _log_results(self, results: Dict[str, float], filename: str) -> None:
-        """Overrides default logging.
+        """Override default logging for cross-validation results.
+
+        Provides custom logging format for cross-validation results,
+        showing mean scores and standard deviations for each metric.
 
         Parameters
         ----------
         results : Dict[str, float]
             The results of the cross-validation
         filename : str
-            The name of the file to save the results to
+            The name of the file where results were saved
 
         Returns
         -------
         None
+
+        Notes
+        -----
+        The logging format shows each metric with its mean score and
+        standard deviation, providing a quick overview of model
+        performance variability.
+
+        The metadata key is excluded from the logged results.
         """
         scores_log = "\n".join([
             f"{metric}: mean={res['mean_score']:.4f}, " # pylint: disable=W1405
@@ -270,7 +422,50 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
 
 
 class CompareModels(measure_evaluator.MeasureEvaluator):
-    """Compare multiple models using specified measures."""
+    """Compare multiple models using specified measures.
+
+    This evaluator allows comparison of multiple models on the same
+    dataset using specified performance measures. It can optionally
+    calculate differences between model performances for detailed analysis.
+
+    Parameters
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+
+    Attributes
+    ----------
+    method_name : str
+        The name of the evaluator
+    description : str
+        The description of the evaluator output
+    services : ServiceBundle or None
+        The global services bundle
+    metric_config : MetricManager or None
+        The metric configuration manager
+
+    Notes
+    -----
+    This evaluator is particularly useful for model selection and
+    performance comparison. It can compare any number of models on
+    the same dataset using the same metrics, ensuring fair comparison.
+
+    When calculate_diff is True, the evaluator calculates pairwise
+    differences between all model pairs for each metric, providing
+    detailed performance comparisons.
+
+    Examples
+    --------
+    Compare multiple models:
+        >>> from brisk.evaluation.evaluators import registry
+        >>> evaluator = registry.get("brisk_compare_models")
+        >>> evaluator.evaluate(model1, model2, model3, X=X, y=y, 
+        ...                   metrics=["accuracy", "f1_score"], 
+        ...                   filename="comparison", calculate_diff=True)
+    """
+
     def evaluate(
         self,
         *models: base.BaseEstimator,
@@ -282,24 +477,37 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
     ) -> None:
         """Compare multiple models using specified metrics.
 
+        Executes the complete model comparison workflow. This includes
+        evaluating each model on the specified metrics and optionally
+        calculating pairwise differences between models.
+
         Parameters
         ----------
-        *models : BaseEstimator
-            Models to compare
-        X : DataFrame
-            Input features
-        y : Series
-            Target values
-        metrics : list of str
+        *models : base.BaseEstimator
+            Models to compare (variable number of arguments)
+        X : pd.DataFrame
+            Input features for evaluation
+        y : pd.Series
+            Target values for evaluation
+        metrics : List[str]
             Names of metrics to calculate
         filename : str
             Name for output file (without extension)
         calculate_diff : bool, optional
             Whether to calculate differences between models, by default False
-        
+
         Returns
         -------
         None
+
+        Notes
+        -----
+        The method evaluates each model individually on the same dataset
+        using the same metrics, ensuring fair comparison. If calculate_diff
+        is True, it also calculates pairwise differences between all
+        model pairs for each metric.
+
+        Results are saved with metadata for later analysis and reporting.
         """
         results = self._calculate_measures(
             *models, X=X, y=y, metrics=metrics, calculate_diff=calculate_diff
@@ -318,15 +526,18 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
     ) -> Dict[str, Dict[str, float]]:
         """Calculate the comparison results for multiple models.
 
+        Evaluates each model on the specified metrics and optionally
+        calculates pairwise differences between models.
+
         Parameters
         ----------
-        *models : BaseEstimator
-            Models to compare
-        X : DataFrame
-            Input features
-        y : Series
-            Target values
-        metrics : list of str
+        *models : base.BaseEstimator
+            Models to compare (variable number of arguments)
+        X : pd.DataFrame
+            Input features for evaluation
+        y : pd.Series
+            Target values for evaluation
+        metrics : List[str]
             Names of metrics to calculate
         calculate_diff : bool, optional
             Whether to calculate differences between models, by default False
@@ -335,6 +546,23 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
         -------
         Dict[str, Dict[str, float]]
             Nested dictionary containing metric scores for each model
+            and optionally pairwise differences
+
+        Raises
+        ------
+        ValueError
+            If no models are provided for comparison
+
+        Notes
+        -----
+        The method evaluates each model individually and stores results
+        in a nested dictionary structure. If calculate_diff is True,
+        it also calculates pairwise differences between all model pairs
+        for each metric.
+
+        The differences are calculated as model_b - model_a for each
+        pair, showing the performance improvement (or degradation)
+        when switching from model_a to model_b.
         """
         comparison_results = {}
 
@@ -381,18 +609,28 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
         return comparison_results
 
     def _log_results(self, results: Dict[str, float], filename: str) -> None:
-        """Overrides default logging.
+        """Override default logging for model comparison results.
+
+        Provides custom logging format for model comparison results,
+        showing each model's performance on each metric.
 
         Parameters
         ----------
         results : Dict[str, float]
             The results of the model comparison
         filename : str
-            The name of the file to save the results to
+            The name of the file where results were saved
 
         Returns
         -------
         None
+
+        Notes
+        -----
+        The logging format shows each model's performance on each metric,
+        making it easy to compare model performance at a glance.
+
+        The differences and metadata keys are excluded from the logged results.
         """
         comparison_log = "\n".join([
             f"{model}: " +

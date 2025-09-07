@@ -1,4 +1,9 @@
-"""Implement evaluators that calculate measures on a dataset."""
+"""Evaluators that calculate measures on datasets.
+
+This module provides built-in evaluators for calculating various statistical
+measures and metrics on datasets. These evaluators help understand the
+characteristics and distribution of data in both training and test sets.
+"""
 from typing import Dict, List
 
 import pandas as pd
@@ -8,7 +13,23 @@ from scipy import stats as scipy_stats
 from brisk.evaluation.evaluators import dataset_measure_evaluator
 
 class ContinuousStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
-    """Calculate continuous statistics for a dataset."""
+    """Calculate continuous statistics for a dataset.
+    
+    This evaluator calculates comprehensive descriptive statistics for
+    continuous features in both training and test datasets, including
+    measures of central tendency, dispersion, and distribution shape.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the evaluator, set to 'continuous_statistics'
+    """
+
+    def __init__(self, method_name: str, description: str):
+        """Initialize the ContinuousStatistics evaluator."""
+        super().__init__(method_name, description)
+        self.name = "continuous_statistics"
+
     def _calculate_measures(
         self,
         train_data: pd.DataFrame | pd.Series,
@@ -17,19 +38,29 @@ class ContinuousStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
     ) -> Dict[str, Dict[str, float]]:
         """Calculate continuous statistics for a dataset.
 
+        Calculates comprehensive descriptive statistics for continuous features
+        including mean, median, standard deviation, variance, min/max values,
+        percentiles, skewness, kurtosis, and coefficient of variation.
+
         Parameters
         ----------
-        train_data (pd.DataFrame | pd.Series): 
-            The training data
-        test_data (pd.DataFrame | pd.Series): 
-            The test data
-        feature_names (List[str]): 
-            The names of the features to calculate statistics for
+        train_data : pd.DataFrame or pd.Series
+            The training data containing continuous features
+        test_data : pd.DataFrame or pd.Series
+            The test data containing continuous features
+        feature_names : List[str]
+            The names of the continuous features to calculate statistics for
 
         Returns
         -------
         Dict[str, Dict[str, float]]
-            A dictionary containing the statistics for each feature
+            A nested dictionary containing statistics for each feature.
+            Structure: {feature_name: {split: {statistic: value}}}
+            where split is 'train' or 'test' and statistic includes:
+            - mean, median, std_dev, variance
+            - min, max, range
+            - 25_percentile, 75_percentile
+            - skewness, kurtosis, coefficient_of_variation
         """
         stats = {}
         for feature in feature_names:
@@ -78,7 +109,23 @@ class ContinuousStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
 
 
 class CategoricalStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
-    """Calculate categorical statistics for a dataset."""
+    """Calculate categorical statistics for a dataset.
+    
+    This evaluator calculates descriptive statistics for categorical features
+    in both training and test datasets, including frequency distributions,
+    proportions, entropy, and chi-square tests for distribution differences.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the evaluator, set to 'categorical_statistics'
+    """
+
+    def __init__(self, method_name: str, description: str):
+        """Initialize the CategoricalStatistics evaluator."""
+        super().__init__(method_name, description)
+        self.name = "categorical_statistics"
+
     def _calculate_measures(
         self,
         train_data: pd.DataFrame | pd.Series,
@@ -87,19 +134,31 @@ class CategoricalStatistics(dataset_measure_evaluator.DatasetMeasureEvaluator):
     ) -> Dict[str, Dict[str, float]]:
         """Calculate categorical statistics for a dataset.
 
+        Calculates comprehensive descriptive statistics for categorical features
+        including frequency distributions, proportions, entropy, and chi-square
+        tests to assess distribution differences between train and test sets.
+
         Parameters
         ----------
-        train_data (pd.DataFrame | pd.Series): 
-            The training data
-        test_data (pd.DataFrame | pd.Series): 
-            The test data
-        feature_names (List[str]): 
-            The names of the features to calculate statistics for
+        train_data : pd.DataFrame or pd.Series
+            The training data containing categorical features
+        test_data : pd.DataFrame or pd.Series
+            The test data containing categorical features
+        feature_names : List[str]
+            The names of the categorical features to calculate statistics for
 
         Returns
         -------
         Dict[str, Dict[str, float]]
-            A dictionary containing the statistics for each feature
+            A nested dictionary containing statistics for each feature.
+            Structure: {feature_name: {split: {statistic: value}}}
+            where split is 'train' or 'test' and statistic includes:
+            - frequency: dict of value counts
+            - proportion: dict of normalized value counts
+            - num_unique: number of unique values
+            - entropy: Shannon entropy of the distribution
+            - chi_square: chi-square test results (chi2_stat, p_value,
+            degrees_of_freedom)
         """
         stats = {}
         for feature in feature_names:

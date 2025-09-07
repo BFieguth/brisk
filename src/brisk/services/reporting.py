@@ -1,4 +1,41 @@
-"""Reporting service handles creation of ReportData object."""
+"""Reporting service for creating experiment reports.
+
+This module provides comprehensive reporting functionality for the Brisk
+package, including the creation of ReportData objects, experiment tracking,
+dataset analysis, and visualization management. It serves as the central hub for
+collecting, organizing, and structuring all experiment data into a cohesive
+report format.
+
+The ReportingService handles the creation and management of experiment reports,
+including dataset information, model performance metrics, hyperparameter tuning
+results, and visualization data. It provides caching mechanisms for efficient
+data storage and retrieval, and supports both individual experiment tracking
+and group-level analysis.
+
+Examples
+--------
+>>> from brisk.services.reporting import ReportingService, ReportingContext
+>>> from brisk.evaluation import metric_manager
+>>> 
+>>> # Create reporting service
+>>> reporting_service = ReportingService("reporting")
+>>> reporting_service.set_metric_config(metric_manager)
+>>> 
+>>> # Set reporting context
+>>> reporting_service.set_context(
+...     group_name="classification",
+...     dataset_name="iris",
+...     split_index=0,
+...     feature_names=["sepal_length", "sepal_width"],
+...     algorithm_names=["RandomForest", "SVM"]
+... )
+>>> 
+>>> # Add data and generate report
+>>> reporting_service.add_data_manager(group_name, data_manager)
+>>> reporting_service.add_dataset(group_name, data_splits)
+>>> report_data = reporting_service.get_report_data()
+"""
+
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Tuple, List, Optional, Any
 from collections import defaultdict
@@ -6,7 +43,7 @@ from collections import defaultdict
 from scipy import stats
 
 from brisk.services import base
-from brisk.evaluation import metric_manager as metric_config
+from brisk.evaluation import metric_manager as metric_manager_module
 from brisk.reporting import report_data
 from brisk.version import __version__
 
@@ -15,33 +52,44 @@ if TYPE_CHECKING:
     from brisk.evaluation.evaluators.registry import EvaluatorRegistry
 
 class ReportingContext:
-    """Context for the reporting service.
+    """Context class for tracking current reporting state and parameters.
     
-    Parameters
-    ----------
-    group_name : str
-        The name of the group
-    dataset_name : str
-        The name of the dataset
-    split_index : int
-        The index of the split
-    feature_names : Optional[List[str]]
-        The names of the features
-    algorithm_names : Optional[List[str]]
-        The names of the algorithms
-
+    This class encapsulates the current reporting context, including information
+    about the experiment group, dataset, data split, features, and algorithms
+    being processed. It provides a convenient way to pass context information
+    throughout the reporting pipeline.
+    
     Attributes
     ----------
     group_name : str
-        The name of the group
+        The name of the experiment group being processed
     dataset_name : str
-        The name of the dataset
+        The name of the dataset being analyzed
     split_index : int
-        The index of the split
+        The index of the current data split (0-based)
     feature_names : Optional[List[str]]
-        The names of the features
+        The names of the features in the dataset
     algorithm_names : Optional[List[str]]
-        The names of the algorithms
+        The names of the algorithms being evaluated
+        
+    Notes
+    -----
+    This class is used internally by the ReportingService to maintain context
+    state during report generation. It helps ensure that data is properly
+    associated with the correct experiment group, dataset, and split.
+    
+    Examples
+    --------
+    >>> context = ReportingContext(
+    ...     group_name="classification",
+    ...     dataset_name="iris",
+    ...     split_index=0,
+    ...     feature_names=[
+    ...         "sepal_length", "sepal_width", "petal_length", "petal_width"
+    ...     ],
+    ...     algorithm_names=["RandomForest", "SVM", "LogisticRegression"]
+    ... )
+    >>> print(f"Processing {context.group_name} group")
     """
     def __init__(
         self,
@@ -58,46 +106,101 @@ class ReportingContext:
         self.algorithm_names = algorithm_names
 
 class ReportingService(base.BaseService):
-    """Reporting service handles creation of ReportData object.
+    """Main service class for creating and managing comprehensive experiment
+    reports.
     
-    Parameters
-    ----------
-    name : str
-        The name of the service
-    metric_manager : MetricManager
-        The metric manager
-
+    This service handles the creation and management of experiment reports,
+    including dataset information, model performance metrics, hyperparameter
+    tuning results, and visualization data. It provides caching mechanisms
+    for efficient data storage and retrieval, and supports both individual
+    experiment tracking and group-level analysis.
+    
+    The service maintains internal caches for images, tables, and tuned
+    parameters, and processes this data into structured ReportData objects
+    suitable for HTML report generation.
+    
     Attributes
     ----------
-    name : str
-        The name of the service
-    metric_manager : MetricManager
-        The metric manager
+    navbar : report_data.Navbar
+        Navigation bar information including version and timestamp
+    datasets : Dict[str, report_data.Dataset]
+        Dictionary mapping dataset IDs to Dataset objects
+    experiments : Dict[str, report_data.Experiment]
+        Dictionary mapping experiment IDs to Experiment objects
+    experiment_groups : List[report_data.ExperimentGroup]
+        List of experiment group objects
+    data_managers : Dict[str, report_data.DataManager]
+        Dictionary mapping group names to DataManager objects
+    metric_manager : Optional[metric_config.MetricManager]
+        The metric manager for performance evaluation
     registry : Optional[EvaluatorRegistry]
-        The evaluator registry
+        The evaluator registry for processing evaluation results
     group_to_experiment : Dict[str, List[str]]
-        A dictionary mapping group names to experiment IDs
+        Dictionary mapping group names to experiment IDs
     _current_context : Optional[ReportingContext]
         The current reporting context
     _image_cache : Dict[Tuple[str, str, str], Tuple[str, Dict[str, str]]]
-        A dictionary mapping image keys to image data and metadata
-    _table_cache : Dict[Tuple[str, str, str, str], Tuple[Dict[str, Any], Dict[str, str]]]
-        A dictionary mapping table keys to table data and metadata
+        Cache for storing plot images and metadata
+    _table_cache : Dict[
+        Tuple[str, str, str, str], Tuple[Dict[str, Any], Dict[str, str]]
+    ]
+        Cache for storing table data and metadata
     _cached_tuned_params : Dict[str, Any]
-        A dictionary mapping tuned parameter names to their values
+        Cache for storing hyperparameter tuning results
     test_scores : Dict[str, Dict[str, Dict[str, Dict[str, List[str]]]]]
-        A dictionary mapping group names to dataset names to split indices to
-        metric names and test scores
-    best_score_by_split : Dict[str, Dict[str, Dict[str, Tuple[str, str, str, str]]]]
-        A dictionary mapping group names to dataset names to split indices to
-        the best score by split
+        Nested dictionary storing test scores by group, dataset, and split
+    best_score_by_split : Dict[
+        str, Dict[str, Dict[str, Tuple[str, str, str, str]]]
+    ]
+        Nested dictionary storing best scores by group, dataset, and split
     tuning_metric : Optional[Tuple[str, str]]
-        The tuning metric and its display name
+        The tuning metric abbreviation and display name
+        
+    Notes
+    -----
+    The service uses internal caches to efficiently store and retrieve data
+    during report generation. Caches are cleared when new data is added to
+    ensure consistency. The service requires both metric manager and evaluator
+    registry to be set before processing evaluation results.
+    
+    Examples
+    --------
+    >>> from brisk.services.reporting import ReportingService
+    >>> from brisk.evaluation import metric_manager
+    >>> 
+    >>> # Create and configure reporting service
+    >>> reporting_service = ReportingService("reporting")
+    >>> reporting_service.set_metric_config(metric_manager)
+    >>> reporting_service.set_evaluator_registry(registry)
+    >>> 
+    >>> # Set context and add data
+    >>> reporting_service.set_context("classification", "iris", 0)
+    >>> reporting_service.add_data_manager("classification", data_manager)
+    >>> reporting_service.add_dataset("classification", data_splits)
+    >>> 
+    >>> # Generate final report
+    >>> report_data = reporting_service.get_report_data()
     """
-    def __init__(
-        self,
-        name: str,
-    ):
+    def __init__(self, name: str) -> None:
+        """Initialize the reporting service.
+        
+        This constructor sets up the reporting service with the specified name
+        and initializes all internal data structures, caches, and tracking
+        dictionaries. The service starts with empty datasets, experiments,
+        and caches that will be populated during report generation.
+        
+        Parameters
+        ----------
+        name : str
+            The name identifier for this service
+            
+        Notes
+        -----
+        The service initializes with a timestamped navbar, empty data
+        structures, and nested defaultdicts for efficient data organization.
+        The metric manager and evaluator registry are set to None and must be
+        configured separately before processing evaluation results.
+        """
         super().__init__(name)
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.navbar = report_data.Navbar(
@@ -133,13 +236,34 @@ class ReportingService(base.BaseService):
         )
         self.tuning_metric = None
 
-    def set_metric_config(self, metric_config: metric_config.MetricManager) -> None:
+    def set_metric_config(
+        self,
+        metric_config: metric_manager_module.MetricManager
+    ) -> None:
         """Set the metric manager for this reporting service.
+
+        This method configures the metric manager that will be used for
+        performance evaluation and metric resolution throughout the reporting
+        process. The metric manager is required for processing evaluation
+        results and determining metric properties.
 
         Parameters
         ----------
-        metric_config : MetricManager
-            The metric configuration
+        metric_config : metric_config.MetricManager
+            The metric manager instance containing metric definitions and
+            configuration
+
+        Notes
+        -----
+        The metric manager is used for resolving metric identifiers, determining
+        whether higher values are better for specific metrics, and accessing
+        metric display names and abbreviations.
+
+        Examples
+        --------
+        >>> from brisk.evaluation import metric_manager
+        >>> reporting_service = ReportingService("reporting")
+        >>> reporting_service.set_metric_config(metric_manager)
         """
         self.metric_manager = metric_config
 
@@ -149,26 +273,44 @@ class ReportingService(base.BaseService):
         dataset_name: str,
         split_index: int,
         feature_names: Optional[List[str]] = None,
-        algorithm_names: Optional[str] = None
+        algorithm_names: Optional[List[str]] = None
     ) -> None:
         """Set the current reporting context.
+
+        This method establishes the current reporting context, which includes
+        information about the experiment group, dataset, data split, features,
+        and algorithms being processed. The context is used throughout the
+        reporting pipeline to ensure data is properly associated and organized.
 
         Parameters
         ----------
         group_name : str
-            The name of the experiment group
+            The name of the experiment group being processed
         dataset_name : str
-            The name of the dataset
+            The name of the dataset being analyzed
         split_index : int
-            The index of the split
-        feature_names : Optional[List[str]]
-            The names of the features
-        algorithm_names : Optional[List[str]]
-            The names of the algorithms
+            The index of the current data split (0-based)
+        feature_names : Optional[List[str]], default=None
+            The names of the features in the dataset
+        algorithm_names : Optional[List[str]], default=None
+            The names of the algorithms being evaluated
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        The context is used internally to determine where to store and retrieve
+        data from the various caches. It should be set before adding data
+        managers, datasets, or experiments to ensure proper data organization.
+
+        Examples
+        --------
+        >>> reporting_service = ReportingService("reporting")
+        >>> reporting_service.set_context(
+        ...     group_name="classification",
+        ...     dataset_name="iris",
+        ...     split_index=0,
+        ...     feature_names=["sepal_length", "sepal_width"],
+        ...     algorithm_names=["RandomForest", "SVM"]
+        ... )
         """
         self._current_context = ReportingContext(
             group_name, dataset_name, split_index, feature_names,
@@ -178,24 +320,55 @@ class ReportingService(base.BaseService):
     def clear_context(self) -> None:
         """Clear the current reporting context.
 
-        Returns
-        -------
-        None
+        This method removes the current reporting context, effectively resetting
+        the context state. This is useful when switching between different
+        experiment groups or datasets.
+
+        Notes
+        -----
+        After clearing the context, a new context must be set using
+        `set_context()` before adding new data to the report.
+
+        Examples
+        --------
+        >>> reporting_service = ReportingService("reporting")
+        >>> reporting_service.set_context("group1", "dataset1", 0)
+        >>> # Process data for group1/dataset1
+        >>> reporting_service.clear_context()
+        >>> reporting_service.set_context("group2", "dataset2", 0)
         """
         self._current_context = None
 
-    def get_context(self) -> ReportingContext:
+    def get_context(
+        self
+    ) -> Tuple[str, str, int, Optional[List[str]], Optional[List[str]]]:
         """Get the current reporting context.
+
+        This method retrieves the current reporting context as a tuple
+        containing all context information. The context must be set before
+        calling this method.
 
         Returns
         -------
-        ReportingContext
-            The current reporting context
+        Tuple[str, str, int, Optional[List[str]], Optional[List[str]]]
+            A tuple containing:
+            - group_name: The name of the experiment group
+            - dataset_name: The name of the dataset
+            - split_index: The index of the current split
+            - feature_names: The names of the features (or None)
+            - algorithm_names: The names of the algorithms (or None)
 
         Raises
         ------
         ValueError
-            If no context is set
+            If no context is currently set
+
+        Examples
+        --------
+        >>> report = ReportingService("reporting")
+        >>> report.set_context("classification", "iris", 0)
+        >>> group, dataset, split, features, algorithms = report.get_context()
+        >>> print(f"Processing {group}/{dataset}, split {split}")
         """
         if self._current_context:
             return (
@@ -214,16 +387,31 @@ class ReportingService(base.BaseService):
     ) -> None:
         """Add a DataManager instance to the report.
         
+        This method converts a DataManager instance into a
+        report_data.DataManager object and stores it in the report. The
+        DataManager contains information about data splitting configuration,
+        including test size, number of splits, split method, and other data
+        management parameters.
+
         Parameters
         ----------
         group_name : str
-            The name of the experiment group
+            The name of the experiment group this data manager belongs to
         data_manager : DataManager
-            The DataManager instance
+            The DataManager instance containing data splitting configuration
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        This method clears all internal caches after adding the data manager
+        to ensure data consistency. The data manager information is used in
+        the final report to document the data splitting methodology.
+
+        Examples
+        --------
+        >>> from brisk.data import DataManager
+        >>> reporting_service = ReportingService("reporting")
+        >>> data_manager = DataManager(test_size=0.2, n_splits=5)
+        >>> reporting_service.add_data_manager("classification", data_manager)
         """
         manager = report_data.DataManager(
             ID=group_name,
@@ -244,16 +432,35 @@ class ReportingService(base.BaseService):
     ) -> None:
         """Add a dataset to the report.
 
+        This method processes a DataSplits instance and creates a comprehensive
+        dataset report including split information, target statistics,
+        correlation matrices, and feature distributions. It analyzes the data to
+        determine if it's categorical or continuous and generates appropriate
+        statistics.
+
         Parameters
         ----------
         group_name : str
-            The name of the experiment group
+            The name of the experiment group this dataset belongs to
         data_splits : DataSplits
-            The DataSplits instance
+            The DataSplits instance containing the dataset and split information
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        This method performs extensive data analysis including:
+        - Split size calculations (total, train, test observations)
+        - Target variable statistics (categorical: proportions, entropy;
+          continuous: mean, std, min, max)
+        - Correlation matrix generation for each split
+        - Feature distribution analysis and visualization
+        - Categorical vs continuous data detection (based on unique value ratio)
+
+        Examples
+        --------
+        >>> from brisk.data import DataSplits
+        >>> reporting_service = ReportingService("reporting")
+        >>> data_splits = DataSplits.load_from_file("iris.csv")
+        >>> reporting_service.add_dataset("classification", data_splits)
         """
         dataset_name = data_splits._data_splits[0].dataset_name
         dataset_id = f"{group_name}_{dataset_name}"
@@ -467,7 +674,8 @@ class ReportingService(base.BaseService):
 
         if not plot_image:
             self._other_services["logging"].logger.warning(
-                f"No plot found for feature {feature_name} in {group_name}/{dataset_name}/{split_id}"
+                f"No plot found for feature {feature_name} in "
+                f"{group_name}/{dataset_name}/{split_id}"
             )
             return None
 
@@ -501,7 +709,9 @@ class ReportingService(base.BaseService):
         plot_name = f"{feature_name} Distribution"
         plot = self._create_plot_data(plot_name, plot_image)
 
-        distribution_id = f"{group_name}_{dataset_name}_{split_id}_{feature_name}"
+        distribution_id = (
+            f"{group_name}_{dataset_name}_{split_id}_{feature_name}"
+        )
         return report_data.FeatureDistribution(
             ID=distribution_id,
             tables=tables,
@@ -509,12 +719,35 @@ class ReportingService(base.BaseService):
         )
 
     def get_report_data(self) -> report_data.ReportData:
-        """Get the report data.
+        """Get the complete report data object.
+
+        This method creates and returns a ReportData object containing all
+        the collected experiment data, including datasets, experiments,
+        experiment groups, and data managers. This is the final data structure
+        used for HTML report generation.
 
         Returns
         -------
-        ReportData
-            The report data object
+        report_data.ReportData
+            The complete report data object containing:
+            - navbar: Navigation information with version and timestamp
+            - datasets: Dictionary of all processed datasets
+            - experiments: Dictionary of all experiments
+            - experiment_groups: List of experiment groups
+            - data_managers: Dictionary of data managers
+
+        Notes
+        -----
+        This method should be called after all data has been added to the
+        reporting service. The returned ReportData object can be used with
+        the ReportRenderer to generate HTML reports.
+
+        Examples
+        --------
+        >>> reporting_service = ReportingService("reporting")
+        >>> # Add all data...
+        >>> report_data = reporting_service.get_report_data()
+        >>> # Use with ReportRenderer to generate HTML
         """
         return report_data.ReportData(
             navbar=self.navbar,
@@ -552,7 +785,9 @@ class ReportingService(base.BaseService):
             train_rows.append([stat_name, str(stat_value)])
         tables.append(report_data.TableData(
             name=f"{feature_name} Statistics",
-            description=f"Statistical summary for feature {feature_name} in train set.",
+            description=(
+                f"Statistical summary for feature {feature_name} in train set."
+            ),
             columns=["Statistic", "Value"],
             rows=train_rows
         ))
@@ -560,7 +795,9 @@ class ReportingService(base.BaseService):
             test_rows.append([stat_name, str(stat_value)])
         tables.append(report_data.TableData(
             name=f"{feature_name} Statistics",
-            description=f"Statistical summary for feature {feature_name} in test set.",
+            description=(
+                f"Statistical summary for feature {feature_name} in test set."
+            ),
             columns=["Statistic", "Value"],
             rows=test_rows
         ))
@@ -653,18 +890,35 @@ class ReportingService(base.BaseService):
         image: str,
         metadata: Dict[str, str]
     ) -> None:
-        """Store plot SVG data.
+        """Store plot SVG data in the image cache.
+
+        This method stores SVG plot data along with its metadata in the
+        internal image cache. The plot is associated with the current
+        reporting context (group, dataset, split) and the method name
+        from the metadata.
 
         Parameters
         ----------
         image : str
-            The image data
+            The SVG image data as a string
         metadata : Dict[str, str]
-            The metadata
+            The metadata dictionary containing method information and
+            other plot-related metadata
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        The plot is stored using a key composed of the current context
+        (group_name, dataset_name, split_id) and the method name from
+        metadata. This ensures plots are properly organized and can be
+        retrieved during report generation.
+
+        Examples
+        --------
+        >>> reporting_service = ReportingService("reporting")
+        >>> reporting_service.set_context("classification", "iris", 0)
+        >>> svg_data = "<svg>...</svg>"
+        >>> metadata = {"method": "brisk_correlation_matrix", "type": "plot"}
+        >>> reporting_service.store_plot_svg(svg_data, metadata)
         """
         group_name, dataset_name, split, _, _ = self.get_context()
         image_id = (
@@ -677,18 +931,36 @@ class ReportingService(base.BaseService):
         data: Dict[str, Any],
         metadata: Dict[str, str]
     ) -> None:
-        """Store table data using current context.
+        """Store table data in the table cache using current context.
+
+        This method stores table data along with its metadata in the
+        internal table cache. The table is associated with the current
+        reporting context (group, dataset, split) and the method name
+        from the metadata.
 
         Parameters
         ----------
         data : Dict[str, Any]
-            The data
+            The table data dictionary containing the actual data to be
+            displayed in the report
         metadata : Dict[str, str]
-            The metadata
+            The metadata dictionary containing method information and
+            other table-related metadata
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        The table is stored using a key composed of the current context
+        (group_name, dataset_name, split_id) and the method name from
+        metadata. This ensures tables are properly organized and can be
+        retrieved during report generation.
+
+        Examples
+        --------
+        >>> reporting_service = ReportingService("reporting")
+        >>> reporting_service.set_context("classification", "iris", 0)
+        >>> table_data = {"accuracy": 0.95, "precision": 0.92, "recall": 0.88}
+        >>> metadata = {"method": "brisk_evaluate_model", "is_test": "True"}
+        >>> reporting_service.store_table_data(table_data, metadata)
         """
         group_name, dataset_name, split_index, _, _ = self.get_context()
         split_id = f"split_{split_index}"
@@ -796,14 +1068,31 @@ class ReportingService(base.BaseService):
     def set_evaluator_registry(self, registry: "EvaluatorRegistry") -> None:
         """Set the evaluator registry for this reporting service.
 
+        This method configures the evaluator registry that will be used for
+        processing evaluation results and generating report data. The registry
+        is required for converting cached data into TableData and PlotData
+        objects during report generation.
+
         Parameters
         ----------
         registry : EvaluatorRegistry
-            The evaluator registry
+            The evaluator registry instance containing evaluator definitions
+            and methods for processing evaluation results
 
-        Returns
-        -------
-        None
+        Notes
+        -----
+        The evaluator registry is used to:
+        - Process cached table data into TableData objects
+        - Process cached image data into PlotData objects
+        - Generate appropriate descriptions and metadata for reports
+        - Handle different types of evaluators (measures, plots, etc.)
+
+        Examples
+        --------
+        >>> from brisk.evaluation.evaluators.registry import EvaluatorRegistry
+        >>> reporting_service = ReportingService("reporting")
+        >>> registry = EvaluatorRegistry()
+        >>> reporting_service.set_evaluator_registry(registry)
         """
         self.registry = registry
 
@@ -866,7 +1155,7 @@ class ReportingService(base.BaseService):
         available_measures = [row[0] for row in rows]
         tuning_metric = (
             self.tuning_metric[1]
-            if self.tuning_metric and 
+            if self.tuning_metric and
             self.tuning_metric[1] in available_measures
             else available_measures[0]
         )

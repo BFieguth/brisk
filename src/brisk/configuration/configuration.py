@@ -1,4 +1,4 @@
-"""User interface for defining experiment configurations.
+"""Interface for defining experiment configurations.
 
 This module defines the Configuration class, which serves as a user interface
 for defining experiment configurations within the Brisk framework. It allows
@@ -7,46 +7,92 @@ algorithms, as well as modify starting values and hyperparameters.
 
 Examples
 --------
-    >>> config = Configuration(default_algorithms=["linear", "ridge"])
+Create a basic configuration:
+    >>> config = Configuration(
+    ...     default_workflow="workflow",
+    ...     default_algorithms=["linear", "ridge"]
+    ... )
     >>> config.add_experiment_group(
     ...     name="baseline",
     ...     datasets=["data.csv"]
     ... )
     >>> manager = config.build()
+
+Create configuration with custom settings:
+    >>> config = Configuration(
+    ...     default_workflow="custom_workflow",
+    ...     default_algorithms=["svm", "rf"],
+    ...     categorical_features={"data.csv": ["category1", "category2"]},
+    ...     default_workflow_args={"param1": "value1"}
+    ... )
 """
 from typing import List, Dict, Optional, Any, Tuple
 
-from brisk.configuration.configuration_manager import ConfigurationManager
-from brisk.configuration.experiment_group import ExperimentGroup
+from brisk.configuration import configuration_manager
+from brisk.configuration import experiment_group
 from brisk.services import get_services
-from brisk.theme.plot_settings import PlotSettings
+from brisk.theme import plot_settings as plot_settings_module
 
 class Configuration:
     """User interface for defining experiment configurations.
 
     This class provides a simple interface for users to define experiment groups
-    and their configurations. It handles default values and ensures unique
-    group names.
+    and their configurations. It handles default values, ensures unique group
+    names, and provides validation for configuration parameters.
 
     Parameters
     ----------
-    default_algorithms : list of str
-        List of algorithm names to use as defaults
-    categorical_features : dict, optional
-        Dict mapping categorical feature names to datasets
-    default_workflow_args : dict, optional
-        Values to assign as attributes of the Workflow
+    default_workflow : str
+        Default workflow name to use for experiment groups
+    default_algorithms : List[str]
+        List of algorithm names to use as defaults when none specified
+    categorical_features : Dict[str, List[str]], optional
+        Dictionary mapping dataset identifiers to lists of categorical
+        feature names, by default None
+    default_workflow_args : Dict[str, Any], optional
+        Default values to assign as attributes of the Workflow class,
+        by default None
+    plot_settings : PlotSettings, optional
+        Plot configuration settings, by default None
 
     Attributes
     ----------
-    experiment_groups : list
-        List of ExperimentGroup instances
-    default_algorithms : list
-        List of algorithm names to use when none specified
-    categorical_features : dict
-        Dict mapping categorical feature names to datasets
-    default_workflow_args : dict
-        Values to assign as attributes of the Workflow
+    default_workflow : str
+        Default workflow name for experiment groups
+    experiment_groups : List[ExperimentGroup]
+        List of configured experiment groups
+    default_algorithms : List[str]
+        List of default algorithm names
+    categorical_features : Dict[str, List[str]]
+        Mapping of dataset identifiers to categorical feature lists
+    default_workflow_args : Dict[str, Any]
+        Default workflow arguments
+    plot_settings : PlotSettings
+        Plot configuration settings
+
+    Notes
+    -----
+    The Configuration class serves as the main user interface for setting up
+    experiments. It provides a fluent API for adding experiment groups and
+    automatically handles validation and default value assignment.
+
+    Examples
+    --------
+    Create a simple configuration:
+        >>> config = Configuration(
+        ...     default_workflow="workflow",
+        ...     default_algorithms=["linear", "ridge"]
+        ... )
+
+    Add experiment groups:
+        >>> config.add_experiment_group(
+        ...     name="baseline",
+        ...     datasets=["data1.csv", "data2.csv"],
+        ...     algorithms=["linear", "svm"]
+        ... )
+
+    Build the configuration manager:
+        >>> manager = config.build()
     """
     def __init__(
         self,
@@ -54,16 +100,40 @@ class Configuration:
         default_algorithms: List[str],
         categorical_features: Optional[Dict[str, List[str]]] = None,
         default_workflow_args: Optional[Dict[str, Any]] = None,
-        plot_settings: Optional[PlotSettings] = None
+        plot_settings: Optional[plot_settings_module.PlotSettings] = None
     ):
+        """Initialize Configuration with default settings.
+
+        Creates a new Configuration instance with the specified default
+        workflow, algorithms, and optional configuration parameters.
+
+        Parameters
+        ----------
+        default_workflow : str
+            Default workflow name to use for experiment groups
+        default_algorithms : List[str]
+            List of algorithm names to use as defaults
+        categorical_features : Dict[str, List[str]], optional
+            Dictionary mapping dataset identifiers to categorical feature lists,
+            by default None
+        default_workflow_args : Dict[str, Any], optional
+            Default values to assign as workflow attributes, by default None
+        plot_settings : PlotSettings, optional
+            Plot configuration settings, by default None
+
+        Notes
+        -----
+        If plot_settings is not provided, a default PlotSettings instance
+        will be created automatically.
+        """
         self.default_workflow = default_workflow
-        self.experiment_groups: List[ExperimentGroup] = []
+        self.experiment_groups: List[experiment_group.ExperimentGroup] = []
         self.default_algorithms = default_algorithms
         self.categorical_features = categorical_features or {}
         self.default_workflow_args = default_workflow_args or {}
         self.plot_settings = plot_settings
         if self.plot_settings is None:
-            self.plot_settings = PlotSettings()
+            self.plot_settings = plot_settings_module.PlotSettings()
 
     def add_experiment_group(
         self,
@@ -77,33 +147,70 @@ class Configuration:
         workflow: Optional[str] = None,
         workflow_args: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Add a new ExperimentGroup.
+        """Add a new ExperimentGroup to the configuration.
+
+        Adds a new experiment group with the specified parameters.
+        Validates the group name uniqueness and dataset format before adding.
 
         Parameters
         ----------
         name : str
-            Unique identifier for the group
-        datasets : list
-            List of dataset paths relative to datasets directory
-        data_config : dict, optional
-            Arguments for DataManager used by this ExperimentGroup
-        algorithms : list of str, optional
-            List of algorithms (uses defaults if None)
-        algorithm_config : dict, optional
-            Algorithm-specific configurations, overides values set in
-            algorithms.py
+            Unique identifier for the experiment group
+        datasets : List[str | Tuple[str, str]]
+            List of dataset paths relative to datasets directory. Can be
+            strings (dataset files) or tuples of (dataset_file, table_name)
+            for multi-table databases
+        data_config : Dict[str, Any], optional
+            Arguments for DataManager used by this experiment group,
+            by default None
+        algorithms : List[str], optional
+            List of algorithm names to use. If None, uses default_algorithms,
+            by default None
+        algorithm_config : Dict[str, Dict[str, Any]], optional
+            Algorithm-specific configurations that override values set in
+            algorithms.py, by default None
         description : str, optional
-            Description for the experiment group
+            Human-readable description for the experiment group,
+            by default ""
         workflow : str, optional
-            Name of the workflow file to use (without .py extension)
-        workflow_args : dict, optional
-            Values to assign as attributes in the Workflow
+            Name of the workflow file to use (without .py extension).
+            If None, uses default_workflow, by default None
+        workflow_args : Dict[str, Any], optional
+            Values to assign as attributes in the Workflow class.
+            Must have same keys as default_workflow_args, by default None
 
         Raises
         ------
         ValueError
             If group name already exists or workflow_args keys don't match
             default_workflow_args
+        TypeError
+            If datasets contains invalid types (must be strings or tuples)
+
+        Notes
+        -----
+        The method performs several validation checks:
+        1. Ensures group name is unique
+        2. Validates dataset format (strings or tuples of strings)
+        3. Validates workflow_args keys match default_workflow_args
+        4. Converts string datasets to (dataset, None) tuples
+
+        Examples
+        --------
+        Add a simple experiment group:
+            >>> config.add_experiment_group(
+            ...     name="baseline",
+            ...     datasets=["data.csv"]
+            ... )
+
+        Add group with custom settings:
+            >>> config.add_experiment_group(
+            ...     name="advanced",
+            ...     datasets=[("data.xlsx", "Sheet1"), "data2.csv"],
+            ...     algorithms=["svm", "rf"],
+            ...     data_config={"test_size": 0.3},
+            ...     description="Advanced experiment with custom settings"
+            ... )
         """
         if algorithms is None:
             algorithms = self.default_algorithms
@@ -124,7 +231,7 @@ class Configuration:
         self._check_datasets_type(datasets)
         formated_datasets = self._convert_datasets_to_tuple(datasets)
         self.experiment_groups.append(
-            ExperimentGroup(
+            experiment_group.ExperimentGroup(
                 name,
                 formated_datasets,
                 workflow,
@@ -136,16 +243,36 @@ class Configuration:
             )
         )
 
-    def build(self) -> ConfigurationManager:
+    def build(self) -> configuration_manager.ConfigurationManager:
         """Build and return a ConfigurationManager instance.
+
+        Processes all experiment groups and creates a ConfigurationManager
+        that can execute the experiments. Exports configuration parameters
+        for rerun functionality.
 
         Returns
         -------
         ConfigurationManager
-            Processes ExperimentGroups and creates data splits.
+            Fully configured manager ready to execute experiments
+
+        Notes
+        -----
+        The build process:
+        1. Exports configuration parameters for rerun functionality
+        2. Creates a ConfigurationManager with all experiment groups
+        3. Sets up data managers, algorithm configurations, and workflows
+        4. Prepares the complete experiment execution environment
+
+        Examples
+        --------
+        Build and use the configuration:
+            >>> config = Configuration("workflow", ["linear", "ridge"])
+            >>> config.add_experiment_group(name="test", datasets=["data.csv"])
+            >>> manager = config.build()
+            >>> # manager is ready to execute experiments
         """
         self.export_params()
-        return ConfigurationManager(
+        return configuration_manager.ConfigurationManager(
             self.experiment_groups, self.categorical_features,
             self.plot_settings
         )
@@ -153,15 +280,23 @@ class Configuration:
     def _check_name_exists(self, name: str) -> None:
         """Check if an experiment group name is already in use.
 
+        Validates that the provided group name is unique within the
+        current configuration.
+
         Parameters
         ----------
         name : str
-            Group name to check
+            Group name to check for uniqueness
 
         Raises
         ------
         ValueError
-            If name has already been used
+            If name has already been used in another experiment group
+
+        Notes
+        -----
+        This method is called automatically when adding experiment groups
+        to ensure all group names are unique within a configuration.
         """
         if any(group.name == name for group in self.experiment_groups):
             raise ValueError(
@@ -171,16 +306,27 @@ class Configuration:
     def _check_datasets_type(self, datasets) -> None:
         """Validate the type of datasets parameter.
 
+        Ensures that all items in the datasets list are either strings
+        or tuples of strings, which are the only valid dataset specifications.
+
         Parameters
         ----------
         datasets : list
-            List of dataset specifications
+            List of dataset specifications to validate
 
         Raises
         ------
         TypeError
-            If datasets contains invalid types (must be strings or tuples of
-            strings)
+            If datasets contains invalid types (must be strings or tuples
+            of strings)
+
+        Notes
+        -----
+        Valid dataset specifications:
+        - String: "data.csv" (single dataset file)
+        - Tuple: ("data.xlsx", "Sheet1") (dataset file with table name)
+
+        Invalid specifications will raise TypeError with a descriptive message.
         """
         for dataset in datasets:
             if isinstance(dataset, str):
@@ -195,13 +341,32 @@ class Configuration:
                     f"of strings. Got {type(datasets)}."
                     )
 
-    def _convert_datasets_to_tuple(self, datasets: List[str | Tuple[str, str]]) -> List[Tuple[str, str]]:
+    def _convert_datasets_to_tuple(
+        self,
+        datasets: List[str | Tuple[str, str]]
+    ) -> List[Tuple[str, str]]:
         """Convert datasets to tuples if they are strings.
+
+        Normalizes dataset specifications to a consistent tuple format
+        for internal processing.
 
         Parameters
         ----------
-        datasets : list
-            List of dataset specifications
+        datasets : List[str | Tuple[str, str]]
+            List of dataset specifications (strings or tuples)
+
+        Returns
+        -------
+        List[Tuple[str, str]]
+            List of normalized dataset tuples where:
+            - String datasets become (dataset, None)
+            - Tuple datasets remain unchanged
+
+        Notes
+        -----
+        This normalization ensures consistent handling of dataset specifications
+        throughout the configuration system. All datasets are represented as
+        (dataset_file, table_name) tuples internally.
         """
         formated_datasets = []
         for dataset in datasets:
@@ -211,7 +376,33 @@ class Configuration:
                 formated_datasets.append((dataset, None))
         return formated_datasets
 
-    def export_params(self):
+    def export_params(self) -> None:
+        """Export configuration parameters for rerun functionality.
+
+        Serializes the current configuration to a format that can be
+        used to recreate the experiment setup during rerun operations.
+        This includes all experiment groups, categorical features, and
+        plot settings.
+
+        Notes
+        -----
+        The exported parameters include:
+        - Default workflow and algorithms
+        - Categorical features mapping
+        - Plot settings configuration
+        - All experiment group configurations
+        - Dataset metadata for validation
+
+        This data is used by the rerun system to ensure experiments
+        can be reproduced with identical configurations.
+
+        Examples
+        --------
+        Export is called automatically during build():
+            >>> config = Configuration("workflow", ["linear"])
+            >>> config.add_experiment_group(name="test", datasets=["data.csv"])
+            >>> manager = config.build()  # export_params() called automatically
+        """
         services = get_services()
 
         # flatten categorical_features to a list of items
@@ -241,7 +432,9 @@ class Configuration:
             datasets = []
             for dataset in group.datasets:
                 if isinstance(dataset, tuple):
-                    datasets.append({"dataset": dataset[0], "table_name": dataset[1]})
+                    datasets.append(
+                        {"dataset": dataset[0], "table_name": dataset[1]}
+                    )
                 else:
                     datasets.append({"dataset": dataset, "table_name": None})
 
