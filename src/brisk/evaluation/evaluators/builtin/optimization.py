@@ -1,4 +1,10 @@
-"""Tools for evaluating models that are not plots or measure calculations."""
+"""Tools for evaluating models that are not plots or measure calculations.
+
+This module provides specialized evaluators for advanced model evaluation
+tasks such as hyperparameter tuning. These tools support both grid search
+and random search optimization with comprehensive visualization of tuning
+results across different parameter dimensions.
+"""
 from typing import Dict, Any, List, Tuple, Optional
 
 import pandas as pd
@@ -13,8 +19,40 @@ import plotly.graph_objects as go
 from brisk.evaluation.evaluators import measure_evaluator
 
 class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
-    """Perform hyperparameter tuning using grid or random search."""
+    """Perform hyperparameter tuning using grid or random search.
+    
+    This evaluator provides comprehensive hyperparameter optimization
+    capabilities using either grid search or random search methods.
+    It supports visualization of tuning results for 1D, 2D, and
+    multi-dimensionalparameter spaces using line plots, 3D surface plots, and
+    parallel coordinate plots respectively.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the evaluator, set to 'hyperparameter_tuning'
+    primary_color : str
+        Primary color for plot elements
+    secondary_color : str
+        Secondary color for plot elements
+    accent_color : str
+        Accent color for plot elements
+    categorical_columns : List[str]
+        List of categorical parameter columns for parallel coordinate plots
+    """
+
     def __init__(self, method_name: str, description: str, plot_settings):
+        """Initialize the HyperparameterTuning evaluator.
+        
+        Parameters
+        ----------
+        method_name : str
+            The name of the evaluation method
+        description : str
+            Description of the evaluation method
+        plot_settings
+            Plot settings object containing theme and color configurations
+        """
         super().__init__(method_name, description)
         matplotlib.use("Agg", force=True)
         self.theme = plot_settings.get_theme()
@@ -39,40 +77,37 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> base.BaseEstimator:
         """Perform hyperparameter tuning using grid or random search.
 
+        Executes hyperparameter optimization using the specified search method
+        and returns the best model found. Optionally generates performance
+        visualizations for the tuning results.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The model to be tuned.
-
-        method (str): 
-            The search method to use ("grid" or "random").
-
-        X_train (pd.DataFrame): 
-            The training data.
-
-        y_train (pd.Series): 
-            The target values for training.
-
-        scorer (str): 
-            The scoring metric to use.
-
-        kf (int): 
-            Number of splits for cross-validation.
-
-        num_rep (int): 
-            Number of repetitions for cross-validation.
-
-        n_jobs (int): 
-            Number of parallel jobs to run.
-
-        plot_results (bool): 
-            Whether to plot the performance of hyperparameters. Defaults to 
-            False.
+        model : base.BaseEstimator
+            The model to be tuned
+        method : str
+            The search method to use ("grid" or "random")
+        X_train : pd.DataFrame
+            The training features
+        y_train : pd.Series
+            The training target values
+        scorer : str
+            The scoring metric to optimize
+        kf : int
+            Number of folds for cross-validation
+        num_rep : int
+            Number of repetitions for cross-validation
+        n_jobs : int
+            Number of parallel jobs to run
+        plot_results : bool, optional
+            Whether to generate performance plots, by default False
+        filename : str, optional
+            Filename for saving plots, by default "hyperparameter_tuning"
 
         Returns
         -------
-        BaseEstimator: 
-            The tuned model.
+        base.BaseEstimator
+            The tuned model with optimal hyperparameters
         """
         algo_wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
         param_grid = algo_wrapper.get_hyperparam_grid()
@@ -115,39 +150,39 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> base.BaseEstimator:
         """Perform hyperparameter tuning using grid or random search.
 
+        Executes the actual hyperparameter search using scikit-learn's
+        GridSearchCV or RandomizedSearchCV based on the specified method.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The model to be tuned.
-
-        method (str): 
-            The search method to use ("grid" or "random").
-
-        X_train (pd.DataFrame): 
-            The training data.
-
-        y_train (pd.Series): 
-            The target values for training.
-
-        scorer (str): 
-            The scoring metric to use.
-
-        kf (int): 
-            Number of splits for cross-validation.
-
-        num_rep (int): 
-            Number of repetitions for cross-validation.
-
-        n_jobs (int): 
-            Number of parallel jobs to run.
-
-        param_grid (Dict[str, Any]): 
-            The hyperparameter grid used for tuning.
+        model : base.BaseEstimator
+            The model to be tuned
+        method : str
+            The search method to use ("grid" or "random")
+        X_train : pd.DataFrame
+            The training features
+        y_train : pd.Series
+            The training target values
+        scorer : str
+            The scoring metric to optimize
+        kf : int
+            Number of folds for cross-validation
+        num_rep : int
+            Number of repetitions for cross-validation
+        n_jobs : int
+            Number of parallel jobs to run
+        param_grid : Dict[str, Any]
+            The hyperparameter grid to search over
 
         Returns
         -------
-        BaseEstimator: 
-            The tuned model.
+        base.BaseEstimator
+            The search result object containing best parameters and scores
+
+        Raises
+        ------
+        ValueError
+            If method is not "grid" or "random"
         """
         if method == "grid":
             searcher = model_select.GridSearchCV
@@ -156,7 +191,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         else:
             raise ValueError(
                 f"method must be one of (grid, random). {method} was entered."
-                )
+            )
 
         self.services.logger.logger.info(
             "Starting hyperparameter optimization for %s", 
@@ -177,10 +212,12 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     def _log_results(self, model: base.BaseEstimator) -> None:
         """Log the results of the hyperparameter tuning.
 
+        Logs completion message for hyperparameter optimization process.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The model that was tuned.
+        model : base.BaseEstimator
+            The model that was tuned
 
         Returns
         -------
@@ -199,14 +236,17 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> None:
         """Save the plot to the output directory.
 
+        Saves the generated plot to the output directory with appropriate
+        metadata, handling both matplotlib and plotnine plot objects.
+
         Parameters
         ----------
-        filename (str): 
+        filename : str
             The name of the file to save the plot to
-        metadata (Dict[str, Any]): 
+        metadata : Dict[str, Any]
             The metadata for the plot
-        plot (Any): 
-            The plot to save
+        plot : Any
+            The plot object to save (matplotlib Figure or plotnine ggplot)
 
         Returns
         -------
@@ -227,24 +267,27 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> Optional[pn.ggplot | plt.Figure]:
         """Plot the performance of hyperparameter tuning.
 
+        Creates appropriate visualization based on the number of
+        hyperparameters:
+        - 1 parameter: Line plot
+        - 2 parameters: 3D surface plot
+        - 3+ parameters: Parallel coordinate plot
+
         Parameters
         ----------
-        param_grid (Dict[str, Any]): 
-            The hyperparameter grid used for tuning.
-
-        search_result (Any): 
-            The result from cross-validation during tuning.
-
-        display_name (str): 
-            The name of the algorithm to use in the plot labels.
-
-        scorer (str):
+        param_grid : Dict[str, Any]
+            The hyperparameter grid used for tuning
+        search_result : Any
+            The result from cross-validation during tuning
+        display_name : str
+            The name of the algorithm to use in plot labels
+        scorer : str
             Name of the measure being used for model evaluation
 
         Returns
         -------
         Optional[pn.ggplot | plt.Figure]
-            The plot object or None if the plot is not implemented
+            The plot object or None if no parameters to plot
         """
         param_keys = list(param_grid.keys())
         scorer_name = self.metric_config.get_name(scorer)
@@ -286,27 +329,26 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> pn.ggplot:
         """Plot the performance of a single hyperparameter vs mean test score.
 
+        Creates a line plot showing how model performance varies with
+        a single hyperparameter value.
+
         Parameters
         ----------
-        param_values (List[Any]): 
-            The values of the hyperparameter.
-
-        mean_test_score (List[float]): 
-            The mean test scores for each hyperparameter value.
-
-        param_name (str): 
-            The name of the hyperparameter.
-
-        display_name (str): 
-            The name of the algorithm to use in the plot labels.
-
-        scorer_name (str):
+        param_values : List[Any]
+            The values of the hyperparameter tested
+        mean_test_score : List[float]
+            The mean test scores for each hyperparameter value
+        param_name : str
+            The name of the hyperparameter
+        display_name : str
+            The name of the algorithm to use in plot labels
+        scorer_name : str
             The display name of the scoring measure
 
         Returns
         -------
         pn.ggplot
-            The plot object
+            The line plot object showing hyperparameter performance
         """
         plot_data = pd.DataFrame({
             "Hyperparameter": param_values,
@@ -338,27 +380,26 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> plt.Figure:
         """Plot the performance of two hyperparameters vs mean test score.
 
+        Creates a 3D surface plot showing how model performance varies
+        with two hyperparameters simultaneously.
+
         Parameters
         ----------
-        param_grid (Dict[str, List[Any]]): 
-            The hyperparameter grid used for tuning.
-
-        search_result (Any): 
-            The result from cross-validation during tuning.
-
-        param_names (List[str]): 
-            The names of the two hyperparameters.
-
-        display_name (str): 
-            The name of the algorithm to use in the plot labels.
-        
-        scorer_name (str):
+        param_grid : Dict[str, List[Any]]
+            The hyperparameter grid used for tuning
+        search_result : Any
+            The result from cross-validation during tuning
+        param_names : List[str]
+            The names of the two hyperparameters
+        display_name : str
+            The name of the algorithm to use in plot labels
+        scorer_name : str
             The display name of the scoring measure
 
         Returns
         -------
-        Figure
-            The figure object
+        plt.Figure
+            The 3D surface plot figure object
         """
         X, Y, mean_test_score = self._calc_plot_3d_surface( # pylint: disable=C0103
             param_grid, search_result, param_names
@@ -382,22 +423,25 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Calculate the plot data for the 3D surface plot.
 
+        Prepares data for 3D surface plotting by reshaping cross-validation
+        results into a grid format suitable for matplotlib's plot_surface.
+
         Parameters
         ----------
-        param_grid (Dict[str, List[Any]]): 
-            The hyperparameter grid used for tuning.
+        param_grid : Dict[str, List[Any]]
+            The hyperparameter grid used for tuning
+        search_result : Any
+            The result from cross-validation during tuning
+        param_names : List[str]
+            The names of the two hyperparameters
 
-        search_result (Any): 
-            The result from cross-validation during tuning.
-
-        param_names (List[str]): 
-            The names of the two hyperparameters.
-        
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray, np.ndarray]: 
-            A tuple containing the X, Y ndarrays for the meshgrid, and mean test
-            score values.
+        Tuple[np.ndarray, np.ndarray, np.ndarray]
+            A tuple containing:
+            - X: meshgrid array for first parameter
+            - Y: meshgrid array for second parameter
+            - mean_test_score: reshaped scores for surface plotting
         """
         mean_test_score = search_result.cv_results_["mean_test_score"].reshape(
             len(param_grid[param_names[0]]),
@@ -415,27 +459,32 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         display_name: str,
         scorer_name: str
     ) -> go.Figure:
-        """
-        Create a parallel coordinates plot for hyperparameter search results.
+        """Create a parallel coordinates plot for hyperparameter search results.
         
+        Creates an interactive parallel coordinates plot for visualizing
+        hyperparameter performance across multiple dimensions. Handles both
+        numerical and categorical parameters appropriately.
+
         Parameters
         ----------
-        search_result (Any): 
-            The result from cross-validation during tuning.
-
-        param_names (List[str]): 
-            The names of the hyperparameters.
-
-        display_name (str): 
-            The name of the algorithm to use in the plot labels.
-
-        scorer_name (str):
+        search_result : Any
+            The result from cross-validation during tuning
+        param_names : List[str]
+            The names of the hyperparameters
+        display_name : str
+            The name of the algorithm to use in plot labels
+        scorer_name : str
             The display name of the scoring measure
 
         Returns
         -------
         go.Figure
-            The figure object
+            The interactive parallel coordinates plot figure object
+
+        Raises
+        ------
+        ValueError
+            If no data is found in search results
         """
         df = self._calc_parallel_coordinate(search_result)
 
@@ -512,15 +561,19 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         """
         Extract data from sklearn search results for parallel coordinates plot.
         
+        Processes cross-validation results into a format suitable for
+        parallel coordinates plotting, handling parameter extraction and
+        categorical parameter identification.
+
         Parameters
         ----------
-        search_result (Any): 
-            The result from cross-validation during tuning.
+        search_result : Any
+            The result from cross-validation during tuning
 
         Returns
         -------
         pd.DataFrame
-            The processed dataframe ready for parallel coordinates
+            The processed dataframe ready for parallel coordinates plotting
         """
         results_df = pd.DataFrame(search_result.cv_results_)
         param_cols = [

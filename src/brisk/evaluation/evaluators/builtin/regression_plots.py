@@ -1,4 +1,17 @@
-"""Evaluators to create plots for regression problems."""
+"""Evaluators to create plots for regression problems.
+
+This module provides built-in plot evaluators specifically designed for
+regression problems. These evaluators create visualizations that help
+understand and evaluate regression model performance through predicted
+vs observed plots and residual analysis.
+
+Classes
+-------
+PlotPredVsObs
+    Evaluator for creating predicted vs observed value scatter plots
+PlotResiduals
+    Evaluator for creating residual plots with optional trend lines
+"""
 from typing import Tuple
 
 import pandas as pd
@@ -10,7 +23,24 @@ from brisk.evaluation.evaluators import plot_evaluator
 from brisk.configuration import algorithm_wrapper
 
 class PlotPredVsObs(plot_evaluator.PlotEvaluator):
-    """Plot the predicted vs. observed values for a regression model."""
+    """Plot the predicted vs. observed values for a regression model.
+    
+    This evaluator creates scatter plots comparing predicted values against
+    observed values for regression models. The plot includes a diagonal
+    reference line (y=x) to help assess model performance, where points
+    closer to this line indicate better predictions.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the evaluator, set to 'pred_vs_obs'
+    """
+
+    def __init__(self, method_name: str, description: str, plot_settings):
+        """Initialize the PlotPredVsObs evaluator."""
+        super().__init__(method_name, description, plot_settings)
+        self.name = "pred_vs_obs"
+
     def plot(
         self,
         model: base.BaseEstimator,
@@ -20,20 +50,25 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     ) -> None:
         """Plot the predicted vs. observed values for a regression model.
         
+        Creates a scatter plot comparing predicted values against observed
+        values with a diagonal reference line. Points closer to the diagonal
+        line indicate better model performance.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model.
-        X (pd.DataFrame): 
-            The input features.
-        y (pd.Series): 
-            The true target values.
-        filename (str): 
-            The name of the output file.
+        model : base.BaseEstimator
+            The trained regression model to evaluate
+        X : pd.DataFrame
+            The input features used for prediction
+        y : pd.Series
+            The true target values to compare against predictions
+        filename : str
+            The filename to save the plot to
 
         Returns
         -------
         None
+            The plot is saved to the specified filename
         """
         prediction = self._generate_prediction(model, X)
         plot_data, max_range = self._generate_plot_data(prediction, y)
@@ -50,17 +85,23 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     ) -> Tuple[pd.DataFrame, float]:
         """Calculate the plot data for the predicted vs. observed values.
 
+        Prepares the data needed for creating predicted vs observed plots
+        by combining predictions and true values into a DataFrame and
+        calculating the maximum range for consistent axis scaling.
+
         Parameters
         ----------
-        prediction (pd.Series): 
-            The predicted values.
-        y_true (pd.Series): 
-            The true target values.
+        prediction : pd.Series
+            The predicted values from the model
+        y_true : pd.Series
+            The true target values
 
         Returns
         -------
-        Tuple[pd.DataFrame, float]: 
-            A tuple containing the plot data and the maximum range of the plot.
+        Tuple[pd.DataFrame, float]
+            A tuple containing:
+            - DataFrame with 'Observed' and 'Predicted' columns
+            - Maximum range value for consistent axis scaling
         """
         plot_data = pd.DataFrame({
             "Observed": y_true,
@@ -77,19 +118,23 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     ) -> pn.ggplot:
         """Create a plot of the predicted vs. observed values.
         
+        Generates a plotnine-based scatter plot with predicted values on
+        the y-axis and observed values on the x-axis, including a diagonal
+        reference line for performance assessment.
+
         Parameters
         ----------
-        plot_data (pd.DataFrame): 
-            The plot data.
-        wrapper (AlgorithmWrapper): 
-            The wrapper for the model.
-        max_range (float): 
-            The maximum range of the plot.
+        plot_data : pd.DataFrame
+            DataFrame containing 'Observed' and 'Predicted' columns
+        wrapper : algorithm_wrapper.AlgorithmWrapper
+            The algorithm wrapper containing model metadata
+        max_range : float
+            Maximum value for consistent axis scaling
 
         Returns
         -------
-        pn.ggplot: 
-            The plot object.
+        pn.ggplot
+            The generated predicted vs observed plot object
         """
         plot = (
             pn.ggplot(plot_data, pn.aes(x="Observed", y="Predicted")) +
@@ -115,7 +160,24 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
 
 
 class PlotResiduals(plot_evaluator.PlotEvaluator):
-    """Plot the residuals of a regression model."""
+    """Plot the residuals of a regression model.
+    
+    This evaluator creates residual plots showing the difference between
+    observed and predicted values. Residual plots help identify patterns
+    in model errors, such as heteroscedasticity or non-linear relationships
+    that the model failed to capture.
+    
+    Attributes
+    ----------
+    name : str
+        The name of the evaluator, set to 'residuals'
+    """
+
+    def __init__(self, method_name: str, description: str, plot_settings):
+        """Initialize the PlotResiduals evaluator."""
+        super().__init__(method_name, description, plot_settings)
+        self.name = "residuals"
+
     def plot(
         self,
         model: base.BaseEstimator,
@@ -126,22 +188,27 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
     ) -> None:
         """Plot the residuals of a regression model.
         
+        Creates a scatter plot of residuals (observed - predicted) against
+        observed values. The plot includes a horizontal reference line at
+        y=0 and optionally a trend line to identify patterns in residuals.
+
         Parameters
         ----------
-        model (BaseEstimator): 
-            The trained model.
-        X (pd.DataFrame): 
-            The input features.
-        y (pd.Series): 
-            The true target values.
-        filename (str): 
-            The name of the output file.
-        add_fit_line (bool): 
-            Whether to add a line of best fit to the plot.
+        model : base.BaseEstimator
+            The trained regression model to evaluate
+        X : pd.DataFrame
+            The input features used for prediction
+        y : pd.Series
+            The true target values
+        filename : str
+            The filename to save the plot to
+        add_fit_line : bool, optional
+            Whether to add a trend line to the residual plot, by default False
 
         Returns
         -------
         None
+            The plot is saved to the specified filename
         """
         prediction = self._generate_prediction(model, X)
         plot_data = self._generate_plot_data(prediction, y)
@@ -158,17 +225,21 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
     ) -> pd.DataFrame:
         """Calculate the residuals (observed - predicted).
 
+        Computes residuals by subtracting predicted values from observed
+        values and organizes the data for residual plotting.
+
         Parameters
         ----------
-        predictions (pd.Series): 
-            The predicted values.
-        y (pd.Series): 
-            The true target values.
+        predictions : pd.Series
+            The predicted values from the model
+        y : pd.Series
+            The true target values
 
         Returns
         -------
-        pd.DataFrame: 
-            A dataframe containing the observed and residual values.
+        pd.DataFrame
+            DataFrame containing 'Observed' and 'Residual (Observed -
+            Predicted)' columns
         """
         residuals = y - predictions
         plot_data = pd.DataFrame({
@@ -183,16 +254,26 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
         wrapper: algorithm_wrapper.AlgorithmWrapper,
         add_fit_line: bool
     ) -> pn.ggplot:
-        """Plot the residuals of the model and save the plot.
+        """Create a residual plot with optional trend line.
+
+        Generates a plotnine-based scatter plot of residuals against observed
+        values, including a horizontal reference line at y=0 and optionally
+        a trend line to identify patterns in the residuals.
 
         Parameters
         ----------
-        plot_data (pd.DataFrame): 
-            The plot data.
-        wrapper (AlgorithmWrapper): 
-            The wrapper for the model.
-        add_fit_line (bool): 
-            Whether to add a line of best fit to the plot.
+        plot_data : pd.DataFrame
+            DataFrame containing 'Observed' and 'Residual (Observed -
+            Predicted)' columns
+        wrapper : algorithm_wrapper.AlgorithmWrapper
+            The algorithm wrapper containing model metadata
+        add_fit_line : bool
+            Whether to add a trend line to the plot
+
+        Returns
+        -------
+        pn.ggplot
+            The generated residual plot object
         """
         plot = (
             pn.ggplot(plot_data, pn.aes(

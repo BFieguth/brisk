@@ -1,4 +1,28 @@
-"""Generate report.html from a ReportData instance."""
+"""Generate HTML reports from ReportData instances.
+
+This module provides functionality to render machine learning experiment results
+into interactive HTML reports. It uses Jinja2 templating to combine data with
+HTML templates, CSS styles, and JavaScript functionality.
+
+The ReportRenderer class handles loading of all necessary assets (CSS, HTML
+templates, JavaScript) and renders them into a complete HTML report that can be
+viewed in a web browser.
+
+Examples
+--------
+>>> from brisk.reporting.report_renderer import ReportRenderer
+>>> from brisk.reporting.report_data import ReportData
+>>> from pathlib import Path
+>>> 
+>>> # Create a report renderer
+>>> renderer = ReportRenderer()
+>>> 
+>>> # Render a report
+>>> report_data = ReportData(...)
+>>> output_path = Path("output")
+>>> renderer.render(report_data, output_path)
+>>> # This creates output/report.html
+"""
 import os
 from pathlib import Path
 from typing import Dict
@@ -8,25 +32,60 @@ from jinja2 import Environment, FileSystemLoader
 
 from brisk.reporting.report_data import ReportData
 
-class ReportRenderer():
+class ReportRenderer:
     """Render a ReportData instance to an HTML report.
-
+    
+    This class handles the complete process of converting machine learning
+    experiment data into an interactive HTML report. It loads all necessary
+    assets (CSS, HTML templates, JavaScript) and uses Jinja2 templating to
+    generate the final report.
+    
+    The renderer automatically loads assets from the reporting directory
+    structure:
+    - CSS files from `styles/` directory
+    - HTML page templates from `pages/` directory  
+    - HTML component templates from `components/` directory
+    - JavaScript files from `js/renderers/` and `js/core/app.js`
+    
     Attributes
     ----------
     css_content : Dict[str, str]
-        A dictionary of CSS content.
+        Dictionary mapping CSS variable names to CSS content
     page_templates : Dict[str, str]
-        A dictionary of HTML page templates.
+        Dictionary mapping template variable names to HTML page templates
     component_templates : Dict[str, str]
-        A dictionary of HTML component templates.
+        Dictionary mapping component variable names to HTML component templates
     javascript : str
-        A string of JavaScript code.
+        Concatenated JavaScript code with comments stripped
     env : jinja2.Environment
-        A Jinja2 environment.
+        Jinja2 environment for template rendering
     template : jinja2.Template
-        A Jinja2 template for the report.
+        Main Jinja2 template for the report
+        
+    Examples
+    --------
+    >>> renderer = ReportRenderer()
+    >>> # Assets are automatically loaded during initialization
+    >>> print(len(renderer.css_content))  # Number of CSS files loaded
+    >>> print(len(renderer.page_templates))  # Number of page templates loaded
     """
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the ReportRenderer and load all necessary assets.
+        
+        This constructor automatically loads all CSS files, HTML templates,
+        and JavaScript files from the reporting directory structure. It sets
+        up the Jinja2 environment and loads the main report template.
+        
+        Notes
+        -----
+        The constructor assumes a specific directory structure:
+        - `styles/` - Contains CSS files
+        - `pages/` - Contains HTML page templates
+        - `components/` - Contains HTML component templates
+        - `js/renderers/` - Contains JavaScript renderer files
+        - `js/core/app.js` - Main JavaScript application file
+        - `report.html` - Main Jinja2 template file
+        """
         report_dir = os.path.dirname(os.path.abspath(__file__))
         self.css_content = self._load_directory(
             Path(report_dir, "styles"), ".css", "_css"
@@ -51,21 +110,38 @@ class ReportRenderer():
         file_extension: str,
         name_extension: str
     ) -> Dict[str, str]:
-        """Load all files in a directory and assign variable name to each file.
+        """Load all files in a directory and assign variable names to each file.
+
+        This method scans a directory for files with a specific extension,
+        reads their contents, and creates a dictionary mapping variable names
+        (derived from filenames) to file contents.
 
         Parameters
         ----------
         dir_path : Path
-            The path to the directory to load.
+            The path to the directory to load files from
         file_extension : str
-            The extension of the files to load.
+            The file extension to filter by (e.g., '.css', '.html')
         name_extension : str
-            String to replace file extension with.
+            String to replace the file extension with in variable names
+            (e.g., '_css', '_template', '_component')
 
         Returns
         -------
         Dict[str, str]
-            A dictionary of variable names and file contents.
+            Dictionary mapping variable names to file contents
+            
+        Examples
+        --------
+        >>> renderer = ReportRenderer()
+        >>> css_files = renderer._load_directory(
+        ...     Path("styles"), ".css", "_css"
+        ... )
+        >>> # If styles/ contains 'main.css' and 'theme.css'
+        >>> # Result: {
+        >>> #     "main_css": "/* CSS content */",
+        >>> #     "theme_css": "/* CSS content */"
+        >>> # }
         """
         content = {}
         files = [
@@ -80,21 +156,39 @@ class ReportRenderer():
         return content
 
     def _load_javascript(self, renderer_path: Path, app_path: Path) -> str:
-        """Load JavaScript files, ensure app.js is loaded last.
+        """Load JavaScript files and concatenate them with comments stripped.
 
-        Strips any comments and JSdocs from the files.
+        This method loads all JavaScript files from a renderer directory and
+        the main app.js file, strips comments and JSDoc, and concatenates them
+        into a single string. The app.js file is always loaded last to ensure
+        proper initialization order.
 
         Parameters
         ----------
         renderer_path : Path
-            The path to the directory containing the JavaScript rendering files.
+            The path to the directory containing JavaScript renderer files
         app_path : Path
-            The path to the app.js file.
+            The path to the main app.js file
 
         Returns
         -------
         str
-            A string of JavaScript code.
+            Concatenated JavaScript code with comments stripped
+            
+        Notes
+        -----
+        The method uses regex to remove:
+        - Multi-line comments (/* ... */)
+        - JSDoc comments (/** ... */)
+        - Single-line comments (// ...)
+        
+        Examples
+        --------
+        >>> renderer = ReportRenderer()
+        >>> js_content = renderer._load_javascript(
+        ...     Path("js/renderers"), Path("js/core/app.js")
+        ... )
+        >>> print(len(js_content))  # Total length of concatenated JS
         """
         comment_pattern = re.compile(
             r"/\*\*[\s\S]*?\*/|/\*[\s\S]*?\*/|//.*?\n", re.MULTILINE | re.DOTALL
@@ -117,12 +211,40 @@ class ReportRenderer():
     def render(self, data: ReportData, output_path: Path) -> None:
         """Create an HTML report file from a ReportData instance.
 
+        This method takes a ReportData instance and renders it into a complete
+        HTML report using the loaded templates, CSS, and JavaScript. The report
+        is saved as 'report.html' in the specified output directory.
+
         Parameters
         ----------
         data : ReportData
-            The data to render.
+            The machine learning experiment data to render into HTML
         output_path : Path
-            The path to the directory to write the report to.
+            The directory path where the report.html file will be written
+            
+        Notes
+        -----
+        The method creates a single HTML file that includes:
+        - All CSS styles embedded in <style> tags
+        - All JavaScript code embedded in <script> tags
+        - Complete HTML structure with data rendered via Jinja2 templates
+        
+        The output file will be named 'report.html' and placed in the
+        specified output directory.
+        
+        Examples
+        --------
+        >>> from brisk.reporting.report_data import ReportData
+        >>> from pathlib import Path
+        >>> 
+        >>> renderer = ReportRenderer()
+        >>> report_data = ReportData(...)
+        >>> output_dir = Path("output")
+        >>> output_dir.mkdir(exist_ok=True)
+        >>> 
+        >>> renderer.render(report_data, output_dir)
+        >>> # Creates output/report.html
+        >>> print((output_dir / "report.html").exists())  # True
         """
         html_output = self.template.render(
             report=data.model_dump(),

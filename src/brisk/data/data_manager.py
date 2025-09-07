@@ -1,30 +1,22 @@
-"""Provides the DataManager class for creating train-test splits and applying preprocessing.
+"""Data management and preprocessing for machine learning experiments.
 
 This module contains the DataManager class, which handles creating train-test
-splits for machine learning models and applies preprocessing pipelines. It supports
-several splitting strategies such as shuffle, k-fold, and stratified splits, with
-optional grouping, and can apply missing data handling, scaling, categorical encoding,
-and feature selection preprocessing.
+splits for machine learning models and applies preprocessing pipelines. It
+supports several splitting strategies such as shuffle, k-fold, and stratified
+splits, with optional grouping, and can apply missing data handling, scaling,
+categorical encoding, and feature selection preprocessing.
 
 Exports:
     DataManager: A class for configuring and generating train-test splits with
     preprocessing pipelines.
 """
 
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Tuple
 
 import pandas as pd
 from sklearn import model_selection
 
-from brisk.data import data_split_info
-from brisk.data.preprocessing import (
-    BasePreprocessor,
-    MissingDataPreprocessor,
-    ScalingPreprocessor,
-    CategoricalEncodingPreprocessor,
-    FeatureSelectionPreprocessor,
-)
-from brisk.data import data_splits
+from brisk.data import data_split_info, preprocessing, data_splits
 from brisk.services import get_services
 
 class DataManager:
@@ -33,8 +25,8 @@ class DataManager:
     This class allows users to configure different splitting strategies
     (e.g., shuffle, k-fold, stratified) and return train-test splits or
     cross-validation folds. It supports splitting based on groupings and
-    includes a completed data preprocessing pipeline
-
+    includes a data preprocessing pipeline with support for
+    missing data handling, categorical encoding, scaling, and feature selection.
 
     Parameters
     ----------
@@ -53,13 +45,14 @@ class DataManager:
     random_state : int, optional
         The random seed for reproducibility, by default None
     problem_type : str, optional
-        The type of problem ("classification" or "regression").
-        Defaults to "classification".
-    algorithm_config : list or AlgorithmCollection of AlgorithmWrapper, optional
-        User-provided collection of AlgorithmWrapper objects to use for feature selection.
+        The type of problem ("classification" or "regression"), by default
+        "classification"
+    algorithm_config : AlgorithmCollection
+        User-provided collection of AlgorithmWrapper objects to use for feature
+        selection, by default None
     preprocessors : List[BasePreprocessor], optional
-        List of preprocessor objects to apply to the data in sequence.
-
+        List of preprocessor objects to apply to the data in sequence, by
+        default None
 
     Attributes
     ----------
@@ -85,6 +78,47 @@ class DataManager:
         The initialized scikit-learn splitter object
     _splits : dict
         Cache of previously computed splits
+
+    Notes
+    -----
+    The DataManager supports various splitting strategies:
+    - ShuffleSplit: Random train-test splits
+    - KFold: K-fold cross-validation
+    - StratifiedShuffleSplit: Stratified random splits
+    - StratifiedKFold: Stratified k-fold cross-validation
+    - GroupShuffleSplit: Group-aware random splits
+    - GroupKFold: Group-aware k-fold cross-validation
+    - StratifiedGroupKFold: Stratified group-aware k-fold
+
+    The preprocessing pipeline follows a fixed order:
+    1. Missing Data Handling
+    2. Categorical Encoding
+    3. Scaling (continuous features only)
+    4. Feature Selection
+
+    Examples
+    --------
+    Create a basic data manager:
+        >>> manager = DataManager(test_size=0.2, n_splits=5)
+
+    Create with preprocessing:
+        >>> from brisk.data.preprocessing import MissingDataPreprocessor, \
+        ...     ScalingPreprocessor
+        >>> preprocessors = [
+        ...     MissingDataPreprocessor(strategy="mean"),
+        ...     ScalingPreprocessor(method="standard")
+        ... ]
+        >>> manager = DataManager(
+        ...     test_size=0.2,
+        ...     preprocessors=preprocessors
+        ... )
+
+    Create splits for grouped data:
+        >>> manager = DataManager(
+        ...     split_method="kfold",
+        ...     group_column="subject_id",
+        ...     stratified=True
+        ... )
     """
 
     def __init__(
@@ -97,8 +131,56 @@ class DataManager:
         random_state: Optional[int] = None,
         problem_type: str = "classification",
         algorithm_config=None,
-        preprocessors: Optional[List[BasePreprocessor]] = None,
+        preprocessors: Optional[List[preprocessing.BasePreprocessor]] = None,
     ):
+        """
+        Initialize DataManager with splitting and preprocessing configuration.
+
+        Creates a new DataManager instance with the specified splitting strategy
+        and preprocessing pipeline. Validates the configuration and initializes
+        the appropriate scikit-learn splitter.
+
+        Parameters
+        ----------
+        test_size : float, optional
+            The proportion of the dataset to allocate to the test set, by
+            default 0.2
+        n_splits : int, optional
+            Number of splits for cross-validation, by default 5
+        split_method : str, optional
+            The method to use for splitting ("shuffle" or "kfold"), by default
+            "shuffle"
+        group_column : str, optional
+            The column to use for grouping (if any), by default None
+        stratified : bool, optional
+            Whether to use stratified sampling or cross-validation, by default
+            False
+        random_state : int, optional
+            The random seed for reproducibility, by default None
+        problem_type : str, optional
+            The type of problem ("classification" or "regression"), by default
+            "classification"
+        algorithm_config : AlgorithmCollection
+            User-provided collection of AlgorithmWrapper objects to use for
+            feature selection, by default None
+        preprocessors : List[BasePreprocessor], optional
+            List of preprocessor objects to apply to the data in sequence, by
+            default None
+
+        Raises
+        ------
+        ValueError
+            If invalid split method, problem type, or incompatible combination
+            of group column and stratification is provided
+
+        Notes
+        -----
+        The initialization process:
+        1. Validates all configuration parameters
+        2. Sets up the appropriate scikit-learn splitter
+        3. Initializes the preprocessing pipeline
+        4. Prepares the split cache
+        """
         self.services = get_services()
         self.test_size = test_size
         self.split_method = split_method
@@ -114,13 +196,24 @@ class DataManager:
         self._splits = {}
 
     def _validate_config(self) -> None:
-        """Validates the provided configuration for splitting.
+        """Validate the provided configuration for splitting.
+
+        Performs comprehensive validation of all configuration parameters
+        to ensure they are compatible and valid for the splitting strategy.
 
         Raises
         ------
-            ValueError
-                If invalid split method or incompatible combination of group
-                column and stratification is provided.
+        ValueError
+            If invalid split method, problem type, or incompatible combination
+            of group column and stratification is provided
+
+        Notes
+        -----
+        Validation checks include:
+        - Split method must be "shuffle" or "kfold"
+        - Problem type must be "classification" or "regression"
+        - Group stratified shuffle is not supported (use kfold instead)
+        - All parameter combinations must be valid for scikit-learn splitters
         """
         valid_split_methods = ["shuffle", "kfold"]
         if self.split_method not in valid_split_methods:
@@ -139,7 +232,6 @@ class DataManager:
                 "Use split_method='kfold' for grouped and stratified splits."
             )
 
-
         valid_problem_types = ["classification", "regression"]
         if self.problem_type not in valid_problem_types:
             raise ValueError(
@@ -148,19 +240,32 @@ class DataManager:
             )
 
     def _set_splitter(self):
-        """Selects the appropriate splitter based on the configuration.
+        """Select the appropriate splitter based on the configuration.
+
+        Creates and returns the appropriate scikit-learn splitter object
+        based on the current configuration parameters.
 
         Returns
         -------
-        sklearn.model_selection._BaseKFold or
-            sklearn.model_selection._Splitter: The initialized splitter
-            object based on the configuration.
+        sklearn.model_selection._BaseKFold or sklearn.model_selection._Splitter
+            The initialized splitter object based on the configuration
 
         Raises
         ------
         ValueError
             If invalid combination of stratified and group_column settings
-            is provided.
+            is provided
+
+        Notes
+        -----
+        The method selects from the following splitters based on configuration:
+        - ShuffleSplit: Basic random splits
+        - StratifiedShuffleSplit: Stratified random splits
+        - GroupShuffleSplit: Group-aware random splits
+        - KFold: Basic k-fold cross-validation
+        - StratifiedKFold: Stratified k-fold cross-validation
+        - GroupKFold: Group-aware k-fold cross-validation
+        - StratifiedGroupKFold: Stratified group-aware k-fold cross-validation
         """
         if self.split_method == "shuffle":
             if self.group_column and not self.stratified:
@@ -217,12 +322,17 @@ class DataManager:
         y_test: Optional[pd.Series] = None,
         feature_names: Optional[List[str]] = None,
         categorical_features: Optional[List[str]] = None
-    ) -> tuple[
-        pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str],
-        List[str], List[str], Optional[Any]
+    ) -> Tuple[
+        pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series],
+        List[str], List[str], List[str], Optional[Any]
     ]:
-        """Apply all configured preprocessors to the data in fixed order:
-        Missing Data → Encoding → Scaling → Feature Selection
+        """Apply all configured preprocessors to the data in fixed order.
+
+        Applies the complete preprocessing pipeline in the following order:
+        1. Missing Data Handling
+        2. Categorical Encoding
+        3. Scaling (continuous features only)
+        4. Feature Selection
 
         Parameters
         ----------
@@ -241,13 +351,21 @@ class DataManager:
 
         Returns
         -------
-        tuple[
-            pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str],
-            List[str], List[str], Optional[Any]
-        ]
-            Transformed training data, transformed test data, transformed y_train, transformed y_test,
-            updated feature names, updated categorical features, updated continuous features,
-            and fitted scaler
+        Tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series],
+        Optional[pd.Series], List[str], List[str], List[str], Optional[Any]]
+            Transformed training data, transformed test data, transformed
+            y_train, transformed y_test, updated feature names,
+            updated categorical features, updated continuous features, and
+            fitted scaler
+
+        Notes
+        -----
+        The preprocessing pipeline ensures that:
+        - Missing values are handled first
+        - Categorical features are encoded before scaling
+        - Only continuous features are scaled
+        - Feature selection is applied last
+        - All transformations are fitted on training data only
         """
         if not self.preprocessors:
             # Calculate continuous features (all features except categorical)
@@ -255,43 +373,77 @@ class DataManager:
                 f for f in (feature_names or list(X_train.columns))
                 if f not in (categorical_features or [])
             ]
-            return X_train, X_test, y_train, y_test, feature_names or list(X_train.columns), categorical_features or [], continuous_features, None
+            return (
+                X_train, X_test, y_train, y_test,
+                feature_names or list(X_train.columns),
+                categorical_features or [],
+                continuous_features, None
+            )
 
         current_feature_names = feature_names or list(X_train.columns)
         current_categorical_features = categorical_features or []
 
-        # Get preprocessors by type (fixed order: Missing → Encoding → Scaling → Feature Selection)
-        missing_preprocessor = next((p for p in self.preprocessors if isinstance(p, MissingDataPreprocessor)), None)
-        encoding_preprocessor = next((p for p in self.preprocessors if isinstance(p, CategoricalEncodingPreprocessor)), None)
-        scaling_preprocessor = next((p for p in self.preprocessors if isinstance(p, ScalingPreprocessor)), None)
-        feature_selection_preprocessor = next((p for p in self.preprocessors if isinstance(p, FeatureSelectionPreprocessor)), None)
+        # Get preprocessors by type
+        # Fixed order: Missing → Encoding → Scaling → Feature Selection
+        missing_preprocessor = next(
+            (p for p in self.preprocessors
+            if isinstance(p, preprocessing.MissingDataPreprocessor)
+        ), None)
+        encoding_preprocessor = next(
+            (p for p in self.preprocessors
+            if isinstance(p, preprocessing.CategoricalEncodingPreprocessor)
+        ), None)
+        scaling_preprocessor = next(
+            (p for p in self.preprocessors
+            if isinstance(p, preprocessing.ScalingPreprocessor)
+        ), None)
+        feature_selection_preprocessor = next(
+            (p for p in self.preprocessors
+            if isinstance(p, preprocessing.FeatureSelectionPreprocessor)
+        ), None)
 
         # Step 1: Apply missing data preprocessing
-        X_train, X_test, current_feature_names = self._apply_missing_data_preprocessing(
-            X_train, X_test, y_train, current_feature_names, missing_preprocessor
+        (X_train, X_test, current_feature_names
+        ) = self._apply_missing_data_preprocessing(
+            X_train, X_test, y_train, current_feature_names,
+            missing_preprocessor
         )
 
         # Step 2: Apply categorical encoding
-        X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features = self._apply_categorical_encoding(
-            X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features, encoding_preprocessor
+        (
+            X_train, X_test, y_train, y_test, current_feature_names,
+            current_categorical_features
+        ) = self._apply_categorical_encoding(
+            X_train, X_test, y_train, y_test, current_feature_names,
+            current_categorical_features, encoding_preprocessor
         )
 
         # Step 3: Apply scaling
         X_train, X_test, fitted_scaler = self._apply_scaling(
-            X_train, X_test, y_train, current_feature_names, current_categorical_features, scaling_preprocessor
+            X_train, X_test, y_train, current_feature_names,
+            current_categorical_features, scaling_preprocessor
         )
 
         # Step 4: Apply feature selection
-        X_train, X_test, current_feature_names, current_categorical_features = self._apply_feature_selection(
-            X_train, X_test, y_train, current_feature_names, current_categorical_features, feature_selection_preprocessor, fitted_scaler
+        (
+            X_train, X_test, current_feature_names, current_categorical_features
+        ) = self._apply_feature_selection(
+            X_train, X_test, y_train, current_feature_names,
+            current_categorical_features, feature_selection_preprocessor,
+            fitted_scaler
         )
 
-        # Calculate updated continuous features (all features except categorical)
+        # Calculate updated continuous features (except categorical features)
         updated_continuous_features = [
-            f for f in current_feature_names if f not in current_categorical_features
+            f for f in current_feature_names
+            if f not in current_categorical_features
         ]
 
-        return X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features, updated_continuous_features, fitted_scaler
+        return (
+            X_train, X_test, y_train, y_test, current_feature_names,
+            current_categorical_features, updated_continuous_features,
+            fitted_scaler
+        )
 
     def _apply_missing_data_preprocessing(
         self,
@@ -299,13 +451,13 @@ class DataManager:
         X_test: pd.DataFrame,  # pylint: disable=C0103
         y_train: Optional[pd.Series],
         current_feature_names: List[str],
-        missing_preprocessor: Optional[MissingDataPreprocessor]
-    ) -> tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+        missing_preprocessor: Optional[preprocessing.MissingDataPreprocessor]
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
         """Apply missing data preprocessing.
-        
+
         Handles missing values in the dataset using the configured missing data
         preprocessor. This is the first step in the preprocessing pipeline.
-        
+
         Parameters
         ----------
         X_train : pd.DataFrame
@@ -318,23 +470,42 @@ class DataManager:
             Current feature names
         missing_preprocessor : Optional[MissingDataPreprocessor]
             Missing data preprocessor instance
-            
+
         Returns
         -------
-        tuple[pd.DataFrame, pd.DataFrame, List[str]]
-            Transformed training data, transformed test data, updated feature names
+        Tuple[pd.DataFrame, pd.DataFrame, List[str]]
+            Transformed training data, transformed test data, updated feature
+            names
+
+        Raises
+        ------
+        ValueError
+            If missing values are detected but no MissingDataPreprocessor
+            is provided
+
+        Notes
+        -----
+        This method:
+        1. Fits the missing data preprocessor on training data
+        2. Transforms both training and test data
+        3. Updates feature names if the preprocessor creates new features
+        4. Raises an error if missing values exist but no preprocessor is
+        provided
         """
         if missing_preprocessor:
             missing_preprocessor.fit(X_train, y_train)
             X_train = missing_preprocessor.transform(X_train)
             X_test = missing_preprocessor.transform(X_test)
-            current_feature_names = missing_preprocessor.get_feature_names(current_feature_names)
+            current_feature_names = missing_preprocessor.get_feature_names(
+                current_feature_names
+            )
         else:
             # Check if there are missing values and no missing data preprocessor
             if X_train.isnull().any().any() or X_test.isnull().any().any():
                 raise ValueError(
-                    "Missing values detected in the data but no MissingDataPreprocessor provided. "
-                    "You must handle missing values before proceeding."
+                    "Missing values detected in the data but no "
+                    "MissingDataPreprocessor provided. You must handle missing "
+                    "values before proceeding."
                 )
         return X_train, X_test, current_feature_names
 
@@ -346,15 +517,20 @@ class DataManager:
         y_test: Optional[pd.Series],
         current_feature_names: List[str],
         current_categorical_features: List[str],
-        encoding_preprocessor: Optional[CategoricalEncodingPreprocessor]
-    ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str], List[str]]:
+        encoding_preprocessor: Optional[
+            preprocessing.CategoricalEncodingPreprocessor
+        ]
+    ) -> Tuple[
+            pd.DataFrame, pd.DataFrame, Optional[pd.Series],
+            Optional[pd.Series], List[str], List[str]
+        ]:
         """Apply categorical encoding preprocessing.
-        
+
         Encodes categorical features using the configured encoding preprocessor.
         Updates categorical features list to include encoded feature names.
         This step must be completed before scaling to ensure categorical
         features are properly identified and excluded from scaling.
-        
+
         Parameters
         ----------
         X_train : pd.DataFrame
@@ -368,29 +544,44 @@ class DataManager:
         current_feature_names : List[str]
             Current feature names
         current_categorical_features : List[str]
-            Current categorical feature names (will be updated with encoded features)
+            Current categorical feature names (updated with encoded features)
         encoding_preprocessor : Optional[CategoricalEncodingPreprocessor]
             Categorical encoding preprocessor instance
-            
+
         Returns
         -------
-        tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series], Optional[pd.Series], List[str], List[str]]
-            Transformed training data, transformed test data, transformed y_train, transformed y_test,
-            updated feature names, updated categorical features (including encoded features)
+        Tuple[pd.DataFrame, pd.DataFrame, Optional[pd.Series],
+        Optional[pd.Series], List[str], List[str]]
+            Transformed training data, transformed test data, transformed
+            y_train, transformed y_test, updated feature names,
+            updated categorical features (including encoded features)
+
+        Notes
+        -----
+        This method:
+        1. Fits the encoding preprocessor on training data
+        2. Transforms both features and target variables
+        3. Updates feature names to include encoded features
+        4. Updates categorical features list to include all encoded features
+        5. Logs a warning if categorical features exist but no encoder is
+        provided
         """
         if current_categorical_features and encoding_preprocessor:
-            encoding_preprocessor.fit(X_train, y_train, categorical_features=current_categorical_features)
-            
+            encoding_preprocessor.fit(
+                X_train, y_train, current_categorical_features
+            )
+
             # Transform features and target (always returns tuple now)
             X_train, y_train = encoding_preprocessor.transform(X_train, y_train)
             X_test, y_test = encoding_preprocessor.transform(X_test, y_test)
-            
-            current_feature_names = encoding_preprocessor.get_feature_names(current_feature_names)
-            
+
+            current_feature_names = encoding_preprocessor.get_feature_names(
+                current_feature_names
+            )
+
             # Update categorical features to include encoded features
             updated_categorical_features = []
             for original_cat_feature in current_categorical_features:
-                # Find all features that start with the original categorical feature name
                 encoded_features = [
                     f for f in current_feature_names
                     if f.startswith(f"{original_cat_feature}_")
@@ -398,12 +589,16 @@ class DataManager:
                 updated_categorical_features.extend(encoded_features)
             current_categorical_features = updated_categorical_features
         elif current_categorical_features and not encoding_preprocessor:
-            # Check if there are categorical features but no encoding preprocessor
+        # Check if there are categorical features but no encoding preprocessor
             self.services.logger.logger.warning(
-                f"Categorical features detected: {current_categorical_features} but no CategoricalEncodingPreprocessor provided. "
+                f"Categorical features detected: {current_categorical_features}"
+                " but no CategoricalEncodingPreprocessor provided. "
                 "You must encode categorical features before proceeding."
             )
-        return X_train, X_test, y_train, y_test, current_feature_names, current_categorical_features
+        return (
+            X_train, X_test, y_train, y_test, current_feature_names,
+            current_categorical_features
+        )
 
     def _apply_scaling(
         self,
@@ -412,15 +607,15 @@ class DataManager:
         y_train: Optional[pd.Series],
         current_feature_names: List[str],
         current_categorical_features: List[str],
-        scaling_preprocessor: Optional[ScalingPreprocessor]
+        scaling_preprocessor: Optional[preprocessing.ScalingPreprocessor]
     ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]:
         """Apply scaling preprocessing (only to continuous features).
-        
-        Scales continuous features while excluding categorical features (both original
-        and encoded). This step occurs after categorical encoding to ensure
-        categorical features are properly identified and excluded from scaling.
-        The actual transformation is applied later in DataSplitInfo.
-        
+
+        Scales continuous features while excluding categorical features (both
+        original and encoded). This step occurs after categorical encoding to
+        ensure categorical features are properly identified and excluded from
+        scaling. The actual transformation is applied later in DataSplitInfo.
+
         Parameters
         ----------
         X_train : pd.DataFrame
@@ -435,30 +630,45 @@ class DataManager:
             Categorical features to exclude from scaling (original + encoded)
         scaling_preprocessor : Optional[ScalingPreprocessor]
             Scaling preprocessor instance
-            
+
         Returns
         -------
         tuple[pd.DataFrame, pd.DataFrame, Optional[Any]]
             Training data, test data (unchanged), fitted scaler
+
+        Raises
+        ------
+        ValueError
+            If scaling preprocessor is provided but no continuous features
+            are found to scale
+
+        Notes
+        -----
+        This method:
+        1. Identifies continuous features (excludes all categorical features)
+        2. Fits the scaler on continuous features only
+        3. Returns the fitted scaler for later use
+        4. Raises an error if no continuous features are available for scaling
         """
         fitted_scaler = None
         if scaling_preprocessor:
             # Exclude categorical features from scaling
             features_to_exclude = current_categorical_features.copy()
-            
+
             # Check if there are any continuous features to scale
             all_features = set(current_feature_names)
             features_to_scale = all_features - set(features_to_exclude)
 
             if not features_to_scale:
                 raise ValueError(
-                    "ScalingPreprocessor provided but no continuous features found to scale. "
-                    "All features are categorical or encoded categorical features. "
-                    "Remove the ScalingPreprocessor or ensure there are continuous features in your data."
+                    "ScalingPreprocessor provided but no continuous features "
+                    "found to scale. All features are categorical or encoded "
+                    "categorical features. Remove the ScalingPreprocessor or "
+                    "ensure there are continuous features in your data."
                 )
 
             # Apply scaling (only to continuous features)
-            scaling_preprocessor.fit(X_train, y_train, categorical_features=features_to_exclude)
+            scaling_preprocessor.fit(X_train, y_train, features_to_exclude)
             fitted_scaler = scaling_preprocessor.scaler
         return X_train, X_test, fitted_scaler
 
@@ -469,15 +679,15 @@ class DataManager:
         y_train: Optional[pd.Series],
         current_feature_names: List[str],
         current_categorical_features: List[str],
-        feature_selection_preprocessor: Optional[FeatureSelectionPreprocessor],
+        feature_selector: Optional[preprocessing.FeatureSelectionPreprocessor],
         fitted_scaler: Optional[Any]
     ) -> tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]:
         """Apply feature selection preprocessing.
-        
+
         Selects features using the configured feature selection preprocessor.
         Updates both feature names and categorical features to only include
         selected features. This is the final step in the preprocessing pipeline.
-        
+
         Parameters
         ----------
         X_train : pd.DataFrame
@@ -489,32 +699,45 @@ class DataManager:
         current_feature_names : List[str]
             Current feature names
         current_categorical_features : List[str]
-            Current categorical features (will be filtered to only selected ones)
-        feature_selection_preprocessor : Optional[FeatureSelectionPreprocessor]
+            Current categorical features (will filter to only selected ones)
+        feature_selector : Optional[FeatureSelectionPreprocessor]
             Feature selection preprocessor instance
         fitted_scaler : Optional[Any]
             Fitted scaler from previous step (if any)
-            
+
         Returns
         -------
         tuple[pd.DataFrame, pd.DataFrame, List[str], List[str]]
-            Transformed training data, transformed test data, updated feature names,
-            updated categorical features (only selected ones)
+            Transformed training data, transformed test data, updated feature
+            names, updated categorical features (only selected ones)
+
+        Notes
+        -----
+        This method:
+        1. Passes the fitted scaler to feature selection if available
+        2. Fits the feature selector on training data
+        3. Transforms both training and test data
+        4. Updates feature names to only include selected features
+        5. Filters categorical features to only include selected ones
         """
-        if feature_selection_preprocessor:
+        if feature_selector:
             # Pass the scaler to feature selection if it exists
             if fitted_scaler:
-                feature_selection_preprocessor.scaler = fitted_scaler
-            feature_selection_preprocessor.fit(X_train, y_train)
-            X_train = feature_selection_preprocessor.transform(X_train)
-            X_test = feature_selection_preprocessor.transform(X_test)
-            current_feature_names = feature_selection_preprocessor.get_feature_names(current_feature_names)
-            
-            # Update categorical features to only include those that were selected
+                feature_selector.scaler = fitted_scaler
+            feature_selector.fit(X_train, y_train)
+            X_train = feature_selector.transform(X_train)
+            X_test = feature_selector.transform(X_test)
+            current_feature_names = feature_selector.get_feature_names(
+                current_feature_names
+            )
+            # Update categorical features to only include the selected ones
             current_categorical_features = [
-                f for f in current_categorical_features if f in current_feature_names
+                f for f in current_categorical_features
+                if f in current_feature_names
             ]
-        return X_train, X_test, current_feature_names, current_categorical_features
+        return (
+            X_train, X_test, current_feature_names, current_categorical_features
+        )
 
     def split(
         self,
@@ -524,13 +747,17 @@ class DataManager:
         filename: str,
         table_name: Optional[str] = None,
     ) -> data_split_info.DataSplitInfo:
-        """Splits the data based on the preconfigured splitter.
+        """Split the data based on the preconfigured splitter.
+
+        Creates train-test splits for the specified dataset using the configured
+        splitting strategy and applies the complete preprocessing pipeline.
+        Results are cached to be accessed later using the same parameters.
 
         Parameters
         ----------
         data_path : str
             Path to the dataset file
-        categorical_features : list of str
+        categorical_features : List[str]
             List of categorical feature names
         group_name : str
             Name of the group for split caching
@@ -548,6 +775,28 @@ class DataManager:
         ------
         ValueError
             If group_name is provided without filename or vice versa
+
+        Notes
+        -----
+        The split process:
+        1. Loads data from the specified path
+        2. Separates features and target variables
+        3. Handles grouping columns if specified
+        4. Creates splits using the configured splitter
+        5. Applies preprocessing pipeline to each split
+        6. Creates DataSplitInfo objects for each split
+        7. Caches results for efficient reuse
+
+        Examples
+        --------
+        Create splits for a dataset:
+            >>> manager = DataManager(test_size=0.2)
+            >>> splits = manager.split(
+            ...     data_path="data.csv",
+            ...     categorical_features=["category1", "category2"],
+            ...     group_name="experiment1",
+            ...     filename="dataset1"
+            ... )
         """
         split_key = (group_name, filename, table_name)
 
@@ -572,8 +821,12 @@ class DataManager:
             y_train, y_test = y.iloc[train_idx], y.iloc[test_idx] # pylint: disable=C0103
 
             # Apply preprocessing
-            X_train, X_test, y_train, y_test, feature_names, categorical_features, continuous_features, fitted_scaler = self._apply_preprocessing(  # pylint: disable=C0103
-                X_train, X_test, y_train, y_test, feature_names, categorical_features
+            (
+                X_train, X_test, y_train, y_test, feature_names, # pylint: disable=C0103
+                categorical_features, continuous_features, fitted_scaler
+            ) = self._apply_preprocessing(  # pylint: disable=C0103
+                X_train, X_test, y_train, y_test, feature_names,
+                categorical_features
             )
 
             if self.group_column:
@@ -611,11 +864,23 @@ class DataManager:
         return split_container
 
     def to_markdown(self) -> str:
-        """Creates a markdown representation of the DataManager configuration.
+        """Create a markdown representation of the DataManager configuration.
+
+        Generates a formatted markdown string describing the current
+        DataManager configuration including splitting parameters and
+        preprocessing pipeline.
 
         Returns
         -------
-        str: Markdown formatted string describing the configuration.
+        str
+            Markdown formatted string describing the configuration
+
+        Examples
+        --------
+        Generate configuration documentation:
+            >>> manager = DataManager(test_size=0.2, n_splits=5)
+            >>> md = manager.to_markdown()
+            >>> print(md)
         """
         config = {
             "test_size": self.test_size,
@@ -625,7 +890,9 @@ class DataManager:
             "stratified": self.stratified,
             "random_state": self.random_state,
             "problem_type": self.problem_type,
-            "preprocessors": [type(p).__name__ for p in self.preprocessors] if self.preprocessors else [],
+            "preprocessors": [
+                type(p).__name__ for p in self.preprocessors
+            ] if self.preprocessors else [],
         }
 
         md = [
@@ -642,6 +909,30 @@ class DataManager:
 
     def export_params(self) -> None:
         """Export a JSON-serializable snapshot of the DataManager init params.
+
+        Creates a dictionary containing all initialization parameters
+        and preprocessor configurations for serialization and rerun
+        functionality.
+
+        Returns
+        -------
+        dict
+            Dictionary containing all DataManager parameters and preprocessor
+            configurations in JSON-serializable format
+
+        Notes
+        -----
+        The exported parameters include:
+        - All DataManager initialization parameters
+        - Preprocessor configurations (exported from each preprocessor)
+        - Parameter values in a format suitable for JSON serialization
+
+        Examples
+        --------
+        Export parameters for saving:
+            >>> manager = DataManager(test_size=0.2)
+            >>> params = manager.export_params()
+            >>> # Save params to file or database
         """
         preprocessor_configs = {
             type(preprocessor).__name__: preprocessor.export_params()

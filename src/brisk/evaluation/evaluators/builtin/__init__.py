@@ -1,16 +1,66 @@
-"""Register built-in evaluators."""
+"""Register built-in evaluators.
+
+This module provides functions to register all built-in evaluators with the
+evaluator registry. It includes both model evaluation evaluators and dataset
+evaluation evaluators, covering measures, plots, and other machine learning
+evaluation methods.
+"""
 from brisk.evaluation.evaluators.builtin import (
     common_measures, common_plots, regression_plots, classification_measures,
-    classification_plots, tools, dataset_measures, dataset_plots
+    classification_plots, optimization, dataset_measures, dataset_plots
 )
 
 def register_builtin_evaluators(registry, plot_settings):
     """Register built-in evaluators for model evaluation.
     
+    Registers all built-in evaluators that work with trained models and
+    their predictions. This includes measure evaluators for calculating
+    performance metrics, plot evaluators for creating visualizations and
+    hyperparameter tuning.
+
     Parameters
     ----------
     registry : EvaluatorRegistry
         The registry to register evaluators with
+    plot_settings : PlotSettings
+        The plot settings containing theme and color configuration
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function registers the following evaluators:
+    
+    **Measure Evaluators:**
+    - brisk_evaluate_model: Model performance on specified measures
+    - brisk_evaluate_model_cv: Average model performance across CV splits
+    - brisk_compare_models: Compare model performance across algorithms
+    
+    **Plot Evaluators:**
+    - brisk_plot_learning_curve: Learning curve visualization
+    - brisk_plot_feature_importance: Feature importance plots
+    - brisk_plot_model_comparison: Model comparison plots
+    - brisk_plot_shapley_values: SHAP values visualization
+    - brisk_plot_pred_vs_obs: Predicted vs observed values (regression)
+    - brisk_plot_residuals: Residual plots (regression)
+    - brisk_plot_confusion_heatmap: Confusion matrix heatmap (classification)
+    - brisk_plot_roc_curve: ROC curve (classification)
+    - brisk_plot_precision_recall_curve: Precision-recall curve (classification)
+    
+    **Tool Evaluators:**
+    - brisk_hyperparameter_tuning: Hyperparameter optimization
+    - brisk_confusion_matrix: Confusion matrix calculation
+
+    Examples
+    --------
+    Register built-in evaluators:
+        >>> from brisk.evaluation.evaluators import registry
+        >>> from brisk.theme import PlotSettings
+        >>> registry = registry.EvaluatorRegistry()
+        >>> plot_settings = PlotSettings()
+        >>> register_builtin_evaluators(registry, plot_settings)
     """
     registry.register(common_measures.EvaluateModel(
         "brisk_evaluate_model",
@@ -35,8 +85,7 @@ def register_builtin_evaluators(registry, plot_settings):
             "brisk_plot_feature_importance",
             "Plot feature importance.",
             plot_settings
-        )
-    )
+    ))
     registry.register(common_plots.PlotModelComparison(
         "brisk_plot_model_comparison",
         "Compare model performance across multiple algorithms.",
@@ -75,7 +124,7 @@ def register_builtin_evaluators(registry, plot_settings):
         "Plot precision-recall curve.",
         plot_settings
     ))
-    registry.register(tools.HyperparameterTuning(
+    registry.register(optimization.HyperparameterTuning(
         "brisk_hyperparameter_tuning",
         "Hyperparameter tuning.",
         plot_settings
@@ -85,10 +134,42 @@ def register_builtin_evaluators(registry, plot_settings):
 def register_dataset_evaluators(registry, plot_settings):
     """Register evaluators for dataset evaluation.
     
+    Registers all built-in evaluators that work with datasets directly,
+    providing statistical analysis and visualization capabilities for
+    understanding data characteristics and distributions.
+
     Parameters
     ----------
     registry : EvaluatorRegistry
         The registry to register evaluators with
+    plot_settings : PlotSettings
+        The plot settings containing theme and color configuration
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function registers the following evaluators:
+    
+    **Dataset Measure Evaluators:**
+    - brisk_continuous_statistics: Compute continuous variable statistics
+    - brisk_categorical_statistics: Compute categorical variable statistics
+    
+    **Dataset Plot Evaluators:**
+    - brisk_histogram_plot: Create histogram plots for data distribution
+    - brisk_bar_plot: Create bar plots for categorical data
+    - brisk_correlation_matrix: Create correlation matrix heatmaps
+
+    Examples
+    --------
+    Register dataset evaluators:
+        >>> from brisk.evaluation.evaluators import registry
+        >>> from brisk.theme import PlotSettings
+        >>> registry = registry.EvaluatorRegistry()
+        >>> plot_settings = PlotSettings()
+        >>> register_dataset_evaluators(registry, plot_settings)
     """
     registry.register(dataset_measures.ContinuousStatistics(
         "brisk_continuous_statistics",

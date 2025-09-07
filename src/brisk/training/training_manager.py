@@ -1,8 +1,33 @@
-"""Provides the TrainingManager class to manage the training of models.
+"""Training management system for machine learning experiments.
 
-This module defines the TrainingManager class, which coordinates model training
-across multiple datasets and algorithms. Ensures all models are attempted even
-if some fail.
+This module provides comprehensive functionality for managing the training and
+evaluation of machine learning models across multiple datasets and algorithms.
+The TrainingManager class coordinates the entire experiment lifecycle, from
+setup through execution to reporting, ensuring robust handling of failures
+and comprehensive result tracking.
+
+The module integrates with the broader Brisk ecosystem, utilizing services
+for logging, reporting, evaluation, and configuration management. It provides
+a centralized way to orchestrate complex machine learning workflows while
+maintaining detailed tracking and error handling.
+
+Examples
+--------
+>>> from brisk.training.training_manager import TrainingManager
+>>> from brisk.evaluation import metric_manager
+>>> from brisk.configuration import configuration
+>>> 
+>>> # Create metric configuration
+>>> metric_config = metric_manager.MetricManager()
+>>> 
+>>> # Create configuration manager
+>>> config_manager = configuration.ConfigurationManager()
+>>> 
+>>> # Initialize training manager
+>>> trainer = TrainingManager(metric_config, config_manager)
+>>> 
+>>> # Run all experiments
+>>> trainer.run_experiments(create_report=True)
 """
 
 import collections
@@ -31,24 +56,36 @@ warnings.filterwarnings(
 
 class TrainingManager:
     """Manage the training and evaluation of machine learning models.
-
-    Coordinates model training using various algorithms, evaluates them on
-    different datasets, and generates reports. Integrates with EvaluationManager
-    for model evaluation and ReportManager for generating HTML reports.
-
+    
+    This class coordinates the entire lifecycle of machine learning experiments,
+    from setup through execution to reporting. It manages model training across
+    multiple datasets and algorithms, ensuring robust error handling and
+    comprehensive result tracking.
+    
+    The TrainingManager integrates with the broader Brisk ecosystem, utilizing
+    services for logging, reporting, evaluation, and configuration management.
+    It provides a centralized way to orchestrate complex machine learning
+    workflows while maintaining detailed tracking and error handling.
+    
     Parameters
     ----------
     metric_config : MetricManager
-        Configuration for evaluation metrics
+        Configuration for evaluation metrics and scoring
     config_manager : ConfigurationManager
-        Instance containing data needed to run experiments
-
+        Instance containing all data and configuration needed to run experiments
+        
     Attributes
     ----------
+    services : ServiceBundle
+        Bundle of all available services (logging, reporting, I/O, etc.)
+    results_dir : str
+        Directory where experiment results are stored
     metric_config : MetricManager
-        Configuration for evaluation metrics
+        Configuration for evaluation metrics and scoring
+    eval_manager : EvaluationManager
+        Manager for handling model evaluation and metrics
     data_managers : dict
-        Maps group names to their data managers
+        Maps group names to their corresponding data managers
     experiments : collections.deque
         Queue of experiments to run
     logfile : str
@@ -57,18 +94,76 @@ class TrainingManager:
         Structure of output data organization
     description_map : dict
         Mapping of names to descriptions
+    experiment_groups : dict
+        Mapping of experiment group names to their configurations
     workflow_mapping : dict
         Maps experiment group names to their assigned workflow classes
     experiment_paths : defaultdict
         Nested structure tracking experiment output paths
     experiment_results : defaultdict
-        Stores results of all experiments
+        Stores results of all experiments with status and timing
+        
+    Notes
+    -----
+    The TrainingManager uses a workflow-based approach where different
+    experiment groups can use different workflow classes. This allows for
+    flexibility in handling different types of machine learning tasks
+    (classification, regression, etc.) with appropriate workflows.
+    
+    Error handling is comprehensive - individual experiment failures don't
+    stop the overall process, and detailed logging is maintained for
+    debugging and analysis.
+    
+    Examples
+    --------
+    >>> from brisk.training.training_manager import TrainingManager
+    >>> from brisk.evaluation import metric_manager
+    >>> from brisk.configuration import configuration
+    >>> 
+    >>> # Create metric configuration
+    >>> metric_config = metric_manager.MetricManager()
+    >>> 
+    >>> # Create configuration manager with experiments
+    >>> config_manager = configuration.ConfigurationManager()
+    >>> 
+    >>> # Initialize training manager
+    >>> trainer = TrainingManager(metric_config, config_manager)
+    >>> 
+    >>> # Run all experiments with report generation
+    >>> trainer.run_experiments(create_report=True)
     """
     def __init__(
         self,
         metric_config: metric_manager.MetricManager,
         config_manager: configuration.ConfigurationManager
-    ):
+    ) -> None:
+        """Initialize the TrainingManager with configuration and services.
+        
+        This constructor sets up the training manager with all necessary
+        components for running machine learning experiments. It initializes
+        services, evaluation managers, and data structures for tracking
+        experiments and results.
+        
+        Parameters
+        ----------
+        metric_config : MetricManager
+            Configuration for evaluation metrics and scoring
+        config_manager : ConfigurationManager
+            Instance containing all data and configuration needed to run
+            experiments
+            
+        Notes
+        -----
+        The constructor initializes several key components:
+        - Services bundle for logging, reporting, I/O, etc.
+        - Evaluation manager for handling model evaluation
+        - Data managers for different experiment groups
+        - Experiment queue and workflow mappings
+        - Result tracking structures
+        
+        The experiment_paths structure is a nested defaultdict that tracks
+        output paths for each experiment group, dataset, split, and experiment.
+        """
         self.services = get_services()
         self.results_dir = self.services.io.results_dir
         self.metric_config = metric_config
@@ -97,26 +192,51 @@ class TrainingManager:
         self,
         create_report: bool = True
     ) -> None:
-        """Runs the specified Workflow for each experiment and generates report.
-
-        Uses the workflow_mapping to determine which workflow class to use for
-        each experiment group. All experiment groups must have explicit workflow
-        assigned.
-
+        """Run all experiments in the queue and generate a comprehensive report.
+        
+        This method orchestrates the execution of all experiments in the queue,
+        using the workflow_mapping to determine which workflow class to use for
+        each experiment group. It provides comprehensive error handling and
+        progress tracking throughout the process.
+        
+        The method ensures that all experiments are attempted even if some fail,
+        and provides detailed logging and result tracking. After all experiments
+        complete, it can generate an HTML report summarizing the results.
+        
         Parameters
         ----------
-        create_report : bool
-            Whether to generate an HTML report after all experiments.
-            Defaults to True.
-
+        create_report : bool, default=True
+            Whether to generate an HTML report after all experiments complete.
+            If True, creates a comprehensive report with all results and
+            visualizations.
+            
         Raises
         ------
         ValueError
-            If any experiment group does not have a workflow assigned.
-
-        Returns
-        -------
-        None
+            If any experiment group does not have a workflow assigned in the
+            workflow_mapping
+            
+        Notes
+        -----
+        The method performs the following steps:
+        1. Resets experiment results tracking
+        2. Creates a progress bar for monitoring
+        3. Processes each experiment in the queue
+        4. Handles individual experiment failures gracefully
+        5. Prints a summary of all experiment results
+        6. Exits early if all experiments failed
+        7. Generates HTML report if requested
+        8. Exports rerun configuration for reproducibility
+        
+        Examples
+        --------
+        >>> trainer = TrainingManager(metric_config, config_manager)
+        >>> 
+        >>> # Run experiments with report generation
+        >>> trainer.run_experiments(create_report=True)
+        >>> 
+        >>> # Run experiments without report generation
+        >>> trainer.run_experiments(create_report=False)
         """
         self._reset_experiment_results()
         progress_bar = tqdm.tqdm(
@@ -135,7 +255,7 @@ class TrainingManager:
 
         self._print_experiment_summary()
         all_failed = all(
-            result['status'] == 'FAILED'
+            result["status"] == "FAILED"
             for group_datasets in self.experiment_results.values()
             for experiments in group_datasets.values()
             for result in experiments
@@ -151,37 +271,58 @@ class TrainingManager:
         self._cleanup(self.results_dir, progress_bar)
         if create_report:
             self._create_report(self.results_dir)
-            
+
         try:
             self.services.rerun.export_and_save(Path(self.results_dir))
-        except Exception as e:
-            self.services.logger.logger.warning(f"Failed to save rerun config: {e}")
+        except (ValueError, TypeError, FileNotFoundError) as e:
+            self.services.logger.logger.warning(
+                f"Failed to save rerun config: {e}"
+            )
 
     def _run_single_experiment(
         self,
         current_experiment: experiment.Experiment,
         results_dir: str
     ) -> None:
-        """Runs a single Experiment and handles its outcome.
-
-        Sets up the experiment environment, determines the appropriate workflow
-        from the workflow_mapping based on the experiment's group name.
-
+        """Run a single experiment and handle its outcome.
+        
+        This method sets up the experiment environment, determines the
+        appropriate workflow from the workflow_mapping based on the experiment's
+        group name, and executes the experiment with comprehensive error
+        handling.
+        
+        The method handles both successful and failed experiments, logging
+        appropriate information and updating the experiment results tracking.
+        It also sets up warning handling to capture and log warnings during
+        experiment execution.
+        
         Parameters
         ----------
         current_experiment : Experiment
-            The experiment to run.
+            The experiment to run, containing all necessary configuration
+            and data paths
         results_dir : str
-            Directory to store results.
-        
+            Directory where experiment results will be stored
+            
         Raises
         ------
         KeyError
-            If the experiment's group name is not found in workflow_mapping.
+            If the experiment's group name is not found in workflow_mapping
+            
+        Notes
+        -----
+        The method performs the following steps:
+        1. Extracts experiment metadata (group, dataset, name, workflow)
+        2. Sets up reporting context for the experiment
+        3. Configures warning handling for detailed logging
+        4. Attempts to set up and run the workflow
+        5. Handles success or failure appropriately
+        6. Updates experiment results tracking
+        7. Clears reporting context
         
-        Returns
-        -------
-        None
+        Error handling covers a wide range of exceptions including ValueError,
+        TypeError, AttributeError, KeyError, FileNotFoundError, ImportError,
+        MemoryError, and RuntimeError.
         """
         success = False
         start_time = time.time()
@@ -238,7 +379,6 @@ class TrainingManager:
         ) as e:
             self._handle_failure(
                 group_name,
-                dataset_name,
                 experiment_name,
                 start_time,
                 e,
@@ -254,7 +394,6 @@ class TrainingManager:
             self._handle_success(
                 start_time,
                 group_name,
-                dataset_name,
                 experiment_name,
                 dataset,
                 current_experiment.split_index
@@ -265,11 +404,23 @@ class TrainingManager:
             self.services.reporting.clear_context()
 
     def _reset_experiment_results(self) -> None:
-        """Set self.experiment_results to a defaultdict of lists.
-
-        Returns
-        -------
-        None
+        """Reset experiment results tracking to empty state.
+        
+        This method initializes the experiment_results structure as a nested
+        defaultdict that will store results organized by group name and dataset.
+        Each experiment result is stored as a list of dictionaries containing
+        experiment metadata, status, and timing information.
+        
+        Notes
+        -----
+        The structure created is:
+        experiment_results[group_name][dataset_name] = [result1, result2, ...]
+        
+        Each result dictionary contains:
+        - experiment: Name of the experiment
+        - status: "PASSED" or "FAILED"
+        - time_taken: Formatted time string
+        - error: Error message (if failed)
         """
         self.experiment_results = collections.defaultdict(
             lambda: collections.defaultdict(list)
@@ -277,11 +428,23 @@ class TrainingManager:
 
     def _create_report(self, results_dir: str) -> None:
         """Create an HTML report from the experiment results.
-
+        
+        This method generates a comprehensive HTML report containing all
+        experiment results, visualizations, and analysis. It uses the
+        reporting service to collect all data and the report renderer
+        to generate the final HTML output.
+        
         Parameters
         ----------
         results_dir : str
-            Directory where results are stored.
+            Directory where the HTML report will be saved
+            
+        Notes
+        -----
+        The method uses the reporting service to collect all experiment data
+        and then uses the ReportRenderer to generate the final HTML report.
+        The report includes all visualizations, metrics, and analysis results
+        from the completed experiments.
         """
         report_data = self.services.reporting.get_report_data()
         report_renderer.ReportRenderer().render(report_data, results_dir)
@@ -292,31 +455,47 @@ class TrainingManager:
         workflow: Type[workflow_module.Workflow],
         results_dir: str
     ) -> workflow_module.Workflow:
-        """Prepares a workflow instance for experiment execution.
-
-        Sets up data, algorithms, and evaluation manager for the workflow.
-        Creates a new instance of the specified workflow class with all
-        necessary configuration.
-
+        """Prepare a workflow instance for experiment execution.
+        
+        This method sets up all necessary components for running a workflow,
+        including data splitting, evaluation manager configuration, and
+        workflow instantiation with all required parameters.
+        
+        The method handles data loading, splitting, and preparation for
+        the specific experiment, then creates a configured workflow instance
+        ready for execution.
+        
         Parameters
         ----------
         current_experiment : Experiment
-            The experiment to set up.
+            The experiment to set up, containing all configuration and data
+            paths
         workflow : Type[Workflow]
-            The workflow class to instantiate.
+            The workflow class to instantiate for this experiment
         results_dir : str
-            Directory for results.
-        group_name : str
-            Name of the experiment group.
-        dataset_name : str
-            Name of the dataset.
-        experiment_name : str
-            Name of the experiment.
-
+            Base directory where experiment results will be stored
+            
         Returns
         -------
         Workflow
-            Configured workflow instance.
+            Fully configured workflow instance ready for execution
+            
+        Notes
+        -----
+        The method performs the following setup steps:
+        1. Extracts experiment metadata (group, dataset, name)
+        2. Loads and splits the dataset using the appropriate data manager
+        3. Creates the experiment output directory
+        4. Configures the evaluation manager with experiment values
+        5. Instantiates the workflow with all required parameters
+        
+        The workflow instance is configured with:
+        - Training and test data (X_train, X_test, y_train, y_test)
+        - Algorithm names to use
+        - Feature names for the dataset
+        - Output directory for results
+        - Workflow-specific attributes
+        - Evaluation manager for metrics
         """
         group_name = current_experiment.group_name
         dataset_name = current_experiment.dataset_name
@@ -359,27 +538,38 @@ class TrainingManager:
         self,
         start_time: float,
         group_name: str,
-        dataset_name: str,
         experiment_name: str,
         dataset: str,
         split_index: int
     ) -> None:
         """Handle results for a successful experiment.
-
+        
+        This method processes the successful completion of an experiment,
+        calculating execution time, updating result tracking, and logging
+        the success with appropriate formatting.
+        
         Parameters
         ----------
         start_time : float
-            Time when experiment started
+            Time when the experiment started (from time.time())
         group_name : str
-            Name of experiment group
+            Name of the experiment group
         dataset_name : str
-            Name of dataset
+            Name of the dataset (tuple format)
         experiment_name : str
-            Name of experiment
-
-        Returns
-        -------
-        None
+            Name of the experiment
+        dataset : str
+            Display name of the dataset
+        split_index : int
+            Index of the data split used
+            
+        Notes
+        -----
+        The method:
+        1. Calculates elapsed time from start_time
+        2. Updates experiment_results with success status
+        3. Logs success message with timing information
+        4. Uses formatted time display (minutes and seconds)
         """
         elapsed_time = time.time() - start_time
         self.experiment_results[group_name][dataset].append({
@@ -396,7 +586,6 @@ class TrainingManager:
     def _handle_failure(
         self,
         group_name: str,
-        dataset_name: str,
         experiment_name: str,
         start_time: float,
         error: Exception,
@@ -404,19 +593,36 @@ class TrainingManager:
         split_index: int
     ) -> None:
         """Handle results and logging for a failed experiment.
-
+        
+        This method processes the failure of an experiment, calculating
+        execution time, logging detailed error information, and updating
+        result tracking with failure status and error details.
+        
         Parameters
         ----------
         group_name : str
-            Name of experiment group
+            Name of the experiment group
         dataset_name : str
-            Name of dataset
+            Name of the dataset (tuple format)
         experiment_name : str
-            Name of experiment
+            Name of the experiment
         start_time : float
-            Time when experiment started
+            Time when the experiment started (from time.time())
         error : Exception
-            Exception that caused the failure
+            Exception that caused the experiment to fail
+        dataset : str
+            Display name of the dataset
+        split_index : int
+            Index of the data split used
+            
+        Notes
+        -----
+        The method:
+        1. Calculates elapsed time from start_time
+        2. Logs detailed error information with context
+        3. Updates experiment_results with failure status
+        4. Logs failure message with timing information
+        5. Includes error message in the result tracking
         """
         elapsed_time = time.time() - start_time
         error_message = (
@@ -447,26 +653,37 @@ class TrainingManager:
         dataset_name: Optional[str] = None,
         experiment_name: Optional[str] = None
     ) -> None:
-        """Log warnings with specific formatting.
-
+        """Log warnings with specific formatting and context.
+        
+        This method provides custom warning logging that includes experiment
+        context information, making it easier to track warnings to specific
+        experiments and datasets during execution.
+        
         Parameters
         ----------
         message : str
-            Warning message
+            The warning message to log
         category : Type[Warning]
-            Warning category
+            The type/category of the warning
         filename : str
-            File where warning occurred
+            Name of the file where the warning occurred
         lineno : int
-            Line number where warning occurred
+            Line number where the warning occurred
         dataset_name : str, optional
-            Name of dataset, by default None
+            Name of the dataset being processed, by default None
         experiment_name : str, optional
-            Name of experiment, by default None
-
-        Returns
-        -------
-        None
+            Name of the experiment being run, by default None
+            
+        Notes
+        -----
+        The method formats warnings with:
+        - Dataset and experiment context
+        - File and line number information
+        - Warning category and message
+        - Clear separation for readability
+        
+        This helps with debugging by providing context about which
+        experiment and dataset triggered the warning.
         """
         log_message = (
             f"\n\nDataset Name: {dataset_name} \n"
@@ -479,9 +696,24 @@ class TrainingManager:
 
     def _print_experiment_summary(self) -> None:
         """Print experiment summary organized by group and dataset.
-
-        Displays a formatted table showing the status and execution time
-        for each experiment, grouped by dataset and experiment group.
+        
+        This method displays a comprehensive summary of all experiment results
+        in a formatted table, showing the status and execution time for each
+        experiment, organized by experiment group and dataset.
+        
+        Notes
+        -----
+        The summary includes:
+        - Group-by-group organization of results
+        - Dataset-by-dataset breakdown within each group
+        - Experiment name, status, and execution time
+        - Clear formatting with separators and headers
+        - Brisk version information at the end
+        
+        The output is formatted as a table with columns:
+        - Experiment: Name of the experiment
+        - Status: "PASSED" or "FAILED"
+        - Time: Execution time in formatted format
         """
         print("\n" + "="*70)
         print("EXPERIMENT SUMMARY")
@@ -512,26 +744,41 @@ class TrainingManager:
         split_index: int,
         experiment_name: str
     ) -> str:
-        """Creates and returns the directory path for experiment results.
-
+        """Create and return the directory path for experiment results.
+        
+        This method creates a structured directory path for storing experiment
+        results, organizing them by group, dataset, split, and experiment name.
+        It also creates the directory if it doesn't exist and tracks the path
+        in the experiment_paths structure.
+        
         Parameters
         ----------
         results_dir : str
-            Base results directory.
-
+            Base directory where all results are stored
         group_name : str
-            Name of the experiment group.
-
+            Name of the experiment group
         dataset_name : str
-            Name of the dataset.
-
+            Name of the dataset (tuple format)
+        split_index : int
+            Index of the data split being used
         experiment_name : str
-            Name of the experiment.
-
+            Name of the specific experiment
+            
         Returns
         -------
         str
-            Path to the experiment directory.
+            Full path to the experiment directory
+            
+        Notes
+        -----
+        The directory structure created is:
+        results_dir/group_name/dataset_name/split_{split_index}/experiment_name/
+        
+        For datasets with table names, the directory name includes both
+        the dataset name and table name separated by an underscore.
+        
+        The method also updates the experiment_paths tracking structure
+        for later reference.
         """
         if dataset_name[1] is None:
             dataset_dir_name = dataset_name[0]
@@ -540,8 +787,8 @@ class TrainingManager:
 
         full_path = os.path.normpath(
             os.path.join(
-                results_dir, group_name, dataset_dir_name, f"split_{split_index}",
-                experiment_name
+                results_dir, group_name, dataset_dir_name,
+                f"split_{split_index}", experiment_name
             )
         )
         if not os.path.exists(full_path):
@@ -554,35 +801,58 @@ class TrainingManager:
         return full_path
 
     def _format_time(self, seconds: float) -> str:
-        """Formats time taken in minutes and seconds.
-
+        """Format time taken in minutes and seconds.
+        
+        This method converts a time duration in seconds to a human-readable
+        format showing minutes and seconds, making it easier to understand
+        experiment execution times.
+        
         Parameters
         ----------
         seconds : float
-            Time taken in seconds.
-
+            Time duration in seconds
+            
         Returns
         -------
         str
-            Formatted time string.
+            Formatted time string in "Xm Ys" format
+            
+        Examples
+        --------
+        >>> trainer = TrainingManager(metric_config, config_manager)
+        >>> trainer._format_time(125.5)
+        '2m 5s'
+        >>> trainer._format_time(60.0)
+        '1m 0s'
+        >>> trainer._format_time(30.0)
+        '0m 30s'
         """
         mins, secs = divmod(seconds, 60)
         return f"{int(mins)}m {int(secs)}s"
 
     def _cleanup(self, results_dir: str, progress_bar: tqdm.tqdm) -> None:
-        """Shuts down logging and deletes error_log.txt if it is empty.
-
+        """Clean up resources and remove empty error log files.
+        
+        This method performs cleanup operations after all experiments
+        have completed, including closing the progress bar and removing
+        empty error log files to keep the results directory clean.
+        
         Parameters
         ----------
         results_dir : str
-            Directory where results are stored.
-
+            Directory where results are stored
         progress_bar : tqdm.tqdm
-            Progress bar to close.
-
-        Returns
-        -------
-        None
+            Progress bar instance to close
+            
+        Notes
+        -----
+        The cleanup process:
+        1. Closes the progress bar to free resources
+        2. Checks if error_log.txt exists and is empty
+        3. Removes empty error log files to keep directory clean
+        
+        This helps maintain a clean results directory by removing
+        unnecessary empty log files.
         """
         progress_bar.close()
         error_log_path = os.path.join(results_dir, "error_log.txt")

@@ -1,6 +1,32 @@
-"""IO related utilities."""
+"""I/O utilities and services for file operations and data management.
 
-from pathlib import Path
+This module provides comprehensive I/O functionality for the Brisk package,
+including file saving/loading, plot generation, data processing, and dynamic
+module loading. It serves as the central hub for all file-based operations
+in the machine learning pipeline.
+
+The module includes specialized classes and utilities for handling various
+data formats, plot types, and configuration files, with robust error handling
+and metadata management.
+
+Examples
+--------
+>>> from brisk.services.io import IOService, load_data
+>>> from pathlib import Path
+>>> 
+>>> # Create I/O service
+>>> io_service = IOService("io", Path("results"), Path("output"))
+>>> 
+>>> # Load data
+>>> df = load_data("data.csv")
+>>> 
+>>> # Save data and plots
+>>> data = {"accuracy": 0.95}
+>>> io_service.save_to_json(data, Path("results.json"), {})
+>>> io_service.save_plot(Path("plot.png"), plot=my_plot)
+"""
+
+import pathlib
 from typing import Optional, Any, Dict, Union, TYPE_CHECKING
 import json
 import os
@@ -26,38 +52,129 @@ if TYPE_CHECKING:
     from brisk.training import workflow as workflow_module
 
 class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return list(obj)
-        return super(NumpyEncoder, self).default(obj)
+    """Custom JSON encoder for NumPy data types.
+    
+    This encoder extends the standard JSON encoder to handle NumPy data types
+    that are not natively JSON serializable. It converts NumPy integers,
+    floats, and arrays to their Python equivalents.
+    
+    Notes
+    -----
+    This encoder is used automatically when saving data with NumPy arrays
+    or scalars to JSON files through the IOService.
+    
+    Examples
+    --------
+    >>> import json
+    >>> import numpy as np
+    >>> from brisk.services.io import NumpyEncoder
+    >>> 
+    >>> data = {
+    ...     "accuracy": np.float64(0.95),
+    ...     "scores": np.array([0.1, 0.2, 0.3])
+    ... }
+    >>> json_str = json.dumps(data, cls=NumpyEncoder)
+    >>> print(json_str)  # {"accuracy": 0.95, "scores": [0.1, 0.2, 0.3]}
+    """
+    def default(self, o: Any) -> Any:
+        """Convert NumPy objects to JSON-serializable types.
+        
+        Parameters
+        ----------
+        o : Any
+            The object to convert
+            
+        Returns
+        -------
+        Any
+            JSON-serializable representation of the object
+        """
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return list(o)
+        return super(NumpyEncoder, self).default(o)
 
 
 class IOService(base.BaseService):
-    """IO service for saving and loading files.
+    """I/O service for file operations, data loading, and plot management.
     
-    Parameters
-    ----------
-    name : str
-        The name of the service
-
-    results_dir : Path
-        The root directory for all results, does not change at runtime.
-        
-    output_dir : Path
-        The current output directory, will be changed at runtime.
-
+    This service provides comprehensive I/O functionality for the Brisk package,
+    including saving/loading data files, generating and saving plots, dynamic
+    module loading, and configuration management. It handles various file
+    formats and provides robust error handling and metadata management.
+    
+    The service maintains separate directories for results (static) and output
+    (dynamic), allowing for organized file management throughout experiments.
+    
     Attributes
     ----------
     results_dir : Path
-        The root directory for all results, does not change at runtime.
+        The root directory for all results, does not change at runtime
     output_dir : Path
-        The current output directory, will be changed at runtime.
+        The current output directory, will be changed at runtime
+    format : str
+        Default format for saving plots (default: "png")
+    width : int
+        Default plot width in inches (default: 10)
+    height : int
+        Default plot height in inches (default: 8)
+    dpi : int
+        Default plot DPI (default: 300)
+    transparent : bool
+        Whether to save plots with transparent background (default: False)
+        
+    Notes
+    -----
+    The service automatically creates output directories as needed and
+    integrates with the reporting service to store plot data for reports.
+    
+    Examples
+    --------
+    >>> from brisk.services.io import IOService
+    >>> from pathlib import Path
+    >>> 
+    >>> # Create I/O service
+    >>> io_service = IOService("io", Path("results"), Path("output"))
+    >>> 
+    >>> # Save data
+    >>> data = {"accuracy": 0.95, "precision": 0.92}
+    >>> io_service.save_to_json(data, Path("results.json"), {})
+    >>> 
+    >>> # Save plot
+    >>> io_service.save_plot(Path("plot.png"), plot=my_plot)
+    >>> 
+    >>> # Load data
+    >>> df = io_service.load_data("data.csv")
     """
-    def __init__(self, name: str, results_dir: Path, output_dir: Path):
+    def __init__(
+        self,
+        name: str,
+        results_dir: pathlib.Path,
+        output_dir: pathlib.Path
+    ) -> None:
+        """Initialize the I/O service with directories and default settings.
+        
+        This constructor sets up the I/O service with the specified directories
+        and default plot settings. The service will use these settings for
+        all subsequent file operations unless overridden.
+        
+        Parameters
+        ----------
+        name : str
+            The name identifier for this service
+        results_dir : Path
+            The root directory for all results (static)
+        output_dir : Path
+            The current output directory (dynamic, can be changed)
+            
+        Notes
+        -----
+        The output directory can be changed at runtime using `set_output_dir()`.
+        Default plot settings can be modified using `set_io_settings()`.
+        """
         super().__init__(name)
         self.results_dir = results_dir
         self.output_dir = output_dir
@@ -67,42 +184,60 @@ class IOService(base.BaseService):
         self.dpi = 300
         self.transparent = False
 
-    def set_output_dir(self, output_dir: Path) -> None:
+    def set_output_dir(self, output_dir: pathlib.Path) -> None:
         """Set the current output directory.
+
+        This method updates the current output directory where files will be
+        saved. This is typically called when starting a new experiment to
+        organize outputs by experiment.
 
         Parameters
         ----------
-        output_dir : Path
-            The new output directory
+        output_dir : pathlib.Path
+            The new output directory path
 
-        Returns
-        -------
-        None
+        Examples
+        --------
+        >>> io_service = IOService("io", Path("results"), Path("output"))
+        >>> io_service.set_output_dir(Path("experiment_1"))
+        >>> # Now all saves will go to experiment_1 directory
         """
         self.output_dir = output_dir
 
     def save_to_json(
         self,
         data: Dict[str, Any],
-        output_path: Union[Path, str],
+        output_path: Union[pathlib.Path, str],
         metadata: Dict[str, Any]
     ) -> None:
         """Save dictionary to JSON file with metadata.
 
+        This method saves a dictionary to a JSON file with optional metadata.
+        It automatically creates parent directories if they don't exist and
+        handles NumPy data types through the NumpyEncoder. The data is also
+        stored in the reporting service for report generation.
+
         Parameters
         ----------
-        data : dict
-            Data to save
+        data : Dict[str, Any]
+            Dictionary containing the data to save
+        output_path : Union[Path, str]
+            Path where the JSON file will be saved
+        metadata : Dict[str, Any]
+            Metadata to include with the data (stored as "_metadata" key)
 
-        output_path : str
-            The path to the output file.
+        Notes
+        -----
+        The method automatically creates parent directories and handles
+        NumPy data types. If saving fails, an error is logged but no
+        exception is raised.
 
-        metadata : dict
-            Metadata to include, by default None
-
-        Returns
-        -------
-        None
+        Examples
+        --------
+        >>> io_service = IOService("io", Path("results"), Path("output"))
+        >>> data = {"accuracy": 0.95, "precision": 0.92}
+        >>> metadata = {"experiment": "exp_1", "timestamp": "2024-01-15"}
+        >>> io_service.save_to_json(data, Path("results.json"), metadata)
         """
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
@@ -124,27 +259,46 @@ class IOService(base.BaseService):
 
     def save_plot(
         self,
-        output_path: Path,
+        output_path: pathlib.Path,
         metadata: Optional[Dict[str, Any]] = None,
         plot: Optional[pn.ggplot | go.Figure] = None,
         **kwargs
     ) -> None:
-        """Save current plot to file with metadata.
+        """Save plot to file with metadata and SVG conversion.
+
+        This method saves a plot to a file in the specified format, with
+        automatic SVG conversion for report generation. It supports multiple
+        plot types including matplotlib, plotnine, and plotly figures.
 
         Parameters
         ----------
-        output_path (Path): 
-            The path to the output file.
+        output_path : Path
+            Path where the plot file will be saved
+        metadata : Optional[Dict[str, Any]], default=None
+            Metadata to include with the plot
+        plot : Optional[pn.ggplot | go.Figure], default=None
+            Plot object to save (plotnine or plotly figure)
+        **kwargs
+            Additional plot parameters (height, width, etc.)
 
-        metadata (dict, optional): 
-            Metadata to include, by default None
+        Notes
+        -----
+        The method automatically converts plots to SVG format for reports
+        and handles different plot types. If no plot is provided, it saves
+        the current matplotlib figure.
 
-        plot (ggplot, optional): 
-            Plotnine plot object, by default None
-
-        Returns
-        -------
-        None
+        Examples
+        --------
+        >>> io_service = IOService("io", Path("results"), Path("output"))
+        >>> # Save plotnine plot
+        >>> io_service.save_plot(Path("plot.png"), plot=my_plotnine_plot)
+        >>> 
+        >>> # Save plotly plot
+        >>> io_service.save_plot(Path("plot.png"), plot=my_plotly_figure)
+        >>> 
+        >>> # Save current matplotlib figure
+        >>> plt.plot([1, 2, 3], [1, 4, 9])
+        >>> io_service.save_plot(Path("plot.png"))
         """
         if not os.path.exists(output_path.parent):
             os.makedirs(output_path.parent, exist_ok=True)
@@ -185,7 +339,7 @@ class IOService(base.BaseService):
         self,
         data: Dict,
         metadata: Dict,
-        output_path: Union[Path, str]
+        output_path: Union[pathlib.Path, str]
     ):
         if metadata:
             data["_metadata"] = metadata
@@ -264,24 +418,42 @@ class IOService(base.BaseService):
         data_path: str,
         table_name: Optional[str] = None
     ) -> pd.DataFrame:
-        """Loads data from a CSV, Excel file, or SQL database.
+        """Load data from CSV, Excel, or SQL database files.
+
+        This static method loads data from various file formats into a pandas
+        DataFrame. It automatically detects the file format based on the
+        file extension and handles the appropriate loading method.
 
         Parameters
         ----------
         data_path : str
             Path to the dataset file
-        table_name : str, optional
-            Name of the table in SQL database. Required for SQL databases.
+        table_name : Optional[str], default=None
+            Name of the table in SQL database (required for SQL files)
 
         Returns
         -------
-        pd.DataFrame: The loaded dataset.
+        pd.DataFrame
+            The loaded dataset as a pandas DataFrame
 
         Raises
         ------
         ValueError
             If file format is unsupported or table_name is missing for SQL
-            database.
+            database
+
+        Examples
+        --------
+        >>> from brisk.services.io import IOService
+        >>> 
+        >>> # Load CSV file
+        >>> df = IOService.load_data("data.csv")
+        >>> 
+        >>> # Load Excel file
+        >>> df = IOService.load_data("data.xlsx")
+        >>> 
+        >>> # Load SQL database
+        >>> df = IOService.load_data("data.db", table_name="my_table")
         """
         file_extension = os.path.splitext(data_path)[1].lower()
 
@@ -316,31 +488,49 @@ class IOService(base.BaseService):
         object_name: str,
         required: bool = True
     ) -> Union[object, None]:
-        """
-        Dynamically loads an object from a specified module file.
+        """Dynamically load an object from a specified module file.
+
+        This static method loads a Python object from a module file at runtime.
+        It's useful for loading configuration objects, custom evaluators, or
+        other dynamic components from project files.
 
         Parameters
         ----------
         project_root : str
             Path to project root directory
         module_filename : str
-            Name of the module file
+            Name of the module file (e.g., "algorithms.py")
         object_name : str
-            Name of object to load
+            Name of the object to load from the module
         required : bool, default=True
-            Whether to raise error if object not found
+            Whether to raise an error if the object is not found
 
         Returns
         -------
-        object or None
-            Loaded object or None if not found and not required
+        Union[object, None]
+            The loaded object, or None if not found and not required
 
         Raises
         ------
         FileNotFoundError
-            If module file not found
+            If the module file is not found
         AttributeError
-            If required object not found in module
+            If the required object is not found in the module
+
+        Examples
+        --------
+        >>> from brisk.services.io import IOService
+        >>> 
+        >>> # Load a configuration object
+        >>> config = IOService.load_module_object(
+        ...     "/path/to/project", "algorithms.py", "ALGORITHM_CONFIG"
+        ... )
+        >>> 
+        >>> # Load optional object (returns None if not found)
+        >>> optional = IOService.load_module_object(
+        ...     "/path/to/project", "optional.py", "OPTIONAL_OBJ",
+        ...     required=False
+        ... )
         """
         module_path = os.path.join(project_root, module_filename)
 
@@ -360,12 +550,13 @@ class IOService(base.BaseService):
             return getattr(module, object_name)
         elif required:
             raise AttributeError(
-                f'The object \'{object_name}\' is not defined in {module_filename}'
+                f"The object \'{object_name}\' is not defined in "
+                f"{module_filename}"
             )
         else:
             return None
 
-    def load_custom_evaluators(self, evaluators_file: Path):
+    def load_custom_evaluators(self, evaluators_file: pathlib.Path):
         """Load the register_custom_evaluators() function from evaluators.py
         """
         rerun = self.get_service("rerun")
@@ -386,7 +577,8 @@ class IOService(base.BaseService):
                 loaded_module = module
             else:
                 self.get_service("logging").logger.warning(
-                    "No register_custom_evaluators function found in evaluators.py"
+                    "No register_custom_evaluators function found in "
+                    "evaluators.py"
                 )
 
             return rerun.handle_load_custom_evaluators(
@@ -399,7 +591,7 @@ class IOService(base.BaseService):
             )
             return rerun.handle_load_custom_evaluators(None, evaluators_file)
 
-    def load_base_data_manager(self, data_file: Path):
+    def load_base_data_manager(self, data_file: pathlib.Path):
         rerun = self.get_service("rerun")
         if rerun.is_coordinating:
             return rerun.handle_load_base_data_manager(None)
@@ -434,7 +626,7 @@ class IOService(base.BaseService):
             data_module.BASE_DATA_MANAGER
         )
 
-    def load_algorithms(self, algorithm_file: Path):
+    def load_algorithms(self, algorithm_file: pathlib.Path):
         rerun = self.get_service("rerun")
         if rerun.is_coordinating:
             return rerun.handle_load_algorithms(None)
@@ -445,7 +637,9 @@ class IOService(base.BaseService):
                 f"Please create algorithms.py and define an AlgorithmCollection"
             )
 
-        spec = importlib.util.spec_from_file_location("algorithms", algorithm_file)
+        spec = importlib.util.spec_from_file_location(
+            "algorithms", algorithm_file
+        )
         if spec is None or spec.loader is None:
             raise ImportError(
                 f"Failed to load algorithms module from {algorithm_file}"
@@ -461,7 +655,8 @@ class IOService(base.BaseService):
             )
         self._validate_single_variable(algorithm_file, "ALGORITHM_CONFIG")
         if not isinstance(
-            algo_module.ALGORITHM_CONFIG, algorithm_collection.AlgorithmCollection
+            algo_module.ALGORITHM_CONFIG,
+            algorithm_collection.AlgorithmCollection
         ):
             raise ValueError(
                 f"ALGORITHM_CONFIG in {algorithm_file} is not a valid "
@@ -473,7 +668,10 @@ class IOService(base.BaseService):
 
     def load_workflow(self, workflow_name: str):
         def _is_workflow_subclass(obj) -> bool:
-            """Check if an object is a subclass of Workflow without importing workflow module."""
+            """
+            Check if an object is a subclass of Workflow without importing
+            workflow module.
+            """
             try:
                 import brisk.training.workflow as workflow_module
                 return issubclass(obj, workflow_module.Workflow)
@@ -525,7 +723,7 @@ class IOService(base.BaseService):
 
     def _validate_single_variable(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
         variable_name: str
     ) -> None:
         """Validate that only a variable name is defined only once in a file.
@@ -605,4 +803,4 @@ class IOService(base.BaseService):
             )
         return rerun.handle_load_metric_config(
             metrics_module.METRIC_CONFIG
-        )    
+        )
