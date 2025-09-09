@@ -114,7 +114,8 @@ def create(project_name: str) -> None:
         os.path.join(project_dir, "settings.py"), "w", encoding="utf-8"
     ) as f:
         f.write("""# settings.py
-from brisk.configuration.configuration import Configuration, ConfigurationManager
+from brisk.configuration.configuration import Configuration
+from brisk.configuration.configuration_manager import ConfigurationManager
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(

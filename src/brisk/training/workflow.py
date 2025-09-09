@@ -279,7 +279,7 @@ class Workflow(abc.ABC):
         )
 
     @abc.abstractmethod
-    def workflow(self) -> None:
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names) -> None:
         """Abstract method defining the workflow logic.
         
         This method must be implemented by all concrete subclasses of Workflow.

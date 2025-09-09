@@ -128,7 +128,8 @@ you could define two experiment groups:
 
 .. code-block:: python
 
-    from brisk.configuration.configuration import Configuration, ConfigurationManager
+    from brisk.configuration.configuration import Configuration
+    from brisk.configuration.configuration_manager import ConfigurationManager
     from brisk.data.preprocessing import ScalingPreprocessor
 
     def create_configuration() -> ConfigurationManager:

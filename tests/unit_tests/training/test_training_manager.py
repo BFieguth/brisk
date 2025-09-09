@@ -489,7 +489,7 @@ class TestTrainingManager:
         ]
 
         training_manager._handle_success(
-            start_time, group_name, dataset_name, experiment_name, "dataset1", 0
+            start_time, group_name, experiment_name, dataset_name, 0
         )
         assert (training_manager.experiment_results
                 [group_name][dataset_name][-1]
@@ -513,18 +513,18 @@ class TestTrainingManager:
         split_index = 0
         start_time = 1734371000
         error = "This is a test error"
-        expected_error_message = (
-            "\n\nDataset Name: dataset1\n"
-            "Experiment Name: experiment1\n\n"
-            "Error: This is a test error"
-        )
+        # expected_error_message = (
+        #     "\n\nDataset Name: dataset1\n"
+        #     "Experiment Name: experiment1\n\n"
+        #     "Error: This is a test error"
+        # )
         expected_tqdm_calls = [
             "\nExperiment 'experiment1' on dataset 'dataset1' (Split 0) FAILED in 4m 48s.",
         ]
 
         training_manager._handle_failure(
-            group_name, dataset_name, experiment_name, start_time, error,
-            "dataset1", split_index
+            group_name, experiment_name, start_time, error,
+            dataset_name, split_index
         )
 
         assert (training_manager.experiment_results
