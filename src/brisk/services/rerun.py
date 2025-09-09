@@ -1109,7 +1109,7 @@ class RerunService(base.BaseService):
             plot_settings = PlotSettings(
                 theme=theme,
                 override=True,
-                format=file_io_settings.get("format"),
+                file_format=file_io_settings.get("file_format"),
                 width=file_io_settings.get("width"),
                 height=file_io_settings.get("height"),
                 dpi=file_io_settings.get("dpi"),

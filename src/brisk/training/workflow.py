@@ -273,7 +273,10 @@ class Workflow(abc.ABC):
             If called directly on the base Workflow class without
             implementing the abstract `workflow()` method
         """
-        self.workflow()
+        self.workflow(
+            self.X_train, self.X_test, self.y_train, self.y_test,
+            self.output_dir, self.feature_names
+        )
 
     @abc.abstractmethod
     def workflow(self) -> None:

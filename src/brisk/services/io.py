@@ -407,7 +407,7 @@ class IOService(base.BaseService):
 
     def set_io_settings(self, io_settings: Dict[str, Any]) -> None:
         """Set settings to use when saving plots."""
-        self.format = io_settings["format"]
+        self.format = io_settings["file_format"]
         self.width = io_settings["width"]
         self.height = io_settings["height"]
         self.dpi = io_settings["dpi"]
