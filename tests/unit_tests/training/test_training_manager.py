@@ -289,7 +289,6 @@ class TestTrainingManager:
         mock_workflow_instance.run.assert_called_once()        
         mock_handle_failure.assert_called_once_with(
             "test_group",           # group_name
-            "test_dataset",         # dataset_name  
             "test_experiment",      # experiment_name
             1234567890.0,          # start_time
             mock_workflow_instance.run.side_effect,  # the error instance
@@ -301,7 +300,7 @@ class TestTrainingManager:
         
         # Verify the error passed to _handle_failure is the correct type and message
         call_args = mock_handle_failure.call_args[0]
-        error_passed = call_args[4]  # 5th argument is the error
+        error_passed = call_args[3]  # 5th argument is the error
         assert isinstance(error_passed, error_type)
         assert str(error_passed).replace("'", "") == error_message
 
