@@ -19,12 +19,12 @@ User Guide
     .. grid-item-card::
         :columns: 12 6 6 6
         :padding: 2
-        :link: defaults/index
+        :link: add_algorithms
         :link-type: doc
 
-        Default Wrappers
-        ^^^^^^^^^^^^^^^^
-        Browse the provided metric and algorithm wrappers
+        Add Algorithms
+        ^^^^^^^^^^^^^^
+        Add more algorithms to your project
 
     .. grid-item-card::
         :columns: 12 6 6 6
@@ -65,3 +65,13 @@ User Guide
         Experiment Groups
         ^^^^^^^^^^^^^^^^^
         Modify the setup of your experiments with experiment groups
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: defaults/index
+        :link-type: doc
+
+        Default Wrappers
+        ^^^^^^^^^^^^^^^^
+        Browse the provided metric and algorithm wrappers

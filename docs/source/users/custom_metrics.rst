@@ -90,7 +90,7 @@ More details can be found in the `scikit-learn documentation <https://scikit-lea
 Create a MetricWrapper
 ----------------------
 Once the metric function is defined we simply need to create a ``MetricWrapper`` 
-and add it to the ``MetricManager``. Using the concordance correlation coefficient metric
+and add it to the ``MetricManager`` in ``metrics.py``. Using the concordance correlation coefficient metric
 function from the previous section, we can create the following ``MetricWrapper``:
 
 .. code-block:: python

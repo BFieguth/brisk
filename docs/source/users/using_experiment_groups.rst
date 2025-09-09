@@ -6,7 +6,7 @@ Using ExperimentGroups
 The ``ExperimentGroup`` object is used to define a group of experiments. This can be used
 to help organize your experiments. The ``ExperimentGroup`` class also allows you to override
 the default settings for a set of experiments. This allows you to test out different values
-without having to change the configuration file.
+without having to change the configuration files.
 
 
 Modify DataManager
@@ -99,7 +99,7 @@ we can do the following:
     )
 
 This allows you to test out different hyperparameter values without having to change the
-configuration file.
+``algorithms.py`` file.
 
 .. important::
     ``algorithm_config`` will only modify the specified hyperparameter in the 
@@ -175,7 +175,10 @@ Pass Workflow Arguments
 
 If you want to use ``workflow_args`` it is best practice to first define the default values
 in the ``Configuration`` object. This will ensure that the ``Workflow`` class has the
-correct attributes. For example if we want to use a different value of ``kfold`` for each
+correct attributes for every run. If a value is not set for a workflow argument in an experiment group,
+the workflow may fail when trying to use this argument. 
+
+As an example say we want to use a different value of ``kfold`` for each
 experiment group we can do the following. First we define the default value in the 
 ``Configuration`` object:
 

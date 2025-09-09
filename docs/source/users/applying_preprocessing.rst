@@ -5,7 +5,7 @@ Applying Preprocessing
 
 Brisk provides built-in preprocessing capabilities for missing data handling, 
 scaling, categorical encoding, and feature selection. You can configure preprocessing 
-in your ``DataManager`` and use experiment groups to compare different 
+in your ``DataManager`` or use experiment groups to apply different 
 preprocessing strategies. See 
 :doc:`Using Experiment Groups </users/using_experiment_groups>` for more details.
 
