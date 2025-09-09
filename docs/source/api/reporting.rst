@@ -12,4 +12,5 @@ Module Contents
    :maxdepth: 1
    :hidden:
 
-   reporting/formatting
+   reporting/report_renderer
+   reporting/report_data

@@ -58,27 +58,67 @@ def setup(app):
     with open(docs_path / '_api_objects_table.rst', 'w') as f:
         f.write(generate_list_table())
     
-    with open(docs_path / '_data_objects_table.rst', 'w') as f:
-        f.write(generate_list_table(['DataManager', 'DataSplitInfo']))
+    with open(docs_path / "_builtin_objects_table.rst", "w") as f:
+        f.write(generate_list_table([
+            "ConfusionMatrix", "PlotConfusionHeatmap", "PlotRocCurve",
+            "PlotPrecisionRecallCurve", "EvaluateModel", "EvaluateModelCV",
+            "CompareModels", "PlotLearningCurve", "PlotFeatureImportance",
+            "PlotModelComparison", "PlotShapleyValues", "ContinuousStatistics",
+            "CategoricalStatistics", "Histogram", "BarPlot", "CorrelationMatrix",
+            "HyperparameterTuning", "PlotPredVsObs", "PlotResiduals"
+        ]))
+
+    with open(docs_path / "_cli_objects_table.rst", "w") as f:
+        f.write(generate_list_table([
+            "EnvironmentManager", "EnvironmentDiff", "VersionMatch",
+            "load_sklearn_dataset", "create", "run", "load_data", "create_data",
+            "export_env", "check_env"
+        ]))
 
     with open(docs_path / "_configuration_objects_table.rst", "w") as f:
         f.write(generate_list_table([
             "Configuration", "ExperimentFactory", "ExperimentGroup", 
             "Experiment", "ConfigurationManager", "AlgorithmWrapper",
-            "find_project_root"
+            "find_project_root", "AlgorithmCollection"
+        ]))
+
+    with open(docs_path / '_data_objects_table.rst', 'w') as f:
+        f.write(generate_list_table([
+            'DataManager', 'DataSplitInfo', "DataSplits"
         ]))
 
     with open(docs_path / '_evaluation_objects_table.rst', 'w') as f:
         f.write(generate_list_table([
-            'EvaluationManager', 'MetricManager', 'MetricWrapper'
+            'EvaluationManager', 'MetricManager', 'MetricWrapper', "EvaluatorRegistry",
+            "PlotEvaluator", "MeasureEvaluator", "DatasetPlotEvaluator",
+            "DatasetMeasureEvaluator", "BaseEvaluator"
         ]))
 
     with open(docs_path / '_reporting_objects_table.rst', 'w') as f:
-        f.write(generate_list_table(['ReportManager']))
+        f.write(generate_list_table([
+            "ReportRenderer", "ReportData", "RoundedModel", "TableData",
+            "PlotData", "FeatureDistribution", "DataManager", "Navbar",
+            "ExperimentGroup", "Experiment", "Dataset"
+        ]))
+
+    with open(docs_path / "_services_objects_table.rst", "w") as f:
+        f.write(generate_list_table([
+            "TqdmLoggingHandler", "FileFormatter", "BaseService",
+            "GlobalServiceManager", "ServiceBundle", "IOService", "NumpyEncoder",
+            "LoggingService", "TqdmLoggingHandler", "FileFormatter", "MetadataService",
+            "ReportingService", "ReportingContext", "RerunService", "RerunStrategy",
+            "CaptureStrategy", "CoordinatingStrategy", "UtilityService"
+        ]))
+
+    with open(docs_path / "_theme_objects_table.rst", "w") as f:
+        f.write(generate_list_table([
+            "PlotSettings", "ThemePickleJSONSerializer", "PickleJSONEncoder",
+            "PickleJSONDecoder"
+        ]))
 
     with open(docs_path / '_training_objects_table.rst', 'w') as f:
         f.write(generate_list_table([
-            'TrainingManager', 'Workflow', "TqdmLoggingHandler", "FileFormatter"
+            'TrainingManager', 'Workflow'
         ]))
 
 # -- Options for HTML output -------------------------------------------------

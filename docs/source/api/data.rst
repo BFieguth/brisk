@@ -14,3 +14,5 @@ Module Contents
 
    data/data_manager
    data/data_split_info
+   data/data_splits
+   data/preprocessing

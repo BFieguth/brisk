@@ -13,11 +13,11 @@ Module Contents
     :maxdepth: 1
     :hidden:
 
+    configuration/algorithm_collection
+    configuration/algorithm_wrapper
     configuration/configuration
     configuration/configuration_manager
+    configuration/experiment
     configuration/experiment_factory
     configuration/experiment_group
-    configuration/experiment
-    configuration/algorithm_wrapper
-    configuration/algorithm_collection
     configuration/project

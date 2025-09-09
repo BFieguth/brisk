@@ -13,6 +13,7 @@ User Guide
    custom_evaluators
    applying_preprocessing
    using_experiment_groups
+   customize_builtin_plots
 
 .. grid:: 1 1 2 2
 
@@ -45,6 +46,16 @@ User Guide
         Custom Evaluators
         ^^^^^^^^^^^^^^^^^
         Create custom plots and evaluation methods
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: customize_builtin_plots
+        :link-type: doc
+
+        Customize Built-in Plots
+        ^^^^^^^^^^^^^^^^^^^^^^^
+        Customize the built-in plots using PlotSettings
 
     .. grid-item-card::
         :columns: 12 6 6 6

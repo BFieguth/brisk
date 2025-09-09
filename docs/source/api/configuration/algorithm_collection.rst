@@ -1,5 +1,3 @@
-.. _algorithm_collection:
-
 AlgorithmCollection
 ===================
 
@@ -8,3 +6,4 @@ AlgorithmCollection
 .. autoclass:: AlgorithmCollection
    :members:
    :undoc-members:
+   :show-inheritance:

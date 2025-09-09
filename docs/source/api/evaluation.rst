@@ -17,3 +17,7 @@ Module Contents
    evaluation/evaluation_manager
    evaluation/metric_manager
    evaluation/metric_wrapper
+   evaluation/base_evaluator
+   evaluation/evaluator_registry
+   evaluation/dataset_evaluators
+   evaluation/model_evaluators
