@@ -9,6 +9,7 @@ User Guide
 
    defaults/index
    custom_metrics
+   add_algorithms
    custom_evaluators
    applying_preprocessing
    using_experiment_groups

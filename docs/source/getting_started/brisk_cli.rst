@@ -6,10 +6,10 @@ Brisk CLI
 How to use the Brisk CLI
 ------------------------
 
-Brisk provides a command-line interface (CLI) to help you create and run 
-machine learning projects. The CLI is installed automatically when you install 
-Brisk into a virtual environment, making it available through the ``brisk`` 
-command in your terminal.
+Brisk provides a comprehensive command-line interface (CLI) to help you create and run 
+machine learning projects, manage datasets, and ensure reproducible experiments. The CLI is 
+installed automatically when you install Brisk into a virtual environment, making it available 
+through the ``brisk`` command in your terminal.
 
 To see all available commands and options, run:
 
@@ -17,8 +17,17 @@ To see all available commands and options, run:
 
     brisk --help
 
-Common Commands
----------------
+Available Commands
+------------------
+
+Brisk provides six main commands for managing your machine learning workflow:
+
+* ``create`` - Initialize a new project with template files
+* ``run`` - Execute experiments based on your configuration
+* ``load_data`` - Load scikit-learn datasets into your project
+* ``create_data`` - Generate synthetic datasets for testing
+* ``export-env`` - Export environment requirements from previous runs
+* ``check-env`` - Check environment compatibility with previous runs
 
 create
 ^^^^^^
@@ -47,6 +56,7 @@ This creates a new directory structure with the following files:
 * ``algorithms.py``: Algorithm definitions
 * ``metrics.py``: Metric definitions
 * ``data.py``: Data management setup
+* ``evaluators.py``: Template for custom evaluators
 * ``workflows/``: Directory for workflow files
 * ``datasets/``: Directory for data storage
 
@@ -60,21 +70,28 @@ are configured in ``settings.py``, so you just run the command from your project
 
 .. code-block:: bash
 
-    brisk run -n <results_name> --disable_report
+    brisk run [OPTIONS]
 
 **Arguments:**
 
-* ``-n, --results_name`` (optional): Custom name for the results directory
-* ``--disable_report`` (optional): Flag to disable HTML report generation
+* ``-n, --results_name`` (optional): Custom name for the results directory. If not provided, uses timestamp format DD_MM_YYYY_HH_MM_SS
+* ``-f, --config_file`` (optional): Name of the results folder to run from saved configuration. If provided, reruns experiments using the saved configuration
+* ``--disable_report`` (optional): Flag to disable HTML report generation after experiments complete
+* ``--verbose`` (optional): Flag to enable verbose logging output
 
-**Example:**
+**Examples:**
 
 .. code-block:: bash
 
+    # Run experiments with custom results name
     brisk run -n experiment_1_results
 
-This runs all experiments defined in your ``settings.py`` configuration and saves 
-the results in a directory named "experiment_1_results" within the results directory.
+    # Run experiments with verbose output and no report
+    brisk run --verbose --disable_report
+
+    # Rerun experiments from a previous configuration
+    brisk run -f previous_run
+
 
 load_data
 ^^^^^^^^^
@@ -124,6 +141,62 @@ The ``create_data`` command generates synthetic datasets for testing:
     brisk create_data --data_type regression --n_samples 500 --n_features 10 --dataset_name synthetic_regression
 
 This creates a synthetic regression dataset with 500 samples and 10 features, saving it as "synthetic_regression.csv" in your project's datasets directory.
+
+export-env
+^^^^^^^^^^
+
+The ``export-env`` command creates a requirements.txt file from the environment captured during a previous experiment run. This helps with reproducibility by allowing you to recreate the exact environment used for specific experiments.
+
+.. code-block:: bash
+
+    brisk export-env <run_id> [OPTIONS]
+
+**Arguments:**
+
+* ``run_id`` (required): The run ID to export environment from (e.g., '2024_01_15_14_30_00')
+* ``-o, --output`` (optional): Output path for requirements file. If not provided, saves as 'requirements_{run_id}.txt' in the project root
+* ``--include-all`` (optional): Flag to include all packages from the original environment, not just critical ones (numpy, pandas, scikit-learn, scipy, joblib)
+
+**Examples:**
+
+.. code-block:: bash
+
+    # Export critical packages only
+    brisk export-env my_run_20240101_120000
+
+    # Export all packages to custom file
+    brisk export-env my_run_20240101_120000 --output my_requirements.txt --include-all
+
+    # Export to specific location
+    brisk export-env my_run_20240101_120000 -o /path/to/requirements.txt
+
+This generates a requirements.txt file with proper package version pinning for reproducibility, including header comments with generation timestamp and Python version information.
+
+check-env
+^^^^^^^^^
+
+The ``check-env`` command compares the current Python environment with the environment used in a previous experiment run. It identifies version differences and potential compatibility issues that could affect reproducibility.
+
+.. code-block:: bash
+
+    brisk check-env <run_id> [OPTIONS]
+
+**Arguments:**
+
+* ``run_id`` (required): The run ID to check environment against (e.g., '2024_01_15_14_30_00')
+* ``-v, --verbose`` (optional): Flag to show detailed compatibility report with all package differences. If not provided, shows only summary information
+
+**Examples:**
+
+.. code-block:: bash
+
+    # Quick compatibility check
+    brisk check-env my_run_20240101_120000
+
+    # Detailed compatibility report
+    brisk check-env my_run_20240101_120000 --verbose
+
+The compatibility check examines Python version compatibility, critical package versions (numpy, pandas, scikit-learn, scipy, joblib), and identifies missing or extra packages. Critical packages must have matching major.minor versions for compatibility.
 
 Working with the CLI
 --------------------

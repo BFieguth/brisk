@@ -4,7 +4,7 @@ Default Classification Metrics
 ==============================
 
 Brisk provides a set of predefined classification metrics wrapped as ``MetricWrapper`` instances. 
-These metrics are sourced from scikit-learn and are ready to use in your projects without 
+Many of these metrics are sourced from scikit-learn and are ready to use in your projects without 
 additional configuration.
 
 Classification Metrics

@@ -88,7 +88,7 @@ consistent interface.
         )
     )
 
-Brisk provides a set of predefined wrappers that include most common metrics:
+Brisk provides a set of predefined wrappers that include many common metrics:
 
 .. code-block:: python
 

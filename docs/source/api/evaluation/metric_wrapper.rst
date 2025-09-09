@@ -1,3 +1,5 @@
+.. _metric_wrapper:
+
 MetricWrapper
 =============
 
