@@ -216,7 +216,8 @@ METRIC_CONFIG = brisk.MetricManager(
 def mock_settings_py(tmp_path):
     settings_path = tmp_path / 'settings.py'
     settings_py = """
-from brisk.configuration.configuration import Configuration, ConfigurationManager
+from brisk.configuration.configuration import Configuration
+from brisk.configuration.configuration_manager import ConfigurationManager
 
 def create_configuration() -> ConfigurationManager:
     config = Configuration(
@@ -775,7 +776,7 @@ def mock_regression_workflow(tmp_path):
 from brisk.training.workflow import Workflow
 
 class Regression(Workflow):
-    def workflow(self):
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
         self.model.fit(self.X_train, self.y_train)
         self.evaluate_model(
             self.model, self.X_test, self.y_test, ["MAE"], "test_metrics"
@@ -798,7 +799,7 @@ def mock_categorical_workflow(tmp_path):
 from brisk.training.workflow import Workflow
 
 class Categorical(Workflow):
-    def workflow(self):
+    def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
         self.model.fit(self.X_train, self.y_train)
         self.evaluate_model(
             self.model, self.X_test, self.y_test, ["accuracy"], "test_metrics"

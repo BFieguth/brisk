@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "brisk-ml"
-version = "1.0.1"
+version = "1.1.0"
 description = "A framework that helps train machine learning models using sklearn."
 authors = ["BFieguth <bfieguth@uoguelph.ca>"]
 readme = "README.md"
@@ -23,7 +23,7 @@ openpyxl="^3.1.5"
 pydantic="^2.11.7"
 plotly="^6.1.0"
 kaleido="^1.0.0"
-shap="^0.45.1"
+shap="^0.48.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

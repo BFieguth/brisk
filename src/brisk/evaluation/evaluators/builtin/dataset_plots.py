@@ -156,7 +156,7 @@ class Histogram(dataset_plot_evaluator.DatasetPlotEvaluator):
             pn.facet_wrap("~dataset", ncol=2, scales="free_y") +
             pn.labs(fill="Data Split") +
             pn.labs(
-                title=f"Distribution of {plot_data["feature_name"]}",
+                title=f"Distribution of {plot_data['feature_name']}",
                 x=plot_data["feature_name"],
                 y="Frequency"
             ) +
@@ -362,7 +362,7 @@ class BarPlot(dataset_plot_evaluator.DatasetPlotEvaluator):
             ) +
             pn.geom_col(position="dodge", alpha=0.7, color="black", width=0.7) +
             pn.labs(
-                title=f"Proportion Comparison: {plot_data["feature_name"]}",
+                title=f"Proportion Comparison: {plot_data['feature_name']}",
                 x=plot_data["feature_name"],
                 y="Proportion",
                 fill="Data Split"

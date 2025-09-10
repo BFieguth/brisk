@@ -35,6 +35,7 @@ import sys
 import importlib
 import ast
 import inspect
+import warnings
 
 import matplotlib.pyplot as plt
 import plotnine as pn
@@ -314,11 +315,15 @@ class IOService(base.BaseService):
                     if isinstance(value, dict):
                         metadata[key] = json.dumps(value)
             if plot and isinstance(plot, pn.ggplot):
-                plot.save(
-                    filename=output_path, format=self.format,
-                    height=height, width=width, dpi=self.dpi,
-                    transparent=self.transparent
-                )
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", category=UserWarning, module="plotnine"
+                    )
+                    plot.save(
+                        filename=output_path, format=self.format,
+                        height=height, width=width, dpi=self.dpi,
+                        transparent=self.transparent
+                    )
             elif plot and isinstance(plot, go.Figure):
                 plot.write_image(
                     file=output_path, format=self.format
@@ -381,10 +386,14 @@ class IOService(base.BaseService):
         try:
             svg_buffer = io.BytesIO()
             if plot and isinstance(plot, pn.ggplot):
-                plot.save(
-                    svg_buffer, format="svg", height=height, width=width,
-                    dpi=100
-                )
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", category=UserWarning, module="plotnine"
+                    )
+                    plot.save(
+                        svg_buffer, format="svg", height=height, width=width,
+                        dpi=100
+                    )
             elif plot and isinstance(plot, go.Figure):
                 plot.write_image(
                     file=svg_buffer, format="svg", width=width, height=height
@@ -407,7 +416,7 @@ class IOService(base.BaseService):
 
     def set_io_settings(self, io_settings: Dict[str, Any]) -> None:
         """Set settings to use when saving plots."""
-        self.format = io_settings["format"]
+        self.format = io_settings["file_format"]
         self.width = io_settings["width"]
         self.height = io_settings["height"]
         self.dpi = io_settings["dpi"]

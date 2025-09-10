@@ -432,7 +432,7 @@ class EnvironmentManager:
         lines = []
 
         lines.append("# Auto-generated requirements file from `brisk run`")
-        lines.append(f"# Generated at: {saved_env.get("timestamp", "unknown")}")
+        lines.append(f"# Generated at: {saved_env.get('timestamp', 'unknown')}")
 
         if include_python:
             lines.append(f"# Python version: {python_version}")
@@ -610,8 +610,8 @@ class EnvironmentManager:
         """
         lines = []
         lines.append("Python Version:")
-        lines.append(f"  Original: {version_info["saved"]}")
-        lines.append(f"  Current:  {version_info["current"]}")
+        lines.append(f"  Original: {version_info['saved']}")
+        lines.append(f"  Current:  {version_info['current']}")
 
         if version_info["match"]:
             lines.append("Versions match")
@@ -644,10 +644,10 @@ class EnvironmentManager:
         if system_info["has_system_info"]:
             lines.append("System Information:")
             lines.append(
-                f" Original platform: {system_info["saved_platform"]}"
+                f" Original platform: {system_info['saved_platform']}"
             )
             lines.append(
-                f" Current platform:  {system_info["current_platform"]}"
+                f" Current platform:  {system_info['current_platform']}"
             )
             lines.append("")
         return lines

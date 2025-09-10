@@ -19,7 +19,7 @@ from typing import Any, List, Optional, Tuple, Dict
 import numpy as np
 import pandas as pd
 
-from brisk.evaluation.evaluators import registry_module
+from brisk.evaluation.evaluators import registry as registry_module
 from brisk.evaluation.evaluators.builtin import register_dataset_evaluators
 from brisk.services import get_services
 

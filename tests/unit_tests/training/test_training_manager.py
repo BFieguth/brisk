@@ -289,7 +289,6 @@ class TestTrainingManager:
         mock_workflow_instance.run.assert_called_once()        
         mock_handle_failure.assert_called_once_with(
             "test_group",           # group_name
-            "test_dataset",         # dataset_name  
             "test_experiment",      # experiment_name
             1234567890.0,          # start_time
             mock_workflow_instance.run.side_effect,  # the error instance
@@ -301,7 +300,7 @@ class TestTrainingManager:
         
         # Verify the error passed to _handle_failure is the correct type and message
         call_args = mock_handle_failure.call_args[0]
-        error_passed = call_args[4]  # 5th argument is the error
+        error_passed = call_args[3]  # 5th argument is the error
         assert isinstance(error_passed, error_type)
         assert str(error_passed).replace("'", "") == error_message
 
@@ -489,7 +488,7 @@ class TestTrainingManager:
         ]
 
         training_manager._handle_success(
-            start_time, group_name, dataset_name, experiment_name, "dataset1", 0
+            start_time, group_name, experiment_name, dataset_name, 0
         )
         assert (training_manager.experiment_results
                 [group_name][dataset_name][-1]
@@ -513,18 +512,18 @@ class TestTrainingManager:
         split_index = 0
         start_time = 1734371000
         error = "This is a test error"
-        expected_error_message = (
-            "\n\nDataset Name: dataset1\n"
-            "Experiment Name: experiment1\n\n"
-            "Error: This is a test error"
-        )
+        # expected_error_message = (
+        #     "\n\nDataset Name: dataset1\n"
+        #     "Experiment Name: experiment1\n\n"
+        #     "Error: This is a test error"
+        # )
         expected_tqdm_calls = [
             "\nExperiment 'experiment1' on dataset 'dataset1' (Split 0) FAILED in 4m 48s.",
         ]
 
         training_manager._handle_failure(
-            group_name, dataset_name, experiment_name, start_time, error,
-            "dataset1", split_index
+            group_name, experiment_name, start_time, error,
+            dataset_name, split_index
         )
 
         assert (training_manager.experiment_results

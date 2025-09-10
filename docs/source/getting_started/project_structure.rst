@@ -88,7 +88,7 @@ consistent interface.
         )
     )
 
-Brisk provides a set of predefined wrappers that include most common metrics:
+Brisk provides a set of predefined wrappers that include many common metrics:
 
 .. code-block:: python
 
@@ -128,7 +128,8 @@ you could define two experiment groups:
 
 .. code-block:: python
 
-    from brisk.configuration.configuration import Configuration, ConfigurationManager
+    from brisk.configuration.configuration import Configuration
+    from brisk.configuration.configuration_manager import ConfigurationManager
     from brisk.data.preprocessing import ScalingPreprocessor
 
     def create_configuration() -> ConfigurationManager:
