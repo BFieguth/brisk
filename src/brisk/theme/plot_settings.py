@@ -223,7 +223,7 @@ class PlotSettings:
             raise ValueError(
                 "Invalid file file_format: "
                 f"{self.file_io_settings['file_format']}. "
-                f"Valid formats are: {", ".join(self.VALID_FORMATS)}"
+                f"Valid formats are: {', '.join(self.VALID_FORMATS)}"
             )
 
     def _validate_theme(self, theme: pn.theme) -> None:
