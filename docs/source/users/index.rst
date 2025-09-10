@@ -9,19 +9,23 @@ User Guide
 
    defaults/index
    custom_metrics
+   add_algorithms
+   custom_evaluators
+   applying_preprocessing
    using_experiment_groups
+   customize_builtin_plots
 
 .. grid:: 1 1 2 2
 
     .. grid-item-card::
         :columns: 12 6 6 6
         :padding: 2
-        :link: defaults/index
+        :link: add_algorithms
         :link-type: doc
 
-        Default Wrappers
-        ^^^^^^^^^^^^^^^^
-        Browse the provided metric and algorithm wrappers
+        Add Algorithms
+        ^^^^^^^^^^^^^^
+        Add more algorithms to your project
 
     .. grid-item-card::
         :columns: 12 6 6 6
@@ -33,6 +37,35 @@ User Guide
         ^^^^^^^^^^^^^^
         Add more metrics to your project
 
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: custom_evaluators
+        :link-type: doc
+
+        Custom Evaluators
+        ^^^^^^^^^^^^^^^^^
+        Create custom plots and evaluation methods
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: customize_builtin_plots
+        :link-type: doc
+
+        Customize Built-in Plots
+        ^^^^^^^^^^^^^^^^^^^^^^^
+        Customize the built-in plots using PlotSettings
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: applying_preprocessing
+        :link-type: doc
+
+        Applying Preprocessing
+        ^^^^^^^^^^^^^^^^^^^^^^
+        Configure data preprocessing pipelines and compare strategies
 
     .. grid-item-card::
         :columns: 12 6 6 6
@@ -43,3 +76,13 @@ User Guide
         Experiment Groups
         ^^^^^^^^^^^^^^^^^
         Modify the setup of your experiments with experiment groups
+
+    .. grid-item-card::
+        :columns: 12 6 6 6
+        :padding: 2
+        :link: defaults/index
+        :link-type: doc
+
+        Default Wrappers
+        ^^^^^^^^^^^^^^^^
+        Browse the provided metric and algorithm wrappers

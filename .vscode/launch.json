@@ -5,12 +5,28 @@
             "name": "Debug Brisk CLI Run Command",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/brisk/cli.py",
+            "program": "${workspaceFolder}/src/brisk/cli/cli.py",
             "args": [
-                "run", "-w", "${input:workflowName}"
+                "run"
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/${input:projectDir}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Debug Brisk CLI Run from Rerun File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/brisk/cli/cli.py",
+            "args": [
+                "run",
+                "-f",
+                "${input:resultsDir}"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/${input:projectDir}/results/${input:resultsDir}",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
@@ -44,6 +60,11 @@
             "id": "workflowName",
             "type": "promptString",
             "description": "Enter the workflow file name",
+        },
+        {
+            "id": "resultsDir",
+            "type": "promptString",
+            "description": "Enter the results directory name",
         }
     ]
 }

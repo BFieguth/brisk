@@ -4,6 +4,8 @@
 
    * - Object
      - Description
+   * - :class:`~brisk.configuration.algorithm_collection.AlgorithmCollection`
+     - A collection of AlgorithmWrappers.
    * - :class:`~brisk.configuration.algorithm_wrapper.AlgorithmWrapper`
      - Wraps a machine learning algorithm and provides an interface using the algorithm.
    * - :class:`~brisk.configuration.configuration.Configuration`

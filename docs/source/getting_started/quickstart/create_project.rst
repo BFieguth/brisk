@@ -45,16 +45,16 @@ The directory structure should look like this:
    ├── .briskconfig
    ├── algorithms.py
    ├── data.py
+   ├── evaluators.py
    ├── metrics.py
-   ├── settings.py
-   └── training.py
+   └── settings.py
 
 
 Configure the Project
 =====================
 
-Before we can start training models, we need to configure the project. This involves
-modifying several files in the ``tutorial`` directory.
+Before we can start training models, we need to provide training data and configure the
+experiments we want to run. This involves modifying several files in the ``tutorial`` directory.
 
 Load a Dataset
 --------------
@@ -78,7 +78,7 @@ Define Metrics
 --------------
 
 ``metrics.py`` is where you define the metrics you want to use for evaluating the 
-models. Brisk uses the MetricWrapper class to wrap the metric function along with
+models. Brisk uses the :ref:`MetricWrapper <metric_wrapper>` class to wrap the metric function along with
 other useful information. When you open ``metrics.py`` you will see there is some 
 boilerplate code that should look like this:
 
@@ -87,39 +87,20 @@ boilerplate code that should look like this:
     import brisk
 
     METRIC_CONFIG = brisk.MetricManager(
-        brisk.MetricWrapper()
+        *brisk.REGRESSION_METRICS,
+        *brisk.CLASSIFICATION_METRICS
     )
 
-You will want to leave the MetricManager class as is. MetricManager is used internally
-by Brisk to manage the metrics. For this tutorial, we will use **mean absolute error**.
-To do this we need to define a MetricWrapper for mean absolute error.
+Brisk comes with a set of predefined metrics for :ref:`regression <default_regression_metrics>` and 
+:ref:`classification <default_classification_metrics>`. These wrappers are imported
+and unpacked into the :ref:`MetricManager <metric_manager>` class, making them
+available for use by various components of Brisk. In most cases these provided metrics
+should be sufficient, but you can always define your own metrics by following this
+:ref:`guide <custom_metrics>`.
 
-You can fill in the arguments for MetricWrapper as follows:
-
-.. code-block:: python
-
-    import brisk
-    from sklearn import metrics
-
-    METRIC_CONFIG = brisk.MetricManager(
-        brisk.MetricWrapper(
-            name="mean_absolute_error",
-            func=metrics.mean_absolute_error,
-            display_name="Mean Absolute Error",
-            abbr="MAE"
-        )
-    )
-
-Make sure to import the ``metrics`` module from ``sklearn``. This is the function 
-we want to use to calculate the mean absolute error. We also define a name and abbreviation (abbr)
-for the metric. These will be used later to select the metric we want to use.
-The display name is used whenever the metric name is used in plots or tables.
-
-You can add more metrics by defining more MetricWrappers. Brisk also provides a
-set of default metrics for :ref:`regression <default_regression_metrics>` and 
-:ref:`classification <default_classification_metrics>` that should be sufficient 
-for most projects.
-
+.. important::
+    You must use the name ``METRIC_CONFIG`` as this is what Brisk will
+    look for to load this data at runtime.
 
 Define Algorithms
 ------------------
@@ -133,63 +114,107 @@ should see code that looks like this:
     import brisk
 
     ALGORITHM_CONFIG = brisk.AlgorithmCollection(
-        brisk.AlgorithmWrapper()
+        *brisk.REGRESSION_ALGORITHMS,
+        *brisk.CLASSIFICATION_ALGORITHMS
     )
 
-Just like the MetricManager, we need to leave the AlgorithmCollection class as is.
-You define the algorithms you want to use by adding AlgorithmWrappers to the 
-AlgorithmCollection. We are going to add Linear Regression, Lasso Regression, and 
-Ridge Regression:
+As with ``metrics.py`` Brisk provides a set of predefined algorithms for :ref:`regression <default_regression_algorithms>` and 
+:ref:`classification <default_classification_algorithms>`. These wrappers are imported
+and unpacked into the :ref:`AlgorithmCollection <algorithm_collection>` class.
 
-.. code-block:: python
-
-    import brisk
-    import numpy as np
-    from sklearn import linear_model
-
-    ALGORITHM_CONFIG = brisk.AlgorithmCollection(
-        brisk.AlgorithmWrapper(
-            name="linear",
-            display_name="Linear Regression",
-            algorithm_class=linear_model.LinearRegression
-        ),
-        brisk.AlgorithmWrapper(
-            name="ridge",
-            display_name="Ridge Regression",
-            algorithm_class=linear_model.Ridge,
-            hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
-        ),
-        brisk.AlgorithmWrapper(
-            name="lasso",
-            display_name="LASSO Regression",
-            algorithm_class=linear_model.Lasso,
-            hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
-        ),
-    )
-
-Hopefully this structure is familiar from defining the metrics. You may have noticed
-that we added a ``hyperparam_grid`` argument to the Ridge and Lasso Regression 
-wrappers. This is used to define the hyperparameter space for the algorithm. 
-Brisk will use this to perform hyperparameter tuning.
+These algorithms are meant to be a convenience for getting started with Brisk. They
+are unlikely to be optimal for most projects. See the :ref:`adding algorithms<add_algorithms>` guide
+for more information on how to define your own algorithms.
 
 Data Splitting
 --------------
 
-``data.py`` is where we set how we want to process and split our data by default.
-For this tutorial we can leave the test_size of 0.2. This will use 20% of 
-the dataset for testing and 80% for training. 
+``data.py`` is where we set how we want to process and split our data by default. 
+For this tutorial we can leave the test_size of 0.2. This will use 20% of the dataset 
+for testing and the remaining 80% for training.
 
-We won't be processing the data in this tutorial, so we don't need to change 
-anything else. See the :ref:`api_data_manager` for more details on how the 
-DataManager can be used to preprocess and split your data.
+.. code-block:: python
+
+    from brisk.data.data_manager import DataManager
+
+    BASE_DATA_MANAGER = DataManager(
+        test_size = 0.2
+    )
+
+
+We won’t be processing the data in this tutorial, so we don’t need to change anything else. 
+See :ref:`DataManager <api_data_manager>` for more details on how the DataManager
+can be used to split your data or the :ref:`applying preprocessing<applying_preprocessing>` guide for more information
+on how to use the built-in data preprocessing capabilities.
+
+.. note::
+    By default DataManager will create 5 training and testing splits.
+    You can reduce this number by changing the ``n_splits`` argument if you want
+    the tutorial to run faster.
+    
+    .. code-block:: python
+
+        BASE_DATA_MANAGER = DataManager(
+            test_size = 0.2,
+            n_splits = 1
+        )
+
+Define Workflows
+----------------
+
+Before we configure our experiments, we need to define how we want to train and 
+evaluate our models. This is where the ``Workflow`` class comes in. In Brisk, a 
+Workflow defines the steps we want to take for each experiment.
+
+In ``workflows/workflow.py`` you will see a class called ``MyWorkflow`` that inherits 
+the ``Workflow`` class and an empty ``workflow`` method. This is where you define
+the steps you want to take to train and evaluate models for each experiment.
+
+Brisk comes with a simple workflow setup for a regression problem. You can see it below:
+
+.. code-block:: python
+
+    from brisk.training.workflow import Workflow
+
+    class MyWorkflow(Workflow):
+        def workflow(self, X_train, X_test, y_train, y_test, output_dir, feature_names):
+            self.model.fit(self.X_train, self.y_train)
+            self.evaluate_model_cv(
+                self.model, self.X_train, self.y_train, ["MAE"], "pre_tune_score"
+            )
+            tuned_model = self.hyperparameter_tuning(
+                self.model, "grid", self.X_train, self.y_train, "MAE",
+                kf=5, num_rep=3, n_jobs=-1
+            )
+            self.evaluate_model(
+                tuned_model, self.X_test, self.y_test, ["MAE"], "post_tune_score"
+            )
+            self.plot_learning_curve(tuned_model, self.X_train, self.y_train)
+            self.save_model(tuned_model, "tuned_model")
+
+.. note::
+    If you want to use this workflow to try a classification problem, you can change the
+    ``MAE`` value to ``accuracy`` or any other classification metric. This is not always
+    the case as some methods are specific to classification or regression type problems.
+
+We access our mean absolute error metric from ``metrics.py`` by using the name,
+or in this case the abbreviation. This workflow will be run once for each 
+algorithm in the experiment setup. Since the same workflow code runs 
+for different algorithms it is best not to hardcode algorithm names in variables
+or filenames as this may lead to confusion when looking at the results.
+
+As a final note you’ll notice that the ``workflow.py`` file is given its own ``workflows`` directory. 
+This allows you to have multiple workflows in the same project. Each .py file can
+only contain one Workflow subclass. This is to avoid using the wrong workflow at runtime.
+You can specify the workflow to use in the next step by using the file name without the ``.py`` extension.
 
 Training Settings
 -----------------
 
-``settings.py`` is where we define the experiments we want to run. In Brisk an 
-experiment refers to the combinations of data splits and algorithms we want to 
-try together. We use ExperimentGroups to group experiments together when we want 
-to try several different algorithms on the same data split.
+``settings.py`` is where we configure our experiments by bringing together all the 
+components we've defined. In Brisk, an experiment refers to running a specific workflow
+on a dataset. We use ExperimentGroups to organize related experiments together and
+override default values allowing you to try different setups quickly and easily.
 
 When the CLI creates this file it defines a ``create_configuration`` function that
 returns a ``ConfigurationManager`` instance. The ``Configuration`` class provides an 
@@ -200,33 +225,31 @@ You should see code that looks like this:
 
 .. code-block:: python
 
-    from brisk.configuration.configuration import Configuration, ConfigurationManager
+    from brisk.configuration.configuration import Configuration
+    from brisk.configuration.configuration_manager import ConfigurationManager
 
     def create_configuration() -> ConfigurationManager:
         config = Configuration(
+            default_workflow = "workflow",
             default_algorithms = ["linear"],
         )
 
         config.add_experiment_group(
             name="group_name",
+            datasets=[],
+            workflow="workflow"  
         )
-                    
+
         return config.build()
 
-First we define the default algorithms we want to use. These will be used by an
-ExperimentGroup if no algorithms are specified. By default we want to use all 
-three algorithms we defined in ``algorithms.py``.
+First we specify the default workflow and algorithms to use. The ``default_workflow="workflow"`` 
+tells Brisk to use the ``MyWorkflow`` class from ``workflows/workflow.py`` for any experiment 
+groups that don't specify their own workflow. The same applies to all the default values.
+We select the algorithm by using the ``name`` property of the AlgorithmWrappers to
+select the algorithms we want to use. For this tutorial we will just train a
+linear regression model.
 
-.. code-block:: python
-
-    config = Configuration(
-        default_algorithms = ["linear", "ridge", "lasso"],
-    )
-
-We use the ``name`` property of the AlgorithmWrappers to select the algorithms 
-we want to use.
-
-Next we will define an ExperimentGroup:
+Next we will add an ExperimentGroup:
 
 .. code-block:: python
 
@@ -242,27 +265,9 @@ how the models were trained. We also need to specify a list of datasets we want
 to use. In this case we only have one dataset, but we could add more if we wanted.
 Notice the path to the dataset is relative to the ``datasets/`` directory for convenience.
 
-You can add more ExperimentGroups by calling ``add_experiment_group`` again. Most
-of your time will be spent here defining the experiments you want to run. This guide
+You can add as many experiment groups as you want by calling ``add_experiment_group`` again.
+Most of your time will be spent here defining the experiments you want to run. This guide
 only covers the basics, but you can learn more about ExperimentGroups in the 
 :ref:`using_experiment_groups` section.
 
-
-Training Manager
-----------------
-
-``training.py`` loads in the objects we defined in the other files and passes them 
-to the TrainingManager. It takes care of running your experiments, creating the 
-report and handles any errors. For the most part, you don't need to change anything 
-in this file. You can set the **verbose** parameter to True to get print more information 
-to the console as the experiments run.
-
-.. code-block:: python
-
-    manager = TrainingManager(
-        metric_config=METRIC_CONFIG,
-        config_manager=config,
-        verbose=True
-    )
-
-The final step before we train the models is to define a workflow.
+Next, let's look at how we can run the experiments!

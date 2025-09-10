@@ -1,6 +1,6 @@
 """Configuration container for experiment groups.
 
-This module defines the ExperimentGroup class, which serves as a container for 
+This module defines the ExperimentGroup class, which serves as a container for
 configurations related to a group of experiments within the Brisk framework.
 Default values for AlgorithmWrappers and DataManagers can be overidden within an
 ExperimentGroup.
@@ -44,11 +44,14 @@ class ExperimentGroup:
         Arguments to apply to AlgorithmWrappers
     description : str, optional
         Description for the experiment group
+    workflow : str
+        Name of the workflow file to use (without .py extension)
     workflow_args : dict, optional
         Arguments to pass to workflow as attributes
     """
     name: str
     datasets: List[str | Tuple[str, str]]
+    workflow: str
     data_config: Optional[Dict[str, Any]] = None
     algorithms: Optional[List[str]] = None
     algorithm_config: Optional[Dict[str, Dict[str, Any]]] = None
@@ -58,17 +61,17 @@ class ExperimentGroup:
     @property
     def dataset_paths(self) -> List[Tuple[pathlib.Path, str | None]]:
         """Get full paths to datasets relative to project root.
-        
+
         Returns
         -------
         list of (pathlib.Path, str or None)
             Each tuple contains:
-            
+
             * path : pathlib.Path
                 Full path to the dataset file
             * table_name : str or None
                 Name of table for database files, None for regular files
-        
+
         Raises
         ------
         FileNotFoundError
@@ -85,10 +88,10 @@ class ExperimentGroup:
 
     def __post_init__(self):
         """Validate experiment group configuration after initialization.
-        
+
         Performs validation checks on:
         - Name format
-        - Dataset existence 
+        - Dataset existence
         - Algorithm configuration consistency
         - DataManager configuration parameters
 
@@ -108,9 +111,9 @@ class ExperimentGroup:
 
     def _validate_name(self):
         """Validate experiment group name.
-        
+
         Ensures name is a non-empty string.
-        
+
         Raises
         ------
         ValueError
@@ -121,11 +124,11 @@ class ExperimentGroup:
 
     def _validate_datasets(self):
         """Validate dataset specifications.
-        
+
         Checks:
         - At least one dataset is specified
         - All specified datasets exist in project's datasets directory
-        
+
         Raises
         ------
         ValueError
@@ -146,9 +149,9 @@ class ExperimentGroup:
     def _validate_algorithm_config(self):
         """Validate algorithm configuration.
 
-        Ensures all algorithms in algorithm_config are present in the algorithms 
+        Ensures all algorithms in algorithm_config are present in the algorithms
         list.
-        
+
         Raises
         ------
         ValueError
@@ -175,10 +178,10 @@ class ExperimentGroup:
 
     def _validate_data_config(self):
         """Validate DataManager configuration parameters.
-        
+
         Ensures all parameters in data_config are valid DataManager parameters.
         Uses DataManager's __init__ signature to determine valid parameters.
-        
+
         Raises
         ------
         ValueError
@@ -198,12 +201,14 @@ class ExperimentGroup:
                     f"Invalid DataManager parameters: {invalid_params}\n"
                     f"Valid parameters are: {valid_data_params}"
                 )
+        else:
+            self.data_config = {}
 
     def _validate_description(self):
         """Validate and format experiment group description.
-        
+
         Ensures description is a string and wraps text at 60 characters.
-        
+
         Raises
         ------
         ValueError
@@ -220,9 +225,9 @@ class ExperimentGroup:
 
     def _validate_workflow_args(self):
         """Validate workflow arguments.
-        
+
         Ensures workflow_args is a dictionary if provided.
-        
+
         Raises
         ------
         ValueError

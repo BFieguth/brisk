@@ -16,5 +16,3 @@ Module Contents
 
    training/training_manager
    training/workflow
-   training/alert_mailer
-   training/logging_util

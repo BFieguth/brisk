@@ -1,7 +1,7 @@
 """Create Experiment instances from ExperimentGroup instances.
 
-This module defines the ExperimentFactory class, which is responsible for 
-creating Experiment instances from ExperimentGroup configurations within the 
+This module defines the ExperimentFactory class, which is responsible for
+creating Experiment instances from ExperimentGroup configurations within the
 Brisk framework. The ExperimentFactory applies experiment-specific settings to
 algorithms, and resolves dataset paths for experiments.
 
@@ -10,7 +10,7 @@ Examples
 >>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
 >>> from brisk.configuration.experiment_group import ExperimentGroup
 >>> from brisk.configuration.experiment_factory import ExperimentFactory
->>> 
+>>>
 >>> algorithms = AlgorithmCollection([
 ...     AlgorithmWrapper(
 ...         name="linear",
@@ -18,16 +18,16 @@ Examples
 ...         algorithm_class=LinearRegression
 ...     )
 ... ])
->>> 
+>>>
 >>> categorical_features = {
 ...     "data.csv": ["category1", "category2"]
 ... }
->>> 
+>>>
 >>> factory = ExperimentFactory(
 ...     algorithm_config=algorithms,
 ...     categorical_features=categorical_features
 ... )
->>> 
+>>>
 """
 import collections
 from typing import List, Dict, Any, Deque, Union
@@ -35,10 +35,11 @@ from typing import List, Dict, Any, Deque, Union
 from brisk.configuration import experiment
 from brisk.configuration import experiment_group
 from brisk.configuration import algorithm_wrapper
+from brisk.configuration import algorithm_collection
 
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.
-    
+
     Takes a list of ExperimentGroup and creates a queue of Experiment instances.
     Applies specific configuration for each ExperimentGroup when creating the
     Experiment instances.
@@ -60,11 +61,11 @@ class ExperimentFactory:
 
     def __init__(
         self,
-        algorithm_config: algorithm_wrapper.AlgorithmCollection,
+        algorithm_config: algorithm_collection.AlgorithmCollection,
         categorical_features: Dict[str, List[str]]
     ):
         if not isinstance(
-            algorithm_config, algorithm_wrapper.AlgorithmCollection
+            algorithm_config, algorithm_collection.AlgorithmCollection
         ):
             raise TypeError(
                 "algorithm_config must be an AlgorithmCollection, "
@@ -75,26 +76,30 @@ class ExperimentFactory:
 
     def create_experiments(
         self,
-        group: experiment_group.ExperimentGroup
+        group: experiment_group.ExperimentGroup,
+        n_splits: int
     ) -> Deque[experiment.Experiment]:
         """Create queue of experiments from an experiment group.
-        
+
         Parameters
         ----------
         group : ExperimentGroup
             Configuration for the experiment group
+        
+        n_splits: int
+            The number of data splits to create for this ExperimentGroup
             
         Returns
         -------
         collections.deque
             Queue of Experiment instances ready to run
-            
+
         Examples
         --------
         >>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
         >>> from brisk.configuration.experiment_group import ExperimentGroup
         >>> from brisk.configuration.experiment_factory import ExperimentFactory
-        >>> 
+        >>>
         >>> algorithms = AlgorithmCollection([
         ...     AlgorithmWrapper(
         ...         name="linear",
@@ -102,22 +107,22 @@ class ExperimentFactory:
         ...         algorithm_class=LinearRegression
         ...     )
         ... ])
-        >>> 
+        >>>
         >>> categorical_features = {
         ...     "data.csv": ["category1", "category2"]
         ... }
-        >>> 
+        >>>
         >>> factory = ExperimentFactory(
         ...     algorithm_config=algorithms,
         ...     categorical_features=categorical_features
         ... )
-        >>> 
+        >>>
         >>> group = ExperimentGroup(
-        ...     name="baseline", 
-        ...     datasets=["data.csv"], 
+        ...     name="baseline",
+        ...     datasets=["data.csv"],
         ...     algorithms=["linear"]
         ... )
-        >>> 
+        >>>
         >>> experiments = factory.create_experiments(group)
         """
         experiments = collections.deque()
@@ -156,15 +161,17 @@ class ExperimentFactory:
                 categorical_feature_names = self.categorical_features.get(
                     lookup_key, None
                 )
-                exp = experiment.Experiment(
-                    group_name=group.name,
-                    algorithms=models,
-                    dataset_path=dataset_path,
-                    table_name=table_name,
-                    categorical_features=categorical_feature_names,
-                    workflow_args=group.workflow_args
-                )
-                experiments.append(exp)
+                for index in range(0, n_splits):
+                    experiments.append(experiment.Experiment(
+                        group_name=group.name,
+                        workflow=group.workflow,
+                        algorithms=models,
+                        dataset_path=dataset_path,
+                        workflow_args=group.workflow_args,
+                        split_index=index,
+                        table_name=table_name,
+                        categorical_features=categorical_feature_names
+                    ))
 
         return experiments
 
@@ -174,7 +181,7 @@ class ExperimentFactory:
         config: Dict[str, Any] | None = None
     ) -> algorithm_wrapper.AlgorithmWrapper:
         """Get algorithm wrapper with updated configuration.
-        
+
         Parameters
         ----------
         algo_name : str
@@ -205,7 +212,7 @@ class ExperimentFactory:
         algorithms: List[Union[str, List[str]]]
     ) -> List[List[str]]:
         """Normalize algorithm specification to list of lists.
-        
+
         Parameters
         ----------
         algorithms : list

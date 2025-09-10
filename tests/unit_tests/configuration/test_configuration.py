@@ -7,25 +7,39 @@ from brisk.configuration.configuration_manager import ConfigurationManager
 @pytest.fixture
 def configuration():
     """Create a basic configuration with mocked project root."""
-    return Configuration(default_algorithms=["linear", "ridge"])
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow"
+    )
 
 
 @pytest.fixture
 def configuration_with_categorical_features():
     """Create a configuration with categorical features."""
-    return Configuration(default_algorithms=["linear", "ridge"], categorical_features={"categorical": ["category"]})
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow",
+        categorical_features={"categorical": ["category"]}
+    )
 
 
 @pytest.fixture
 def configuration_with_workflow_args():
     """Create a configuration with workflow args."""
-    return Configuration(default_algorithms=["linear", "ridge"], default_workflow_args={"kfold": 5})
+    return Configuration(
+        default_algorithms=["linear", "ridge"],
+        default_workflow="regression_workflow",
+        default_workflow_args={"kfold": 5}
+    )
 
 
 @pytest.fixture
 def configuration_algorithm_groups():
     """Create a configuration with algorithm groups."""
-    return Configuration(default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]])
+    return Configuration(
+        default_algorithms=[["linear", "ridge"], ["linear", "elasticnet"]],
+        default_workflow="regression_workflow"
+    )
 
 
 class TestConfiguration:
@@ -69,9 +83,9 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
-        assert group.data_config is None
+        assert group.data_config == {}
         assert group.algorithm_config is None
         assert group.description == ""
         assert group.workflow_args == {}
@@ -93,7 +107,7 @@ class TestConfiguration:
         
         group = configuration.experiment_groups[0]
         assert group.name == "custom_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["elasticnet"]
         assert group.algorithm_config == algorithm_config
         assert group.description == "This is a test description"
@@ -141,9 +155,9 @@ class TestConfiguration:
         
         group = configuration_with_workflow_args.experiment_groups[0]
         assert group.name == "test_group"
-        assert group.datasets == ["regression.csv"]
+        assert group.datasets == [("regression.csv", None)]
         assert group.algorithms == ["linear", "ridge"]
-        assert group.data_config is None
+        assert group.data_config == {}
         assert group.algorithm_config is None
         assert group.description == ""
         assert group.workflow_args == {"kfold": 10}
@@ -167,9 +181,9 @@ class TestConfiguration:
     def test_check_name_exists(self, mock_brisk_project, configuration):
         """Test check_name_exists method"""
         configuration.experiment_groups = [
-            ExperimentGroup(name="group", datasets=["regression.csv"]),
-            ExperimentGroup(name="group_2", datasets=["regression.csv"]),
-            ExperimentGroup(name="group_3", datasets=["regression.csv"])
+            ExperimentGroup(name="group", workflow="regression_workflow", datasets=["regression.csv"]),
+            ExperimentGroup(name="group_2", workflow="regression_workflow", datasets=["regression.csv"]),
+            ExperimentGroup(name="group_3", workflow="regression_workflow", datasets=["regression.csv"])
         ]
         with pytest.raises(ValueError, match="already exists"):
             configuration._check_name_exists("group")
@@ -200,3 +214,32 @@ class TestConfiguration:
             configuration._check_datasets_type(datasets_list)
 
         configuration._check_datasets_type(datasets_correct)
+
+    def test_convert_datasets_to_tuple(self, configuration):
+        datasets = [
+            "data.csv", ("mixed_features.db", "mixed_features_regression")
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("mixed_features.db", "mixed_features_regression")
+        ]
+
+        datasets = [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.db", "data_table1"),
+            ("data.db", "data_table2"),
+        ]
+
+        datasets = [
+            "data.csv", "test.csv"
+        ]
+        formated_datasets = configuration._convert_datasets_to_tuple(datasets)
+        assert formated_datasets == [
+            ("data.csv", None),
+            ("test.csv", None)
+        ]

@@ -1,145 +1,432 @@
-header {
-    top: 0;
-    left: 0;
-    right: 0;
-    background-color: #1B1B1B;
-    color: #E0E0E0;
-    text-align: left;
-    padding: 20px 0;
-    padding-left: 10px;
-    font-size: 28px;
-    width: 100vw;
+.experiment-container {
+    display: flex;
+    height: 100%;
 }
 
-body {
-    background-color: #333333;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 400;
-    font-size: 16px; /* Set base font size */
-    line-height: 1.6; /* Increase line height for readability */
+.experiment-summary {
+    width: 33%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    min-height: 0;
+    overflow: auto;
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 16px;
+}
+
+.experiment-right {
+    width: 67%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    min-height: 0;
+    gap: 16px; /* Add gap between tables and plots */
+}
+
+.experiment-tables, .experiment-plots {
+    height: calc(50vh - 24px);
+    width: 100%;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height, flex;
+}
+
+/* Tables and Plots Layout */
+.tables-layout, .plots-layout {
+    display: flex;
+    height: 100%;
+    background-image: linear-gradient(var(--bg-light), var(--bg), var(--bg-dark));
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 8px 0;
+}
+
+/* Left side navigation */
+.tables-nav, .plots-nav {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-dark);
+    border-right: 1px solid var(--border);
+    min-height: 0;
+}
+
+/* Section header with expand button */
+.section-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+    padding: 0.5rem 1rem;
+}
+
+.section-title {
     margin: 0;
-    padding: 0;
+    color: var(--text);
+    font-size: 1.1em;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
 }
 
-div {
-    margin-left: 10px;
+/* Expand/collapse button styles */
+.expand-container {
+    position: absolute;
+    right: 1rem;
+    --color: var(--text-muted);
+    --size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: var(--size);
+    user-select: none;
+    fill: var(--color);
+    transition: fill 0.2s ease;
 }
 
-/* For table headers */
-th {
-    background-color: #14274A; 
-    color: #E0E0E0;
-    border: 2px solid #444444; 
-    padding: 12px;
+.expand-container:hover {
+    --color: var(--primary);
+}
+
+.expand-container .expand {
+    position: absolute;
+    animation: keyframes-fill .5s;
+}
+
+.expand-container .compress {
+    position: absolute;
+    display: none;
+    animation: keyframes-fill .5s;
+}
+
+/* On check event */
+.expand-container input:checked ~ .expand {
+    display: none;
+}
+
+.expand-container input:checked ~ .compress {
+    display: block;
+}
+
+/* Hide the default checkbox */
+.expand-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Animation */
+@keyframes keyframes-fill {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Smooth expand/collapse container behavior */
+.experiment-right {
+    transition: none;
+}
+
+/* Expanded states with smooth transitions */
+.experiment-right.tables-expanded .experiment-tables {
+    height: calc(80vh - 32px);
+    flex: none;
+}
+
+.experiment-right.tables-expanded .experiment-plots {
+    height: calc(20vh - 16px);
+    flex: none;
+    min-height: 120px;
+}
+
+.experiment-right.plots-expanded .experiment-plots {
+    height: calc(80vh - 32px);
+    flex: none;
+}
+
+.experiment-right.plots-expanded .experiment-tables {
+    height: calc(20vh - 16px);
+    flex: none;
+    min-height: 120px;
+}
+
+/* Reset to normal state when neither is expanded */
+.experiment-right:not(.tables-expanded):not(.plots-expanded) .experiment-tables,
+.experiment-right:not(.tables-expanded):not(.plots-expanded) .experiment-plots {
+    height: calc(50vh - 24px);
+    flex: none;
+}
+
+/* Collapsed state adjustments with smooth transitions */
+.experiment-right.tables-expanded .experiment-plots .plots-content,
+.experiment-right.plots-expanded .experiment-tables .tables-content {
+    height: 60px;
+    overflow: hidden;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.experiment-right.tables-expanded .experiment-plots .plots-list,
+.experiment-right.plots-expanded .experiment-tables .tables-list {
+    max-height: 40px;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tables-list, .plots-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 1rem;
+}
+
+.table-name, .plot-name {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-family: "Montserrat";
+    padding: 0.75rem 0.5rem;
+    margin: 0.25rem 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    border-radius: 4px;
+}
+
+.table-name:hover, .plot-name:hover {
+    background-color: var(--bg);
+    color: var(--secondary);
+}
+
+.table-name.selected, .plot-name.selected {
+    color: var(--primary);
+    font-weight: 600;
+    background-color: var(--bg-light);
+}
+
+/* Right side content */
+.tables-content, .plots-content {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow: auto;
+    background-color: var(--bg);
+}
+
+/* Table styling within content area */
+.tables-content .table-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tables-content .data-table {
+    font-family: "Montserrat";
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    flex: 1;
+}
+
+.tables-content .data-table th,
+.tables-content .data-table td {
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.tables-content .data-table th {
+    background-color: var(--bg-dark);
+    font-weight: bold;
+    font-size: 1.125rem;
+}
+
+.tables-content .table-description {
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    text-align: center;
+    display: block !important;
+}
+
+/* Plot styling within content area */
+.plots-content .plot-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.plots-content .plot-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.plots-content .plot-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+}
+
+.plots-content .plot-image svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.plots-content .plot-description {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 0.5rem;
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+hr {
+    width: 90%;
+}
+
+.experiment-title {
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--text);
+    font-size: 1.2em;
     font-weight: 600;
 }
 
-/* For table body */
-td {
-    background-color: #1E3A8A;
-    color: #E0E0E0; 
-    border: 1px solid #444444;
-    padding: 12px;
-}
-
-/* Adding horizontal and vertical spacing */
-table {
-    border-collapse: collapse;
-    border-spacing: 0 8px;
-    width: 80%;
-    margin: 0 auto;
-}
-
-h1, h2 {
-    font-weight: 700;
-    line-height: 1.3; /* Tighter line height for headers */
-}
-
-h2 {
-    margin: 30px 0 15px 0; 
-    padding: 0; 
-    color: #E0E0E0; 
-    line-height: 1.3; 
-    margin-left: 10px;
-}
-
-h1 {
-    margin: 30px 0 15px 0; 
-    padding: 0; 
-    color: #E0E0E0; 
-    margin-left: 10px;
-}
-
-p {
-    color: #F8F0E3;    
-    margin: 15px 0; /* Add margin for spacing */
-    padding: 0; 
-    color: #E0E0E0; 
-    margin-left: 10px;
-    font-size: 16px;
-    line-height: 1.6;
-}
-
-/* Add a subtle border to images */
-img {
-    border: 2px solid #444444; 
-    padding: 5px;
-    max-width: 100%; 
-    height: auto; 
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
-    border-radius: 4px; 
-}
-
-.header-content {
+/* Algorithm selector styling (same as split selector) */
+.algorithm-nav {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 0 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
 }
 
-.navigation {
-    display: flex;
-    flex-direction: column;
-    align-items: center;  /* Changed from flex-end to center */
-}
-
-.nav-group {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-start;  /* Added to ensure buttons are centered */
-    padding-right: 75px; 
-}
-
-.nav-button {
-    background-color: #14274A;
-    color: #E0E0E0;
-    padding: 8px 16px;
-    border-radius: 4px;
+.algorithm-text {
     text-decoration: none;
-    font-size: 14px;
-    transition: background-color 0.2s;
-    min-width: 100px;  /* Added to make buttons consistent width */
-    text-align: center;  /* Added to center button text */
+    color: var(--text-muted);
+    font-size: 18px;
+    font-family: "Montserrat";
+    padding: 0.25rem 0.5rem;
+    margin: 0px;
+    cursor: pointer;
+    transition: color 0.2s ease;
 }
 
-.nav-button:hover {
-    background-color: #1E3A8A;
+.algorithm-text:hover {
+    background-color: var(--bg);
+    color: var(--secondary);
 }
 
-.nav-button.disabled {
-    background-color: #555;  /* Grey background for disabled buttons */
-    color: #999;  /* Lighter text color for disabled buttons */
-    pointer-events: none;  /* Prevent clicking on disabled buttons */
+.algorithm-text.selected {
+    color: var(--primary);
+    font-weight: 600;
 }
 
-.breadcrumb-container {
-    text-align: center;  /* Center the breadcrumb text */
-    margin-top: 5px;  /* Add some space above the breadcrumb */
+/* Parameter sections */
+.parameter-section {
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    overflow: hidden;
 }
 
-.breadcrumb {
-    color: #888;
-    font-size: 14px;
-    padding-right: 75px;
+.parameter-title {
+    text-align: center;
+    margin: 0;
+    padding: 12px;
+    color: var(--text);
+    font-size: 1.1em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Use split-table styling for parameter tables */
+.parameter-table {
+    font-family: "Montserrat";
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg);
+    margin: 0;
+}
+
+.parameter-table th,
+.parameter-table td {
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.5rem;
+}
+
+.parameter-table th {
+    font-weight: bold;
+    font-size: 1.125rem;
+    color: var(--text);
+}
+
+.parameter-table td {
+    color: var(--text);
+}
+
+.parameter-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Data splits navigation using dataset-name styling */
+.splits-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.split-text {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    font-family: "Montserrat";
+    padding: 0.25rem 0.5rem;
+    margin: 0px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.split-text:hover {
+    background-color: var(--bg);
+    color: var(--secondary);
+}
+
+.split-text.selected {
+    color: var(--primary);
+    font-weight: 600;
 }

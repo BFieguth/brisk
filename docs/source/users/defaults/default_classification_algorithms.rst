@@ -1,3 +1,5 @@
+.. _default_classification_algorithms:
+
 Default Classification Algorithms
 ==================================
 

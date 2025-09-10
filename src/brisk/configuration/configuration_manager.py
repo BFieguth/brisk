@@ -1,70 +1,120 @@
 """Manage experiment configurations and DataManager instances.
 
-This module defines the ConfigurationManager class, which is responsible for 
-managing experiment configurations and creating DataManager instances. The 
-ConfigurationManager processes configurations for experiment groups, ensuring 
-that DataManager instances are created efficiently and reused when 
+This module defines the ConfigurationManager class, which is responsible for
+managing experiment configurations and creating DataManager instances. The
+ConfigurationManager processes configurations for experiment groups, ensuring
+that DataManager instances are created efficiently and reused when
 configurations match.
 """
 
-import ast
 import collections
-from importlib import util
-from pathlib import Path
 from typing import List, Dict, Tuple
 
 from brisk.data import data_manager
-from brisk.configuration import experiment_group, experiment_factory, project
-from brisk.configuration import algorithm_wrapper
+from brisk.configuration import (
+    experiment_group, experiment_factory, project, algorithm_collection
+)
 from brisk.reporting import formatting
+from brisk.services import get_services
+from brisk.theme import plot_settings as plot_settings_module
 
 class ConfigurationManager:
     """Manage experiment configurations and DataManager instances.
-    
+
     This class processes ExperimentGroup configurations and creates the minimum
     necessary DataManager instances, reusing them when configurations match.
-    
+
     Parameters
     ----------
-    experiment_groups : list of ExperimentGroup
-        List of experiment group configurations
-    categorical_features : dict
-        Dict mapping categorical features to dataset
+    experiment_groups : List[ExperimentGroup]
+        List of experiment group configurations to process
+    categorical_features : Dict[str, List[str]]
+        Dictionary mapping dataset identifiers to lists of categorical
+        feature names
+    plot_settings : PlotSettings
+        Plot configuration settings for the experiments
 
     Attributes
     ----------
-    experiment_groups : list
+    experiment_groups : List[ExperimentGroup]
         List of experiment group configurations
-    data_managers : dict
-        Mapping of unique configurations to DataManager instances
-    categorical_features : dict
-        Mapping of features to their datasets
+    data_managers : Dict[str, DataManager]
+        Mapping of group names to DataManager instances
+    categorical_features : Dict[str, List[str]]
+        Mapping of dataset identifiers to categorical feature lists
     project_root : Path
         Root directory of the project
     algorithm_config : AlgorithmCollection
-        Collection of algorithm configurations
+        Collection of algorithm configurations loaded from algorithms.py
     base_data_manager : DataManager
-        Base configuration for data management
+        Base configuration for data management loaded from data.py
     experiment_queue : collections.deque
-        Queue of experiments to run
-    output_structure : dict
+        Queue of experiments ready to run
+    output_structure : Dict[str, Dict[str, Tuple[str, str]]]
         Directory structure for experiment outputs
-    description_map : dict
+    description_map : Dict[str, str]
         Mapping of group names to descriptions
+    workflow_map : Dict[str, Type]
+        Mapping of workflow names to workflow classes
+    logfile : str
+        Markdown documentation of the configuration
+
+    Notes
+    -----
+    The ConfigurationManager optimizes memory usage by reusing DataManager
+    instances when experiment groups have identical data configurations.
+    This is particularly important when running many experiments with
+    similar data processing requirements.
+
+    Examples
+    --------
+    Create a configuration manager:
+        >>> from brisk.configuration import ConfigurationManager
+        >>> manager = ConfigurationManager(
+        ...     experiment_groups=groups,
+        ...     categorical_features=categorical_features,
+        ...     plot_settings=plot_settings
+        ... )
     """
     def __init__(
         self,
         experiment_groups: List[experiment_group.ExperimentGroup],
-        categorical_features: Dict[str, List[str]]
+        categorical_features: Dict[str, List[str]],
+        plot_settings: plot_settings_module.PlotSettings
     ):
-        """Initialize ConfigurationManager.
-        
-        Args:
-            experiment_groups: List of experiment group configurations
-            categorical_features: Dict mapping categorical features to dataset
+        """Initialize ConfigurationManager with experiment groups and settings.
+
+        Sets up the complete configuration for experiment execution including
+        loading algorithm configurations, creating data managers, building
+        experiment queues, and preparing output structures.
+
+        Parameters
+        ----------
+        experiment_groups : List[ExperimentGroup]
+            List of experiment group configurations to process
+        categorical_features : Dict[str, List[str]]
+            Dictionary mapping dataset identifiers to lists of categorical
+            feature names
+        plot_settings : PlotSettings
+            Plot configuration settings for the experiments
+
+        Notes
+        -----
+        The initialization process:
+        1. Loads algorithm configuration from algorithms.py
+        2. Loads base data manager configuration from data.py
+        3. Creates optimized data manager instances
+        4. Builds experiment queue from all groups
+        5. Creates data splits for all datasets
+        6. Generates configuration documentation
+        7. Sets up output directory structure
         """
+        self.services = get_services()
+        self.services.io.set_io_settings(plot_settings.get_io_settings())
+        self.services.utility.set_plot_settings(plot_settings)
         self.experiment_groups = experiment_groups
         self.categorical_features = categorical_features
+        self.workflow_map = {}
         self.project_root = project.find_project_root()
         self.algorithm_config = self._load_algorithm_config()
         self.base_data_manager = self._load_base_data_manager()
@@ -77,168 +127,85 @@ class ConfigurationManager:
 
     def _load_base_data_manager(self) -> data_manager.DataManager:
         """Load default DataManager configuration from project's data.py.
-        
-        Parameters
-        ----------
-        None
+
+        Loads the base DataManager configuration that serves as the template
+        for all experiment groups. This configuration defines default
+        parameters for data processing, splitting, and preprocessing.
 
         Returns
         -------
         DataManager
-            Configured instance from data.py
-            
+            Configured DataManager instance loaded from data.py
+
         Raises
         ------
         FileNotFoundError
             If data.py is not found in project root
         ImportError
             If data.py cannot be loaded or BASE_DATA_MANAGER is not defined
-            
+
         Notes
         -----
-        data.py must define BASE_DATA_MANAGER = DataManager(...)
+        The data.py file must define:
+        BASE_DATA_MANAGER = DataManager(...)
+
+        This base configuration is used as a template for creating
+        group-specific data managers with custom parameters.
         """
         data_file = self.project_root / "data.py"
-
-        if not data_file.exists():
-            raise FileNotFoundError(
-                f"Data file not found: {data_file}\n"
-                f"Please create data.py with BASE_DATA_MANAGER configuration"
-            )
-
-        spec = util.spec_from_file_location("data", data_file)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Failed to load data module from {data_file}")
-
-        data_module = util.module_from_spec(spec)
-        spec.loader.exec_module(data_module)
-
-        if not hasattr(data_module, "BASE_DATA_MANAGER"):
-            raise ImportError(
-                f"BASE_DATA_MANAGER not found in {data_file}\n"
-                f"Please define BASE_DATA_MANAGER = DataManager(...)"
-            )
-        self._validate_single_variable(data_file, "BASE_DATA_MANAGER")
-        if not isinstance(
-            data_module.BASE_DATA_MANAGER, data_manager.DataManager
-        ):
-            raise ValueError(
-                f"BASE_DATA_MANAGER in {data_file} is not a valid "
-                "DataManager instance"
-            )
-        return data_module.BASE_DATA_MANAGER
-
-    def _validate_single_variable(
-        self,
-        file_path: Path,
-        variable_name: str
-    ) -> None:
-        """Validate that only a variable name is defined only once in a file.
-
-        Parameters
-        ----------
-        file_path : Path
-            Path to the Python file to check
-        variable_name : str
-            Name of the variable to check
-        
-        Raises
-        ------
-        ValueError
-            If the variable is defined multiple times
-        SyntaxError
-            If the file contains invalid Python syntax
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                source_code = f.read()
-
-            tree = ast.parse(source_code, filename=str(file_path))
-
-            assignments = []
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if (
-                            isinstance(target, ast.Name)
-                            and target.id == variable_name
-                        ):
-                            assignments.append(node.lineno)
-
-            if len(assignments) > 1:
-                lines_str = ", ".join(map(str, assignments))
-                raise ValueError(
-                    f"{variable_name} is defined multiple times in {file_path} "
-                    f"on lines: {lines_str}. Please define it exactly once to "
-                    "avoid ambiguity."
-                )
-        except SyntaxError as e:
-            raise SyntaxError(f"Invalid Python syntax in {file_path}") from e
+        base_data_manager = self.services.io.load_base_data_manager(data_file)
+        return base_data_manager
 
     def _load_algorithm_config(
         self
-    ) -> algorithm_wrapper.AlgorithmCollection:
+    ) -> algorithm_collection.AlgorithmCollection:
         """Load algorithm configuration from project's algorithms.py.
-        
-        Parameters
-        ----------
-        None
+
+        Loads the complete algorithm configuration that defines all
+        available algorithms, their default parameters, and hyperparameter
+        grids for the experiments.
 
         Returns
         -------
-        list
-            List of AlgorithmWrapper instances from algorithms.py
-            
+        AlgorithmCollection
+            Collection of AlgorithmWrapper instances from algorithms.py
+
         Raises
         ------
         FileNotFoundError
             If algorithms.py is not found in project root
         ImportError
             If algorithms.py cannot be loaded or ALGORITHM_CONFIG is not defined
-            
+
         Notes
         -----
-        algorithms.py must define ALGORITHM_CONFIG = AlgorithmCollection()
+        The algorithms.py file must define:
+        ALGORITHM_CONFIG = AlgorithmCollection(...)
+
+        This configuration is used by the ExperimentFactory to create
+        experiment instances with the appropriate algorithms.
         """
         algo_file = self.project_root / "algorithms.py"
-
-        if not algo_file.exists():
-            raise FileNotFoundError(
-                f"algorithms.py file not found: {algo_file}\n"
-                f"Please create algorithms.py and define an AlgorithmCollection"
-            )
-
-        spec = util.spec_from_file_location("algorithms", algo_file)
-        if spec is None or spec.loader is None:
-            raise ImportError(
-                f"Failed to load algorithms module from {algo_file}"
-                )
-
-        algo_module = util.module_from_spec(spec)
-        spec.loader.exec_module(algo_module)
-
-        if not hasattr(algo_module, "ALGORITHM_CONFIG"):
-            raise ImportError(
-                f"ALGORITHM_CONFIG not found in {algo_file}\n"
-                f"Please define ALGORITHM_CONFIG = AlgorithmCollection()"
-            )
-        self._validate_single_variable(algo_file, "ALGORITHM_CONFIG")
-        if not isinstance(
-            algo_module.ALGORITHM_CONFIG, algorithm_wrapper.AlgorithmCollection
-        ):
-            raise ValueError(
-                f"ALGORITHM_CONFIG in {algo_file} is not a valid "
-                "AlgorithmCollection instance"
-            )
-        return algo_module.ALGORITHM_CONFIG
+        algo_config = self.services.io.load_algorithms(algo_file)
+        return algo_config
 
     def _get_base_params(self) -> Dict:
         """Get parameters from base DataManager instance.
-        
+
+        Extracts all initialization parameters from the base DataManager
+        to use as a template for creating group-specific data managers.
+
         Returns
         -------
-        dict
-            Dictionary of current parameter values from base DataManager
+        Dict
+            Dictionary of parameter names and values from the base DataManager
+
+        Notes
+        -----
+        This method uses introspection to extract parameter names from
+        the DataManager's __init__ method, excluding 'self'. The resulting
+        dictionary can be used to create new DataManager instances with
+        the same base configuration plus any group-specific overrides.
         """
         return {
             name: getattr(self.base_data_manager, name)
@@ -248,53 +215,91 @@ class ConfigurationManager:
 
     def _create_data_managers(self) -> Dict[str, data_manager.DataManager]:
         """Create minimal set of DataManager instances.
-        
+
         Groups ExperimentGroups by their data_config and creates one
-        DataManager instance per unique configuration.
-        
+        DataManager instance per unique configuration. This optimization
+        reduces memory usage by reusing data managers when configurations
+        are identical.
+
         Returns
         -------
-        dict
+        Dict[str, DataManager]
             Dictionary mapping group names to DataManager instances
-        
+
         Notes
         -----
-        Reuses DataManager instances when configurations match to minimize
-        memory usage
+        The method groups experiment groups by their data configuration:
+        - Groups with identical data_config share the same DataManager
+        - Groups with no data_config use the base DataManager
+        - Preprocessor configurations are handled specially to ensure
+          proper grouping based on preprocessor types
+
+        This optimization is particularly important when running many
+        experiments with similar data processing requirements.
         """
         config_groups = collections.defaultdict(list)
         for group in self.experiment_groups:
-            # Convert data_config to frozendict for hashable key
-            config_key = frozenset(
-                (group.data_config or {}).items()
-            )
+            # Create a hashable key for grouping similar configurations
+            data_config = group.data_config or {}
+            if "preprocessors" in data_config:
+                # Create a key based on preprocessor types and other config
+                preprocessor_types = tuple(
+                    type(p).__name__ for p in data_config["preprocessors"]
+                )
+                other_config = {
+                    k: v for k, v in data_config.items() if k != "preprocessors"
+                }
+                config_key = (
+                    preprocessor_types, frozenset(other_config.items())
+                )
+            else:
+                config_key = frozenset(data_config.items())
+
             config_groups[config_key].append(group.name)
 
         managers = {}
-        for config, group_names in config_groups.items():
-            if not config:
+        for config_key, group_names in config_groups.items():
+            first_group = next(
+                g for g in self.experiment_groups
+                if g.name in group_names
+            )
+
+            if not first_group.data_config:
                 manager = self.base_data_manager
             else:
                 base_params = self._get_base_params()
-                new_params = dict(config)
-                base_params.update(new_params)
+                base_params.update(first_group.data_config)
                 manager = data_manager.DataManager(**base_params)
 
             for name in group_names:
+                self.services.reporting.add_data_manager(name, manager)
                 managers[name] = manager
 
         return managers
 
     def _create_experiment_queue(self) -> collections.deque:
         """Create queue of experiments from all ExperimentGroups.
-        
+
         Creates an ExperimentFactory with loaded algorithm configuration,
         then processes each ExperimentGroup to create Experiment instances.
-        
+        Loads workflow classes and creates the complete experiment queue.
+
         Returns
         -------
         collections.deque
             Queue of Experiment instances ready to run
+
+        Notes
+        -----
+        The method:
+        1. Creates an ExperimentFactory with algorithm configuration
+        2. Loads workflow classes for each experiment group
+        3. Determines the number of data splits for each group
+        4. Creates experiment instances for all algorithm-dataset combinations
+        5. Adds all experiments to the execution queue
+
+        The experiment queue is processed during experiment execution,
+        with each experiment running independently.
         """
         factory = experiment_factory.ExperimentFactory(
             self.algorithm_config, self.categorical_features
@@ -302,16 +307,34 @@ class ConfigurationManager:
 
         all_experiments = collections.deque()
         for group in self.experiment_groups:
-            experiments = factory.create_experiments(group)
+            workflow_class = self.services.io.load_workflow(group.workflow)
+            self.workflow_map[group.workflow] = workflow_class
+            n_splits = group.data_config.get(
+                "n_splits", self.base_data_manager.n_splits
+            )
+            experiments = factory.create_experiments(group, n_splits)
             all_experiments.extend(experiments)
 
         return all_experiments
 
     def _create_data_splits(self) -> None:
         """Create DataSplitInfo instances for all datasets.
-        
-        Creates splits for each dataset in each experiment group using the
-        appropriate DataManager instance.
+
+        Creates data splits for each dataset in each experiment group using
+        the appropriate DataManager instance. This prepares all datasets
+        for cross-validation and train/test splitting.
+
+        Notes
+        -----
+        The method processes each experiment group and:
+        1. Gets the appropriate DataManager for the group
+        2. For each dataset in the group:
+           - Determines categorical features for the dataset
+           - Creates data splits using the DataManager
+           - Associates splits with the group and dataset
+
+        This ensures that all datasets are properly prepared for
+        experiment execution with the correct feature categorization.
         """
         for group in self.experiment_groups:
             group_data_manager = self.data_managers[group.name]
@@ -327,19 +350,29 @@ class ConfigurationManager:
                 group_data_manager.split(
                     data_path=str(dataset_path),
                     categorical_features=categorical_features,
-                    table_name=table_name,
                     group_name=group.name,
+                    table_name=table_name,
                     filename=dataset_path.stem
                 )
 
     def _create_logfile(self) -> None:
         """Create a markdown string describing the configuration.
-        
-        Creates a detailed markdown document containing:
-        - Default algorithm configurations
-        - Experiment group configurations
-        - DataManager settings
-        - Dataset information
+
+        Generates comprehensive documentation of the experiment configuration
+        including algorithm settings, experiment group details, data manager
+        configurations, and dataset information.
+
+        Notes
+        -----
+        The generated markdown includes:
+        - Default algorithm configurations with parameters and grids
+        - Experiment group descriptions and settings
+        - DataManager configurations for each group
+        - Dataset information including feature categorization
+        - Algorithm-specific configurations for each group
+
+        This documentation is saved as part of the experiment results
+        and provides a complete record of the configuration used.
         """
         md_content = [
             "## Default Algorithm Configuration"
@@ -393,7 +426,7 @@ class ConfigurationManager:
                     table_name=table_name,
                     group_name=group.name,
                     filename=dataset_path.stem
-                )
+                ).get_split(0)
 
                 md_content.extend([
                     f"#### {dataset_path.name}",
@@ -409,13 +442,28 @@ class ConfigurationManager:
 
     def _get_output_structure(self) -> Dict[str, Dict[str, Tuple[str, str]]]:
         """Get the directory structure for experiment outputs.
-        
+
+        Creates a nested dictionary structure that maps experiment groups
+        to their datasets and provides the necessary path information
+        for organizing experiment results.
+
         Returns
         -------
-        dict
+        Dict[str, Dict[str, Tuple[str, str]]]
             Nested dictionary structure where:
             - Top level keys are experiment group names
             - Second level maps dataset names to (path, table_name) tuples
+
+        Notes
+        -----
+        The output structure is used to organize experiment results
+        in a hierarchical manner:
+        - Group level: Each experiment group gets its own directory
+        - Dataset level: Each dataset within a group gets its own subdirectory
+        - File level: Results are organized by dataset and table name
+
+        This structure ensures that results from different experiments
+        are properly separated and organized.
         """
         output_structure = {}
 
@@ -437,12 +485,22 @@ class ConfigurationManager:
 
     def _create_description_map(self) -> Dict[str, str]:
         """Create a mapping of group names to descriptions.
-        
+
+        Creates a simple mapping of experiment group names to their
+        descriptions, filtering out empty descriptions.
+
         Returns
         -------
-        dict
+        Dict[str, str]
             Mapping of group names to their descriptions, excluding empty
             descriptions
+
+        Notes
+        -----
+        This mapping is used for generating reports and documentation
+        where group descriptions are needed. Empty descriptions are
+        filtered out to avoid cluttering the output with meaningless
+        entries.
         """
         return {
             group.name: group.description

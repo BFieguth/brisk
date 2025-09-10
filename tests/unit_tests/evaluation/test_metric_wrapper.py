@@ -13,7 +13,8 @@ def accuracy_wrapper():
         func=metrics.accuracy_score,
         display_name="Accuracy",
         abbr="ac",
-        normalize=True
+        normalize=True,
+        greater_is_better=True
     )
     return wrapper
 
@@ -24,6 +25,7 @@ def f1_wrapper():
         name="f1",
         func=metrics.f1_score,
         display_name="F1 Score",
+        greater_is_better=True
     )
     return wrapper
 

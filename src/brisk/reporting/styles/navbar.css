@@ -1,0 +1,275 @@
+.navbar {
+    background-color: var(--bg-dark);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px var(--bg-dark);
+    position: relative;
+}
+
+.navbar-left {
+    margin: 0;
+    flex: 0 0 auto;
+    min-width: 200px;
+}
+
+.navbar-middle {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 2rem;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 25px;
+    padding-right: 25px;
+    flex: 0 0 auto;
+}
+
+.navbar-title {
+    color: var(--text);
+    font-weight: 400;
+    margin: 10px 0px;
+}
+
+.navbar-title a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.navbar-title a:hover {
+    color: var(--primary);
+    cursor: pointer;
+}
+
+.navbar-version,
+.navbar-timestamp {
+    color: var(--text-muted);
+    margin: 0px;
+}
+
+/* Theme toggle button */
+.theme-container {
+    position: relative;
+    display: inline-block;
+}
+
+.theme-button {
+    background: none; 
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text);
+    transition: transform 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+.theme-button:hover .theme-svg {
+    transform: scale(1.25);
+    color: var(--primary);
+}
+
+.theme-text {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0);
+    z-index: 20;
+    transform-origin: left center;
+    padding: 8px 12px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.theme-container:hover .theme-text {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+}
+
+/* Github and Docs Icons */
+.github-container,
+.docs-container {
+    position: relative;
+    display: inline-block;
+}
+
+.github-button,
+.docs-button {
+    background: none; 
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.github-svg,
+.docs-svg {
+    width: 48px;
+    height: 48px;
+    color: var(--text);
+    transition: transform 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+.github-button:hover .github-svg,
+.docs-button:hover .docs-svg {
+    transform: scale(1.25);
+    stroke: var(--primary);
+}
+
+.github-text,
+.docs-text {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text);
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0); /* -translate-x-[50%] + initial scale(0) for hidden state */
+    z-index: 20;
+    transform-origin: left center;
+    padding: 8px 12px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* transition-all duration-300 ease-in-out */
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.github-container:hover .github-text,
+.docs-container:hover .docs-text {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+}
+
+/* Experiment Navigation Section - Now integrated in navbar middle */
+.experiment-nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Navigation buttons - smaller for navbar integration */
+.nav-button {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+.nav-button:hover:not(:disabled) {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+    color: var(--text);
+}
+
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-light);
+}
+
+/* Experiment info section - compact for navbar */
+.experiment-nav-info {
+    text-align: center;
+    color: var(--text);
+    font-family: "Montserrat", sans-serif;
+    margin: 0 1rem;
+}
+
+.experiment-nav-group,
+.experiment-nav-dataset {
+    color: var(--text);
+    margin-bottom: 0.15rem;
+}
+
+.experiment-nav-breadcrumb {
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .navbar {
+        flex-wrap: wrap;
+        padding: 10px 20px;
+    }
+    
+    .navbar-left {
+        min-width: auto;
+        flex: 1 1 auto;
+    }
+    
+    .navbar-middle {
+        order: 3;
+        flex: 1 1 100%;
+        margin: 0.5rem 0 0 0;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+    }
+    
+    .experiment-nav-content {
+        max-width: none;
+    }
+    
+    .experiment-nav-info {
+        margin: 0 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-right {
+        gap: 15px;
+        padding-right: 10px;
+    }
+    
+    .experiment-nav-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .experiment-nav-info {
+        order: -1;
+        margin: 0;
+    }
+    
+    .nav-button {
+        flex: 1;
+        max-width: 100px;
+    }
+}

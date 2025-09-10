@@ -1,6 +1,6 @@
 """Data for individual experiment runs.
 
-This module defines the Experiment class, which represents a single experiment 
+This module defines the Experiment class, which represents a single experiment
 within the Brisk framework. Each Experiment instance contains the information
 needed for one model training run.
 
@@ -9,7 +9,7 @@ Examples
 >>> from pathlib import Path
 >>> from sklearn.linear_model import LinearRegression
 >>> from brisk.utility.algorithm_wrapper import AlgorithmWrapper
->>> 
+>>>
 >>> experiment = Experiment(
 ...     group_name="baseline",
 ...     algorithms={"model": AlgorithmWrapper("linear", LinearRegression)},
@@ -21,7 +21,7 @@ Examples
 """
 import dataclasses
 import pathlib
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 
 from brisk.configuration import algorithm_wrapper
 
@@ -35,7 +35,7 @@ class Experiment:
         Name of the experiment group for organization
     algorithms : dict
         Dictionary of AlgorithmWrapper instances with standardized keys:
-        
+
         * Single model : dict
             {"model": wrapper}
         * Multiple models : dict
@@ -44,6 +44,8 @@ class Experiment:
         Path to the dataset file
     workflow_args : dict
         Arguments to pass to the workflow
+    split_index: int
+        Index value used to select a DataSplitInfo instance from DataSplits
     table_name : str, optional
         Name of table for database files
     categorical_features : list of str, optional
@@ -53,8 +55,12 @@ class Experiment:
     ----------
     name : str
         Full descriptive name combining group and algorithms
-    dataset_name : str
-        Name of the dataset with optional table name
+    workflow: str
+        Name of the workflow file to use (without .py extension)
+    dataset_name : Tuple[str, Optional[str]]
+        Name of the dataset file and table name (for database files`)
+    table_name: str
+        Name of the table (database files only)
     algorithm_kwargs : dict
         Dictionary of instantiated algorithm objects
     algorithm_names : list
@@ -63,9 +69,11 @@ class Experiment:
         Combined workflow and algorithm arguments
     """
     group_name: str
+    workflow: str
     algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
     dataset_path: pathlib.Path
     workflow_args: Dict[str, Any]
+    split_index: int
     table_name: Optional[str | None]
     categorical_features: Optional[List[str] | None]
 
@@ -85,7 +93,7 @@ class Experiment:
         return f"{self.group_name}_{algo_names}"
 
     @property
-    def dataset_name(self) -> str:
+    def dataset_name(self) -> Tuple[str, Optional[str]]:
         """Get the dataset name with optional table name.
 
         Returns
@@ -94,11 +102,7 @@ class Experiment:
             Dataset stem with optional table name
             Example: 'data_table1' or 'data'
         """
-        dataset_name = (
-            f"{self.dataset_path.stem}_{self.table_name}"
-            if self.table_name else self.dataset_path.stem
-        )
-        return dataset_name
+        return (self.dataset_path.stem, self.table_name)
 
     @property
     def algorithm_kwargs(self) -> dict:
@@ -178,7 +182,7 @@ class Experiment:
                 raise ValueError('Single model must use key "model"')
         else:
             expected_keys = [
-                "model" if i == 0 else f"model{i+1}" 
+                "model" if i == 0 else f"model{i+1}"
                 for i in range(len(self.algorithms))
             ]
             if list(self.algorithms.keys()) != expected_keys:

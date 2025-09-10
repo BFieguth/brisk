@@ -16,7 +16,8 @@ The first step is to define a function that calculates the metric. This function
 must take two arguments, ``y_true`` and ``y_pred`` (in this order). These are array-like
 objects of the same length with the actual and predicted values, respectively. Your metric
 function should return a float. You can define these functions in the ``metrics.py`` file
-before you create the ``MetricManager``.
+before you create the ``MetricManager``. You may also import functions that implement an
+evaluation metric from scikit-learn or other libraries, given it follows the expected interface.
 
 Here is an example of a metric function that calculates the concordance correlation coefficient:
 
@@ -77,7 +78,7 @@ If you do not need to use the split metadata, you can ignore it in your function
 
 Multiclass Metrics
 ------------------
-Some metrics are defiend for the binary classification problem and only consider the positive label.
+Some metrics are defined for the binary classification problem and only consider the positive label.
 When extending a binary metric to a multiclass problem, the problem is treated as a series of
 binary classification problems for each class. These values need to be averaged to get a single
 value for the metric for all classes. For sklearn metrics, this is done by passing the ``average``
@@ -89,7 +90,7 @@ More details can be found in the `scikit-learn documentation <https://scikit-lea
 Create a MetricWrapper
 ----------------------
 Once the metric function is defined we simply need to create a ``MetricWrapper`` 
-and add it to the ``MetricManager``. Using the concordance correlation coefficient metric
+and add it to the ``MetricManager`` in ``metrics.py``. Using the concordance correlation coefficient metric
 function from the previous section, we can create the following ``MetricWrapper``:
 
 .. code-block:: python
@@ -105,7 +106,7 @@ function from the previous section, we can create the following ``MetricWrapper`
 
 The ``name`` and ``abbr`` atttributes must be unique as they are used to identify the metric.
 You can name them whatever makes sense for your project. The ``display_name`` attribute is
-used for plots and tables.
+used in plots and tables to identify the metric.
 
 By adding the ``MetricWrapper`` to the ``MetricManager``, the metric will be available for use
 in your workflows.
