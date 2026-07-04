@@ -27,87 +27,33 @@ Examples
 """
 
 import pathlib
-from typing import Optional, Any, Dict, Union, TYPE_CHECKING
+from typing import Optional, Any, Dict, Union
 import json
 import os
-import io
-import sys
 import importlib
+import importlib.util
 import ast
 import inspect
-import warnings
 
-import matplotlib.pyplot as plt
 import plotnine as pn
 import plotly.graph_objects as go
-import numpy as np
 import pandas as pd
-import sqlite3
 
+from brisk.adapters.filesystem.module_loader_adapter import ModuleLoaderAdapter
+from brisk.adapters.filesystem.storage_adapter import (
+    FilesystemStorageAdapter,
+    NumpyEncoder,
+)
+from brisk.adapters.plotting.plot_renderer import PlotRenderer
 from brisk.services import base
 from brisk.data import data_manager
 from brisk.configuration import algorithm_collection
 from brisk.evaluation import metric_manager
 
-if TYPE_CHECKING:
-    from brisk.training import workflow as workflow_module
-
-class NumpyEncoder(json.JSONEncoder):
-    """Custom JSON encoder for NumPy data types.
-    
-    This encoder extends the standard JSON encoder to handle NumPy data types
-    that are not natively JSON serializable. It converts NumPy integers,
-    floats, and arrays to their Python equivalents.
-    
-    Notes
-    -----
-    This encoder is used automatically when saving data with NumPy arrays
-    or scalars to JSON files through the IOService.
-    
-    Examples
-    --------
-    >>> import json
-    >>> import numpy as np
-    >>> from brisk.services.io import NumpyEncoder
-    >>> 
-    >>> data = {
-    ...     "accuracy": np.float64(0.95),
-    ...     "scores": np.array([0.1, 0.2, 0.3])
-    ... }
-    >>> json_str = json.dumps(data, cls=NumpyEncoder)
-    >>> print(json_str)  # {"accuracy": 0.95, "scores": [0.1, 0.2, 0.3]}
-    """
-    def default(self, o: Any) -> Any:
-        """Convert NumPy objects to JSON-serializable types.
-        
-        Parameters
-        ----------
-        o : Any
-            The object to convert
-            
-        Returns
-        -------
-        Any
-            JSON-serializable representation of the object
-        """
-        if isinstance(o, np.integer):
-            return int(o)
-        if isinstance(o, np.floating):
-            val = float(o)
-            # Handle NaN and Infinity which are not valid JSON
-            if np.isnan(val) or np.isinf(val):
-                return None
-            return val
-        if isinstance(o, np.ndarray):
-            return o.tolist()
-        if isinstance(o, (float, int)) and (np.isnan(o) if isinstance(o, float) else False):
-            return None
-        # Handle any other non-serializable objects by converting to string
-        try:
-            return super(NumpyEncoder, self).default(o)
-        except TypeError:
-            # For sklearn estimators and other complex objects, store type name
-            return f"<{type(o).__module__}.{type(o).__name__}>"
+_module_loader = ModuleLoaderAdapter()
+_default_storage = FilesystemStorageAdapter(
+    pathlib.Path("."), pathlib.Path(".")
+)
 
 
 class IOService(base.BaseService):
@@ -188,13 +134,25 @@ class IOService(base.BaseService):
         Default plot settings can be modified using `set_io_settings()`.
         """
         super().__init__(name)
-        self.results_dir = results_dir
-        self.output_dir = output_dir
         self.format = "png"
         self.width = 10
         self.height = 8
         self.dpi = 300
         self.transparent = False
+        self._plot_renderer = PlotRenderer(
+            file_format=self.format,
+            width=self.width,
+            height=self.height,
+            dpi=self.dpi,
+            transparent=self.transparent,
+        )
+        self._storage = FilesystemStorageAdapter(
+            results_dir=results_dir,
+            output_dir=output_dir,
+            plot_renderer=self._plot_renderer,
+        )
+        self.results_dir = self._storage.results_dir
+        self.output_dir = self._storage.output_dir
 
     def set_output_dir(self, output_dir: pathlib.Path) -> None:
         """Set the current output directory.
@@ -214,7 +172,8 @@ class IOService(base.BaseService):
         >>> io_service.set_output_dir(Path("experiment_1"))
         >>> # Now all saves will go to experiment_1 directory
         """
-        self.output_dir = output_dir
+        self._storage.set_output_dir(output_dir)
+        self.output_dir = self._storage.output_dir
 
     def save_to_json(
         self,
@@ -251,14 +210,11 @@ class IOService(base.BaseService):
         >>> metadata = {"experiment": "exp_1", "timestamp": "2024-01-15"}
         >>> io_service.save_to_json(data, Path("results.json"), metadata)
         """
-        if not os.path.exists(output_path.parent):
-            os.makedirs(output_path.parent, exist_ok=True)
         try:
             if metadata:
                 data["_metadata"] = metadata
 
-            with open(output_path, "w", encoding="utf-8") as file:
-                json.dump(data, file, indent=4, cls=NumpyEncoder)
+            self._storage.save_to_json(data, output_path, metadata)
 
             filename = pathlib.Path(output_path).stem
             self._other_services["reporting"].store_table_data(
@@ -313,44 +269,36 @@ class IOService(base.BaseService):
         >>> plt.plot([1, 2, 3], [1, 4, 9])
         >>> io_service.save_plot(Path("plot.png"))
         """
-        if not os.path.exists(output_path.parent):
-            os.makedirs(output_path.parent, exist_ok=True)
-
         height = kwargs.get("height", self.height)
         width = kwargs.get("width", self.width)
         filename = output_path.stem
-        output_path = output_path.with_suffix(f".{self.format}")
-        self._convert_to_svg(metadata, plot, height, width, filename)
+        save_path = output_path.with_suffix(f".{self.format}")
+
+        try:
+            svg_str = self._plot_renderer.to_svg(
+                plot, height=height, width=width
+            )
+            self._other_services["reporting"].store_plot_svg(
+                svg_str, metadata, filename
+            )
+        except IOError as e:
+            self._other_services["logging"].logger.info(
+                f"Failed to convert plot to SVG: {e}"
+            )
 
         try:
             if metadata:
                 for key, value in metadata.items():
                     if isinstance(value, dict):
                         metadata[key] = json.dumps(value)
-            if plot and isinstance(plot, pn.ggplot):
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        "ignore", category=UserWarning, module="plotnine"
-                    )
-                    plot.save(
-                        filename=output_path, format=self.format,
-                        height=height, width=width, dpi=self.dpi,
-                        transparent=self.transparent
-                    )
-            elif plot and isinstance(plot, go.Figure):
-                plot.write_image(
-                    file=output_path, format=self.format
-                )
-            else:
-                plt.savefig(
-                    output_path, format=self.format,
-                    dpi=self.dpi, transparent=self.transparent
-                )
-                plt.close()
+
+            self._storage.save_plot(
+                save_path, metadata, plot, height=height, width=width
+            )
 
         except IOError as e:
             self._other_services["logging"].logger.info(
-                f"Failed to save plot to {output_path}: {e}"
+                f"Failed to save plot to {save_path}: {e}"
             )
 
     def save_rerun_config(
@@ -372,64 +320,6 @@ class IOService(base.BaseService):
                 f"Failed to save JSON to {output_path}: {e}"
             )
 
-    def _convert_to_svg(
-        self,
-        metadata: Dict[str, Any],
-        plot: Optional[pn.ggplot | go.Figure],
-        height,
-        width,
-        filename: str = ""
-    ) -> None:
-        """Convert plot to SVG format for the report.
-
-        Parameters
-        ----------
-        metadata : dict
-            Metadata to include
-        plot : ggplot
-            Plotnine plot object
-        height : int
-            The plot height in inches
-        width : int
-            The plot width in inches
-        filename : str
-            The filename stem for cache key disambiguation
-
-        Returns
-        -------
-        None
-        """
-        try:
-            svg_buffer = io.BytesIO()
-            if plot and isinstance(plot, pn.ggplot):
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        "ignore", category=UserWarning, module="plotnine"
-                    )
-                    plot.save(
-                        svg_buffer, format="svg", height=height, width=width,
-                        dpi=100
-                    )
-            elif plot and isinstance(plot, go.Figure):
-                plot.write_image(
-                    file=svg_buffer, format="svg", width=width, height=height
-                )
-            else:
-                plt.savefig(
-                    svg_buffer, format="svg", bbox_inches="tight", dpi=100
-                )
-
-            svg_str = svg_buffer.getvalue().decode("utf-8")
-            svg_buffer.close()
-            self._other_services["reporting"].store_plot_svg(
-                svg_str, metadata, filename
-            )
-
-        except IOError as e:
-            self._other_services["logging"].logger.info(
-                f"Failed to convert plot to SVG: {e}"
-            )
-
     def set_io_settings(self, io_settings: Dict[str, Any]) -> None:
         """Set settings to use when saving plots."""
         self.format = io_settings["file_format"]
@@ -437,6 +327,7 @@ class IOService(base.BaseService):
         self.height = io_settings["height"]
         self.dpi = io_settings["dpi"]
         self.transparent = io_settings["transparent"]
+        self._plot_renderer.configure(io_settings)
 
     @staticmethod
     def load_data(
@@ -480,31 +371,7 @@ class IOService(base.BaseService):
         >>> # Load SQL database
         >>> df = IOService.load_data("data.db", table_name="my_table")
         """
-        file_extension = os.path.splitext(data_path)[1].lower()
-
-        if file_extension == ".csv":
-            return pd.read_csv(data_path)
-
-        elif file_extension in [".xls", ".xlsx"]:
-            return pd.read_excel(data_path)
-
-        elif file_extension in [".db", ".sqlite"]:
-            if table_name is None:
-                raise ValueError(
-                    "For SQL databases, 'table_name' must be provided."
-                )
-
-            conn = sqlite3.connect(data_path)
-            query = f"SELECT * FROM {table_name}"
-            df = pd.read_sql(query, conn)
-            conn.close()
-            return df
-
-        else:
-            raise ValueError(
-                f"Unsupported file format: {file_extension}. "
-                "Supported formats are CSV, Excel, and SQL database."
-            )
+        return _default_storage.load_data(data_path, table_name)
 
     @staticmethod
     def load_module_object(
@@ -557,29 +424,12 @@ class IOService(base.BaseService):
         ...     required=False
         ... )
         """
-        module_path = os.path.join(project_root, module_filename)
-
-        if not os.path.exists(module_path):
-            raise FileNotFoundError(
-                f'{module_filename} not found in {project_root}'
-            )
-
-        module_name = os.path.splitext(module_filename)[0]
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-
-        spec.loader.exec_module(module)
-
-        if hasattr(module, object_name):
-            return getattr(module, object_name)
-        elif required:
-            raise AttributeError(
-                f"The object \'{object_name}\' is not defined in "
-                f"{module_filename}"
-            )
-        else:
-            return None
+        return _module_loader.load_module_object(
+            project_root,
+            module_filename,
+            object_name,
+            required=required,
+        )
 
     def load_custom_evaluators(self, evaluators_file: pathlib.Path):
         """Load the register_custom_evaluators() function from evaluators.py
