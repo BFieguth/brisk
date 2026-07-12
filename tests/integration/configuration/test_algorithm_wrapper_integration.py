@@ -4,7 +4,7 @@ import json
 import pytest
 from sklearn import linear_model
 
-from brisk.configuration import algorithm_wrapper
+from brisk.adapters.sklearn import model_adapter as algorithm_wrapper
 
 
 @pytest.mark.integration
@@ -12,7 +12,7 @@ class TestAlgorithmWrapperIntegration():
     """Integration tests for the AlgorithmWrapper class."""
 
     def test_export_config_serializable(self):
-        wrapper = algorithm_wrapper.AlgorithmWrapper(
+        wrapper = algorithm_wrapper.SklearnAlgorithmWrapper(
             name="test_wrapper",
             display_name="Test Wrapper",
             algorithm_class = linear_model.Ridge
@@ -25,7 +25,7 @@ class TestAlgorithmWrapperIntegration():
         assert deserialized == output
 
     def test_export_config_algorithm_module(self):
-        wrapper = algorithm_wrapper.AlgorithmWrapper(
+        wrapper = algorithm_wrapper.SklearnAlgorithmWrapper(
             name="test_wrapper",
             display_name="Test Wrapper",
             algorithm_class = linear_model.Ridge

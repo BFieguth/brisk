@@ -8,7 +8,7 @@ Examples
 --------
 >>> from pathlib import Path
 >>> from sklearn.linear_model import LinearRegression
->>> from brisk.utility.algorithm_wrapper import AlgorithmWrapper
+>>> from brisk import AlgorithmWrapper
 >>>
 >>> experiment = Experiment(
 ...     group_name="baseline",
@@ -23,7 +23,7 @@ import dataclasses
 import pathlib
 from typing import Dict, Optional, List, Any, Tuple
 
-from brisk.configuration import algorithm_wrapper
+from brisk.ports import algorithm
 
 @dataclasses.dataclass
 class Experiment:
@@ -70,7 +70,7 @@ class Experiment:
     """
     group_name: str
     workflow: str
-    algorithms: Dict[str, algorithm_wrapper.AlgorithmWrapper]
+    algorithms: Dict[str, algorithm.AlgorithmWrapperPort]
     dataset_path: pathlib.Path
     workflow_args: Dict[str, Any]
     split_index: int

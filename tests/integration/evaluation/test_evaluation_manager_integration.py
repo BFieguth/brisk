@@ -9,7 +9,8 @@ from sklearn import linear_model
 import numpy as np
 import joblib
 
-from brisk.evaluation import evaluation_manager, metric_manager
+from brisk.evaluation import evaluation_manager
+from brisk.adapters.sklearn import metric_adapter as metric_manager
 from brisk.services import bundle, io, rerun
 from brisk.configuration import project
 from brisk.theme import plot_settings
@@ -62,7 +63,7 @@ def mock_services(tmp_path):
 
 @pytest.fixture()
 def sample_metric_manager():
-    return metric_manager.MetricManager()
+    return metric_manager.SklearnMetricManager()
 
 
 @pytest.fixture()

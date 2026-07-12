@@ -12,12 +12,12 @@ import os
 
 import numpy as np
 from sklearn import base
-import joblib
 import plotnine as pn
 
+from brisk.adapters.filesystem.serializer_adapter import JoblibSerializerAdapter
 from brisk.evaluation.evaluators import registry
-from brisk.evaluation import metric_manager
 from brisk.evaluation.evaluators import builtin
+from brisk.ports import metric
 from brisk.services import (
     get_services,
     update_experiment_config,
@@ -26,6 +26,9 @@ from brisk.services import (
 )
 from brisk.evaluation.evaluators import base as base_eval
 from brisk.configuration import project
+
+_serializer = JoblibSerializerAdapter()
+
 
 class EvaluationManager:
     """Coordinator for evaluation operations.
@@ -61,8 +64,8 @@ class EvaluationManager:
     Examples
     --------
     Initialize evaluation manager:
-        >>> from brisk.evaluation import metric_manager
-        >>> metric_mgr = metric_manager.MetricManager()
+        >>> from brisk import MetricManager
+        >>> metric_mgr = MetricManager()
         >>> eval_mgr = EvaluationManager(metric_mgr)
 
     Get an evaluator:
@@ -71,7 +74,7 @@ class EvaluationManager:
 
     def __init__(
         self,
-        metric_manager: metric_manager.MetricManager,
+        metric_manager: metric.MetricManagerPort,
     ):
         """Initialize EvaluationManager with metric configuration.
 
@@ -337,7 +340,7 @@ class EvaluationManager:
             "model": model,
             "metadata": metadata
         }
-        joblib.dump(model_package, output_path)
+        _serializer.dump(model_package, output_path)
         self.services.logger.logger.info(
             "Saving model '%s' to '%s'.", filename, output_path
         )
@@ -370,4 +373,4 @@ class EvaluationManager:
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
-        return joblib.load(filepath)
+        return _serializer.load(filepath)

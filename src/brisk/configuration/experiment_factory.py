@@ -7,7 +7,7 @@ algorithms, and resolves dataset paths for experiments.
 
 Examples
 --------
->>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
+>>> from brisk import AlgorithmCollection
 >>> from brisk.configuration.experiment_group import ExperimentGroup
 >>> from brisk.configuration.experiment_factory import ExperimentFactory
 >>>
@@ -33,8 +33,10 @@ import collections
 from typing import List, Dict, Any, Deque, Union
 
 from brisk.configuration import (
-        experiment, experiment_group, algorithm_wrapper, algorithm_collection
+        experiment, experiment_group, algorithm_collection
 )
+from brisk.ports import algorithm
+from brisk.adapters.sklearn import model_adapter
 
 class ExperimentFactory:
     """Factory for creating Experiment instances from ExperimentGroups.
@@ -95,7 +97,7 @@ class ExperimentFactory:
 
         Examples
         --------
-        >>> from brisk.utility.algorithm_wrapper import AlgorithmCollection
+        >>> from brisk import AlgorithmCollection
         >>> from brisk.configuration.experiment_group import ExperimentGroup
         >>> from brisk.configuration.experiment_factory import ExperimentFactory
         >>>
@@ -178,7 +180,7 @@ class ExperimentFactory:
         self,
         algo_name: str,
         config: Dict[str, Any] | None = None
-    ) -> algorithm_wrapper.AlgorithmWrapper:
+    ) -> algorithm.AlgorithmWrapperPort:
         """Get algorithm wrapper with updated configuration.
 
         Parameters
@@ -194,7 +196,7 @@ class ExperimentFactory:
             New wrapper instance with updated configuration
         """
         original_wrapper = self.algorithm_config[algo_name]
-        wrapper = algorithm_wrapper.AlgorithmWrapper(
+        wrapper = model_adapter.SklearnAlgorithmWrapper(
             name=original_wrapper.name,
             display_name=original_wrapper.display_name,
             algorithm_class=original_wrapper.algorithm_class,

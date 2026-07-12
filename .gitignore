@@ -27,3 +27,6 @@ working_report_data.json
 
 *.pyc
 .DS_Store
+
+CLAUDE.md
+.claude

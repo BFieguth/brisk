@@ -15,10 +15,10 @@ from sklearn import svm
 from sklearn import naive_bayes
 from sklearn import neighbors
 
-from brisk.configuration import algorithm_wrapper
+from brisk.adapters.sklearn import model_adapter
 
-CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
-    algorithm_wrapper.AlgorithmWrapper(
+CLASSIFICATION_ALGORITHMS: List[model_adapter.SklearnAlgorithmWrapper] = [
+    model_adapter.SklearnAlgorithmWrapper(
         name="logistic",
         display_name="Logistic Regression",
         algorithm_class=linear_model.LogisticRegression,
@@ -29,7 +29,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "C": list(np.arange(1, 30, 0.5)),
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="svc",
         display_name="Support Vector Classification",
         algorithm_class=svm.SVC,
@@ -40,7 +40,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1],
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="knn_classifier",
         display_name="k-Nearest Neighbours Classifier",
         algorithm_class=neighbors.KNeighborsClassifier,
@@ -51,7 +51,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "leaf_size": list(range(5, 50, 5)),
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="dtc",
         display_name="Decision Tree Classifier",
         algorithm_class=tree.DecisionTreeClassifier,
@@ -61,7 +61,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None],
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="rf_classifier",
         display_name="Random Forest Classifier",
         algorithm_class=ensemble.RandomForestClassifier,
@@ -72,7 +72,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None],
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="gaussian_nb",
         display_name="Gaussian Naive Bayes",
         algorithm_class=naive_bayes.GaussianNB,
@@ -80,7 +80,7 @@ CLASSIFICATION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "var_smoothing": [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="ridge_classifier",
         display_name="Ridge Classifier",
         algorithm_class=linear_model.RidgeClassifier,

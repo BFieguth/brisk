@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "brisk-ml"
-version = "1.2.0"
+version = "2.0.0"
 description = "A framework that helps train machine learning models using sklearn."
 authors = ["BFieguth <bfieguth@uoguelph.ca>"]
 readme = "README.md"
@@ -35,6 +35,13 @@ ui = ["briskui"]
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-cov = "^6.0.0"
+mypy = "^1.13.0"
+pandas-stubs = "^2.2.3"
+types-toml = "^0.10.8"
+types-tqdm = "^4.66.0"
+types-seaborn = "^0.13.2"
+types-openpyxl = "^3.1.5"
+types-Pillow = "^10.2.0"
 
 [[tool.poetry.source]]
 name = "testpypi"
@@ -55,6 +62,21 @@ markers = [
     "e2e: End-to-end tests that test complete workflows",
     "slow: Tests that take a long time to run",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+strict_equality = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+exclude = ["tests/", "dev/", "docs/"]
 
 [tool.coverage.report]
 exclude_lines = [

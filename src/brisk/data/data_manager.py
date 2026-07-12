@@ -14,9 +14,9 @@ Exports:
 from typing import Optional, List, Any, Tuple
 
 import pandas as pd
-from sklearn import model_selection
 
 from brisk.data import data_split_info, preprocessing, data_splits, splitkey
+from brisk.ports import splitter as splitter_port
 from brisk.services import get_services, missing, bundle
 
 
@@ -75,8 +75,8 @@ class DataManager:
         List of algorithms to use as feature selection estimators
     preprocessors : List[BasePreprocessor]
         List of preprocessors to apply to the data
-    splitter : sklearn.model_selection._BaseKFold
-        The initialized scikit-learn splitter object
+    splitter : SplitterPort
+        The initialized splitter object created by the splitter factory
     _splits : dict
         Cache of previously computed splits
 
@@ -132,7 +132,8 @@ class DataManager:
         random_state: Optional[int] = None,
         problem_type: str = "classification",
         algorithm_config=None,
-        preprocessors: Optional[List[preprocessing.BasePreprocessor]] = None,
+        preprocessors: Optional[List[preprocessing.PreprocessorPort]] = None,
+        splitter_factory: Optional[splitter_port.SplitterFactoryPort] = None,
     ):
         """
         Initialize DataManager with splitting and preprocessing configuration.
@@ -192,9 +193,29 @@ class DataManager:
         self.problem_type = problem_type
         self.algorithm_config = algorithm_config
         self.preprocessors = preprocessors or []
+        self.splitter_factory = (
+            splitter_factory or self._default_splitter_factory()
+        )
         self._validate_config()
         self.splitter = self._set_splitter()
         self._splits = {}
+
+    @staticmethod
+    def _default_splitter_factory() -> splitter_port.SplitterFactoryPort:
+        """Create the default sklearn splitter factory.
+
+        Imported lazily so the domain module does not depend on the adapter
+        layer at import time.
+
+        Returns
+        -------
+        splitter_port.SplitterFactoryPort
+            A new ``SklearnSplitterFactory`` instance.
+        """
+        from brisk.adapters.sklearn.splitter_adapter import ( # pylint: disable=import-outside-toplevel
+            SklearnSplitterFactory,
+        )
+        return SklearnSplitterFactory()
 
     def set_services(self, services: Optional[bundle.ServiceBundle] = None):
         if services is None:
@@ -246,79 +267,30 @@ class DataManager:
                 "Choose from 'classification' or 'regression'."
             )
 
-    def _set_splitter(self):
-        """Select the appropriate splitter based on the configuration.
+    def _set_splitter(self) -> splitter_port.SplitterPort:
+        """Create the configured splitter via the splitter factory.
 
-        Creates and returns the appropriate scikit-learn splitter object
-        based on the current configuration parameters.
+        Delegates construction to the injected ``SplitterFactoryPort`` so the
+        domain no longer depends on a specific splitting library.
 
         Returns
         -------
-        sklearn.model_selection._BaseKFold or sklearn.model_selection._Splitter
-            The initialized splitter object based on the configuration
+        splitter_port.SplitterPort
+            The initialized splitter object based on the configuration.
 
         Raises
         ------
         ValueError
             If invalid combination of stratified and group_column settings
-            is provided
-
-        Notes
-        -----
-        The method selects from the following splitters based on configuration:
-        - ShuffleSplit: Basic random splits
-        - StratifiedShuffleSplit: Stratified random splits
-        - GroupShuffleSplit: Group-aware random splits
-        - KFold: Basic k-fold cross-validation
-        - StratifiedKFold: Stratified k-fold cross-validation
-        - GroupKFold: Group-aware k-fold cross-validation
-        - StratifiedGroupKFold: Stratified group-aware k-fold cross-validation
+            is provided.
         """
-        if self.split_method == "shuffle":
-            if self.group_column and not self.stratified:
-                return model_selection.GroupShuffleSplit(
-                    n_splits=self.n_splits, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
-
-            elif self.stratified and not self.group_column:
-                return model_selection.StratifiedShuffleSplit(
-                    n_splits=self.n_splits, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
-
-            elif not self.stratified and not self.group_column:
-                return model_selection.ShuffleSplit(
-                    n_splits=self.n_splits, test_size=self.test_size,
-                    random_state=self.random_state
-                    )
-
-        elif self.split_method == "kfold":
-            if self.group_column and not self.stratified:
-                return model_selection.GroupKFold(n_splits=self.n_splits)
-
-            elif self.stratified and not self.group_column:
-                return model_selection.StratifiedKFold(
-                    n_splits=self.n_splits,
-                    shuffle=True if self.random_state else False,
-                    random_state=self.random_state,
-                )
-
-            elif not self.stratified and not self.group_column:
-                return model_selection.KFold(
-                    n_splits=self.n_splits,
-                    shuffle=True if self.random_state else False,
-                    random_state=self.random_state,
-                )
-
-            elif self.group_column and self.stratified:
-                return model_selection.StratifiedGroupKFold(
-                    n_splits=self.n_splits
-                )
-
-        raise ValueError(
-            "Invalid combination of stratified and group_column for "
-            "the specified split method."
+        return self.splitter_factory.create_splitter(
+            split_method=self.split_method,
+            n_splits=self.n_splits,
+            test_size=self.test_size,
+            stratified=self.stratified,
+            group_column=self.group_column,
+            random_state=self.random_state,
         )
 
     def _apply_preprocessing(
