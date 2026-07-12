@@ -31,6 +31,7 @@ class MetricPort(Protocol):
     ) -> float: ...
 
 
+@runtime_checkable
 class MetricWrapperPort(Protocol):
     """Wraps a metric callable with display metadata and default params."""
 
@@ -51,6 +52,7 @@ class MetricWrapperPort(Protocol):
     def set_params(self, **params: Any) -> None: ...
 
 
+@runtime_checkable
 class MetricManagerPort(Protocol):
     """
     Registry that looks up metric wrappers by name, abbreviation, or display

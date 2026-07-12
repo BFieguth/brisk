@@ -47,7 +47,7 @@ import sqlite3
 from brisk.services import base
 from brisk.data import data_manager
 from brisk.configuration import algorithm_collection
-from brisk.evaluation import metric_manager
+from brisk.ports import metric
 
 if TYPE_CHECKING:
     from brisk.training import workflow as workflow_module
@@ -819,7 +819,7 @@ class IOService(base.BaseService):
             )
         self._validate_single_variable(metric_file, "METRIC_CONFIG")
         if not isinstance(
-            metrics_module.METRIC_CONFIG, metric_manager.MetricManager
+            metrics_module.METRIC_CONFIG, metric.MetricManagerPort
         ):
             raise ValueError(
                 f"METRIC_CONFIG in {metric_file} is not a valid "

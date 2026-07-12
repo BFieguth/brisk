@@ -18,7 +18,9 @@ Usage:
 
 For more information, please refer to the documentation or the README file.
 """
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.adapters.sklearn.model_adapter import (
+    SklearnAlgorithmWrapper as AlgorithmWrapper,
+)
 from brisk.configuration.algorithm_collection import AlgorithmCollection
 from brisk.configuration.configuration_manager import ConfigurationManager
 from brisk.configuration.configuration import Configuration
@@ -27,8 +29,10 @@ from brisk.defaults.regression_algorithms import REGRESSION_ALGORITHMS
 from brisk.defaults.regression_metrics import REGRESSION_METRICS
 from brisk.defaults.classification_algorithms import CLASSIFICATION_ALGORITHMS
 from brisk.defaults.classification_metrics import CLASSIFICATION_METRICS
-from brisk.evaluation.metric_manager import MetricManager
-from brisk.evaluation.metric_wrapper import MetricWrapper
+from brisk.adapters.sklearn.metric_adapter import (
+    SklearnMetricManager as MetricManager,
+    SklearnMetricWrapper as MetricWrapper,
+)
 from brisk.evaluation.evaluation_manager import EvaluationManager
 from brisk.evaluation.evaluators.plot_evaluator import PlotEvaluator
 from brisk.evaluation.evaluators.measure_evaluator import MeasureEvaluator

@@ -16,29 +16,29 @@ from sklearn import neural_network
 from sklearn import svm
 from sklearn import tree
 
-from brisk.configuration import algorithm_wrapper
+from brisk.adapters.sklearn import model_adapter
 
-REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
-    algorithm_wrapper.AlgorithmWrapper(
+REGRESSION_ALGORITHMS: List[model_adapter.SklearnAlgorithmWrapper] = [
+    model_adapter.SklearnAlgorithmWrapper(
         name="linear",
         display_name="Linear Regression",
         algorithm_class=linear_model.LinearRegression
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="ridge",
         display_name="Ridge Regression",
         algorithm_class=linear_model.Ridge,
         default_params={"max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="lasso",
         display_name="LASSO Regression",
         algorithm_class=linear_model.Lasso,
         default_params={"alpha": 0.1, "max_iter": 10000},
         hyperparam_grid={"alpha": np.logspace(-3, 0, 100)}
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="bridge",
         display_name="Bayesian Ridge Regression",
         algorithm_class=linear_model.BayesianRidge,
@@ -50,7 +50,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="elasticnet",
         display_name="Elastic Net Regression",
         algorithm_class=linear_model.ElasticNet,
@@ -60,7 +60,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "l1_ratio": list(np.arange(0.1, 1, 0.1))
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="dtr",
         display_name="Decision Tree Regression",
         algorithm_class=tree.DecisionTreeRegressor,
@@ -71,7 +71,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="rf",
         display_name="Random Forest",
         algorithm_class=ensemble.RandomForestRegressor,
@@ -83,7 +83,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "max_depth": list(range(5, 25, 5)) + [None]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="svr",
         display_name="Support Vector Regression",
         algorithm_class=svm.SVR,
@@ -94,7 +94,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="mlp",
         display_name="Multi-Layer Perceptron Regression",
         algorithm_class=neural_network.MLPRegressor,
@@ -108,7 +108,7 @@ REGRESSION_ALGORITHMS: List[algorithm_wrapper.AlgorithmWrapper] = [
             "learning_rate": ["constant", "invscaling", "adaptive"]
         }
     ),
-    algorithm_wrapper.AlgorithmWrapper(
+    model_adapter.SklearnAlgorithmWrapper(
         name="knn",
         display_name="K-Nearest Neighbour Regression",
         algorithm_class=neighbors.KNeighborsRegressor,

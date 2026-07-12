@@ -12,7 +12,7 @@ AlgorithmCollection : list
 """
 from typing import Union
 
-from brisk.configuration import algorithm_wrapper
+from brisk.ports import algorithm
 
 class AlgorithmCollection(list):
     """A collection for managing AlgorithmWrapper instances.
@@ -69,7 +69,7 @@ class AlgorithmCollection(list):
         for item in args:
             self.append(item)
 
-    def append(self, item: algorithm_wrapper.AlgorithmWrapper) -> None:
+    def append(self, item: algorithm.AlgorithmWrapperPort) -> None:
         """Add an AlgorithmWrapper to the collection.
 
         Adds a new algorithm wrapper to the collection while ensuring
@@ -101,7 +101,7 @@ class AlgorithmCollection(list):
             >>> alg = AlgorithmWrapper("svm", SVC())
             >>> collection.append(alg)
         """
-        if not isinstance(item, algorithm_wrapper.AlgorithmWrapper):
+        if not isinstance(item, algorithm.AlgorithmWrapperPort):
             raise TypeError(
                 "AlgorithmCollection only accepts AlgorithmWrapper instances"
             )
@@ -114,7 +114,7 @@ class AlgorithmCollection(list):
     def __getitem__(
         self,
         key: Union[int, str]
-    ) -> algorithm_wrapper.AlgorithmWrapper:
+    ) -> algorithm.AlgorithmWrapperPort:
         """Get algorithm by index or name.
 
         Provides flexible access to algorithms in the collection using

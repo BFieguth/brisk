@@ -13,7 +13,6 @@ from typing import Any, Callable, cast
 from sklearn import metrics
 
 from brisk.adapters.base import metric_manager
-from brisk.defaults import classification_metrics, regression_metrics
 from brisk.ports import metric
 
 
@@ -302,6 +301,12 @@ class SklearnMetricManager(metric_manager.BaseMetricManager):
         list[dict[str, Any]]
             Serializable list of metric configurations.
         """
+        # Imported lazily to avoid a circular import: the default metric
+        # collections are built from SklearnMetricWrapper (this module).
+        from brisk.defaults import ( # pylint: disable=import-outside-toplevel
+            classification_metrics, regression_metrics,
+        )
+
         regression_names = {
             wrapper.name for wrapper in regression_metrics.REGRESSION_METRICS
         }

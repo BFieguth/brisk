@@ -14,11 +14,11 @@ maintaining detailed tracking and error handling.
 Examples
 --------
 >>> from brisk.training.training_manager import TrainingManager
->>> from brisk.evaluation import metric_manager
+>>> from brisk import MetricManager
 >>> from brisk.configuration import configuration
 >>> 
 >>> # Create metric configuration
->>> metric_config = metric_manager.MetricManager()
+>>> metric_config = MetricManager()
 >>> 
 >>> # Create configuration manager
 >>> config_manager = configuration.ConfigurationManager()
@@ -39,9 +39,10 @@ from pathlib import Path
 
 import tqdm
 
-from brisk.evaluation import evaluation_manager, metric_manager
+from brisk.evaluation import evaluation_manager
 from brisk.reporting import report_renderer
 from brisk.configuration import configuration_manager, experiment
+from brisk.ports import metric
 from brisk.version import __version__
 from brisk.training import workflow as workflow_module
 from brisk.services import get_services, missing, bundle
@@ -116,11 +117,11 @@ class TrainingManager:
     Examples
     --------
     >>> from brisk.training.training_manager import TrainingManager
-    >>> from brisk.evaluation import metric_manager
+    >>> from brisk import MetricManager
     >>> from brisk.configuration import configuration
     >>> 
     >>> # Create metric configuration
-    >>> metric_config = metric_manager.MetricManager()
+    >>> metric_config = MetricManager()
     >>> 
     >>> # Create configuration manager with experiments
     >>> config_manager = configuration.ConfigurationManager()
@@ -133,7 +134,7 @@ class TrainingManager:
     """
     def __init__(
         self,
-        metric_config: metric_manager.MetricManager,
+        metric_config: metric.MetricManagerPort,
         config_manager: configuration_manager.ConfigurationManager
     ) -> None:
         """Initialize the TrainingManager with configuration and services.

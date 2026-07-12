@@ -16,8 +16,8 @@ import joblib
 import plotnine as pn
 
 from brisk.evaluation.evaluators import registry
-from brisk.evaluation import metric_manager
 from brisk.evaluation.evaluators import builtin
+from brisk.ports import metric
 from brisk.services import (
     get_services,
     update_experiment_config,
@@ -61,8 +61,8 @@ class EvaluationManager:
     Examples
     --------
     Initialize evaluation manager:
-        >>> from brisk.evaluation import metric_manager
-        >>> metric_mgr = metric_manager.MetricManager()
+        >>> from brisk import MetricManager
+        >>> metric_mgr = MetricManager()
         >>> eval_mgr = EvaluationManager(metric_mgr)
 
     Get an evaluator:
@@ -71,7 +71,7 @@ class EvaluationManager:
 
     def __init__(
         self,
-        metric_manager: metric_manager.MetricManager,
+        metric_manager: metric.MetricManagerPort,
     ):
         """Initialize EvaluationManager with metric configuration.
 

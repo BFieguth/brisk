@@ -15,7 +15,7 @@ and group-level analysis.
 Examples
 --------
 >>> from brisk.services.reporting import ReportingService, ReportingContext
->>> from brisk.evaluation import metric_manager
+>>> from brisk import MetricManager
 >>> 
 >>> # Create reporting service
 >>> reporting_service = ReportingService("reporting")
@@ -43,7 +43,7 @@ from collections import defaultdict
 from scipy import stats
 
 from brisk.services import base
-from brisk.evaluation import metric_manager as metric_manager_module
+from brisk.ports import metric as metric_port
 from brisk.reporting import report_data
 from brisk.version import __version__
 
@@ -166,7 +166,7 @@ class ReportingService(base.BaseService):
     Examples
     --------
     >>> from brisk.services.reporting import ReportingService
-    >>> from brisk.evaluation import metric_manager
+    >>> from brisk import MetricManager
     >>> 
     >>> # Create and configure reporting service
     >>> reporting_service = ReportingService("reporting")
@@ -238,7 +238,7 @@ class ReportingService(base.BaseService):
 
     def set_metric_config(
         self,
-        metric_config: metric_manager_module.MetricManager
+        metric_config: metric_port.MetricManagerPort
     ) -> None:
         """Set the metric manager for this reporting service.
 
@@ -261,7 +261,7 @@ class ReportingService(base.BaseService):
 
         Examples
         --------
-        >>> from brisk.evaluation import metric_manager
+        >>> from brisk import MetricManager
         >>> reporting_service = ReportingService("reporting")
         >>> reporting_service.set_metric_config(metric_manager)
         """
@@ -1178,7 +1178,7 @@ class ReportingService(base.BaseService):
         None
         """
         name = self.metric_manager._resolve_identifier(measure)
-        wrapper = self.metric_manager._metrics_by_name[name]
+        wrapper = self.metric_manager._wrappers[name]
         self.tuning_metric = (wrapper.abbr, wrapper.display_name)
 
     def _collect_best_score(

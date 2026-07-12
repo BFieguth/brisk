@@ -78,7 +78,9 @@ def sample_sqlite_data():
 @pytest.fixture
 def algorithms_file_content():
     return """from brisk.configuration.algorithm_collection import AlgorithmCollection
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.adapters.sklearn.model_adapter import (
+    SklearnAlgorithmWrapper as AlgorithmWrapper,
+)
 from sklearn.linear_model import Ridge
 
 ALGORITHM_CONFIG = AlgorithmCollection(
@@ -103,7 +105,7 @@ BASE_DATA_MANAGER = DataManager()
 
 @pytest.fixture
 def metrics_file_content():
-    return """from brisk.evaluation.metric_manager import MetricManager
+    return """from brisk import MetricManager
 
 METRIC_CONFIG = MetricManager()
 """

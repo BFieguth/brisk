@@ -52,9 +52,9 @@ from typing import List, Dict, Any, Union, Optional
 
 import numpy as np
 import pandas as pd
-from sklearn import base
 
 from brisk.evaluation import evaluation_manager as eval_manager
+from brisk.ports import algorithm
 
 class Workflow(abc.ABC):
     """Abstract base class for machine learning workflows.
@@ -311,7 +311,7 @@ class Workflow(abc.ABC):
     # Interface to call Evaluators registered to EvaluationManager
     def evaluate_model( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -355,7 +355,7 @@ class Workflow(abc.ABC):
 
     def evaluate_model_cv( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -402,7 +402,7 @@ class Workflow(abc.ABC):
 
     def compare_models( # pragma: no cover
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -463,7 +463,7 @@ class Workflow(abc.ABC):
 
     def plot_pred_vs_obs( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y_true: pd.Series,
         filename: str
@@ -502,7 +502,7 @@ class Workflow(abc.ABC):
 
     def plot_learning_curve( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
         filename: str = "learning_curve",
@@ -561,7 +561,7 @@ class Workflow(abc.ABC):
 
     def plot_feature_importance( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         threshold: Union[int, float],
@@ -619,7 +619,7 @@ class Workflow(abc.ABC):
 
     def plot_residuals( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         filename: str,
@@ -665,7 +665,7 @@ class Workflow(abc.ABC):
 
     def plot_model_comparison( # pragma: no cover
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metric: str,
@@ -713,7 +713,7 @@ class Workflow(abc.ABC):
 
     def hyperparameter_tuning( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         method: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
@@ -722,7 +722,7 @@ class Workflow(abc.ABC):
         num_rep: int,
         n_jobs: int,
         plot_results: bool = False
-    ) -> base.BaseEstimator:
+    ) -> algorithm.ModelPort:
         """Perform hyperparameter tuning using grid or random search.
         
         This method optimizes model hyperparameters using either grid search
@@ -964,7 +964,7 @@ class Workflow(abc.ABC):
 
     def save_model(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         filename: str
     ) -> None: #pragma: no cover
         """Save model to pickle file.
@@ -992,7 +992,7 @@ class Workflow(abc.ABC):
         """
         self.evaluation_manager.save_model(model, filename)
 
-    def load_model(self, filepath: str) -> base.BaseEstimator: #pragma: no cover
+    def load_model(self, filepath: str) -> algorithm.ModelPort: #pragma: no cover
         """Load model from pickle file.
         
         This method loads a previously saved model from a pickle file,
@@ -1028,7 +1028,7 @@ class Workflow(abc.ABC):
 
     def plot_shapley_values( # pragma: no cover
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         filename: str = "shapley_values",
