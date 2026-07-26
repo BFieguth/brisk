@@ -17,7 +17,6 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 import plotnine as pn
-from sklearn import base
 
 from brisk.evaluation.evaluators import plot_evaluator
 from brisk.ports import algorithm
@@ -43,7 +42,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         filename: str
@@ -56,7 +55,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained regression model to evaluate
         X : pd.DataFrame
             The input features used for prediction
@@ -180,7 +179,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         filename: str,
@@ -194,7 +193,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained regression model to evaluate
         X : pd.DataFrame
             The input features used for prediction

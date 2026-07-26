@@ -7,7 +7,8 @@ access to services, color management, and metadata generation functionality.
 import abc
 from typing import List, Dict, Any, Union, Optional
 
-from sklearn import base
+from brisk.ports import algorithm, metric
+
 
 class BaseEvaluator(abc.ABC):
     """Base class to enforce a common interface for all evaluators.
@@ -253,7 +254,7 @@ class BaseEvaluator(abc.ABC):
             raise RuntimeError("Services not set. Call set_services() first.")
         return self.services.reporting
 
-    def set_metric_config(self, metric_config) -> None:
+    def set_metric_config(self, metric_config: metric.MetricManagerPort) -> None:
         """Set the metric configuration for this evaluator.
 
         Configures the evaluator with access to the metric configuration
@@ -278,7 +279,7 @@ class BaseEvaluator(abc.ABC):
 
     def _generate_metadata(
         self,
-        models: Union[base.BaseEstimator, List[base.BaseEstimator]],
+        models: Union[algorithm.ModelPort, List[algorithm.ModelPort]],
         is_test: bool
     ) -> Dict[str, Any]:
         """Generate metadata for output.
@@ -289,7 +290,7 @@ class BaseEvaluator(abc.ABC):
 
         Parameters
         ----------
-        models : Union[base.BaseEstimator, List[base.BaseEstimator]]
+        models : Union[algorithm.ModelPort, List[algorithm.ModelPort]]
             The model or list of models to generate metadata for
         is_test : bool
             Whether the model is a test model

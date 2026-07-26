@@ -12,11 +12,13 @@ import numpy as np
 import plotnine as pn
 import matplotlib
 import matplotlib.pyplot as plt
-from sklearn import base
-import sklearn.model_selection as model_select
 import plotly.graph_objects as go
 
+from brisk.adapters.sklearn.evaluation_adapter import SklearnEvaluationAdapter
 from brisk.evaluation.evaluators import measure_evaluator
+from brisk.ports import algorithm
+
+_sklearn = SklearnEvaluationAdapter()
 
 class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
     """Perform hyperparameter tuning using grid or random search.
@@ -64,7 +66,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
     def evaluate(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         method: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
@@ -74,7 +76,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         n_jobs: int,
         plot_results: bool = False,
         filename: str = "hyperparameter_tuning"
-    ) -> base.BaseEstimator:
+    ) -> algorithm.ModelPort:
         """Perform hyperparameter tuning using grid or random search.
 
         Executes hyperparameter optimization using the specified search method
@@ -83,7 +85,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to be tuned
         method : str
             The search method to use ("grid" or "random")
@@ -106,7 +108,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
         Returns
         -------
-        base.BaseEstimator
+        algorithm.ModelPort
             The tuned model with optimal hyperparameters
         """
         algo_wrapper = self.utility.get_algo_wrapper(model.wrapper_name)
@@ -138,7 +140,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
     def calculate_measures(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         method: str,
         X_train: pd.DataFrame, # pylint: disable=C0103
         y_train: pd.Series,
@@ -147,7 +149,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         num_rep: int,
         n_jobs: int,
         param_grid: Dict[str, Any]
-    ) -> base.BaseEstimator:
+    ) -> algorithm.ModelPort:
         """Perform hyperparameter tuning using grid or random search.
 
         Executes the actual hyperparameter search using scikit-learn's
@@ -155,7 +157,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to be tuned
         method : str
             The search method to use ("grid" or "random")
@@ -176,7 +178,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
 
         Returns
         -------
-        base.BaseEstimator
+        algorithm.ModelPort
             The search result object containing best parameters and scores
 
         Raises
@@ -184,14 +186,7 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         ValueError
             If method is not "grid" or "random"
         """
-        if method == "grid":
-            searcher = model_select.GridSearchCV
-        elif method == "random":
-            searcher = model_select.RandomizedSearchCV
-        else:
-            raise ValueError(
-                f"method must be one of (grid, random). {method} was entered."
-            )
+        searcher = _sklearn.get_search_class(method)
 
         self.services.logger.logger.info(
             "Starting hyperparameter optimization for %s", 
@@ -209,14 +204,14 @@ class HyperparameterTuning(measure_evaluator.MeasureEvaluator):
         search_result = search.fit(X_train, y_train, groups=indices)
         return search_result
 
-    def log_results(self, model: base.BaseEstimator) -> None:
+    def log_results(self, model: algorithm.ModelPort) -> None:
         """Log the results of the hyperparameter tuning.
 
         Logs completion message for hyperparameter optimization process.
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model that was tuned
 
         Returns

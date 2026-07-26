@@ -11,13 +11,12 @@ import copy
 import os
 
 import numpy as np
-from sklearn import base
 import plotnine as pn
 
 from brisk.adapters.filesystem.serializer_adapter import JoblibSerializerAdapter
 from brisk.evaluation.evaluators import registry
 from brisk.evaluation.evaluators import builtin
-from brisk.ports import metric
+from brisk.ports import algorithm, metric, serializer
 from brisk.services import (
     get_services,
     update_experiment_config,
@@ -26,8 +25,6 @@ from brisk.services import (
 )
 from brisk.evaluation.evaluators import base as base_eval
 from brisk.configuration import project
-
-_serializer = JoblibSerializerAdapter()
 
 
 class EvaluationManager:
@@ -75,6 +72,7 @@ class EvaluationManager:
     def __init__(
         self,
         metric_manager: metric.MetricManagerPort,
+        serializer_adapter: serializer.SerializerPort | None = None,
     ):
         """Initialize EvaluationManager with metric configuration.
 
@@ -85,6 +83,7 @@ class EvaluationManager:
         """
         self.services = missing.MissingServices()
         self.metric_manager = copy.deepcopy(metric_manager)
+        self._serializer = serializer_adapter or JoblibSerializerAdapter()
         self.output_dir = None
         self.plot_settings = None
         self.registry = registry.EvaluatorRegistry()
@@ -308,7 +307,7 @@ class EvaluationManager:
         evaluator.set_metric_config(self.metric_manager)
         return evaluator
 
-    def save_model(self, model: base.BaseEstimator, filename: str) -> None:
+    def save_model(self, model: algorithm.ModelPort, filename: str) -> None:
         """Save model to pickle file.
 
         Saves a trained model along with its metadata to a pickle file
@@ -316,7 +315,7 @@ class EvaluationManager:
 
         Parameters
         ----------
-        model : BaseEstimator
+        model : algorithm.ModelPort
             The trained model to save
         filename : str
             The name for the output file (without extension)
@@ -340,12 +339,12 @@ class EvaluationManager:
             "model": model,
             "metadata": metadata
         }
-        _serializer.dump(model_package, output_path)
+        self._serializer.dump(model_package, output_path)
         self.services.logger.logger.info(
             "Saving model '%s' to '%s'.", filename, output_path
         )
 
-    def load_model(self, filepath: str) -> base.BaseEstimator:
+    def load_model(self, filepath: str) -> algorithm.ModelPort:
         """Load model from pickle file.
 
         Loads a previously saved model from a pickle file. The loaded
@@ -358,7 +357,7 @@ class EvaluationManager:
 
         Returns
         -------
-        BaseEstimator
+        algorithm.ModelPort
             The loaded model object
 
         Raises
@@ -373,4 +372,4 @@ class EvaluationManager:
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No model found at {filepath}")
-        return _serializer.load(filepath)
+        return self._serializer.load(filepath)

@@ -10,10 +10,13 @@ import itertools
 
 import pandas as pd
 import numpy as np
-from sklearn import base
-import sklearn.model_selection as model_select
 
+from brisk.adapters.sklearn.evaluation_adapter import SklearnEvaluationAdapter
 from brisk.evaluation.evaluators import measure_evaluator
+from brisk.ports import algorithm
+
+_sklearn = SklearnEvaluationAdapter()
+
 
 class EvaluateModel(measure_evaluator.MeasureEvaluator):
     """Evaluate a model on the provided measures and save the results.
@@ -232,7 +235,7 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
 
     def evaluate(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -247,7 +250,7 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to evaluate
         X : pd.DataFrame
             The input features for evaluation
@@ -321,7 +324,7 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
 
     def calculate_measures(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -335,7 +338,7 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to evaluate
         X : pd.DataFrame
             The input features for evaluation
@@ -370,7 +373,7 @@ class EvaluateModelCV(measure_evaluator.MeasureEvaluator):
             display_name = self.metric_config.get_name(metric_name)
             scorer = self.metric_config.get_scorer(metric_name)
             if scorer is not None:
-                scores = model_select.cross_val_score(
+                scores = _sklearn.cross_val_score(
                     model, X, y, scoring=scorer, cv=splitter, groups=indices
                     )
                 results[display_name] = {
@@ -469,7 +472,7 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
 
     def evaluate(
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         metrics: List[str],
@@ -484,7 +487,7 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        *models : base.BaseEstimator
+        *models : algorithm.ModelPort
             Models to compare (variable number of arguments)
         X : pd.DataFrame
             Input features for evaluation
@@ -519,7 +522,7 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
 
     def calculate_measures(
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         metrics: List[str],
@@ -532,7 +535,7 @@ class CompareModels(measure_evaluator.MeasureEvaluator):
 
         Parameters
         ----------
-        *models : base.BaseEstimator
+        *models : algorithm.ModelPort
             Models to compare (variable number of arguments)
         X : pd.DataFrame
             Input features for evaluation
