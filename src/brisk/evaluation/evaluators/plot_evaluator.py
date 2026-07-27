@@ -8,11 +8,11 @@ with standardized plot generation, metadata handling, and result saving.
 import abc
 from typing import Dict, Any
 
-from sklearn import base
 import pandas as pd
 import matplotlib
 
 from brisk.evaluation.evaluators import base as base_eval
+from brisk.ports import algorithm
 
 class PlotEvaluator(base_eval.BaseEvaluator):
     """Template for model evaluators that plot data.
@@ -111,7 +111,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         filename: str
@@ -124,7 +124,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained model to evaluate
         X : pd.DataFrame
             The input data for plotting
@@ -193,7 +193,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
 
     def _generate_prediction(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame # pylint: disable=C0103
     ) -> pd.Series:
         """Default prediction generation - can be overridden.
@@ -204,7 +204,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained model to use for prediction
         X : pd.DataFrame
             The input data for prediction
@@ -226,7 +226,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
     @abc.abstractmethod
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         **kwargs
@@ -239,7 +239,7 @@ class PlotEvaluator(base_eval.BaseEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained model to evaluate
         X : pd.DataFrame
             The input data for plotting

@@ -43,7 +43,7 @@ from brisk.version import __version__
 from brisk.configuration import project
 from brisk.services import io
 from brisk.configuration import algorithm_collection
-from brisk.evaluation import metric_manager
+from brisk.ports import metric
 from brisk.theme.plot_settings import PlotSettings
 from brisk.theme.theme_serializer import ThemePickleJSONSerializer
 from brisk.data import data_manager as data_manager_module
@@ -634,7 +634,7 @@ class CoordinatingStrategy(RerunStrategy):
         )
 
         if not isinstance(
-            metric_config_obj, metric_manager.MetricManager
+            metric_config_obj, metric.MetricManagerPort
         ):
             raise ValueError(
                 "METRIC_CONFIG is not a valid MetricManager instance"

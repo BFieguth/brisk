@@ -10,11 +10,14 @@ from typing import Optional, Dict, Union, List, Tuple, Any
 import pandas as pd
 import numpy as np
 import plotnine as pn
-from sklearn import inspection, tree, ensemble, base
-import sklearn.model_selection as model_select
 import shap
 
+from brisk.adapters.sklearn.evaluation_adapter import SklearnEvaluationAdapter
 from brisk.evaluation.evaluators import plot_evaluator
+from brisk.ports import algorithm
+
+_sklearn = SklearnEvaluationAdapter()
+
 
 class PlotLearningCurve(plot_evaluator.PlotEvaluator):
     """Plot learning curves showing model performance vs training size.
@@ -69,7 +72,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         filename: str = "learning_curve",
@@ -86,7 +89,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             Model to evaluate
         X : pd.DataFrame
             Training features
@@ -127,7 +130,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         cv: int = 5,
@@ -142,7 +145,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             Model to evaluate
         X : pd.DataFrame
             Training features
@@ -182,7 +185,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
         results = {}
         scorer = self.metric_config.get_scorer(metric)
         train_sizes, train_scores, test_scores, fit_times, _ = (
-            model_select.learning_curve(
+            _sklearn.learning_curve(
                 model, X, y, cv=splitter, groups=indices,
                 n_jobs=n_jobs, train_sizes=np.linspace(0.1, 1.0, 5),
                 return_times=True, scoring=scorer
@@ -201,7 +204,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
         self,
         results: Dict[str, Any],
         metric: str,
-        model: base.BaseEstimator
+        model: algorithm.ModelPort
     ) -> pn.ggplot:
         """Create a learning curve plot using plotnine.
 
@@ -215,7 +218,7 @@ class PlotLearningCurve(plot_evaluator.PlotEvaluator):
             train_scores_std, test_scores_mean, test_scores_std
         metric : str
             The metric name for the y-axis label
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model for the plot title
 
         Returns
@@ -340,7 +343,7 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         threshold: Union[int, float],
@@ -357,7 +360,7 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to evaluate
         X : pd.DataFrame
             The input features
@@ -403,7 +406,7 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         threshold: Union[int, float],
@@ -419,7 +422,7 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The model to evaluate
         X : pd.DataFrame
             The input features
@@ -456,16 +459,12 @@ class PlotFeatureImportance(plot_evaluator.PlotEvaluator):
         """
         scorer = self.metric_config.get_scorer(metric)
 
-        if isinstance(
-            model, (
-                tree.DecisionTreeRegressor, ensemble.RandomForestRegressor,
-                ensemble.GradientBoostingRegressor)
-            ):
+        if _sklearn.has_native_feature_importances(model):
             model.fit(X,y)
             importance = model.feature_importances_
         else:
             model.fit(X, y)
-            results = inspection.permutation_importance(
+            results = _sklearn.permutation_importance(
                 model, X=X, y=y, scoring=scorer, n_repeats=num_rep
                 )
             importance = results.importances_mean
@@ -603,7 +602,7 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         metric: str,
@@ -617,7 +616,7 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        *models : base.BaseEstimator
+        *models : algorithm.ModelPort
             A variable number of model instances to evaluate
         X : pd.DataFrame
             The input features for evaluation
@@ -651,7 +650,7 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        *models: base.BaseEstimator,
+        *models: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         metric: str
@@ -663,7 +662,7 @@ class PlotModelComparison(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        *models : base.BaseEstimator
+        *models : algorithm.ModelPort
             A variable number of model instances to evaluate
         X : pd.DataFrame
             The input features for evaluation
@@ -809,7 +808,7 @@ class PlotShapleyValues(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         filename: str = "shap_values",
@@ -823,7 +822,7 @@ class PlotShapleyValues(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             Trained model to explain
         X : pd.DataFrame
             Feature data for generating explanations
@@ -870,7 +869,7 @@ class PlotShapleyValues(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
     ) -> Optional[Dict[str, Any]]:
@@ -881,7 +880,7 @@ class PlotShapleyValues(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             Trained model to explain
         X : pd.DataFrame
             Feature data

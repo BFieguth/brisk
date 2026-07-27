@@ -8,11 +8,14 @@ from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn import base
-import sklearn.metrics as sk_metrics
 import plotnine as pn
 
+from brisk.adapters.sklearn.evaluation_adapter import SklearnEvaluationAdapter
 from brisk.evaluation.evaluators import plot_evaluator
+from brisk.ports import algorithm
+
+_sklearn = SklearnEvaluationAdapter()
+
 
 class PlotConfusionHeatmap(plot_evaluator.PlotEvaluator):
     """Plot a heatmap of the confusion matrix for a model.
@@ -134,7 +137,7 @@ class PlotConfusionHeatmap(plot_evaluator.PlotEvaluator):
         geom_text functions.
         """
         labels = np.unique(y).tolist()
-        cm = sk_metrics.confusion_matrix(y, prediction, labels=labels)
+        cm = _sklearn.confusion_matrix(y, prediction, labels=labels)
         cm_percent = cm / cm.sum() * 100
 
         plot_data = []
@@ -306,7 +309,7 @@ class PlotRocCurve(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         pos_label: Optional[int] = 1
@@ -318,7 +321,7 @@ class PlotRocCurve(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained binary classification model
         X : np.ndarray
             The input features for evaluation
@@ -354,8 +357,8 @@ class PlotRocCurve(plot_evaluator.PlotEvaluator):
         else:
             # Use binary predictions as a last resort
             y_score = model.predict(X)
-        fpr, tpr, _ = sk_metrics.roc_curve(y, y_score, pos_label=pos_label)
-        auc = sk_metrics.roc_auc_score(y, y_score)
+        fpr, tpr, _ = _sklearn.roc_curve(y, y_score, pos_label=pos_label)
+        auc = _sklearn.roc_auc_score(y, y_score)
 
         roc_data = pd.DataFrame({
             "False Positive Rate": fpr,
@@ -535,7 +538,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         filename: str,
@@ -549,7 +552,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained binary classification model
         X : np.ndarray
             The input features for evaluation
@@ -582,7 +585,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
 
     def generate_plot_data(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: np.ndarray, # pylint: disable=C0103
         y: np.ndarray,
         pos_label: Optional[int] = 1
@@ -594,7 +597,7 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained binary classification model
         X : np.ndarray
             The input features for evaluation
@@ -630,10 +633,10 @@ class PlotPrecisionRecallCurve(plot_evaluator.PlotEvaluator):
         else:
             # Use binary predictions as a last resort
             y_score = model.predict(X)
-        precision, recall, _ = sk_metrics.precision_recall_curve(
+        precision, recall, _ = _sklearn.precision_recall_curve(
             y, y_score, pos_label=pos_label
         )
-        ap_score = sk_metrics.average_precision_score(
+        ap_score = _sklearn.average_precision_score(
             y, y_score, pos_label=pos_label
         )
 

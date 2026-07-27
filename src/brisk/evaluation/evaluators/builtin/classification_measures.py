@@ -8,9 +8,12 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-import sklearn.metrics as sk_metrics
 
+from brisk.adapters.sklearn.evaluation_adapter import SklearnEvaluationAdapter
 from brisk.evaluation.evaluators import measure_evaluator
+
+_sklearn = SklearnEvaluationAdapter()
+
 
 class ConfusionMatrix(measure_evaluator.MeasureEvaluator):
     """Calculate a confusion matrix for a classification model.
@@ -138,7 +141,7 @@ class ConfusionMatrix(measure_evaluator.MeasureEvaluator):
         different evaluations.
         """
         labels = np.unique(y).tolist()
-        cm = sk_metrics.confusion_matrix(y, prediction, labels=labels).tolist()
+        cm = _sklearn.confusion_matrix(y, prediction, labels=labels).tolist()
         data = {
             "confusion_matrix": cm,
             "labels": labels

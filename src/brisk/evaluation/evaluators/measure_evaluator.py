@@ -9,10 +9,10 @@ result handling.
 import abc
 from typing import List, Dict, Any, Tuple
 
-from sklearn import base
 import pandas as pd
 
 from brisk.evaluation.evaluators import base as base_eval
+from brisk.ports import algorithm
 
 class MeasureEvaluator(base_eval.BaseEvaluator):
     """Template for evaluators that calculate measures of model performance.
@@ -73,7 +73,7 @@ class MeasureEvaluator(base_eval.BaseEvaluator):
 
     def evaluate(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame, # pylint: disable=C0103
         y: pd.Series,
         metrics: List[str],
@@ -87,7 +87,7 @@ class MeasureEvaluator(base_eval.BaseEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained model to evaluate
         X : pd.DataFrame
             The input data for evaluation
@@ -157,7 +157,7 @@ class MeasureEvaluator(base_eval.BaseEvaluator):
 
     def _generate_prediction(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame # pylint: disable=C0103
     ) -> pd.Series:
         """Default prediction generation - can be overridden.
@@ -168,7 +168,7 @@ class MeasureEvaluator(base_eval.BaseEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained model to use for prediction
         X : pd.DataFrame
             The input data for prediction

@@ -6,11 +6,15 @@ import pandas as pd
 import numpy as np
 from sklearn import linear_model, metrics
 
-from brisk.configuration.algorithm_wrapper import AlgorithmWrapper
+from brisk.adapters.sklearn.model_adapter import (
+    SklearnAlgorithmWrapper as AlgorithmWrapper,
+)
 from brisk.configuration.experiment_group import ExperimentGroup
 from brisk.configuration.algorithm_collection import AlgorithmCollection
-from brisk.evaluation.metric_manager import MetricManager
-from brisk.evaluation.metric_wrapper import MetricWrapper
+from brisk.adapters.sklearn.metric_adapter import (
+    SklearnMetricManager as MetricManager,
+    SklearnMetricWrapper as MetricWrapper,
+)
 from brisk.data import data_split_info, data_splits, splitkey
 
 # pylint: disable=W0212

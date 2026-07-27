@@ -39,7 +39,8 @@ import numpy as np
 import pandas as pd
 import sklearn.model_selection as model_select
 
-from brisk.configuration import algorithm_wrapper, algorithm_collection
+from brisk.configuration import algorithm_collection
+from brisk.ports import algorithm
 from brisk.services import base
 from brisk.theme.plot_settings import PlotSettings
 
@@ -183,7 +184,7 @@ class UtilityService(base.BaseService):
     def get_algo_wrapper(
         self,
         wrapper_name: str
-    ) -> algorithm_wrapper.AlgorithmWrapper:
+    ) -> algorithm.AlgorithmWrapperPort:
         """Get the AlgorithmWrapper instance.
 
         This method retrieves an algorithm wrapper from the algorithm
@@ -196,7 +197,7 @@ class UtilityService(base.BaseService):
 
         Returns
         -------
-        algorithm_wrapper.AlgorithmWrapper
+        algorithm.AlgorithmWrapperPort
             The AlgorithmWrapper instance
 
         Raises

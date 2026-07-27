@@ -17,10 +17,9 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 import plotnine as pn
-from sklearn import base
 
 from brisk.evaluation.evaluators import plot_evaluator
-from brisk.configuration import algorithm_wrapper
+from brisk.ports import algorithm
 
 class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     """Plot the predicted vs. observed values for a regression model.
@@ -43,7 +42,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         filename: str
@@ -56,7 +55,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained regression model to evaluate
         X : pd.DataFrame
             The input features used for prediction
@@ -113,7 +112,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
     def _create_plot(
         self,
         plot_data: pd.DataFrame,
-        wrapper: algorithm_wrapper.AlgorithmWrapper,
+        wrapper: algorithm.AlgorithmWrapperPort,
         max_range: float
     ) -> pn.ggplot:
         """Create a plot of the predicted vs. observed values.
@@ -126,7 +125,7 @@ class PlotPredVsObs(plot_evaluator.PlotEvaluator):
         ----------
         plot_data : pd.DataFrame
             DataFrame containing 'Observed' and 'Predicted' columns
-        wrapper : algorithm_wrapper.AlgorithmWrapper
+        wrapper : algorithm.AlgorithmWrapperPort
             The algorithm wrapper containing model metadata
         max_range : float
             Maximum value for consistent axis scaling
@@ -180,7 +179,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
 
     def plot(
         self,
-        model: base.BaseEstimator,
+        model: algorithm.ModelPort,
         X: pd.DataFrame,
         y: pd.Series,
         filename: str,
@@ -194,7 +193,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
 
         Parameters
         ----------
-        model : base.BaseEstimator
+        model : algorithm.ModelPort
             The trained regression model to evaluate
         X : pd.DataFrame
             The input features used for prediction
@@ -251,7 +250,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
     def _create_plot(
         self,
         plot_data: pd.DataFrame,
-        wrapper: algorithm_wrapper.AlgorithmWrapper,
+        wrapper: algorithm.AlgorithmWrapperPort,
         add_fit_line: bool
     ) -> pn.ggplot:
         """Create a residual plot with optional trend line.
@@ -265,7 +264,7 @@ class PlotResiduals(plot_evaluator.PlotEvaluator):
         plot_data : pd.DataFrame
             DataFrame containing 'Observed' and 'Residual (Observed -
             Predicted)' columns
-        wrapper : algorithm_wrapper.AlgorithmWrapper
+        wrapper : algorithm.AlgorithmWrapperPort
             The algorithm wrapper containing model metadata
         add_fit_line : bool
             Whether to add a trend line to the plot
