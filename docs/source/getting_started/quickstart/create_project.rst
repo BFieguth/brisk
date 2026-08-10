@@ -4,11 +4,11 @@ Start a New Project
 
 First make sure you have activated the virtual environment you created in the :ref:`install` section.
 
-If you are using conda, you can activate your environment by running:
+If you are using uv, you can activate your environment by running:
 
 .. code-block:: bash
 
-   conda activate myenv
+   source .venv/bin/activate
 
 If you are using venv, run:
 

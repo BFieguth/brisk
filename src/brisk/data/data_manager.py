@@ -744,6 +744,7 @@ class DataManager:
         group_name: str,
         filename: str,
         table_name: Optional[str] = None,
+        evaluate: bool = True,
     ) -> data_split_info.DataSplitInfo:
         """Split the data based on the preconfigured splitter.
 
@@ -763,6 +764,9 @@ class DataManager:
             Filename for split caching
         table_name : str, optional
             Name of the table in SQL database, by default None
+        evaluate : bool, default=True
+            Whether to run split-distribution evaluation and reporting.
+            Set to False when only preprocessed arrays are needed (e.g. CLI).
 
         Returns
         -------
@@ -858,12 +862,14 @@ class DataManager:
                 categorical_features=split_categorical,
                 continuous_features=continuous_features
             )
-            split.set_services()
-            split.evaluate_data_split()
+            if evaluate:
+                split.set_services()
+                split.evaluate_data_split()
             split_container.add(split)
 
         self._splits[split_key] = split_container
-        self.services.reporting.add_dataset(group_name, split_container)
+        if evaluate:
+            self.services.reporting.add_dataset(group_name, split_container)
         return split_container
 
     def to_markdown(self) -> str:

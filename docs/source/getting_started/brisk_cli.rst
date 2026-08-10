@@ -20,12 +20,13 @@ To see all available commands and options, run:
 Available Commands
 ------------------
 
-Brisk provides six main commands for managing your machine learning workflow:
+Brisk provides these main commands for managing your machine learning workflow:
 
 * ``create`` - Initialize a new project with template files
 * ``run`` - Execute experiments based on your configuration
 * ``load_data`` - Load scikit-learn datasets into your project
 * ``create_data`` - Generate synthetic datasets for testing
+* ``preprocess`` - Apply configured preprocessing without running training
 * ``export-env`` - Export environment requirements from previous runs
 * ``check-env`` - Check environment compatibility with previous runs
 
@@ -141,6 +142,42 @@ The ``create_data`` command generates synthetic datasets for testing:
     brisk create_data --data_type regression --n_samples 500 --n_features 10 --dataset_name synthetic_regression
 
 This creates a synthetic regression dataset with 500 samples and 10 features, saving it as "synthetic_regression.csv" in your project's datasets directory.
+
+preprocess
+^^^^^^^^^^
+
+The ``preprocess`` command applies the preprocessing pipeline from ``data.py``
+(``BASE_DATA_MANAGER``) to a dataset without running training. Data is split
+first, then preprocessors are fit on the training split only and applied to
+the test split, matching experiment behavior.
+
+.. code-block:: bash
+
+    brisk preprocess -d <dataset> [OPTIONS]
+
+**Arguments:**
+
+* ``-d, --dataset`` (required): Dataset filename in the project's ``datasets`` directory
+* ``-o, --output`` (optional): Directory for preprocessed CSVs. Defaults to ``preprocessed`` under the project root
+* ``--table`` (optional): Table name when the dataset is a SQLite database
+* ``--categorical-features`` (optional): Comma-separated categorical column names
+* ``--split-index`` (optional): Write only this split index. Default writes every split
+
+**Examples:**
+
+.. code-block:: bash
+
+    # Preprocess a CSV using BASE_DATA_MANAGER from data.py
+    brisk preprocess -d diabetes.csv
+
+    # Write a single split to a custom directory
+    brisk preprocess -d my_data.csv -o preview --split-index 0
+
+    # Encode named categorical columns
+    brisk preprocess -d mixed.csv --categorical-features category1,category2
+
+This writes train and test CSV files (one pair per split) so you can inspect
+preprocessed data before running ``brisk run``.
 
 export-env
 ^^^^^^^^^^

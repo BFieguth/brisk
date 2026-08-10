@@ -11,6 +11,8 @@ CLI Commands
 
 .. autofunction:: create_data
 
+.. autofunction:: preprocess
+
 .. autofunction:: export_env
 
 .. autofunction:: check_env

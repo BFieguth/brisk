@@ -9,6 +9,7 @@ The CLI is built using Click and provides the following main functionality:
 - Project initialization with template files
 - Experiment execution with configurable workflows
 - Dataset loading from scikit-learn and synthetic data generation
+- Preprocessing a dataset without running training
 - Environment management for reproducible experiments
 - Results export and environment compatibility checking
 
@@ -26,6 +27,8 @@ load_data
     Load datasets from scikit-learn into the project
 create_data
     Generate synthetic datasets for testing
+preprocess
+    Apply configured preprocessing to a dataset without training
 export-env
     Export environment requirements from a previous run
 check-env
@@ -63,6 +66,7 @@ from sklearn import datasets
 from brisk.configuration import project
 from brisk.cli.cli_helpers import (
     _run_from_project, _run_from_config, load_sklearn_dataset,
+    _preprocess_dataset,
 )
 from brisk.cli.environment import EnvironmentManager, VersionMatch
 
@@ -697,6 +701,86 @@ def create_data(
         print(f"Synthetic dataset saved to {csv_path}")
 
     except FileNotFoundError as e:
+        print(f"Error: {e}")
+
+
+@cli.command()
+@click.option(
+    "-d",
+    "--dataset",
+    required=True,
+    help="Dataset filename in the project's datasets directory."
+)
+@click.option(
+    "-o",
+    "--output",
+    default=None,
+    help=(
+        "Directory for preprocessed CSVs. Defaults to "
+        "'preprocessed' under the project root."
+    )
+)
+@click.option(
+    "--table",
+    "table_name",
+    default=None,
+    help="Table name when the dataset is a SQLite database."
+)
+@click.option(
+    "--categorical-features",
+    default=None,
+    help="Comma-separated categorical column names."
+)
+@click.option(
+    "--split-index",
+    type=int,
+    default=None,
+    help="Write only this split index. Default writes every split."
+)
+def preprocess(
+    dataset: str,
+    output: Optional[str],
+    table_name: Optional[str],
+    categorical_features: Optional[str],
+    split_index: Optional[int]
+) -> None:
+    """Apply preprocessing to a dataset without running training.
+
+    Loads BASE_DATA_MANAGER from the project's data.py and applies the
+    same split-then-preprocess pipeline used during experiments. Writes
+    train and test CSVs so you can inspect preprocessed data without
+    training models.
+
+    Parameters
+    ----------
+    dataset : str
+        Dataset filename in the project's datasets directory
+    output : str, optional
+        Directory for preprocessed CSVs. Defaults to 'preprocessed'
+        under the project root
+    table_name : str, optional
+        Table name when the dataset is a SQLite database
+    categorical_features : str, optional
+        Comma-separated categorical column names
+    split_index : int, optional
+        Write only this split index. If omitted, every split is written
+
+    Raises
+    ------
+    FileNotFoundError
+        If the project root or dataset file is not found
+    ValueError
+        If preprocessing configuration is invalid
+    """
+    try:
+        project_root = project.find_project_root()
+        if project_root not in sys.path:
+            sys.path.insert(0, str(project_root))
+        _preprocess_dataset(
+            project_root, dataset, output, table_name,
+            categorical_features, split_index
+        )
+    except (FileNotFoundError, ImportError, AttributeError, ValueError) as e:
         print(f"Error: {e}")
 
 

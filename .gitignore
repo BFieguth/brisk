@@ -1,4 +1,5 @@
 old_suite/*
+.venv/
 
 *.ini
 *.pyc

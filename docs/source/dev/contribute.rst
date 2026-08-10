@@ -13,33 +13,27 @@ Getting Started
 
       git checkout -b feature/your-feature-name
 
-3. **Create a Conda Environment**:
+3. **Create a uv Environment**:
 
    .. code-block:: bash
 
-      conda create -n brisk-dev python==3.12
-      conda activate brisk-dev
+      uv venv --python 3.12
+      source .venv/bin/activate
 
-4. **Install Poetry**:
-
-   .. code-block:: bash
-
-      conda install poetry
-
-5. **Install Development Dependencies**:
+4. **Install Development Dependencies**:
 
    .. code-block:: bash
 
-      poetry install
+      uv sync --group dev
 
-6. **Make Changes**: Implement your changes, including tests and documentation
-7. **Push Your Branch**: Push your changes to the repository:
+5. **Make Changes**: Implement your changes, including tests and documentation
+6. **Push Your Branch**: Push your changes to the repository:
 
    .. code-block:: bash
 
       git push origin feature/your-feature-name
 
-6. **Create a Pull Request**: Create a PR from your branch to the main branch
+7. **Create a Pull Request**: Create a PR from your branch to the main branch
 
 Issues
 ------
@@ -71,14 +65,14 @@ Testing
 
   .. code-block:: bash
 
-     pytest
+     uv run pytest
 
 * Ensure all tests pass and coverage is maintained or improved.
 * The end-to-end tests can take several minutes to run so you may want to run just the unit tests until you have have your feature working:
 
   .. code-block:: bash
 
-     pytest tests/unit_tests
+     uv run pytest tests/unit_tests
 
 Documentation
 -------------
