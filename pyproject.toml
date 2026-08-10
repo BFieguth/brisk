@@ -1,59 +1,66 @@
-[tool.poetry]
+[project]
 name = "brisk-ml"
 version = "2.0.0"
 description = "A framework that helps train machine learning models using sklearn."
-authors = ["BFieguth <bfieguth@uoguelph.ca>"]
+authors = [{name = "BFieguth", email = "bfieguth@uoguelph.ca"}]
 readme = "README.md"
-packages = [{include = "brisk", from = "src"}]
+requires-python = ">=3.10,<4"
+dependencies = [
+    "scikit-learn>=1.5.1,<2",
+    "pandas>=2.2.3,<3",
+    "matplotlib>=3.9.2,<4",
+    "jinja2>=3.1.4,<4",
+    "tqdm>=4.66.5,<5",
+    "click>=8.1.7,<9",
+    "seaborn>=0.13.2,<0.14",
+    "joblib>=1.4.2,<2",
+    "numpy>=2.1.2,<3",
+    "toml>=0.10.2,<0.11",
+    "plotnine>=0.14.4,<0.15",
+    "openpyxl>=3.1.5,<4",
+    "pydantic>=2.11.7,<3",
+    "plotly>=6.1.0,<7",
+    "kaleido>=1.0.0,<2",
+    "shap>=0.48.0,<0.49",
+    "fonttools>4.60.2",
+    "orjson<=3.11.4",
+    "pillow>=12.1.1",
+]
 
-[tool.poetry.dependencies]
-python = ">3.10,<4.0"
-scikit-learn = "^1.5.1"
-pandas = "^2.2.3"
-matplotlib = "^3.9.2"
-jinja2 = "^3.1.4"
-tqdm="^4.66.5"
-click="^8.1.7"
-seaborn="^0.13.2"
-joblib="^1.4.2"
-numpy="^2.1.2"
-toml="^0.10.2"
-plotnine="^0.14.4"
-openpyxl="^3.1.5"
-pydantic="^2.11.7"
-plotly="^6.1.0"
-kaleido="^1.0.0"
-shap="^0.48.0"
-fonttools=">4.60.2"
-orjson="<=3.11.4"
-pillow=">=12.1.1"
-briskui = {version = ">=1.0.0", optional = true, python = ">=3.11"}
+[project.optional-dependencies]
+ui = ["briskui>=1.0.0; python_version >= '3.11'"]
 
-[tool.poetry.extras]
-ui = ["briskui"]
+[project.scripts]
+brisk = "brisk.cli.cli:cli"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
-pytest-cov = "^6.0.0"
-mypy = "^1.13.0"
-pandas-stubs = "^2.2.3"
-types-toml = "^0.10.8"
-types-tqdm = "^4.66.0"
-types-seaborn = "^0.13.2"
-types-openpyxl = "^3.1.5"
-types-Pillow = "^10.2.0"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3,<9",
+    "pytest-cov>=6.0.0,<7",
+    "mypy>=1.13.0,<2",
+    "pylint>=3.3.0,<4",
+    "pandas-stubs>=2.2.3,<3",
+    "types-toml>=0.10.8,<0.11",
+    "types-tqdm>=4.66.0,<5",
+    "types-seaborn>=0.13.2,<0.14",
+    "types-openpyxl>=3.1.5,<4",
+    "types-Pillow>=10.2.0,<11",
+]
 
-[[tool.poetry.source]]
+[[tool.uv.index]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
-priority = "supplemental"
+explicit = true
+
+[tool.uv.sources]
+briskui = { index = "testpypi" }
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.scripts]
-brisk = "brisk.cli.cli:cli"
+[tool.hatch.build.targets.wheel]
+packages = ["src/brisk"]
 
 [tool.pytest.ini_options]
 markers = [

@@ -20,6 +20,8 @@
      - Create a requirements.txt file from the environment captured during a previous experiment run.
    * - :class:`~brisk.cli.cli.load_data`
      - Load a scikit-learn dataset by name.
+   * - :class:`~brisk.cli.cli.preprocess`
+     - Apply configured preprocessing to a dataset without training.
    * - :class:`~brisk.cli.cli_helpers.load_sklearn_dataset`
      - Load a scikit-learn dataset by name.
    * - :class:`~brisk.cli.cli.run`

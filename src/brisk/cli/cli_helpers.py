@@ -1,5 +1,5 @@
 """Define helper functions used by CLI commands."""
-from typing import Union, Dict, Any, List
+from typing import Union, Dict, Any, List, Optional
 import json
 import os
 import pathlib
@@ -197,6 +197,89 @@ def _run_from_config(
     except (FileNotFoundError, ImportError, AttributeError, ValueError) as e:
         print(f'Error: {str(e)}')
         return
+
+
+def _preprocess_dataset(
+    project_root: pathlib.Path,
+    dataset: str,
+    output: Optional[str],
+    table_name: Optional[str],
+    categorical_features: Optional[str],
+    split_index: Optional[int]
+) -> None:
+    """Apply project preprocessing to a dataset and write train/test CSVs."""
+    datasets_dir = project_root / "datasets"
+    data_path = datasets_dir / dataset
+    if not data_path.exists() and not dataset.lower().endswith(
+        (".csv", ".xlsx", ".xls", ".db", ".sqlite")
+    ):
+        data_path = datasets_dir / f"{dataset}.csv"
+    if not data_path.exists():
+        raise FileNotFoundError(
+            f"Dataset not found: {data_path}\n"
+            "Place the file in the project's datasets directory."
+        )
+    if data_path.suffix.lower() in {".db", ".sqlite"} and not table_name:
+        raise ValueError(
+            "A --table name is required when preprocessing a SQLite dataset."
+        )
+
+    output_dir = (
+        pathlib.Path(output) if output else project_root / "preprocessed"
+    )
+    if not output_dir.is_absolute():
+        output_dir = project_root / output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    initialize_services(output_dir, verbose=False, mode="capture")
+    services = get_services()
+    manager = services.io.load_base_data_manager(project_root / "data.py")
+    manager.set_services(services)
+
+    if categorical_features:
+        cat_features = [
+            name.strip()
+            for name in categorical_features.split(",")
+            if name.strip()
+        ]
+    else:
+        cat_features = []
+
+    stem = data_path.stem
+    if table_name:
+        stem = f"{stem}_{table_name}"
+
+    splits = manager.split(
+        data_path=str(data_path),
+        categorical_features=cat_features,
+        group_name="preprocess",
+        filename=stem,
+        table_name=table_name,
+        evaluate=False,
+    )
+
+    if split_index is not None:
+        indices = [split_index]
+    else:
+        indices = list(range(splits.expected_n_splits))
+    include_index = splits.expected_n_splits > 1 and split_index is None
+
+    print(f"Preprocessed data saved to {output_dir}")
+    for index in indices:
+        split = splits.get_split(index)
+        target_name = split.y_train.name if split.y_train.name else "target"
+        train_df = split.X_train.copy()
+        train_df[target_name] = split.y_train.to_numpy()
+        test_df = split.X_test.copy()
+        test_df[target_name] = split.y_test.to_numpy()
+
+        suffix = f"_split{index}" if include_index else ""
+        train_path = output_dir / f"{stem}{suffix}_train.csv"
+        test_path = output_dir / f"{stem}{suffix}_test.csv"
+        train_df.to_csv(train_path, index=False)
+        test_df.to_csv(test_path, index=False)
+        print(f"  {train_path.name}")
+        print(f"  {test_path.name}")
 
 
 def load_sklearn_dataset(name: str) -> Union[dict, None]:

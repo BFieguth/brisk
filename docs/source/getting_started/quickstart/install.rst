@@ -13,7 +13,7 @@ Dependencies
 ============
 
 Several packages will be installed automatically when you install Brisk. We recommend using 
-a virtual environment, such as `venv <https://docs.python.org/3/library/venv.html>`_ or `conda <https://docs.conda.io/projects/conda/en/latest/user-guide/index.html>`_, to manage dependencies.
+a virtual environment, such as `venv <https://docs.python.org/3/library/venv.html>`_ or `uv <https://docs.astral.sh/uv/>`_, to manage dependencies.
 
 - `scikit-learn <https://scikit-learn.org/stable/>`_: provides many of the machine learning tools used in Brisk.
 - `pandas <https://pandas.pydata.org/docs/>`_: provides dataframes for working with structured data.

@@ -155,7 +155,7 @@ class GlobalServiceManager:
             "logging", results_dir, verbose
         )
         self.services["metadata"] = metadata.MetadataService("metadata")
-        self.services["io"] = io.IOService("io", results_dir, None)
+        self.services["io"] = io.IOService("io", results_dir, results_dir)
         self.services["utility"] = utility.UtilityService(
             "utility", None, None
         )
